@@ -1,0 +1,80 @@
+should this look at annualized returns, or scale returns by dt
+
+should plot rank insted of value?
+
+should we plot (manhattan) distance between parameter values?
+
+what should we eliminate durin preprocessing:
+
+	 1) guys who are <=0 profit at t=0.1
+	 2) what else?
+
+
+Color by value at t3.
+animate slider
+smart renorm (preserving origin, like global norm)
+X t2 = t1 + dt <= tf
+
+X must redraw whenever buttons or sliders change
+
+Direct selection of nets.
+
+Add "selection only" display
+display profit history (parallel coords)
+
+add new kind of window subclass for showing selected net leraning parameter scatterplot
+-----
+Jacques says:
+
+   class c2 is subclass of c1
+   class c1 has method c1::ma()
+   c2 does not have its own ma()
+
+   c1 and c2 each have their own separate methods mb()
+
+   c1::ma() calls mb()
+
+   i1 = new c1
+   i2 = new c2
+
+   i1.ma() will call c1::ma() which will call mb() which is c1::mb()
+   i2.ma() will call c1::ma() which will call mb() which is c2::mb()
+
+Well, that works, but only if mb is declared virtual in c1.
+-----
+Install fltk 1.1.5
+Keyboard access to slider values
+control panel per window (or control panel settings per window)
+t1, t2, displacement?  
+---
+
+rgb color exponent slider
+Precompliled headers for blitz and fltk (and gmm++)
+    tried it - only saves a a couple of seconds on compile			 
+link gmm++ to blas and lapack
+ratios of densities
+matrix invariants, or other anisotropy measures
+eigenvectors?
+least squares grad and hessian
+relative coords.
+natural neighbors densities
+control panels consolodated into one, with one tab per plot
+fix normalization, etc.  For pairs, xforms, etc.
+	normalization (scaling of data) seperate from display offset, except perhaps for 3sigma
+	e.g. do not shift data zero - just scale data, have separate option for display -1:1 or 0:1
+add sixsigma?
+histograms for marginals
+make skelaton for other programs, e.g. ktest
+multiple selections
+separate colors for selected, unselected, blendcolor
+panel buttons to duplicate keys to reset xform, invert selection, deselect, etc..
+trackball 3d manip
+binned kernel densities
+nD trackball
+running entropy / MI estimates
+run entropy code
+principal componenents
+independent components
+---
+use texture (1-d?) coord instead of color to render color of points.  Generate texture based on selection region, thus avoiding testing all points to see if they are in the region.  Question: how to handle individual colors ramps and alphas on a per-plot basis:  Answer, use a separate texture for each plot, but use the same texture coords.  Use vertex (and texture) arrays to speed rendering.
+---

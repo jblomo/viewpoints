@@ -1,0 +1,726 @@
+#include<stdlib.h>
+#include<stdio.h>
+#include<assert.h>
+#include<math.h>
+#include<complex.h>
+#include <iostream.h>
+#include <fstream.h>
+#include <sstream>
+#include <sys/types.h>
+#include <sys/uio.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <vector>
+#include <string>
+#include <sstream>
+ 
+#ifdef __APPLE__
+#include <vecLib/vBLAS.h>
+#elif linux
+extern "C" {
+# include <cblas.h>
+}
+#endif
+
+#include <FL/math.h>
+#include <FL/Fl.H>
+#include <FL/Fl_Window.H>
+#include <FL/Fl_Hor_Value_Slider.H>
+#include <FL/Fl_Button.H>
+#include <FL/Fl_Group.H>
+#include <FL/Fl_Choice.H>
+#include <FL/gl.h>
+#include <FL/Fl_Gl_Window.H>
+//flews extras
+#include <FL/Fl_flews.h>
+#include <FL/Fl_Value_Slider_Input.H>
+#include "Fl_Hor_Value_Slider_Input.H"
+
+#include <blitz/array.h>
+
+const int nvals_max = 423;  	// maximum number of columns allowed in data file
+const int MAXPOINTS = 100000;	// maximum rows in data file
+const int skip = 0; 			// skip this many columns at the beginning of each row
+
+int npoints = MAXPOINTS;			// actual number of rows in data file
+int nvals = nvals_max;				// actual number of columns in data file
+
+blitz::Array<float,2> points(nvals_max,MAXPOINTS);	// main data array
+//blitz::Array<float,1> xpoints(MAXPOINTS);
+//blitz::Array<float,1> ypoints(MAXPOINTS);
+blitz::Array<int,1> xindex(MAXPOINTS), yindex(MAXPOINTS), identity(MAXPOINTS);
+blitz::Array<int,1> selected(MAXPOINTS);
+
+float xmin, xmax, gmax;
+
+float pointsize = 1.0;
+int istart = 0;
+
+int sfactor = GL_CONSTANT_COLOR;
+int dfactor = GL_DST_ALPHA;
+
+class plot_window; // love those one-pass compilers.
+class control_panel_window;
+
+class plot_window : public Fl_Gl_Window {
+  protected:
+	void draw();
+	void draw_grid();
+	void draw_data_points(); // used to be virtual when overloaded by subclass
+	int handle (int event);
+	void handle_selection();
+	void resort();
+	int xprev, yprev, xcur, ycur;
+	float xdragged, ydragged;
+	float xcenter, ycenter, xscale, yscale;
+	float xdown, ydown, xtracked, ytracked;
+	int selection_changed;
+  public:
+	plot_window(int w, int h);
+	blitz::Array<float,1> xpoints;
+	blitz::Array<float,1> ypoints;
+	control_panel_window *cp;	// pointer to the control panel associated with this plot window
+	int extract_data_points();
+};
+
+plot_window::plot_window(int w,int h) : Fl_Gl_Window(w,h) 
+{
+	blitz::Range NPTS(0,npoints-1);	
+	xpoints.resize(npoints);
+	ypoints.resize(npoints);
+	xdragged = 0;
+	ydragged = 0;
+	xcenter = 0.0;
+	ycenter = 0.0;
+	xscale = 0.95;
+	yscale = 0.95;
+	xtracked = 0.0;
+	ytracked = 0.0;
+	selection_changed = 0;
+#if 0
+	if (can_do(FL_RGB8|FL_DOUBLE|FL_ALPHA|FL_DEPTH))
+		mode(FL_RGB8|FL_DOUBLE|FL_ALPHA|FL_DEPTH);  // Can't seem to make this work on PBG4 OSX 
+	else
+		mode(FL_RGB|FL_DOUBLE|FL_ALPHA);
+#endif
+		mode(FL_RGB8|FL_DOUBLE|FL_ALPHA);
+}
+
+
+class control_panel_window : public Fl_Window {
+  protected:
+	void extract_and_redraw ();
+	void maybe_redraw ();
+  public:
+	control_panel_window(int w, int h);
+	void make_widgets(control_panel_window *cpw);
+	static void static_extract_and_redraw (Fl_Widget *w, control_panel_window *cpw)
+		{ cpw->extract_and_redraw(); }
+	static void static_maybe_redraw(Fl_Widget *w, control_panel_window *cpw)
+		{ cpw->maybe_redraw() ;}
+	Fl_Hor_Value_Slider_Input *t1_slider, *dt_slider; 	// control the two points in the timeseries
+	Fl_Hor_Value_Slider_Input *BC, *BA; // constant blend color and alpha
+	Fl_Hor_Value_Slider_Input *pointsize_slider;
+	Fl_Hor_Value_Slider_Input *npts_slider;
+	
+	Fl_Button *dont_clear;
+	Fl_Button *x_equals_delta_x, *y_equals_delta_x;
+	Fl_Button *normalize_x, *normalize_y;
+	Fl_Button *rank_x, *rank_y;
+
+	plot_window *pw;  // pointer to the plot window associated with this control panel
+};
+
+control_panel_window::control_panel_window(int w, int h) : Fl_Window(w, h) {
+}
+
+plot_window *pw1, *pw2;
+control_panel_window *cp1, *cp2;
+
+int plot_window::handle(int event) {
+	switch(event) {
+	case FL_PUSH:
+		cp->show();	// show (raise) the control panel associated with this plot window.
+		xprev = Fl::event_x();
+		yprev = Fl::event_y();
+		// cout << "FL_PUSH at " << xprev << ", " << yprev << endl;
+		if (Fl::event_state() == (FL_BUTTON1 | FL_ALT))
+		{
+			xdown = (float)xprev;
+			xdown = + (2.0*(xdown/(float)w()) -1.0) ; // window -> [-1,1]
+			xdown = xdown / xscale;
+			xdown = xdown + xcenter;
+			
+			ydown = (float)yprev;
+			ydown = - (2.0*(ydown/(float)h()) -1.0) ; // window -> [-1,1]
+			ydown = ydown/yscale;
+			ydown = ydown + ycenter;
+		}
+		return 1;
+	case FL_DRAG:
+		// printf ("event_state: %x\n", Fl::event_state());
+		xcur = Fl::event_x();
+		ycur = Fl::event_y();
+		xdragged =   xcur - xprev;
+		ydragged = -(ycur - yprev);
+		xprev = xcur;
+		yprev = ycur;
+		// left-mouse alone
+		if (Fl::event_state() == FL_BUTTON1)
+		{
+			xcenter -= xdragged*(1/xscale)*(2.0/w());
+			ycenter -= ydragged*(1/yscale)*(2.0/h());
+		}
+		// middle-mouse alone or c-left-mouse
+		else if ((Fl::event_state() == FL_BUTTON2) ||
+				 (Fl::event_state() == (FL_BUTTON1 | FL_CTRL)))
+		{
+			xscale *= 1 + xdragged*(2.0/w());
+			yscale *= 1 + ydragged*(2.0/h());
+		}
+		// cout << "xcenter, ycenter: " << xcenter << ", " << ycenter << endl;
+		// cout << "xscale, yscale: " << xscale << ", " << yscale << endl;
+
+		// m-left-mouse
+		else if (Fl::event_state() == (FL_BUTTON1 | FL_ALT))
+		{
+			// selection code goes here....
+			// track the mouse in word coords
+			xtracked = + (2.0*(xcur/(float)w()) -1.0) ; // window -> [-1,1]
+			xtracked = xtracked / xscale;
+			xtracked = xtracked + xcenter;
+
+			ytracked = - (2.0*(ycur/(float)h()) -1.0) ; // window -> [-1,1]
+			ytracked = ytracked/yscale;
+			ytracked = ytracked + ycenter;
+
+			selection_changed = 1;
+		}
+		Fl::redraw(); //???
+		return 1;
+	case FL_RELEASE:   
+		// mouse up
+		// cout << "FL_RELEASE at " << Fl::event_x() << ", " << Fl::event_y() << endl;
+		selection_changed = 0;
+		Fl::redraw() ;
+		return 1;
+	case FL_KEYDOWN:
+		// keypress, key is in Fl::event_key(), ascii in Fl::event_text()
+		// Return 1 if you understand/use the keyboard event, 0 otherwise...
+		// cout << "FL_KEYDOWN, event_key() = " << Fl::event_key() << endl;
+		switch (Fl::event_key()) {
+		case 'r':
+			// reset zoom and pan
+			xcenter = ycenter = 0.0;
+			xscale = yscale = 0.95;
+			Fl::redraw(); //???
+			return 1;
+		default: return 0;
+		}
+	case FL_KEYUP:
+		// keypress, key is in Fl::event_key(), ascii in Fl::event_text()
+		// Return 1 if you understand/use the keyboard event, 0 otherwise...
+		// cout << "FL_KEYUP" << endl;
+		return 0;
+	case FL_SHORTCUT:
+		// shortcut, key is in Fl::event_key(), ascii in Fl::event_text()
+		// Return 1 if you understand/use the shortcut event, 0 otherwise...
+		// cout << "FL_SHORTCUT" << endl;
+		return 0;
+	default:
+		// pass other events to the base class...
+		return Fl_Gl_Window::handle(event);}
+} 
+
+
+void plot_window::draw() 
+{
+	// the valid() property can avoid reinitializing matrix for each redraw:
+	if (!valid())
+    {
+		valid(1);
+		glMatrixMode(GL_PROJECTION);
+		glLoadIdentity();
+		glOrtho(-1, 1, -1, 1, -1, +1);
+		glViewport(0, 0, w(), h());
+		glEnable(GL_DEPTH_TEST);
+		glEnable(GL_BLEND);
+		glEnable(GL_POINT_SMOOTH);
+		glHint(GL_POINT_SMOOTH_HINT,GL_NICEST);
+		glEnable(GL_LINE_SMOOTH);
+		glHint(GL_LINE_SMOOTH_HINT,GL_NICEST);
+    }
+  
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+	// glTranslatef (0, 0, 0);
+	glScalef (xscale, yscale, 1.0);
+	glTranslatef (-xcenter, -ycenter, 0.0);
+
+	if (cp->dont_clear->value() == 0)
+    {
+		glClearColor(0.85,0.85,0.85,0.0);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		draw_grid();
+    }
+
+	if (selection_changed)
+		handle_selection ();
+	draw_data_points();
+}
+
+void 
+control_panel_window::maybe_redraw() 
+{
+  // kludge.  Avoid double redraw when setting "don't clear".
+  if (dont_clear->value())
+    return;
+  Fl::redraw();
+}
+
+void plot_window::draw_grid()
+{
+	glBlendFunc(GL_ONE, GL_ZERO);
+//	glBlendFunc(sfactor, dfactor);
+//	glLineWidth(0.5);
+	glColor4f(0.8,0.8,0.8,0.0);
+	// draw the grid here
+	glBegin (GL_LINES);
+	for (int i=1; i<=10; i++)
+	{
+		// horiz. grid lines;
+		glVertex3f (-1.0, +0.1*i, -0.01);
+		glVertex3f (+1.0, +0.1*i, -0.01);
+		glVertex3f (-1.0, -0.1*i, -0.01);
+		glVertex3f (+1.0, -0.1*i, -0.01);
+
+		// vert. grid lines;
+		glVertex3f (+0.1*i, -1.0, -0.01);
+		glVertex3f (+0.1*i, +1.0, -0.01);
+		glVertex3f (-0.1*i, -1.0, -0.01);
+		glVertex3f (-0.1*i, +1.0, -0.01);
+	}
+	// axes
+	glColor4f(0.7,0.7,0.7,0.0);
+	glVertex3f (-1.0, 0.0, -0.01);
+	glVertex3f (+1.0, 0.0, -0.01);
+	glVertex3f (0.0, -1.0, -0.01);
+	glVertex3f (0.0, +1.0, -0.01);
+	glEnd();
+}
+
+void plot_window::handle_selection()
+{
+	int draw_selection_box = 1;
+	if (draw_selection_box)
+	{
+		glBlendFunc(GL_ONE, GL_ZERO);
+		glLineWidth(1.0);
+		glColor4f(0.25,0.25,0.75,0.0);
+		glBegin (GL_LINE_LOOP);
+		glVertex2f (xdown, 		ydown);
+		glVertex2f (xtracked,   ydown);
+		glVertex2f (xtracked,   ytracked);
+		glVertex2f (xdown,		ytracked);
+		glEnd();
+	}
+	blitz::Range NPTS(0,npoints-1);	
+	selected(NPTS) = where((xpoints(NPTS)>fmaxf(xdown,xtracked) || xpoints(NPTS)<fminf(xdown,xtracked) ||
+							ypoints(NPTS)>fmaxf(ydown,ytracked) || ypoints(NPTS)<fminf(ydown,ytracked)), 0,1);
+}
+
+int xorder (const void *i, const void *j)
+{
+  if(pw1->xpoints(*(int *)i) < pw1->xpoints(*(int *)j))
+    return -1;
+  return (pw1->xpoints(*(int *)i) > pw1->xpoints(*(int *)j));
+}
+
+int yorder (const void *i, const void *j)
+{
+  if(pw1->ypoints(*(int *)i) < pw1->ypoints(*(int *)j))
+    return -1;
+  return (pw1->ypoints(*(int *)i) > pw1->ypoints(*(int *)j));
+}
+
+void
+plot_window::resort ()
+{
+  static int initialized = 0;
+  if (!initialized)
+  {
+	  cout << "making identity" << endl;
+	  for (int i=0; i<MAXPOINTS; i++)
+	  {
+		  identity(i)=i;
+	  }
+	  initialized = 1;
+  }
+  blitz::Range NPTS(0,npoints-1);	
+  // .data asks blitz to return a pointer an array's data
+  if (cp->rank_x->value())
+  {
+	  if (!xindex.isStorageContiguous() || !xpoints.isStorageContiguous())
+	  {
+		  cerr << "Tried to pass non contigous x data to qsort.  Aborting!" << endl;
+		  exit (1);
+	  }
+	  xindex(NPTS) = identity(NPTS);
+	  qsort(xindex.data(),npoints,sizeof(int),xorder); 
+//	  xpoints(NPTS) = 1.0 - 2.0*xindex(NPTS)/(float)(npoints-1);
+	  for(int i=0; i<npoints; i++)
+      {
+		  xpoints(xindex(i)) = 2*float(i) / (float)npoints - 1;
+      }
+  }
+  if (cp->rank_y->value())
+  {
+	  if (!yindex.isStorageContiguous() || !ypoints.isStorageContiguous())
+	  {
+		  cerr << "Tried to pass non contigous y data to qsort.  Aborting!" << endl;
+		  exit (1);
+	  }
+	  yindex(NPTS) = identity(NPTS);
+	  qsort(yindex.data(),npoints,sizeof(int),yorder); 
+//	  ypoints(NPTS) = 1.0 - 2.0*yindex(NPTS)/(float)(npoints-1);
+	  for(int i=0; i<npoints; i++)
+      {
+		  ypoints(yindex(i)) = 2*float(i) / (float)npoints - 1;
+      }
+  }
+}
+
+
+void clearAlphaPlanes()
+{
+	glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_TRUE);
+	glClearColor (0.0, 0.0, 0.0, 0.0);
+	glClear (GL_COLOR_BUFFER_BIT);
+	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+}
+
+//float r1=0.5, g1=0.1, b1=0.025; 
+float r1=0.5,  g1=0.05, b1=0.05, alpha1 = 1.0;
+float r2=0.085, g2=0.085, b2=0.85, alpha2 = 1.0;
+float r3=0.05,  g3=0.5, b3=0.05, alpha3 = 1.0;
+
+void plot_window::draw_data_points()
+{
+  glPointSize(cp->pointsize_slider->value());
+  glBlendColor (cp->BC->value(), cp->BC->value(), cp->BC->value(), powf(cp->BA->value(),2.0));
+  glBlendFunc(sfactor, dfactor);
+  glBegin(GL_POINTS);
+  for (int i=0; i<npoints; i++) {
+	  if (!selected(i))
+	  {
+		  glColor4f(r1, g1, b1, alpha1);
+		  glVertex2f(xpoints(i), ypoints(i));
+	  }
+  }
+  glEnd();
+  clearAlphaPlanes();
+//  glBlendFunc(GL_CONSTANT_COLOR, GL_ZERO);
+  glBegin(GL_POINTS);
+  for (int i=0; i<npoints; i++) {
+	  if (selected(i))
+	  {
+//		  glColor4f(r2, g2, b2, alpha2);
+		  glColor4f(r3, g3, b3, alpha3);
+		  glVertex3f(xpoints(i), ypoints(i), 0.1);
+	  }
+  }
+  glEnd();
+}
+
+int
+plot_window::extract_data_points ()
+{
+	blitz::Range NPTS(0,npoints-1);	
+	int t1 = (int)(cp->t1_slider->value());
+	int dt = (int)(cp->dt_slider->value());
+	int t2 = t1 + dt;
+	if (t1 < 0)
+		return 0;
+	if (t2 >= nvals)
+		return 0;
+	if (cp->x_equals_delta_x->value())
+	{
+		xpoints(NPTS) = points(t1, NPTS) * nvals / ((float)(t1) + 1.0);
+	}
+	else
+		xpoints(NPTS) = points(t1, NPTS);
+	if (cp->y_equals_delta_x->value())
+	{
+		ypoints(NPTS) = (points(t2, NPTS) - points(t1, NPTS)) * nvals / ((float)t2 - (float)(t1) + 1.0);
+	}
+	else
+		ypoints(NPTS) = points(t2, NPTS);
+	if (cp->rank_x->value() || cp->rank_y->value())
+	{
+		resort ();
+	}
+	if (cp->normalize_x->value())
+	{
+//		float xmin = min(xpoints(NPTS));
+//		float xmax = max(xpoints(NPTS));
+//		xpoints(NPTS) = -1.0 + 2.0*(xpoints(NPTS) - xmin) / (xmax - xmin);
+		float absmag = fmaxf(fabsf(min(xpoints(NPTS))),fabsf(max(xpoints(NPTS))));
+		xpoints(NPTS) = xpoints(NPTS) / absmag;
+	}
+	if (cp->normalize_y->value())
+	{
+//		float ymin = min(ypoints(NPTS));
+//		float ymax = max(ypoints(NPTS));
+//		ypoints(NPTS) = -1.0 + 2.0*(ypoints(NPTS) - ymin) / (ymax - ymin);
+		float absmag = fmaxf(fabsf(min(ypoints(NPTS))),fabsf(max(ypoints(NPTS))));
+		ypoints(NPTS) = ypoints(NPTS) / absmag;
+	}
+	return 1;
+}
+
+void
+control_panel_window::extract_and_redraw ()
+{
+	if (pw->extract_data_points())
+		Fl::redraw ();
+}
+
+// normalize data array using global max magnitude
+void normalize_minmax ()
+{
+	float limit = 1000.0;  // anything with higher nagnitude is assumed to be bogus.
+	blitz::Range NPTS(0,npoints-1);
+	blitz::Range NVALS(skip,nvals-1);
+	xmin = min(where(points(NVALS,NPTS)<-limit, 0.0, points(NVALS,NPTS)));
+	xmax = max(where(points(NVALS,NPTS)>+limit, 0.0, points(NVALS,NPTS)));
+	gmax = (fabs(xmin)>fabs(xmax)) ? fabs(xmin) : fabs(xmax);
+	cout << "global min = " << xmin << ", global max = " << xmax << ", scaling all data by " << 1.0/gmax << endl;
+	points(NVALS,NPTS) = points(NVALS,NPTS) / gmax;
+}
+  
+void npts_changed(Fl_Widget *o) 
+{
+	npoints = int(((Fl_Slider *)o)->value());
+	Fl::redraw();
+}
+
+void read_asci_file() 
+{
+	int i;
+	char line[20*nvals+1];	// 20 characters better hold one value + delimiters
+	for (i=0; i<npoints; i++)
+	{
+		if (!fgets ((char *)&(line[0]), sizeof(line), stdin))
+		{
+			if (feof(stdin))
+				break;
+			if (ferror(stdin))
+			{
+				fprintf (stderr, "error reading input occured at line %d\n", i+1);
+				exit (1);
+			}
+		}
+//		printf ("line %i = |%s|\n", i, (char *)&(line[0]));
+		float val = 0.0;
+		int ret, nchars = 0;
+		int offset = 0;
+		for (int j=0; j<nvals; j++)
+		{
+			ret = sscanf((char *)&(line[offset]),"%f%n",&val,&nchars);
+//			printf ("i = %d, j = %d, offset = %d, ret = %d, nchars = %d, val = %f\n", i, j, offset, ret, nchars, val);
+			if (ret != 1)
+			{
+				fprintf (stderr, "trouble reading input value %d on line %d\n", j+1, i+1);
+				exit (1);
+			}
+			offset += nchars;
+			if (fabs(val) > 100.0)
+				val = 0.0;
+			points(j,i) = val;
+		}
+		if (i>0 && (i%10000 == 0))
+			printf ("read %d lines\n", i);
+	}
+	cout << "read " << i << " lines." << endl;
+	npoints = i;
+}
+
+void read_binary_file() 
+{
+	blitz::Array<float,1> vals(nvals);
+	blitz::Range NVALS(0,nvals-1);
+	int i;
+	if (!points.isStorageContiguous())
+	{
+		cerr << "Tried to pass non contigous buffer to read.  Aborting!" << endl;
+		exit (1);
+	}
+		
+	for (i=0; i<npoints; i++)
+	{
+		unsigned int ret = read(0, (void *)(vals.data()), nvals*sizeof(float));
+		if (ret != nvals*sizeof(float))
+		{
+			if (ret == 0) // EOF
+				break;
+			else
+			{
+				fprintf (stderr, "error reading input occured at line %d\n", i+1);
+				exit (1);
+			}
+		}
+		points(NVALS,i) = vals;
+		if (i>0 && (i%10000 == 0))
+			printf ("read %d lines\n", i);
+	}
+	cout << "read " << i << " lines." << endl;
+	npoints = i;
+}
+
+void
+control_panel_window::make_widgets(control_panel_window *cpw)
+{
+
+	int xpos = 50;
+	int ypos = 0;
+
+	npts_slider = new Fl_Hor_Value_Slider_Input(xpos, ypos+=25, cpw->w()-60, 20, "npts");
+	npts_slider->align(FL_ALIGN_LEFT);
+	npts_slider->callback(npts_changed);
+	npts_slider->value(npoints);
+	npts_slider->step(1);
+	npts_slider->bounds(1,MAXPOINTS);
+
+	BA = new Fl_Hor_Value_Slider_Input(xpos, ypos+=25, cpw->w()-60, 20, "BA");
+	BA->align(FL_ALIGN_LEFT);
+	BA->step(0.001);
+	BA->bounds(0.5,1.0);
+	BA->value(1.0);
+	BA->callback((void (*)(Fl_Widget*))Fl::redraw);
+
+	BC = new Fl_Hor_Value_Slider_Input(xpos, ypos+=25, cpw->w()-60, 20, "BC");
+	BC->align(FL_ALIGN_LEFT);
+	BC->step(0.001);
+	BC->bounds(0.0,1.0);
+	BC->value(1.0);
+	BC->callback((void (*)(Fl_Widget*))Fl::redraw);
+
+	pointsize_slider = new Fl_Hor_Value_Slider_Input(xpos, ypos+=25, cpw->w()-60, 20, "size");
+	pointsize_slider->align(FL_ALIGN_LEFT);
+	pointsize_slider->callback((void (*)(Fl_Widget*))Fl::redraw);
+	pointsize_slider->value(2.0);
+	pointsize_slider->step(0.25);
+	pointsize_slider->bounds(0.1,20.0);
+
+	t1_slider = new Fl_Hor_Value_Slider_Input (xpos, ypos+=25, cpw->w()-60, 20, "t1");
+	t1_slider->align(FL_ALIGN_LEFT);
+	t1_slider->callback((Fl_Callback*)static_extract_and_redraw, this);
+	t1_slider->value(skip);
+	t1_slider->step(1);
+	t1_slider->bounds(0,nvals);
+
+	dt_slider = new Fl_Hor_Value_Slider_Input (xpos, ypos+=25, cpw->w()-60, 20, "dt");
+	dt_slider->align(FL_ALIGN_LEFT);
+	dt_slider->callback((Fl_Callback*)static_extract_and_redraw, this);
+	dt_slider->value(0);
+	dt_slider->step(1);
+	dt_slider->bounds(0,nvals-1);
+
+	int xpos2 = xpos;
+	dont_clear = new Fl_Button(xpos2, ypos+=25, 20, 20, "don't clear");
+	dont_clear->align(FL_ALIGN_RIGHT);
+	dont_clear->type(FL_TOGGLE_BUTTON);
+	dont_clear->selection_color(FL_YELLOW);
+	dont_clear->callback((Fl_Callback*)static_maybe_redraw, this);
+
+	x_equals_delta_x = new Fl_Button(xpos2, ypos+=25, 20, 20, "x=x1/(t1+1)");
+	x_equals_delta_x->align(FL_ALIGN_RIGHT);
+	x_equals_delta_x->type(FL_TOGGLE_BUTTON);
+	x_equals_delta_x->selection_color(FL_YELLOW);
+	x_equals_delta_x->callback((Fl_Callback*)static_extract_and_redraw, this);
+
+	y_equals_delta_x = new Fl_Button(xpos2, ypos+=25, 20, 20, "y=(x2-x1)/(t2-t1+1)");
+	y_equals_delta_x->align(FL_ALIGN_RIGHT);
+	y_equals_delta_x->type(FL_TOGGLE_BUTTON);
+	y_equals_delta_x->selection_color(FL_YELLOW);
+	y_equals_delta_x->callback((Fl_Callback*)static_extract_and_redraw, this);
+
+	normalize_x = new Fl_Button(xpos2, ypos+=25, 20, 20, "normalize x");
+	normalize_x->align(FL_ALIGN_RIGHT);
+	normalize_x->type(FL_TOGGLE_BUTTON);
+	normalize_x->selection_color(FL_YELLOW);
+	normalize_x->callback((Fl_Callback*)static_extract_and_redraw, this);
+
+	normalize_y = new Fl_Button(xpos2, ypos+=25, 20, 20, "normalize y");
+	normalize_y->align(FL_ALIGN_RIGHT);
+	normalize_y->type(FL_TOGGLE_BUTTON);
+	normalize_y->selection_color(FL_YELLOW);
+	normalize_y->callback((Fl_Callback*)static_extract_and_redraw, this);
+
+	rank_x = new Fl_Button(xpos2, ypos+=25, 20, 20, "rank x");
+	rank_x->align(FL_ALIGN_RIGHT);
+	rank_x->type(FL_TOGGLE_BUTTON);
+	rank_x->selection_color(FL_YELLOW);
+	rank_x->callback((Fl_Callback*)static_extract_and_redraw, this);
+
+	rank_y = new Fl_Button(xpos2, ypos+=25, 20, 20, "rank y");
+	rank_y->align(FL_ALIGN_RIGHT);
+	rank_y->type(FL_TOGGLE_BUTTON);
+	rank_y->selection_color(FL_YELLOW);
+	rank_y->callback((Fl_Callback*)static_extract_and_redraw, this);
+}
+
+int main(int argc, char **argv)
+{
+
+  read_binary_file ();
+  normalize_minmax();
+
+  // create control panel window
+  cp1 = new control_panel_window (Fl::w()-Fl::h()-25, Fl::h()-50);
+  cp1->resizable(cp1);
+  cp1->position(Fl::h()+25,50);
+  cp1->make_widgets (cp1);
+  cp1->end();
+    
+  // create plotting window
+  pw1 = new plot_window(Fl::h(), Fl::h()-50);
+  pw1->resizable(pw1);
+  pw1->position(0,50);
+  pw1->end();
+
+  // link plot window and its associated control panel window
+  cp1->pw = pw1;
+  pw1->cp = cp1;
+
+  cp1->show(argc,argv);
+  pw1->show(argc,argv);
+
+  // create control panel window
+  cp2 = new control_panel_window (Fl::w()-Fl::h()-25, Fl::h()-50);
+  cp2->resizable(cp2);
+  cp2->position(Fl::h()+30,55);
+  cp2->make_widgets (cp2);
+  cp2->end();
+    
+  // create plotting window
+  pw2 = new plot_window(Fl::h(), Fl::h()-50);
+  pw2->resizable(pw2);
+  pw2->position(5,55);
+  pw2->end();
+
+  // link plot window and its associated control panel window
+  cp2->pw = pw2;
+  pw2->cp = cp2;
+
+  cp2->show(argc,argv);
+  pw2->show(argc,argv);
+
+
+  int result = Fl::run();  // enter main event loop
+  delete cp1;
+  delete pw1;
+  return result;
+}
+

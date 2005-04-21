@@ -1,0 +1,72 @@
+This aassumes I will be running the svn server (svnserve) and keeping my
+repository (repositories) on the same machine that I am doing my
+work.
+
+1) install subversion (./configure --without-berkeley-db )
+3) Make sure the svnadmin deamon is running ("svnserv -d" see svnserve(8))
+4) Make that any firewall I am running allows connections to the svnserv port
+
+5) make a directory to hold repositories (master databases of all
+   revisions for my projects under subversion revision control).  I
+   only do this once.  It can be anywhere.  E.g:
+
+% mkdir ~/SVN-Repository/
+
+6) to create a repository for a project (e.g. "grid2") that I would
+   like to bring under subversion's revision control execute the
+   command:   
+
+% svnadmin create ~/SVN-Repository/grid2
+
+7) to import the (previously uncontrolled) source code for this
+   project (grid2) along with its auxillary files (data, text,
+   Makefile, notes, subdirectories, etc) I make a temporary copy of my
+   files, e.g: 
+
+% cp -rp ~/src/grid2 ~/src/grid2.xxx
+% cd ~/src/grid2.xxx
+
+8) clean up the directory (grid2.xxx) getting rid of cruft, huge data
+   files, including cruft in subdirectories. 
+
+9) Then import the whole (clean) directory heirarchy into the
+   repository.  We only do this once (per project): 
+
+% svn import . svn://creon@localhost/Users/creon/SVN-Repository/grid2 -m "initial checkin of grid2"
+
+9) Now we can delete the grid2.xxx directory
+
+% cd ..
+% rm -rf grid2.xxx
+
+10) Save the original source code directory, for peace of mind. (not
+    really necessary):
+
+% mv grid2 grid2.pre_svn
+
+11) Make a new grid2 directory where we will store our working copy
+    and do all our work from now on:
+
+% mkdir grid2
+% cd grid2
+
+12) Now check out a working copy from the repository and get to work:
+
+% svn checkout svn://creon@localhost/Users/creon/SVN-Repository/grid2 .
+
+% emacs grid2.cc ......
+
+13) from now use svn {status, update, checkin} in the work cycle.
+
+Possible problems:
+
+Make sure the svnserve.conf file in the repository allows write
+access, e.g:
+
+# in /Users/creon/SVN-Repository/grid2/svnserve.conf
+#
+[general]
+anon-access = write
+auth-access = write
+#
+
