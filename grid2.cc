@@ -104,12 +104,13 @@ class plot_window : public Fl_Gl_Window {
   public:
 	plot_window(int w, int h);
 	blitz::Array<float,2> vertices;
-	blitz::Array<int,1> a_rank;
+	blitz::Array<int,1> x_rank, y_rank, z_rank;
 	std::string xlabel, ylabel, zlabel;
 	control_panel_window *cp;	// pointer to the control panel associated with this plot window
 	int extract_data_points();
 	int transform_2d();
-	int normalize(blitz::Array<float,1>, int);
+	void compute_rank (blitz::Array<float,1>, blitz::Array<int,1>);
+	int normalize(blitz::Array<float,1>, blitz::Array<int,1>, int);
 	void reset_view();
 	float angle;
 	int needs_redraw;
@@ -121,7 +122,9 @@ plot_window::plot_window(int w,int h) : Fl_Gl_Window(w,h)
 {
 	count++;
 	vertices.resize(npoints,3);
-	a_rank.resize(npoints);
+	x_rank.resize(npoints);
+	y_rank.resize(npoints);
+	z_rank.resize(npoints);
 #if 0
 	if (can_do(FL_RGB8|FL_DOUBLE|FL_ALPHA|FL_DEPTH))
 		mode(FL_RGB8|FL_DOUBLE|FL_ALPHA|FL_DEPTH);  // Can't seem to make this work on PBG4 OSX 
@@ -638,7 +641,7 @@ plot_window::transform_2d ()
 }
 
 int 
-plot_window::normalize (blitz::Array<float,1> a, int style)
+plot_window::normalize (blitz::Array<float,1> a, blitz::Array<int,1> a_rank, int style)
 {
 	if (style == NORMALIZATION_NONE)
 		return 1;
@@ -673,32 +676,6 @@ plot_window::normalize (blitz::Array<float,1> a, int style)
 			a(NPTS) = (a(NPTS) - mu) / (3*sigma);
 		return 1;
 	case NORMALIZATION_RANK:
-		current_plot_window = this;
-		if (!a_rank.isStorageContiguous() || !a.isStorageContiguous())
-		{
-			cerr << "Tried to pass non-contigous data to qsort.  Aborting!" << endl;
-			exit (1);
-		}
-		a_rank(NPTS) = identity(NPTS);
-		
-		// this is ugly.  should replace with... C++ sort?
-		if (a.data() == xpoints.data())
-		{
-			qsort(a_rank.data(),npoints,sizeof(int),xorder); 
-		}
-		else if (a.data() == ypoints.data())
-		{
-			qsort(a_rank.data(),npoints,sizeof(int),yorder); 
-		}
-		else if (a.data() == zpoints.data())
-		{
-			qsort(a_rank.data(),npoints,sizeof(int),zorder); 
-		}
-		else
-		{
-			cerr << "problems computing rank index order" << endl;
-			return 0;
-		}
 		for(int i=0; i<npoints; i++)
 		{
 			a(a_rank(i)) = 2*float(i) / (float)npoints - 1;
@@ -706,6 +683,38 @@ plot_window::normalize (blitz::Array<float,1> a, int style)
 		return 1;
 	default:
 		return 0;
+	}
+}
+
+void
+plot_window::compute_rank (blitz::Array<float,1> a, blitz::Array<int,1> a_rank)
+{
+	blitz::Range NPTS(0,npoints-1);
+	current_plot_window = this;
+	if (!a_rank.isStorageContiguous() || !a.isStorageContiguous())
+	{
+		cerr << "Tried to pass non-contigous data to qsort.  Aborting!" << endl;
+		exit (1);
+	}
+	a_rank(NPTS) = identity(NPTS);
+		
+	// this is ugly.  should replace with... C++ sort?
+	if (a.data() == xpoints.data())
+	{
+		qsort(a_rank.data(),npoints,sizeof(int),xorder); 
+	}
+	else if (a.data() == ypoints.data())
+	{
+		qsort(a_rank.data(),npoints,sizeof(int),yorder); 
+	}
+	else if (a.data() == zpoints.data())
+	{
+		qsort(a_rank.data(),npoints,sizeof(int),zorder); 
+	}
+	else
+	{
+		cerr << "problems computing rank index order" << endl;
+		return;
 	}
 }
 
@@ -736,9 +745,13 @@ plot_window::extract_data_points ()
 	ypoints(NPTS) = points(t2,NPTS);
 	zpoints(NPTS) = points(t3,NPTS);
 
-	(void) normalize (xpoints, cp->x_normalization_style->value());
-	(void) normalize (ypoints, cp->y_normalization_style->value());
-	(void) normalize (zpoints, cp->z_normalization_style->value());
+	compute_rank(xpoints,x_rank);
+	compute_rank(ypoints,y_rank);
+	compute_rank(zpoints,z_rank);
+
+	(void) normalize (xpoints, x_rank, cp->x_normalization_style->value());
+	(void) normalize (ypoints, y_rank, cp->y_normalization_style->value());
+	(void) normalize (zpoints, z_rank, cp->z_normalization_style->value());
 	(void) transform_2d ();
 
 	vertices(NPTS,0) = xpoints(NPTS);
