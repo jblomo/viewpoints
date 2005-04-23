@@ -46,7 +46,11 @@
 // Blitz++
 #include <blitz/array.h>
 
-#include "stable.h"
+#  ifdef __APPLE__
+#    include <OpenGL/glext.h>
+#  else
+#    include <GL/glext.h>
+#  endif
 
 #include "grid2.H"
 
@@ -364,9 +368,14 @@ void plot_window::draw()
 		glEnable(GL_DEPTH_TEST);
 		glEnable(GL_BLEND);
 		glEnable(GL_POINT_SMOOTH);
-//??	glHint(GL_POINT_SMOOTH_HINT,GL_NICEST);
+		glHint(GL_POINT_SMOOTH_HINT,GL_NICEST);
 		glEnableClientState(GL_VERTEX_ARRAY);
 		glEnableClientState(GL_COLOR_ARRAY);
+#ifdef __APPLE__
+#ifdef FAST_APPLE_VERTEX_EXTENSIONS
+		glEnableClientState(GL_VERTEX_ARRAY_RANGE_APPLE);
+#endif // FAST_APPLE_VERTEX_EXTENSIONS
+#endif // __APPLE__		
     }
   
 	glMatrixMode(GL_MODELVIEW);
@@ -449,7 +458,6 @@ void plot_window::draw_grid()
 			glColor4f(0.4,0.4,0.4,0.0);
 		else
 			glColor4f(0.6*cp->Bkg->value(), 0.6*cp->Bkg->value(), 0.6*cp->Bkg->value(), 0.0);
-		glColor4f(0.4,0.4,0.4,0.0);
 		glBegin (GL_LINES);
 		glVertex3f (-1.0, 0.0,  0.0); glVertex3f (+1.0, 0.0,  0.0);
 		glVertex3f (0.0, -1.0,  0.0); glVertex3f (0.0, +1.0,  0.0);
@@ -467,11 +475,11 @@ void plot_window::draw_labels ()
     {
 		glPushMatrix ();
 		glLoadIdentity();
-		gl_font (FL_HELVETICA , 12);
-		if (cp->Bkg->value() <= 0.8)
-			glColor4f(1,1,1,0.25);
+		gl_font (FL_HELVETICA, 14);
+		if (cp->Bkg->value() <= 0.5)
+			glColor4f(0.8,0.8,0.8,0.0);
 		else
-			glColor4f(0,0,0,0.25);
+			glColor4f(0.2,0.2,0.2,0.0);
 
 		float xlabel_width = 2.0 * gl_width(xlabel.c_str())/(float)(this->w());
 //		float ylabel_width = 2.0 * gl_width(ylabel.c_str())/(float)(this->w());
@@ -581,9 +589,12 @@ void clearAlphaPlanes()
 void plot_window::draw_data_points()
 {
 	glDisable(GL_DEPTH_TEST);
-	glEnable(GL_BLEND);
-	glEnable(GL_POINT_SMOOTH);
-//?	glHint(GL_POINT_SMOOTH_HINT,GL_NICEST);
+
+//  the following are done once if necessary in the plot_window::draw()
+//	glEnable(GL_BLEND);
+//	glEnable(GL_POINT_SMOOTH);
+//	glHint(GL_POINT_SMOOTH_HINT,GL_NICEST);
+
 	glPointSize(cp->pointsize_slider->value());
 
 	float const_color[4];
@@ -606,6 +617,15 @@ void plot_window::draw_data_points()
 		glColorPointer (4, GL_FLOAT, 0, altcp);
 		
 	glVertexPointer (3, GL_FLOAT, 0, vp);
+
+#ifdef __APPLE__
+#ifdef FAST_APPLE_VERTEX_EXTENSIONS
+	glVertexArrayRangeAPPLE (3*npoints*sizeof(GLfloat),(GLvoid *)vp);
+	glVertexArrayParameteriAPPLE (GL_VERTEX_ARRAY_STORAGE_HINT_APPLE, GL_STORAGE_CACHED_APPLE);  // for static data
+	glVertexArrayParameteriAPPLE (GL_VERTEX_ARRAY_STORAGE_HINT_APPLE, GL_STORAGE_SHARED_APPLE);  // for dynamic data
+#endif // FAST_APPLE_VERTEX_EXTENSIONS
+#endif __APPLE__
+
 	glDrawArrays (GL_POINTS, 0, npoints);
 
 	glEnable(GL_DEPTH_TEST);
@@ -758,6 +778,12 @@ plot_window::extract_data_points ()
 	vertices(NPTS,1) = ypoints(NPTS);
 	vertices(NPTS,2) = zpoints(NPTS);
 
+#ifdef __APPLE___
+#ifdef FAST_APPLE_VERTEX_EXTENSIONS
+	GLvoid *vp = (GLvoid *)vertices.data();
+	glFlushVertexArrayRangeAPPLE(3*npoints*sizeof(GLfloat), vp);
+#endif FAST_APPLE_VERTEX_EXTENSIONS
+#endif // __APPLE__
 	return 1;
 }
 
