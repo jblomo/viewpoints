@@ -93,7 +93,8 @@ class plot_window : public Fl_Gl_Window {
 	void draw();
 	void draw_grid();
 	void draw_labels();
-	void draw_data_points(); // used to be virtual when overloaded by subclass
+	void draw_data_points();
+	void draw_histograms();
 	int handle (int event);
 	void handle_selection();
 	void color_array_from_selection();
@@ -158,7 +159,7 @@ class control_panel_window : public Fl_Window {
 	Fl_Hor_Value_Slider_Input *rot_slider;
 	Fl_Choice *varindex1, *varindex2, *varindex3;
 	
-	Fl_Button *spin, *dont_clear, *show_axes, *show_grid, *show_labels;
+	Fl_Button *spin, *dont_clear, *show_axes, *show_grid, *show_labels, *show_histogram;
 //	Fl_Button *x_equals_delta_x, *y_equals_delta_x;
 	Fl_Group *transform_style;
 	Fl_Button *sum_vs_difference, *polar, *ratio, *no_transform;
@@ -402,6 +403,7 @@ void plot_window::draw()
 	if (selection_changed)
 		handle_selection ();
 	draw_data_points();
+	draw_histograms ();
 }
 
 void 
@@ -556,26 +558,23 @@ void plot_window::color_array_from_selection()
 
 int xorder (const void *i, const void *j)
 {
-	plot_window *pw = current_plot_window;
-	if(pw->vertices(*(int *)i,0) < pw->vertices(*(int *)j,0))
+	if(xpoints(*(int *)i) < xpoints(*(int *)j))
 		return -1;
-	return (pw->vertices(*(int *)i,0) > pw->vertices(*(int *)j,0));
+	return (xpoints(*(int *)i) > xpoints(*(int *)j));
 }
 
 int yorder (const void *i, const void *j)
 {
-	plot_window *pw = current_plot_window;
-	if(pw->vertices(*(int *)i,1) < pw->vertices(*(int *)j,1))
+	if(ypoints(*(int *)i) < ypoints(*(int *)j))
 		return -1;
-	return (pw->vertices(*(int *)i,1) > pw->vertices(*(int *)j,1));
+	return (ypoints(*(int *)i) > ypoints(*(int *)j));
 }
 
 int zorder (const void *i, const void *j)
 {
-	plot_window *pw = current_plot_window;
-	if(pw->vertices(*(int *)i,2) < pw->vertices(*(int *)j,2))
+	if(zpoints(*(int *)i) < zpoints(*(int *)j))
 		return -1;
-	return (pw->vertices(*(int *)i,2) > pw->vertices(*(int *)j,2));
+	return (zpoints(*(int *)i) > zpoints(*(int *)j));
 }
 
 void clearAlphaPlanes()
@@ -628,6 +627,57 @@ void plot_window::draw_data_points()
 
 	glDrawArrays (GL_POINTS, 0, npoints);
 
+	glEnable(GL_DEPTH_TEST);
+}
+
+void plot_window::draw_histograms()
+{
+	if (!(cp->show_histogram->value()))
+		return;
+
+	// compute histogram
+	const int nbins=128;
+	blitz::Array<float,1> counts(nbins);
+	counts = 0.0;
+	float xmin=vertices(x_rank(0),0);
+	float xmax=vertices(x_rank(npoints-1), 0);
+	float xrange= xmax-xmin;
+	for (int i=0; i<npoints; i++)
+	{
+		float x = vertices(i,0);
+		int bin=(int)(nbins*((x-xmin)/xrange));
+		if (bin == nbins)
+			bin--;
+		counts(bin)++;
+	}
+	counts = counts/sqrt((float)npoints);
+
+	// draw histogram
+	glDisable(GL_DEPTH_TEST);
+	glPushMatrix();
+	glLoadIdentity();
+
+	glTranslatef (xzoomcenter*xscale, 0.0, 0);
+	glScalef (xscale, 1.0/(float)nbins, 1.0);
+	glTranslatef (-xcenter, 0.0, 0.0);
+	glTranslatef (-xzoomcenter, 0.0, 0);
+	glColor4f (0.0, 1.0, 0.0, 1.0);
+	float width = (xmax-xmin) / (float)(nbins-1);
+	float x = xmin;
+	glBegin(GL_LINE_STRIP);
+	glVertex2f(x,0.0);					
+	for (int bin=0; bin<nbins; bin++)
+	{
+		// left edge
+		glVertex2f(x,counts(bin));			
+		// top edge
+		glVertex2f(x+width,counts(bin));	
+		// right edge 
+		glVertex2f(x+width,0.0);
+		x+=width;
+	}
+	glEnd();
+	glPopMatrix();
 	glEnable(GL_DEPTH_TEST);
 }
 
@@ -709,8 +759,8 @@ plot_window::normalize (blitz::Array<float,1> a, blitz::Array<int,1> a_rank, int
 void
 plot_window::compute_rank (blitz::Array<float,1> a, blitz::Array<int,1> a_rank)
 {
-	blitz::Range NPTS(0,npoints-1);
 	current_plot_window = this;
+	blitz::Range NPTS(0,npoints-1);
 	if (!a_rank.isStorageContiguous() || !a.isStorageContiguous())
 	{
 		cerr << "Tried to pass non-contigous data to qsort.  Aborting!" << endl;
@@ -736,6 +786,8 @@ plot_window::compute_rank (blitz::Array<float,1> a, blitz::Array<int,1> a_rank)
 		cerr << "problems computing rank index order" << endl;
 		return;
 	}
+	cout << "a_rank(0)=" << a_rank(0) << ", a(a_rank(0))=" << a(a_rank(0)) << endl;
+	cout << "a_rank(npoints-1)=" << a_rank(npoints-1) << ", a(a_rank(npoints-1))=" << a(a_rank(npoints-1)) << endl;
 }
 
 int
@@ -749,8 +801,8 @@ plot_window::extract_data_points ()
 		return 0;
 	if (t2 > nvals)
 		return 0;
-	// get the labels for the x and y axes
 #endif
+	// get the labels for the plot's axes
 	int t1 = (int)(cp->varindex1->mvalue()->user_data());
 	int t2 = (int)(cp->varindex2->mvalue()->user_data());
 	int t3 = (int)(cp->varindex3->mvalue()->user_data());
@@ -765,8 +817,11 @@ plot_window::extract_data_points ()
 	ypoints(NPTS) = points(t2,NPTS);
 	zpoints(NPTS) = points(t3,NPTS);
 
+	cout << "computing rank of " << xlabel << endl;
 	compute_rank(xpoints,x_rank);
+	cout << "computing rank of " << ylabel << endl;
 	compute_rank(ypoints,y_rank);
+	cout << "computing rank of " << zlabel << endl;
 	compute_rank(zpoints,z_rank);
 
 	(void) normalize (xpoints, x_rank, cp->x_normalization_style->value());
@@ -1108,6 +1163,10 @@ control_panel_window::make_widgets(control_panel_window *cpw)
 	show_labels = b = new Fl_Button(xpos, ypos+=25, 20, 20, "labels");
 	b->callback((Fl_Callback*)static_maybe_redraw, this);
 	b->align(FL_ALIGN_RIGHT); b->type(FL_TOGGLE_BUTTON); b->selection_color(FL_YELLOW);	b->value(1);
+
+	show_histogram = b = new Fl_Button(xpos, ypos+=25, 20, 20, "histogram");
+	b->callback((Fl_Callback*)static_maybe_redraw, this);
+	b->align(FL_ALIGN_RIGHT); b->type(FL_TOGGLE_BUTTON); b->selection_color(FL_YELLOW);	b->value(0);
 }
 
 void
@@ -1240,12 +1299,13 @@ int main(int argc, char **argv)
 	pw1->reset_view();
 
 	// first display of data and control panel windows
-	cp1->varindex1->value(0);  // galaxy x
-	cp1->varindex2->value(1);  // galaxy y
-	cp1->varindex3->value(2);  // galaxy z
+	cp1->varindex1->value(0);  
+	cp1->varindex2->value(1);  
+	cp1->varindex3->value(2);  
 	cp1->show(argc,argv);
+	pw1->extract_data_points();
 	pw1->show(argc,argv);
-	cp1->extract_and_redraw();
+
 
 	// create control panel window
 	cp2 = new control_panel_window (300, (Fl::h()-50)/2);
@@ -1268,12 +1328,12 @@ int main(int argc, char **argv)
 	pw2->reset_view();
 
 	// first display of data and control panel windows
-	cp2->varindex1->value(0); // galaxy RA
-	cp2->varindex2->value(2); // galaxy RS
-	cp2->varindex3->value(1); // galaxy dec
+	cp2->varindex1->value(0); 
+	cp2->varindex2->value(2); 
+	cp2->varindex3->value(1); 
 	cp2->show(argc,argv);
+	pw2->extract_data_points();
 	pw2->show(argc,argv);
-	cp2->extract_and_redraw();
 
 	// create control panel window
 	cp3 = new control_panel_window (300, (Fl::h()-50)/2);
@@ -1300,8 +1360,8 @@ int main(int argc, char **argv)
 	cp3->varindex2->value(rand()%nvals);
 	cp3->varindex3->value(rand()%nvals);
 	cp3->show(argc,argv);
+	pw3->extract_data_points();
 	pw3->show(argc,argv);
-	cp3->extract_and_redraw();
 
 	// create control panel window
 	cp4 = new control_panel_window (300, (Fl::h()-50)/2);
@@ -1328,8 +1388,8 @@ int main(int argc, char **argv)
 	cp4->varindex2->value(rand()%nvals);
 	cp4->varindex3->value(rand()%nvals);
 	cp4->show(argc,argv);
+	pw4->extract_data_points();
 	pw4->show(argc,argv);
-	cp4->extract_and_redraw();
 
 	Fl::add_idle(redraw_if_changing);
 //	Fl::add_check(redraw_if_changing);
