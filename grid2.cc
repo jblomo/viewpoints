@@ -94,7 +94,6 @@ class plot_window : public Fl_Gl_Window {
 	void draw_grid();
 	void draw_labels();
 	void draw_data_points();
-	void draw_histograms();
 	int handle (int event);
 	void handle_selection();
 	void color_array_from_selection();
@@ -106,16 +105,22 @@ class plot_window : public Fl_Gl_Window {
 	float xdown, ydown, xtracked, ytracked;
 	int selection_changed, extend_selection;
 	static int count;
+	// histograms
+	static const int nbins = 128;
+	blitz::Array<float,2> counts;
+	void compute_histogram (int);
+	void draw_histograms ();
   public:
 	plot_window(int w, int h);
 	blitz::Array<float,2> vertices;
 	blitz::Array<int,1> x_rank, y_rank, z_rank;
+	float amin[3], amax[3]; // min and max for data's bounding box in x, y, and z;
+	void compute_rank (blitz::Array<float,1>, blitz::Array<int,1>);
+	int normalize(blitz::Array<float,1>, blitz::Array<int,1>, int);
 	std::string xlabel, ylabel, zlabel;
 	control_panel_window *cp;	// pointer to the control panel associated with this plot window
 	int extract_data_points();
 	int transform_2d();
-	void compute_rank (blitz::Array<float,1>, blitz::Array<int,1>);
-	int normalize(blitz::Array<float,1>, blitz::Array<int,1>, int);
 	void reset_view();
 	float angle;
 	int needs_redraw;
@@ -130,6 +135,7 @@ plot_window::plot_window(int w,int h) : Fl_Gl_Window(w,h)
 	x_rank.resize(npoints);
 	y_rank.resize(npoints);
 	z_rank.resize(npoints);
+	counts.resize(nbins,3);
 #if 0
 	if (can_do(FL_RGB8|FL_DOUBLE|FL_ALPHA|FL_DEPTH))
 		mode(FL_RGB8|FL_DOUBLE|FL_ALPHA|FL_DEPTH);  // Can't seem to make this work on PBG4 OSX 
@@ -630,51 +636,77 @@ void plot_window::draw_data_points()
 	glEnable(GL_DEPTH_TEST);
 }
 
-void plot_window::draw_histograms()
+void plot_window::compute_histogram(int axis)
 {
 	if (!(cp->show_histogram->value()))
 		return;
 
-	// compute histogram
-	const int nbins=128;
-	blitz::Array<float,1> counts(nbins);
-	counts = 0.0;
-	float xmin=vertices(x_rank(0),0);
-	float xmax=vertices(x_rank(npoints-1), 0);
-	float xrange= xmax-xmin;
+	blitz::Range BINS(0,nbins-1);
+	counts(BINS,axis) = 0.0;
+	float range = amax[axis]-amin[axis];
+
 	for (int i=0; i<npoints; i++)
 	{
-		float x = vertices(i,0);
-		int bin=(int)(nbins*((x-xmin)/xrange));
+		float x = vertices(i,axis);
+		int bin=(int)(nbins*((x-amin[axis])/range));
 		if (bin == nbins)
 			bin--;
-		counts(bin)++;
+		counts(bin,axis)++;
 	}
-	counts = counts/sqrt((float)npoints);
+	counts(BINS,axis) = (counts(BINS,axis)/((float)npoints));
+}
 
+void plot_window::draw_histograms()
+{
+	if (!(cp->show_histogram->value()))
+		return;
 	// draw histogram
 	glDisable(GL_DEPTH_TEST);
 	glPushMatrix();
-	glLoadIdentity();
 
+	// x axis histogram
+	glLoadIdentity();
 	glTranslatef (xzoomcenter*xscale, 0.0, 0);
-	glScalef (xscale, 1.0/(float)nbins, 1.0);
-	glTranslatef (-xcenter, 0.0, 0.0);
+	glScalef (xscale, yscale, 1.0);
+	glTranslatef (-xcenter, -1.0/yscale, 0.0);
 	glTranslatef (-xzoomcenter, 0.0, 0);
 	glColor4f (0.0, 1.0, 0.0, 1.0);
-	float width = (xmax-xmin) / (float)(nbins-1);
-	float x = xmin;
+	float xwidth = (amax[0]-amin[0]) / (float)(nbins);
+	float x = amin[0];
 	glBegin(GL_LINE_STRIP);
 	glVertex2f(x,0.0);					
 	for (int bin=0; bin<nbins; bin++)
 	{
 		// left edge
-		glVertex2f(x,counts(bin));			
+		glVertex2f(x,counts(bin,0));			
 		// top edge
-		glVertex2f(x+width,counts(bin));	
+		glVertex2f(x+xwidth,counts(bin,0));	
 		// right edge 
-		glVertex2f(x+width,0.0);
-		x+=width;
+		glVertex2f(x+xwidth,0.0);
+		x+=xwidth;
+	}
+	glEnd();
+
+	// y axis histogram
+	glLoadIdentity();
+	glTranslatef (0.0, yzoomcenter*yscale, 0);
+	glScalef (xscale, yscale, 1.0);
+	glTranslatef (-1.0/xscale, -ycenter, 0.0);
+	glTranslatef (0.0, -yzoomcenter, 0);
+	glColor4f (0.0, 1.0, 0.0, 1.0);
+	float ywidth = (amax[1]-amin[1]) / (float)(nbins);
+	float y = amin[1];
+	glBegin(GL_LINE_STRIP);
+	glVertex2f(0.0,y);					
+	for (int bin=0; bin<nbins; bin++)
+	{
+		// bottom
+		glVertex2f(counts(bin,1),y);			
+		// right edge
+		glVertex2f(counts(bin,1), y+ywidth);	
+		// top edge 
+		glVertex2f(0.0, y+ywidth);
+		y+=ywidth;
 	}
 	glEnd();
 	glPopMatrix();
@@ -825,13 +857,25 @@ plot_window::extract_data_points ()
 	compute_rank(zpoints,z_rank);
 
 	(void) normalize (xpoints, x_rank, cp->x_normalization_style->value());
+	amin[0] = xpoints(x_rank(0));
+	amax[0] = xpoints(x_rank(npoints-1));
+
 	(void) normalize (ypoints, y_rank, cp->y_normalization_style->value());
+	amin[1] = ypoints(y_rank(0));
+	amax[1] = ypoints(y_rank(npoints-1));
+
 	(void) normalize (zpoints, z_rank, cp->z_normalization_style->value());
-	(void) transform_2d ();
+	amin[2] = zpoints(z_rank(0));
+	amax[2] = zpoints(z_rank(npoints-1));
 
 	vertices(NPTS,0) = xpoints(NPTS);
 	vertices(NPTS,1) = ypoints(NPTS);
 	vertices(NPTS,2) = zpoints(NPTS);
+	(void) transform_2d ();
+
+	compute_histogram (0);
+	compute_histogram (1);
+	// compute_histogram (2);
 
 #ifdef __APPLE___
 #ifdef FAST_APPLE_VERTEX_EXTENSIONS
@@ -1128,7 +1172,7 @@ control_panel_window::make_widgets(control_panel_window *cpw)
 	dont_clear->selection_color(FL_YELLOW);
 	dont_clear->callback((Fl_Callback*)static_maybe_redraw, this);
 
-	transform_style = new Fl_Group (xpos2-1, ypos+25-1, 20+2, 3*20+4);
+	transform_style = new Fl_Group (xpos2-1, ypos+25-1, 20+2, 4*25+2);
 
 		no_transform = b = new Fl_Button(xpos2, ypos+=25, 20, 20, "identity");
 		b->callback((Fl_Callback*)static_extract_and_redraw, this);
