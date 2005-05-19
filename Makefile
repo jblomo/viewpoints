@@ -6,6 +6,8 @@ CXX		= g++
 CC		= cc
 #CXX = gxlc++
 #CC = gxlc++
+#CXX		= g++-3.3
+#CC		= gcc-3.3
 MAKEDEPEND	= $(CXX) -M
 
 ifeq ($(platform),Darwin)
@@ -69,9 +71,8 @@ EXEEXT		=
 TARGET =	grid2$(EXEEXT)
 #TARGET =	mgrid$(EXEEXT)
 
-#SRCS =	grid.cc histo.cc
 SRCS =	grid2.cc 
-#SRCS =	mgrid.cc grid2.cc
+#SRCS =	mgrid.cc
 
 OBJS:=	$(SRCS:.cc=.o)
 

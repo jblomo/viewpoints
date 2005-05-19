@@ -1,0 +1,15 @@
+denb_16, vs lam2_16, rank, x+y v x-y
+select rhs vs lhs
+
+10:00:09 05 May 05
+
+Fast selection idea.  Use mouse x and mouse y to create a new
+texture (or texture matrix) that is effetively a blue rectangle
+(corners based on mouse coords) inside a red square.  Use each point's
+x,y coords in active window (where selection is being made) as that
+points texture coords in ALL windows.  This can generalized to create
+textures (coresponding to soft selections) based on arbirary functions
+of coordinates and other (e.g. slider) variables.  E.g. a texture coord
+can represent energy, or distance from some n-d point, or how many
+times a region has been brushed by an airbrush, etc....
+

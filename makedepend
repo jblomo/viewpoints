@@ -1,287 +1,150 @@
-grid2.o: grid2.cc /usr/include/unistd.h /usr/include/sys/cdefs.h \
-  /usr/include/sys/types.h /usr/include/sys/appleapiopts.h \
+grid2.o: grid2.cc /usr/include/unistd.h /usr/include/_types.h \
+  /usr/include/sys/_types.h /usr/include/sys/cdefs.h \
+  /usr/include/machine/_types.h /usr/include/ppc/_types.h \
+  /usr/include/sys/unistd.h /usr/include/sys/select.h \
+  /usr/include/sys/appleapiopts.h /usr/include/sys/types.h \
   /usr/include/machine/types.h /usr/include/ppc/types.h \
-  /usr/include/machine/ansi.h /usr/include/ppc/ansi.h \
   /usr/include/machine/endian.h /usr/include/ppc/endian.h \
-  /usr/include/sys/unistd.h /usr/include/signal.h \
+  /usr/include/sys/_endian.h /usr/include/signal.h \
   /usr/include/sys/signal.h /usr/include/machine/signal.h \
-  /usr/include/ppc/signal.h /usr/include/stdlib.h /usr/include/alloca.h \
-  /usr/include/stdio.h /usr/include/fcntl.h /usr/include/sys/fcntl.h \
-  /usr/include/gcc/darwin/3.3/assert.h /usr/include/math.h \
-  /usr/include/architecture/ppc/math.h /usr/include/sys/uio.h \
-  /usr/include/sys/stat.h /usr/include/sys/time.h /usr/include/time.h \
-  /usr/include/gcc/darwin/3.3/machine/limits.h /usr/include/ppc/limits.h \
+  /usr/include/ppc/signal.h /usr/include/sys/time.h /usr/include/time.h \
+  /usr/include/machine/_limits.h /usr/include/ppc/_limits.h \
+  /usr/include/stdlib.h /usr/include/sys/wait.h \
+  /usr/include/sys/resource.h /usr/include/alloca.h /usr/include/stdio.h \
+  /usr/include/fcntl.h /usr/include/sys/fcntl.h /usr/include/assert.h \
+  /usr/include/math.h /usr/include/architecture/ppc/math.h \
+  /usr/include/sys/uio.h /usr/include/sys/stat.h \
   /System/Library/Frameworks/vecLib.framework/Headers/vBLAS.h \
-  /System/Library/Frameworks/CoreServices.framework/Headers/CoreServices.h \
-  /System/Library/Frameworks/CoreServices.framework/Frameworks/CarbonCore.framework/Headers/CarbonCore.h \
-  /System/Library/Frameworks/CoreFoundation.framework/Headers/CoreFoundation.h \
-  /System/Library/Frameworks/CoreFoundation.framework/Headers/CFBase.h \
-  /usr/include/gcc/darwin/3.3/stdint.h \
-  /usr/include/gcc/darwin/3.3/stdbool.h /usr/include/AvailabilityMacros.h \
   /System/Library/Frameworks/CoreServices.framework/Headers/../Frameworks/CarbonCore.framework/Headers/MacTypes.h \
   /System/Library/Frameworks/CoreServices.framework/Frameworks/CarbonCore.framework/Headers/ConditionalMacros.h \
-  /usr/include/TargetConditionals.h \
-  /System/Library/Frameworks/CoreFoundation.framework/Headers/CFArray.h \
-  /System/Library/Frameworks/CoreFoundation.framework/Headers/CFBag.h \
-  /System/Library/Frameworks/CoreFoundation.framework/Headers/CFCharacterSet.h \
-  /System/Library/Frameworks/CoreFoundation.framework/Headers/CFData.h \
-  /System/Library/Frameworks/CoreFoundation.framework/Headers/CFDate.h \
-  /System/Library/Frameworks/CoreFoundation.framework/Headers/CFDictionary.h \
-  /System/Library/Frameworks/CoreFoundation.framework/Headers/CFNumber.h \
-  /System/Library/Frameworks/CoreFoundation.framework/Headers/CFPropertyList.h \
-  /System/Library/Frameworks/CoreFoundation.framework/Headers/CFString.h \
-  /System/Library/Frameworks/CoreFoundation.framework/Headers/CFLocale.h \
-  /usr/include/gcc/darwin/3.3/stdarg.h \
-  /System/Library/Frameworks/CoreFoundation.framework/Headers/CFStream.h \
-  /System/Library/Frameworks/CoreFoundation.framework/Headers/CFURL.h \
-  /System/Library/Frameworks/CoreFoundation.framework/Headers/CFRunLoop.h \
-  /usr/include/mach/port.h /usr/include/mach/boolean.h \
-  /usr/include/mach/machine/boolean.h /usr/include/mach/ppc/boolean.h \
-  /usr/include/mach/machine/vm_types.h /usr/include/mach/ppc/vm_types.h \
-  /System/Library/Frameworks/CoreFoundation.framework/Headers/CFSocket.h \
-  /System/Library/Frameworks/CoreFoundation.framework/Headers/CFSet.h \
-  /System/Library/Frameworks/CoreFoundation.framework/Headers/CFTimeZone.h \
-  /System/Library/Frameworks/CoreFoundation.framework/Headers/CFTree.h \
-  /System/Library/Frameworks/CoreFoundation.framework/Headers/CFXMLNode.h \
-  /System/Library/Frameworks/CoreFoundation.framework/Headers/CFXMLParser.h \
-  /usr/include/ctype.h /usr/include/runetype.h /usr/include/errno.h \
-  /usr/include/sys/errno.h /usr/include/gcc/darwin/3.3/float.h \
-  /usr/include/limits.h /usr/include/sys/syslimits.h \
-  /usr/include/locale.h /usr/include/setjmp.h \
-  /usr/include/machine/setjmp.h /usr/include/ppc/setjmp.h \
-  /usr/include/stddef.h /usr/include/string.h \
-  /System/Library/Frameworks/CoreFoundation.framework/Headers/CFBinaryHeap.h \
-  /System/Library/Frameworks/CoreFoundation.framework/Headers/CFBitVector.h \
-  /System/Library/Frameworks/CoreFoundation.framework/Headers/CFBundle.h \
-  /System/Library/Frameworks/CoreFoundation.framework/Headers/CFByteOrder.h \
-  /System/Library/Frameworks/CoreFoundation.framework/Headers/CFPlugIn.h \
-  /System/Library/Frameworks/CoreFoundation.framework/Headers/CFUUID.h \
-  /System/Library/Frameworks/CoreFoundation.framework/Headers/CFURLAccess.h \
-  /System/Library/Frameworks/CoreFoundation.framework/Headers/CFDateFormatter.h \
-  /System/Library/Frameworks/CoreFoundation.framework/Headers/CFNumberFormatter.h \
-  /System/Library/Frameworks/CoreFoundation.framework/Headers/CFUserNotification.h \
-  /System/Library/Frameworks/CoreFoundation.framework/Headers/CFMachPort.h \
-  /System/Library/Frameworks/CoreFoundation.framework/Headers/CFMessagePort.h \
-  /System/Library/Frameworks/CoreFoundation.framework/Headers/CFNotificationCenter.h \
-  /System/Library/Frameworks/CoreFoundation.framework/Headers/CFPreferences.h \
-  /System/Library/Frameworks/CoreFoundation.framework/Headers/CFStringEncodingExt.h \
-  /System/Library/Frameworks/CoreServices.framework/Frameworks/CarbonCore.framework/Headers/Finder.h \
-  /System/Library/Frameworks/CoreServices.framework/Frameworks/CarbonCore.framework/Headers/FixMath.h \
-  /System/Library/Frameworks/CoreServices.framework/Frameworks/CarbonCore.framework/Headers/Script.h \
-  /System/Library/Frameworks/CoreServices.framework/Frameworks/CarbonCore.framework/Headers/IntlResources.h \
-  /System/Library/Frameworks/CoreServices.framework/Frameworks/CarbonCore.framework/Headers/UTCUtils.h \
-  /System/Library/Frameworks/CoreServices.framework/Frameworks/CarbonCore.framework/Headers/MacErrors.h \
-  /System/Library/Frameworks/CoreServices.framework/Frameworks/CarbonCore.framework/Headers/TextCommon.h \
-  /System/Library/Frameworks/CoreServices.framework/Frameworks/CarbonCore.framework/Headers/Collections.h \
-  /System/Library/Frameworks/CoreServices.framework/Frameworks/CarbonCore.framework/Headers/MixedMode.h \
-  /System/Library/Frameworks/CoreServices.framework/Frameworks/CarbonCore.framework/Headers/Endian.h \
-  /usr/include/libkern/OSByteOrder.h \
-  /usr/include/libkern/ppc/OSByteOrder.h \
-  /System/Library/Frameworks/CoreServices.framework/Frameworks/CarbonCore.framework/Headers/Patches.h \
-  /System/Library/Frameworks/CoreServices.framework/Frameworks/CarbonCore.framework/Headers/Gestalt.h \
-  /System/Library/Frameworks/CoreServices.framework/Frameworks/CarbonCore.framework/Headers/MacMemory.h \
-  /System/Library/Frameworks/CoreServices.framework/Frameworks/CarbonCore.framework/Headers/Math64.h \
-  /System/Library/Frameworks/CoreServices.framework/Frameworks/CarbonCore.framework/Headers/Components.h \
-  /System/Library/Frameworks/CoreServices.framework/Frameworks/CarbonCore.framework/Headers/Files.h \
-  /System/Library/Frameworks/CoreServices.framework/Frameworks/CarbonCore.framework/Headers/OSUtils.h \
-  /System/Library/Frameworks/CoreServices.framework/Frameworks/CarbonCore.framework/Headers/DateTimeUtils.h \
-  /System/Library/Frameworks/CoreServices.framework/Frameworks/CarbonCore.framework/Headers/Resources.h \
-  /System/Library/Frameworks/CoreServices.framework/Frameworks/CarbonCore.framework/Headers/CodeFragments.h \
-  /System/Library/Frameworks/CoreServices.framework/Frameworks/CarbonCore.framework/Headers/Multiprocessing.h \
-  /System/Library/Frameworks/CoreServices.framework/Frameworks/CarbonCore.framework/Headers/Aliases.h \
-  /System/Library/Frameworks/CoreServices.framework/Frameworks/CarbonCore.framework/Headers/MacLocales.h \
-  /System/Library/Frameworks/CoreServices.framework/Frameworks/CarbonCore.framework/Headers/Debugging.h \
-  /usr/include/AssertMacros.h \
-  /System/Library/Frameworks/CoreServices.framework/Frameworks/CarbonCore.framework/Headers/PLStringFuncs.h \
-  /System/Library/Frameworks/CoreServices.framework/Frameworks/CarbonCore.framework/Headers/DriverSynchronization.h \
-  /System/Library/Frameworks/CoreServices.framework/Frameworks/CarbonCore.framework/Headers/Devices.h \
-  /System/Library/Frameworks/CoreServices.framework/Frameworks/CarbonCore.framework/Headers/NameRegistry.h \
-  /System/Library/Frameworks/CoreServices.framework/Frameworks/CarbonCore.framework/Headers/DriverServices.h \
-  /System/Library/Frameworks/CoreServices.framework/Frameworks/CarbonCore.framework/Headers/MachineExceptions.h \
-  /System/Library/Frameworks/CoreServices.framework/Frameworks/CarbonCore.framework/Headers/NumberFormatting.h \
-  /System/Library/Frameworks/CoreServices.framework/Frameworks/CarbonCore.framework/Headers/StringCompare.h \
-  /System/Library/Frameworks/CoreServices.framework/Frameworks/CarbonCore.framework/Headers/TextUtils.h \
-  /System/Library/Frameworks/CoreServices.framework/Frameworks/CarbonCore.framework/Headers/ToolUtils.h \
-  /System/Library/Frameworks/CoreServices.framework/Frameworks/CarbonCore.framework/Headers/UnicodeUtilities.h \
-  /System/Library/Frameworks/CoreServices.framework/Frameworks/CarbonCore.framework/Headers/fp.h \
-  /usr/include/fenv.h /usr/include/architecture/ppc/fenv.h \
-  /System/Library/Frameworks/CoreServices.framework/Frameworks/CarbonCore.framework/Headers/TextEncodingConverter.h \
-  /System/Library/Frameworks/CoreServices.framework/Frameworks/CarbonCore.framework/Headers/UnicodeConverter.h \
-  /System/Library/Frameworks/CoreServices.framework/Frameworks/CarbonCore.framework/Headers/Threads.h \
-  /System/Library/Frameworks/CoreServices.framework/Frameworks/CarbonCore.framework/Headers/Folders.h \
-  /System/Library/Frameworks/CoreServices.framework/Frameworks/CarbonCore.framework/Headers/Timer.h \
-  /System/Library/Frameworks/CoreServices.framework/Frameworks/CarbonCore.framework/Headers/MultiprocessingInfo.h \
-  /System/Library/Frameworks/CoreServices.framework/Frameworks/CarbonCore.framework/Headers/LowMem.h \
-  /System/Library/Frameworks/CoreServices.framework/Frameworks/CarbonCore.framework/Headers/AVLTree.h \
-  /System/Library/Frameworks/CoreServices.framework/Frameworks/CarbonCore.framework/Headers/PEFBinaryFormat.h \
-  /System/Library/Frameworks/CoreServices.framework/Frameworks/CarbonCore.framework/Headers/HFSVolumes.h \
-  /System/Library/Frameworks/CoreServices.framework/Frameworks/CarbonCore.framework/Headers/AIFF.h \
-  /System/Library/Frameworks/CoreServices.framework/Frameworks/CarbonCore.framework/Headers/TextEncodingPlugin.h \
-  /System/Library/Frameworks/CoreServices.framework/Frameworks/OSServices.framework/Headers/OSServices.h \
-  /System/Library/Frameworks/CoreServices.framework/Frameworks/OSServices.framework/Headers/AppleDiskPartitions.h \
-  /System/Library/Frameworks/CoreServices.framework/Frameworks/OSServices.framework/Headers/IconStorage.h \
-  /System/Library/Frameworks/CoreServices.framework/Frameworks/OSServices.framework/Headers/Power.h \
-  /System/Library/Frameworks/CoreServices.framework/Frameworks/OSServices.framework/Headers/SCSI.h \
-  /System/Library/Frameworks/CoreServices.framework/Frameworks/OSServices.framework/Headers/SystemSound.h \
-  /System/Library/Frameworks/CoreServices.framework/Frameworks/OSServices.framework/Headers/OpenTransport.h \
-  /System/Library/Frameworks/CoreServices.framework/Frameworks/OSServices.framework/Headers/OpenTransportProviders.h \
-  /System/Library/Frameworks/CoreServices.framework/Frameworks/OSServices.framework/Headers/OpenTransportProtocol.h \
-  /System/Library/Frameworks/CoreServices.framework/Frameworks/OSServices.framework/Headers/NSLCore.h \
-  /System/Library/Frameworks/CoreServices.framework/Frameworks/OSServices.framework/Headers/SecurityCore.h \
-  /System/Library/Frameworks/CoreServices.framework/Frameworks/OSServices.framework/Headers/KeychainCore.h \
-  /System/Library/Frameworks/CoreServices.framework/Frameworks/CFNetwork.framework/Headers/CFNetwork.h \
-  /System/Library/Frameworks/CoreServices.framework/Frameworks/CFNetwork.framework/Headers/CFSocketStream.h \
-  /System/Library/Frameworks/CoreServices.framework/Frameworks/CFNetwork.framework/Headers/CFHost.h \
-  /System/Library/Frameworks/CoreServices.framework/Frameworks/CFNetwork.framework/Headers/CFNetServices.h \
-  /System/Library/Frameworks/CoreServices.framework/Frameworks/CFNetwork.framework/Headers/CFFTPStream.h \
-  /System/Library/Frameworks/CoreServices.framework/Frameworks/CFNetwork.framework/Headers/CFHTTPMessage.h \
-  /System/Library/Frameworks/CoreServices.framework/Frameworks/CFNetwork.framework/Headers/CFHTTPStream.h \
-  /System/Library/Frameworks/CoreServices.framework/Frameworks/WebServicesCore.framework/Headers/WebServicesCore.h \
-  /System/Library/Frameworks/CoreServices.framework/Frameworks/WebServicesCore.framework/Headers/WSTypes.h \
-  /System/Library/Frameworks/CoreServices.framework/Frameworks/WebServicesCore.framework/Headers/WSMethodInvocation.h \
-  /System/Library/Frameworks/CoreServices.framework/Frameworks/WebServicesCore.framework/Headers/WSProtocolHandler.h \
-  /System/Library/Frameworks/CoreServices.framework/Frameworks/SearchKit.framework/Headers/SearchKit.h \
-  /System/Library/Frameworks/CoreServices.framework/Frameworks/SearchKit.framework/Headers/SKDocument.h \
-  /System/Library/Frameworks/CoreServices.framework/Frameworks/SearchKit.framework/Headers/SKAnalysis.h \
-  /System/Library/Frameworks/CoreServices.framework/Frameworks/SearchKit.framework/Headers/SKIndex.h \
-  /System/Library/Frameworks/CoreServices.framework/Frameworks/SearchKit.framework/Headers/SKSearch.h \
+  /usr/include/AvailabilityMacros.h /usr/include/TargetConditionals.h \
+  /usr/lib/gcc/powerpc-apple-darwin8/4.0.0/include/stdbool.h \
   /System/Library/Frameworks/vecLib.framework/Headers/cblas.h \
-  /usr/include/gcc/darwin/3.3/c++/iostream \
-  /usr/include/gcc/darwin/3.3/c++/ppc-darwin/bits/c++config.h \
-  /usr/include/gcc/darwin/3.3/c++/ppc-darwin/bits/os_defines.h \
-  /usr/include/gcc/darwin/3.3/c++/ostream \
-  /usr/include/gcc/darwin/3.3/c++/ios \
-  /usr/include/gcc/darwin/3.3/c++/iosfwd \
-  /usr/include/gcc/darwin/3.3/c++/ppc-darwin/bits/c++locale.h \
-  /usr/include/gcc/darwin/3.3/c++/clocale \
-  /usr/include/gcc/darwin/3.3/c++/cctype \
-  /usr/include/gcc/darwin/3.3/c++/bits/stringfwd.h \
-  /usr/include/gcc/darwin/3.3/c++/bits/fpos.h \
-  /usr/include/gcc/darwin/3.3/c++/ppc-darwin/bits/c++io.h \
-  /usr/include/gcc/darwin/3.3/c++/cstdio \
-  /usr/include/gcc/darwin/3.3/c++/cstddef \
-  /usr/include/gcc/darwin/3.3/c++/ppc-darwin/bits/gthr.h \
-  /usr/include/gcc/darwin/3.3/c++/ppc-darwin/bits/gthr-default.h \
+  /usr/include/gcc/darwin/4.0/c++/iostream \
+  /usr/include/gcc/darwin/4.0/c++/powerpc-apple-darwin8/bits/c++config.h \
+  /usr/include/gcc/darwin/4.0/c++/powerpc-apple-darwin8/bits/os_defines.h \
+  /usr/include/gcc/darwin/4.0/c++/ostream \
+  /usr/include/gcc/darwin/4.0/c++/ios \
+  /usr/include/gcc/darwin/4.0/c++/iosfwd \
+  /usr/include/gcc/darwin/4.0/c++/powerpc-apple-darwin8/bits/c++locale.h \
+  /usr/include/gcc/darwin/4.0/c++/clocale /usr/include/locale.h \
+  /usr/include/_locale.h /usr/include/gcc/darwin/4.0/c++/cstring \
+  /usr/include/gcc/darwin/4.0/c++/cstddef \
+  /usr/lib/gcc/powerpc-apple-darwin8/4.0.0/include/stddef.h \
+  /usr/include/string.h /usr/include/gcc/darwin/4.0/c++/cstdio \
+  /usr/include/gcc/darwin/4.0/c++/powerpc-apple-darwin8/bits/c++io.h \
+  /usr/include/gcc/darwin/4.0/c++/powerpc-apple-darwin8/bits/gthr.h \
+  /usr/include/gcc/darwin/4.0/c++/powerpc-apple-darwin8/bits/gthr-default.h \
   /usr/include/pthread.h /usr/include/pthread_impl.h /usr/include/sched.h \
-  /usr/include/mach/mach_types.h /usr/include/mach/host_info.h \
-  /usr/include/mach/vm_statistics.h /usr/include/mach/machine.h \
-  /usr/include/mach/time_value.h /usr/include/mach/host_notify.h \
-  /usr/include/mach/host_special_ports.h \
-  /usr/include/mach/memory_object_types.h /usr/include/mach/vm_types.h \
-  /usr/include/mach/exception_types.h \
-  /usr/include/mach/machine/exception.h /usr/include/mach/ppc/exception.h \
-  /usr/include/mach/thread_status.h \
-  /usr/include/mach/machine/thread_status.h \
-  /usr/include/mach/ppc/thread_status.h \
-  /usr/include/mach/machine/thread_state.h \
-  /usr/include/mach/ppc/thread_state.h /usr/include/mach/processor_info.h \
-  /usr/include/mach/machine/processor_info.h \
-  /usr/include/mach/ppc/processor_info.h /usr/include/mach/task_info.h \
-  /usr/include/mach/policy.h /usr/include/mach/task_policy.h \
-  /usr/include/mach/task_special_ports.h /usr/include/mach/thread_info.h \
-  /usr/include/mach/thread_policy.h \
-  /usr/include/mach/thread_special_ports.h \
-  /usr/include/mach/clock_types.h /usr/include/mach/vm_attributes.h \
-  /usr/include/mach/vm_inherit.h /usr/include/mach/vm_behavior.h \
-  /usr/include/mach/vm_prot.h /usr/include/mach/vm_sync.h \
-  /usr/include/mach/vm_region.h /usr/include/mach/kmod.h \
-  /usr/include/mach/kern_return.h /usr/include/mach/machine/kern_return.h \
-  /usr/include/mach/ppc/kern_return.h /usr/include/mach/std_types.h \
-  /usr/include/gcc/darwin/3.3/c++/cwchar \
-  /usr/include/gcc/darwin/3.3/c++/ctime /usr/include/wchar.h \
-  /usr/include/gcc/darwin/3.3/c++/bits/functexcept.h \
-  /usr/include/gcc/darwin/3.3/c++/exception_defines.h \
-  /usr/include/gcc/darwin/3.3/c++/exception \
-  /usr/include/gcc/darwin/3.3/c++/bits/char_traits.h \
-  /usr/include/gcc/darwin/3.3/c++/cstring \
-  /usr/include/gcc/darwin/3.3/c++/bits/localefwd.h \
-  /usr/include/gcc/darwin/3.3/c++/bits/ios_base.h \
-  /usr/include/gcc/darwin/3.3/c++/ppc-darwin/bits/atomicity.h \
-  /usr/include/gcc/darwin/3.3/c++/bits/locale_classes.h \
-  /usr/include/gcc/darwin/3.3/c++/string \
-  /usr/include/gcc/darwin/3.3/c++/memory \
-  /usr/include/gcc/darwin/3.3/c++/bits/stl_algobase.h \
-  /usr/include/gcc/darwin/3.3/c++/climits \
-  /usr/include/gcc/darwin/3.3/c++/cstdlib \
-  /usr/include/gcc/darwin/3.3/c++/new \
-  /usr/include/gcc/darwin/3.3/c++/bits/stl_pair.h \
-  /usr/include/gcc/darwin/3.3/c++/bits/type_traits.h \
-  /usr/include/gcc/darwin/3.3/c++/bits/stl_iterator_base_types.h \
-  /usr/include/gcc/darwin/3.3/c++/bits/stl_iterator_base_funcs.h \
-  /usr/include/gcc/darwin/3.3/c++/bits/concept_check.h \
-  /usr/include/gcc/darwin/3.3/c++/bits/stl_iterator.h \
-  /usr/include/gcc/darwin/3.3/c++/debug/debug.h \
-  /usr/include/gcc/darwin/3.3/c++/debug/support.h \
-  /usr/include/gcc/darwin/3.3/c++/cassert \
-  /usr/include/gcc/darwin/3.3/c++/bits/stl_alloc.h \
-  /usr/include/gcc/darwin/3.3/c++/bits/stl_threads.h \
-  /usr/include/gcc/darwin/3.3/c++/bits/stl_construct.h \
-  /usr/include/gcc/darwin/3.3/c++/bits/stl_uninitialized.h \
-  /usr/include/gcc/darwin/3.3/c++/bits/stl_raw_storage_iter.h \
-  /usr/include/gcc/darwin/3.3/c++/bits/stl_function.h \
-  /usr/include/gcc/darwin/3.3/c++/bits/basic_string.h \
-  /usr/include/gcc/darwin/3.3/c++/algorithm \
-  /usr/include/gcc/darwin/3.3/c++/bits/stl_algo.h \
-  /usr/include/gcc/darwin/3.3/c++/bits/stl_heap.h \
-  /usr/include/gcc/darwin/3.3/c++/bits/stl_tempbuf.h \
-  /usr/include/gcc/darwin/3.3/c++/bits/basic_string.tcc \
-  /usr/include/gcc/darwin/3.3/c++/streambuf \
-  /usr/include/gcc/darwin/3.3/c++/bits/streambuf.tcc \
-  /usr/include/gcc/darwin/3.3/c++/bits/basic_ios.h \
-  /usr/include/gcc/darwin/3.3/c++/bits/streambuf_iterator.h \
-  /usr/include/gcc/darwin/3.3/c++/bits/locale_facets.h \
-  /usr/include/gcc/darwin/3.3/c++/cwctype /usr/include/wctype.h \
-  /usr/include/gcc/darwin/3.3/c++/ppc-darwin/bits/ctype_base.h \
-  /usr/include/gcc/darwin/3.3/c++/ppc-darwin/bits/ctype_inline.h \
-  /usr/include/gcc/darwin/3.3/c++/bits/codecvt.h \
-  /usr/include/gcc/darwin/3.3/c++/ppc-darwin/bits/codecvt_specializations.h \
-  /usr/include/gcc/darwin/3.3/c++/ppc-darwin/bits/time_members.h \
-  /usr/include/gcc/darwin/3.3/c++/ppc-darwin/bits/messages_members.h \
-  /usr/include/gcc/darwin/3.3/c++/bits/basic_ios.tcc \
-  /usr/include/gcc/darwin/3.3/c++/bits/ostream.tcc \
-  /usr/include/gcc/darwin/3.3/c++/locale \
-  /usr/include/gcc/darwin/3.3/c++/bits/locale_facets.tcc \
-  /usr/include/gcc/darwin/3.3/c++/cerrno \
-  /usr/include/gcc/darwin/3.3/c++/cmath \
-  /usr/include/gcc/darwin/3.3/c++/bits/cmath.tcc \
-  /usr/include/gcc/darwin/3.3/c++/limits \
-  /usr/include/gcc/darwin/3.3/c++/typeinfo \
-  /usr/include/gcc/darwin/3.3/c++/istream \
-  /usr/include/gcc/darwin/3.3/c++/bits/istream.tcc \
-  /usr/include/gcc/darwin/3.3/c++/fstream \
-  /usr/include/gcc/darwin/3.3/c++/ppc-darwin/bits/basic_file.h \
-  /usr/include/gcc/darwin/3.3/c++/bits/fstream.tcc \
-  /usr/include/gcc/darwin/3.3/c++/sstream \
-  /usr/include/gcc/darwin/3.3/c++/bits/sstream.tcc \
-  /usr/include/gcc/darwin/3.3/c++/vector \
-  /usr/include/gcc/darwin/3.3/c++/bits/stl_vector.h \
-  /usr/include/gcc/darwin/3.3/c++/bits/stl_bvector.h \
-  /usr/include/gcc/darwin/3.3/c++/bits/vector.tcc \
+  /usr/include/gcc/darwin/4.0/c++/cctype /usr/include/ctype.h \
+  /usr/include/runetype.h \
+  /usr/include/gcc/darwin/4.0/c++/bits/stringfwd.h \
+  /usr/include/gcc/darwin/4.0/c++/bits/postypes.h \
+  /usr/include/gcc/darwin/4.0/c++/cwchar \
+  /usr/include/gcc/darwin/4.0/c++/ctime /usr/include/wchar.h \
+  /usr/lib/gcc/powerpc-apple-darwin8/4.0.0/include/stdarg.h \
+  /usr/include/_wctype.h \
+  /usr/lib/gcc/powerpc-apple-darwin8/4.0.0/include/stdint.h \
+  /usr/include/gcc/darwin/4.0/c++/bits/functexcept.h \
+  /usr/include/gcc/darwin/4.0/c++/exception_defines.h \
+  /usr/include/gcc/darwin/4.0/c++/exception \
+  /usr/include/gcc/darwin/4.0/c++/bits/char_traits.h \
+  /usr/include/gcc/darwin/4.0/c++/bits/stl_algobase.h \
+  /usr/include/gcc/darwin/4.0/c++/climits \
+  /usr/lib/gcc/powerpc-apple-darwin8/4.0.0/include/limits.h \
+  /usr/lib/gcc/powerpc-apple-darwin8/4.0.0/include/syslimits.h \
+  /usr/include/limits.h /usr/include/machine/limits.h \
+  /usr/include/ppc/limits.h /usr/include/sys/syslimits.h \
+  /usr/include/gcc/darwin/4.0/c++/cstdlib \
+  /usr/include/gcc/darwin/4.0/c++/bits/stl_pair.h \
+  /usr/include/gcc/darwin/4.0/c++/bits/cpp_type_traits.h \
+  /usr/include/gcc/darwin/4.0/c++/bits/stl_iterator_base_types.h \
+  /usr/include/gcc/darwin/4.0/c++/bits/stl_iterator_base_funcs.h \
+  /usr/include/gcc/darwin/4.0/c++/bits/concept_check.h \
+  /usr/include/gcc/darwin/4.0/c++/bits/stl_iterator.h \
+  /usr/include/gcc/darwin/4.0/c++/debug/debug.h \
+  /usr/include/gcc/darwin/4.0/c++/cassert \
+  /usr/include/gcc/darwin/4.0/c++/bits/type_traits.h \
+  /usr/include/gcc/darwin/4.0/c++/bits/localefwd.h \
+  /usr/include/gcc/darwin/4.0/c++/bits/ios_base.h \
+  /usr/include/gcc/darwin/4.0/c++/bits/atomicity.h \
+  /usr/include/gcc/darwin/4.0/c++/powerpc-apple-darwin8/bits/atomic_word.h \
+  /usr/include/gcc/darwin/4.0/c++/bits/locale_classes.h \
+  /usr/include/gcc/darwin/4.0/c++/string \
+  /usr/include/gcc/darwin/4.0/c++/memory \
+  /usr/include/gcc/darwin/4.0/c++/bits/allocator.h \
+  /usr/include/gcc/darwin/4.0/c++/powerpc-apple-darwin8/bits/c++allocator.h \
+  /usr/include/gcc/darwin/4.0/c++/ext/new_allocator.h \
+  /usr/include/gcc/darwin/4.0/c++/new \
+  /usr/include/gcc/darwin/4.0/c++/bits/stl_construct.h \
+  /usr/include/gcc/darwin/4.0/c++/bits/stl_uninitialized.h \
+  /usr/include/gcc/darwin/4.0/c++/bits/stl_raw_storage_iter.h \
+  /usr/include/gcc/darwin/4.0/c++/limits \
+  /usr/include/gcc/darwin/4.0/c++/bits/stl_function.h \
+  /usr/include/gcc/darwin/4.0/c++/bits/basic_string.h \
+  /usr/include/gcc/darwin/4.0/c++/algorithm \
+  /usr/include/gcc/darwin/4.0/c++/bits/stl_algo.h \
+  /usr/include/gcc/darwin/4.0/c++/bits/stl_heap.h \
+  /usr/include/gcc/darwin/4.0/c++/bits/stl_tempbuf.h \
+  /usr/include/gcc/darwin/4.0/c++/bits/basic_string.tcc \
+  /usr/include/gcc/darwin/4.0/c++/streambuf \
+  /usr/include/gcc/darwin/4.0/c++/bits/streambuf.tcc \
+  /usr/include/gcc/darwin/4.0/c++/bits/basic_ios.h \
+  /usr/include/gcc/darwin/4.0/c++/bits/streambuf_iterator.h \
+  /usr/include/gcc/darwin/4.0/c++/bits/locale_facets.h \
+  /usr/include/gcc/darwin/4.0/c++/cwctype /usr/include/wctype.h \
+  /usr/include/gcc/darwin/4.0/c++/powerpc-apple-darwin8/bits/ctype_base.h \
+  /usr/include/gcc/darwin/4.0/c++/powerpc-apple-darwin8/bits/ctype_inline.h \
+  /usr/include/gcc/darwin/4.0/c++/bits/codecvt.h \
+  /usr/include/gcc/darwin/4.0/c++/powerpc-apple-darwin8/bits/codecvt_specializations.h \
+  /usr/include/gcc/darwin/4.0/c++/powerpc-apple-darwin8/bits/time_members.h \
+  /usr/include/gcc/darwin/4.0/c++/powerpc-apple-darwin8/bits/messages_members.h \
+  /usr/include/gcc/darwin/4.0/c++/bits/basic_ios.tcc \
+  /usr/include/gcc/darwin/4.0/c++/bits/ostream.tcc \
+  /usr/include/gcc/darwin/4.0/c++/locale \
+  /usr/include/gcc/darwin/4.0/c++/bits/locale_facets.tcc \
+  /usr/include/gcc/darwin/4.0/c++/typeinfo \
+  /usr/include/gcc/darwin/4.0/c++/istream \
+  /usr/include/gcc/darwin/4.0/c++/bits/istream.tcc \
+  /usr/include/gcc/darwin/4.0/c++/fstream \
+  /usr/include/gcc/darwin/4.0/c++/powerpc-apple-darwin8/bits/basic_file.h \
+  /usr/include/gcc/darwin/4.0/c++/bits/fstream.tcc \
+  /usr/include/gcc/darwin/4.0/c++/sstream \
+  /usr/include/gcc/darwin/4.0/c++/bits/sstream.tcc \
+  /usr/include/gcc/darwin/4.0/c++/vector \
+  /usr/include/gcc/darwin/4.0/c++/bits/stl_vector.h \
+  /usr/include/gcc/darwin/4.0/c++/bits/stl_bvector.h \
+  /usr/include/gcc/darwin/4.0/c++/bits/vector.tcc \
   /usr/local/include/FL/math.h /usr/local/include/FL/gl.h \
   /usr/local/include/FL/Enumerations.H /usr/local/include/FL/Fl_Export.H \
   /System/Library/Frameworks/OpenGL.framework/Headers/gl.h \
+  /System/Library/Frameworks/OpenGL.framework/Headers/glext.h \
   /usr/local/include/FL/Fl.H /usr/local/include/FL/Fl_Window.H \
   /usr/local/include/FL/Fl_Group.H /usr/local/include/FL/Fl_Widget.H \
   /usr/local/include/FL/Fl_Hor_Value_Slider.H \
   /usr/local/include/FL/Fl_Value_Slider.H \
   /usr/local/include/FL/Fl_Slider.H /usr/local/include/FL/Fl_Valuator.H \
-  /usr/local/include/FL/Fl_Button.H /usr/local/include/FL/Fl_Choice.H \
-  /usr/local/include/FL/Fl_Menu_.H /usr/local/include/FL/Fl_Menu_Item.H \
-  /usr/local/include/FL/Fl_Image.H /usr/local/include/FL/Fl_Gl_Window.H \
+  /usr/local/include/FL/Fl_Button.H /usr/local/include/FL/Fl_Group.H \
+  /usr/local/include/FL/Fl_Choice.H /usr/local/include/FL/Fl_Menu_.H \
+  /usr/local/include/FL/Fl_Menu_Item.H /usr/local/include/FL/Fl_Image.H \
+  /usr/local/include/FL/Fl_Gl_Window.H /usr/local/include/FL/Fl_Window.H \
   ../flews-0.3/FL/Fl_flews.h ../flews-0.3/FL/Fl_Value_Input_Spin.H \
   /usr/local/include/FL/Fl_Input.H /usr/local/include/FL/Fl_Input_.H \
-  /usr/local/include/FL/fl_draw.H ../flews-0.3/FL/Fl_Value_Slider_Input.H \
-  ../flews-0.3/FL/Fl_Spin.H ../flews-0.3/FL/Fl_Ball.H \
-  ../flews-0.3/FL/Fl_Quaternion.H ../flews-0.3/FL/Fl_Multi_Value_Slider.H \
-  ../flews-0.3/FL/Fl_Pack_2D.H /usr/local/include/FL/Fl_Pack.H \
-  Fl_Hor_Value_Slider_Input.H /usr/local/include/blitz/array.h \
-  /usr/local/include/blitz/array-impl.h /usr/local/include/blitz/blitz.h \
-  /usr/local/include/blitz/compiler.h /usr/local/include/blitz/config.h \
-  /usr/local/include/blitz/tuning.h /usr/local/include/blitz/tau.h \
-  /usr/include/gcc/darwin/3.3/c++/iomanip \
-  /usr/include/gcc/darwin/3.3/c++/functional \
-  /usr/include/gcc/darwin/3.3/c++/complex \
-  /usr/include/gcc/darwin/3.3/c++/bits/cpp_type_traits.h \
+  /usr/local/include/FL/fl_draw.H /usr/local/include/FL/Fl_Valuator.H \
+  ../flews-0.3/FL/Fl_Value_Slider_Input.H \
+  /usr/local/include/FL/Fl_Value_Slider.H ../flews-0.3/FL/Fl_Spin.H \
+  ../flews-0.3/FL/Fl_Ball.H ../flews-0.3/FL/Fl_Quaternion.H \
+  ../flews-0.3/FL/Fl_Multi_Value_Slider.H \
+  /usr/local/include/FL/Fl_Slider.H ../flews-0.3/FL/Fl_Pack_2D.H \
+  /usr/local/include/FL/Fl_Pack.H Fl_Hor_Value_Slider_Input.H \
+  /usr/local/include/blitz/array.h /usr/local/include/blitz/array-impl.h \
+  /usr/local/include/blitz/blitz.h /usr/local/include/blitz/compiler.h \
+  /usr/local/include/blitz/config.h /usr/local/include/blitz/tuning.h \
+  /usr/local/include/blitz/tau.h /usr/include/gcc/darwin/4.0/c++/iomanip \
+  /usr/include/gcc/darwin/4.0/c++/functional \
+  /usr/include/gcc/darwin/4.0/c++/cmath \
+  /usr/include/gcc/darwin/4.0/c++/bits/cmath.tcc \
+  /usr/include/gcc/darwin/4.0/c++/complex \
   /usr/local/include/blitz/bzdebug.h /usr/local/include/blitz/memblock.h \
   /usr/local/include/blitz/numtrait.h \
   /usr/local/include/blitz/memblock.cc /usr/local/include/blitz/range.h \
@@ -360,4 +223,4 @@ grid2.o: grid2.cc /usr/include/unistd.h /usr/include/sys/cdefs.h \
   /usr/local/include/blitz/meta/matvec.h \
   /usr/local/include/blitz/meta/matmat.h \
   /usr/local/include/blitz/tinymatio.cc \
-  /usr/local/include/blitz/array/stencils.cc stable.h grid2.H
+  /usr/local/include/blitz/array/stencils.cc grid2.H

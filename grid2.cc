@@ -593,12 +593,6 @@ void clearAlphaPlanes()
 
 void plot_window::draw_data_points()
 {
-	glDisable(GL_DEPTH_TEST);
-
-//  the following are done once if necessary in the plot_window::draw()
-//	glEnable(GL_BLEND);
-//	glEnable(GL_POINT_SMOOTH);
-//	glHint(GL_POINT_SMOOTH_HINT,GL_NICEST);
 
 	glPointSize(cp->pointsize_slider->value());
 
@@ -617,10 +611,15 @@ void plot_window::draw_data_points()
 
 	// draw all the points
 	if (display_deselected)
+	{
 		glColorPointer (4, GL_FLOAT, 0, cp);
+	}
 	else
+	{
+		glEnable (GL_ALPHA_TEST);
+		glAlphaFunc (GL_GEQUAL, 0.5);
 		glColorPointer (4, GL_FLOAT, 0, altcp);
-		
+	}		
 	glVertexPointer (3, GL_FLOAT, 0, vp);
 
 #ifdef __APPLE__
@@ -633,7 +632,7 @@ void plot_window::draw_data_points()
 
 	glDrawArrays (GL_POINTS, 0, npoints);
 
-	glEnable(GL_DEPTH_TEST);
+	glDisable(GL_ALPHA_TEST);
 }
 
 void plot_window::compute_histogram(int axis)
