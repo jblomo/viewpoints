@@ -12,12 +12,18 @@
 #include <sys/time.h>
 
 #ifdef __APPLE__
+#include <float.h>
+#else
+#include <values.h>
+#endif // APPLE
+
+#ifdef __APPLE__
 #include <vecLib/vBLAS.h>
 #elif linux
 //extern "C" {
 //# include <cblas.h>
 //}
-#endif
+#endif // APPLE
         
 /* Add C++ includes here */
 #include <iostream>
@@ -56,13 +62,14 @@
 
 using namespace std;
 
-const int nvals_max = 256;  	// maximum number of columns allowed in data file
-const int MAXPOINTS = 200000;	// maximum rows in data file
+const int nvals_max = 50;  	// maximum number of columns allowed in data file
+const int MAXPOINTS = 500000;	// maximum rows in data file
 const int skip = 0; 			// skip this many columns at the beginning of each row
 
 int npoints = MAXPOINTS;			// actual number of rows in data file
 int nvals = nvals_max;				// actual number of columns in data file
 int display_deselected = 1;			// display deselected objects in alternate color
+int scale_histogram = 0;			// global toggle between scale histgram & scale view :-(
 
 blitz::Array<float,2> points(nvals_max,MAXPOINTS);	// main data array
 blitz::Array<int,1> identity;
@@ -106,9 +113,10 @@ class plot_window : public Fl_Gl_Window {
 	int selection_changed, extend_selection;
 	static int count;
 	// histograms
-	static const int nbins = 128;
-	blitz::Array<float,2> counts;
+	int nbins;
+	blitz::Array<float,2> counts, counts_selected;
 	void compute_histogram (int);
+	float xhscale, yhscale;
 	void draw_histograms ();
   public:
 	plot_window(int w, int h);
@@ -116,6 +124,9 @@ class plot_window : public Fl_Gl_Window {
 	blitz::Array<int,1> x_rank, y_rank, z_rank;
 	float amin[3], amax[3]; // min and max for data's bounding box in x, y, and z;
 	void compute_rank (blitz::Array<float,1>, blitz::Array<int,1>);
+	static const int nbins_default = 128;
+	static const int nbins_max = 1024;
+	void compute_histograms ();
 	int normalize(blitz::Array<float,1>, blitz::Array<int,1>, int);
 	std::string xlabel, ylabel, zlabel;
 	control_panel_window *cp;	// pointer to the control panel associated with this plot window
@@ -135,7 +146,9 @@ plot_window::plot_window(int w,int h) : Fl_Gl_Window(w,h)
 	x_rank.resize(npoints);
 	y_rank.resize(npoints);
 	z_rank.resize(npoints);
-	counts.resize(nbins,3);
+	nbins = nbins_default;
+	counts.resize(nbins_max,3);
+	counts_selected.resize(nbins_max,3);
 #if 0
 	if (can_do(FL_RGB8|FL_DOUBLE|FL_ALPHA|FL_DEPTH))
 		mode(FL_RGB8|FL_DOUBLE|FL_ALPHA|FL_DEPTH);  // Can't seem to make this work on PBG4 OSX 
@@ -163,9 +176,10 @@ class control_panel_window : public Fl_Window {
 	Fl_Hor_Value_Slider_Input *pointsize_slider;
 	Fl_Hor_Value_Slider_Input *Bkg, *Lum, *Alph;
 	Fl_Hor_Value_Slider_Input *rot_slider;
+	Fl_Hor_Value_Slider_Input *nbins_slider;
 	Fl_Choice *varindex1, *varindex2, *varindex3;
 	
-	Fl_Button *spin, *dont_clear, *show_axes, *show_grid, *show_labels, *show_histogram;
+	Fl_Button *spin, *dont_clear, *show_points, *show_axes, *show_grid, *show_labels, *show_histogram;
 //	Fl_Button *x_equals_delta_x, *y_equals_delta_x;
 	Fl_Group *transform_style;
 	Fl_Button *sum_vs_difference, *polar, *ratio, *no_transform;
@@ -258,11 +272,18 @@ int plot_window::handle(int event) {
 		// scale = drag with middle-mouse (or c-left-mouse)
 		else if ((Fl::event_state() == FL_BUTTON2) || (Fl::event_state() == (FL_BUTTON1 | FL_CTRL)))
 		{
-			xscale *= 1 + xdragged*(2.0/w());
-			yscale *= 1 + ydragged*(2.0/h());
-			DEBUG ( cout << "xscale, yscale: " << xscale << ", " << yscale << endl );
+			if (scale_histogram)
+			{
+				xhscale *= 1 + xdragged*(2.0/w());
+				yhscale *= 1 + ydragged*(2.0/h());
+			} else {
+				xscale *= 1 + xdragged*(2.0/w());
+				yscale *= 1 + ydragged*(2.0/h());
+				DEBUG ( cout << "xscale, yscale: " << xscale << ", " << yscale << endl );
+			}
 			// redraw();
 			needs_redraw = 1;
+
 		}
 
 		// continue selection = drag with left mouse
@@ -282,6 +303,7 @@ int plot_window::handle(int event) {
 				} else {
 					extend_selection = 1;
 				}
+
 			} else {
 				xtracked = + (2.0*(xcur/(float)w()) -1.0) ; // window -> [-1,1]
 				xtracked = xtracked / xscale;
@@ -319,15 +341,26 @@ int plot_window::handle(int event) {
 			reset_view ();
 			//redraw();
 			return 1;
+		case 'h':
+			scale_histogram=1;
+			return 1;
 		case 'q':
 		case '\027':
 			// quit
 			exit (0);
-		default: return 0;
+		default:
+			return 0;
 		}
 	case FL_KEYUP:
 		DEBUG ( cout << "FL_KEYUP" << endl);
-		return 0;
+		switch (Fl::event_key())
+		{
+		case 'h':
+			scale_histogram=0;
+			return 1;
+		default:
+			return 0;
+		}
 	case FL_SHORTCUT:
 		// shortcut, key is in Fl::event_key(), ascii in Fl::event_text()
 		// Return 1 if you understand/use the shortcut event, 0 otherwise...
@@ -342,6 +375,9 @@ void plot_window::reset_view()
 {
 	xscale = yscale = 0.95;
 	xcenter = ycenter = 0.0;
+
+	xhscale = xscale;
+	yhscale = yscale;
 
 	xdragged = ydragged = 0.0;
 	xzoomcenter = yzoomcenter = 0.0;
@@ -401,13 +437,16 @@ void plot_window::draw()
     {
 		//glClearColor(0.0,0.0,0.0,0.0);
 		glClearColor(cp->Bkg->value(), cp->Bkg->value(), cp->Bkg->value(), 0.0);
+		glClearDepth(0);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		draw_grid();
 		draw_labels();
     }
 
 	if (selection_changed)
+	{
 		handle_selection ();
+	}
 	draw_data_points();
 	draw_histograms ();
 }
@@ -479,24 +518,23 @@ void plot_window::draw_labels ()
 	if (!cp->show_labels->value())
 		return;
 	// note: perhaps we should not bother with one if it is too close to the origin?
-	// if (show_axis_labels->value())
-    {
-		glPushMatrix ();
-		glLoadIdentity();
-		gl_font (FL_HELVETICA, 14);
-		if (cp->Bkg->value() <= 0.5)
-			glColor4f(0.8,0.8,0.8,0.0);
-		else
-			glColor4f(0.2,0.2,0.2,0.0);
-
-		float xlabel_width = 2.0 * gl_width(xlabel.c_str())/(float)(this->w());
-//		float ylabel_width = 2.0 * gl_width(ylabel.c_str())/(float)(this->w());
-		float offset = 0.05;  // how far label should be from end of vector
-
-		gl_draw((const char *)(xlabel.c_str()), 1.0F-(offset+xlabel_width), 0.0F-offset);
-		gl_draw((const char *)(ylabel.c_str()), offset, 1.0F-2*offset);
-		glPopMatrix ();
-	}
+	glDisable(GL_DEPTH_TEST);
+	glPushMatrix ();
+	glLoadIdentity();
+	gl_font (FL_HELVETICA, 14);
+	if (cp->Bkg->value() <= 0.5)
+		glColor4f(0.8,0.8,0.8,0.0);
+	else
+		glColor4f(0.2,0.2,0.2,0.0);
+	
+	float xlabel_width = 2.0 * gl_width(xlabel.c_str())/(float)(this->w());
+//	float ylabel_width = 2.0 * gl_width(ylabel.c_str())/(float)(this->w());
+	float offset = 0.05;  // how far label should be from end of vector
+	
+	gl_draw((const char *)(xlabel.c_str()), 1.0F-(offset+xlabel_width), 0.0F-offset);
+	gl_draw((const char *)(ylabel.c_str()), offset, 1.0F-2*offset);
+	glPopMatrix ();
+	glEnable(GL_DEPTH_TEST);
 }
 
 
@@ -593,6 +631,17 @@ void clearAlphaPlanes()
 
 void plot_window::draw_data_points()
 {
+	if (!cp->show_points->value())
+		return;
+//	glDisable(GL_DEPTH_TEST);
+
+//  the following are done once if necessary in the plot_window::draw()
+//	glEnable(GL_BLEND);
+//	glEnable(GL_POINT_SMOOTH);
+//	glHint(GL_POINT_SMOOTH_HINT,GL_NICEST);
+
+	glEnable(GL_ALPHA_TEST);
+	glAlphaFunc (GL_ALWAYS, 0.0);
 
 	glPointSize(cp->pointsize_slider->value());
 
@@ -609,17 +658,18 @@ void plot_window::draw_data_points()
 	GLfloat *cp = (GLfloat *)colors.data();
 	GLfloat *altcp = (GLfloat *)altcolors.data();
 
-	// draw all the points
+	// tell the GPU where to find the correct colors for each vertex.
 	if (display_deselected)
 	{
 		glColorPointer (4, GL_FLOAT, 0, cp);
 	}
 	else
 	{
-		glEnable (GL_ALPHA_TEST);
-		glAlphaFunc (GL_GEQUAL, 0.5);
+		glAlphaFunc (GL_GEQUAL, 0.5);  // this should stop any deselected points (alpha=0.0) from being drawn, whatever the blendfunc.
 		glColorPointer (4, GL_FLOAT, 0, altcp);
-	}		
+	}
+
+	// tell the GPU where to find the vertices;
 	glVertexPointer (3, GL_FLOAT, 0, vp);
 
 #ifdef __APPLE__
@@ -628,11 +678,13 @@ void plot_window::draw_data_points()
 	glVertexArrayParameteriAPPLE (GL_VERTEX_ARRAY_STORAGE_HINT_APPLE, GL_STORAGE_CACHED_APPLE);  // for static data
 	glVertexArrayParameteriAPPLE (GL_VERTEX_ARRAY_STORAGE_HINT_APPLE, GL_STORAGE_SHARED_APPLE);  // for dynamic data
 #endif // FAST_APPLE_VERTEX_EXTENSIONS
-#endif __APPLE__
+#endif // __APPLE__
 
+	// tell teh GPU to draw the vertices.
 	glDrawArrays (GL_POINTS, 0, npoints);
 
 	glDisable(GL_ALPHA_TEST);
+//	glEnable(GL_DEPTH_TEST);
 }
 
 void plot_window::compute_histogram(int axis)
@@ -640,19 +692,33 @@ void plot_window::compute_histogram(int axis)
 	if (!(cp->show_histogram->value()))
 		return;
 
+	nbins = (int)(cp->nbins_slider->value());
+	// cout << "nbins = " << nbins << endl;
 	blitz::Range BINS(0,nbins-1);
 	counts(BINS,axis) = 0.0;
+	counts_selected(BINS,axis) = 0.0;
 	float range = amax[axis]-amin[axis];
 
 	for (int i=0; i<npoints; i++)
 	{
 		float x = vertices(i,axis);
 		int bin=(int)(nbins*((x-amin[axis])/range));
-		if (bin == nbins)
-			bin--;
+		if (bin < 0)
+			bin = 0;
+		if (bin >= nbins)
+			bin=nbins-1;
 		counts(bin,axis)++;
+		if (selected(i))
+			counts_selected(bin,axis)++;
 	}
-	counts(BINS,axis) = (counts(BINS,axis)/((float)npoints));
+	counts(BINS,axis) = (3.0*nbins/(float)nbins_default)*counts(BINS,axis)/((float)(npoints));
+	counts_selected(BINS,axis) = (3.0*nbins/(float)nbins_default)*counts_selected(BINS,axis)/((float)(npoints));
+}
+
+void plot_window::compute_histograms ()
+{
+	compute_histogram(0);
+	compute_histogram(1);
 }
 
 void plot_window::draw_histograms()
@@ -660,18 +726,25 @@ void plot_window::draw_histograms()
 	if (!(cp->show_histogram->value()))
 		return;
 	// draw histogram
-	glDisable(GL_DEPTH_TEST);
+	
+	glEnable(GL_DEPTH_TEST);
 	glPushMatrix();
 
-	// x axis histogram
+	// x axis histograms
 	glLoadIdentity();
 	glTranslatef (xzoomcenter*xscale, 0.0, 0);
-	glScalef (xscale, yscale, 1.0);
-	glTranslatef (-xcenter, -1.0/yscale, 0.0);
+	glScalef (xscale, yhscale, 1.0);
+	glTranslatef (-xcenter, -1.0/yhscale, 0.0);
 	glTranslatef (-xzoomcenter, 0.0, 0);
-	glColor4f (0.0, 1.0, 0.0, 1.0);
+	// histograms cover pointclouds
+	glTranslatef (0.0, 0.0, 0.1);
 	float xwidth = (amax[0]-amin[0]) / (float)(nbins);
+
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	// x axis histogram (all points)
 	float x = amin[0];
+	glColor4f (0.0, 1.0, 0.0, 0.5);
 	glBegin(GL_LINE_STRIP);
 	glVertex2f(x,0.0);					
 	for (int bin=0; bin<nbins; bin++)
@@ -681,20 +754,40 @@ void plot_window::draw_histograms()
 		// top edge
 		glVertex2f(x+xwidth,counts(bin,0));	
 		// right edge 
-		glVertex2f(x+xwidth,0.0);
+		//glVertex2f(x+xwidth,0.0);
 		x+=xwidth;
 	}
 	glEnd();
 
-	// y axis histogram
+	// Refactor this!
+	// x axis histogram (selected points)
+	x = amin[0];
+	glColor4f (0.25, 1.0, 0.25, 1.0);
+	glBegin(GL_LINE_STRIP);
+
+	for (int bin=0; bin<nbins; bin++)
+	{
+		// left edge
+		glVertex2f(x,counts_selected(bin,0));			
+		// top edge
+		glVertex2f(x+xwidth,counts_selected(bin,0));	
+		// right edge 
+		//glVertex2f(x+xwidth,0.0);
+		x+=xwidth;
+	}
+	glEnd();
+
+	// y axis histograms
 	glLoadIdentity();
 	glTranslatef (0.0, yzoomcenter*yscale, 0);
-	glScalef (xscale, yscale, 1.0);
-	glTranslatef (-1.0/xscale, -ycenter, 0.0);
+	glScalef (xhscale, yscale, 1.0);
+	glTranslatef (-1.0/xhscale, -ycenter, 0.0);
 	glTranslatef (0.0, -yzoomcenter, 0);
-	glColor4f (0.0, 1.0, 0.0, 1.0);
 	float ywidth = (amax[1]-amin[1]) / (float)(nbins);
+
+	// y axis histogram (all points)
 	float y = amin[1];
+	glColor4f (0.0, 1.0, 0.0, 0.5);
 	glBegin(GL_LINE_STRIP);
 	glVertex2f(0.0,y);					
 	for (int bin=0; bin<nbins; bin++)
@@ -704,12 +797,29 @@ void plot_window::draw_histograms()
 		// right edge
 		glVertex2f(counts(bin,1), y+ywidth);	
 		// top edge 
-		glVertex2f(0.0, y+ywidth);
+		// glVertex2f(0.0, y+ywidth);
 		y+=ywidth;
 	}
 	glEnd();
+
+	// Refactor this!
+	// y axis histogram (selected points)
+	y = amin[1];
+	glColor4f (0.25, 1.0, 0.25, 1.0);
+	glBegin(GL_LINE_STRIP);
+	for (int bin=0; bin<nbins; bin++)
+	{
+		// bottom
+		glVertex2f(counts_selected(bin,1),y);			
+		// right edge
+		glVertex2f(counts_selected(bin,1), y+ywidth);	
+		// top edge 
+		// glVertex2f(0.0, y+ywidth);
+		y+=ywidth;
+	}
+	glEnd();
+
 	glPopMatrix();
-	glEnable(GL_DEPTH_TEST);
 }
 
 int
@@ -761,13 +871,12 @@ plot_window::normalize (blitz::Array<float,1> a, blitz::Array<int,1> a_rank, int
 		return 1;
 	case NORMALIZATION_ZEROMAX:
 		if (finite(amax) && amax != 0.0)
-			a(NPTS) = -1 + 2*a(NPTS)/amax;
+			a(NPTS) = a(NPTS)/amax;
 		return 1;
 	case NORMALIZATION_MAXABS:
-		amax = fmaxf(fabsf(amin),fabs(amax));
+		amax = fmaxf(fabsf(amin),fabsf(amax));
 		if (finite(amax) && amax != 0.0)
-			a(NPTS) = -1 + 2*a(NPTS)/amax;
-		a(NPTS) = a(NPTS) / amax;
+			a(NPTS) = a(NPTS)/amax;
 		return 1;
 	case NORMALIZATION_THREESIGMA:
 		mu = mean(a(NPTS));
@@ -872,9 +981,7 @@ plot_window::extract_data_points ()
 	vertices(NPTS,2) = zpoints(NPTS);
 	(void) transform_2d ();
 
-	compute_histogram (0);
-	compute_histogram (1);
-	// compute_histogram (2);
+	compute_histograms ();
 
 #ifdef __APPLE___
 #ifdef FAST_APPLE_VERTEX_EXTENSIONS
@@ -1099,6 +1206,13 @@ control_panel_window::make_widgets(control_panel_window *cpw)
 	rot_slider->step(0.001);
 	rot_slider->bounds(-90.0, 90.0);
 
+	nbins_slider = new Fl_Hor_Value_Slider_Input(xpos, ypos+=25, cpw->w()-60, 20, "nbins");
+	nbins_slider->align(FL_ALIGN_LEFT);
+	nbins_slider->callback((Fl_Callback*)static_extract_and_redraw, this);
+	nbins_slider->value(plot_window::nbins_default);
+	nbins_slider->step(1);
+	nbins_slider->bounds(2,plot_window::nbins_max);
+
 	// dynamically build the variables menu
 	// cout << "starting menu build, nvals = " << nvals << endl;
 	for (int i=0; i<nvals; i++)
@@ -1199,6 +1313,10 @@ control_panel_window::make_widgets(control_panel_window *cpw)
 	b->callback((Fl_Callback*)static_maybe_redraw, this);
 	b->align(FL_ALIGN_RIGHT); b->type(FL_TOGGLE_BUTTON); b->selection_color(FL_YELLOW);	b->value(1);
 
+	show_points = b = new Fl_Button(xpos, ypos+=25, 20, 20, "points");
+	b->callback((Fl_Callback*)static_maybe_redraw, this);
+	b->align(FL_ALIGN_RIGHT); b->type(FL_TOGGLE_BUTTON); b->selection_color(FL_YELLOW);	b->value(1);
+
 	show_axes = b = new Fl_Button(xpos, ypos+=25, 20, 20, "axes");
 	b->callback((Fl_Callback*)static_maybe_redraw, this);
 	b->align(FL_ALIGN_RIGHT); b->type(FL_TOGGLE_BUTTON); b->selection_color(FL_YELLOW);	b->value(1);
@@ -1227,6 +1345,11 @@ redraw_all_plots ()
 	pw3->redraw();
 	pw4->redraw();
 	#endif
+	pw1->compute_histograms();
+	pw2->compute_histograms();
+	pw3->compute_histograms();
+	pw4->compute_histograms();
+
 	pw1->needs_redraw = 1;
 	pw2->needs_redraw = 1;
 	pw3->needs_redraw = 1;

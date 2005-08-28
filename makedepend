@@ -5,7 +5,10 @@ grid2.o: grid2.cc /usr/include/unistd.h /usr/include/_types.h \
   /usr/include/sys/appleapiopts.h /usr/include/sys/types.h \
   /usr/include/machine/types.h /usr/include/ppc/types.h \
   /usr/include/machine/endian.h /usr/include/ppc/endian.h \
-  /usr/include/sys/_endian.h /usr/include/signal.h \
+  /usr/include/sys/_endian.h \
+  /usr/lib/gcc/powerpc-apple-darwin8/4.0.0/include/stdint.h \
+  /usr/include/libkern/OSByteOrder.h \
+  /usr/include/libkern/ppc/OSByteOrder.h /usr/include/signal.h \
   /usr/include/sys/signal.h /usr/include/machine/signal.h \
   /usr/include/ppc/signal.h /usr/include/sys/time.h /usr/include/time.h \
   /usr/include/machine/_limits.h /usr/include/ppc/_limits.h \
@@ -14,11 +17,9 @@ grid2.o: grid2.cc /usr/include/unistd.h /usr/include/_types.h \
   /usr/include/fcntl.h /usr/include/sys/fcntl.h /usr/include/assert.h \
   /usr/include/math.h /usr/include/architecture/ppc/math.h \
   /usr/include/sys/uio.h /usr/include/sys/stat.h \
+  /usr/lib/gcc/powerpc-apple-darwin8/4.0.0/include/float.h \
   /System/Library/Frameworks/vecLib.framework/Headers/vBLAS.h \
-  /System/Library/Frameworks/CoreServices.framework/Headers/../Frameworks/CarbonCore.framework/Headers/MacTypes.h \
-  /System/Library/Frameworks/CoreServices.framework/Frameworks/CarbonCore.framework/Headers/ConditionalMacros.h \
-  /usr/include/AvailabilityMacros.h /usr/include/TargetConditionals.h \
-  /usr/lib/gcc/powerpc-apple-darwin8/4.0.0/include/stdbool.h \
+  /usr/include/AvailabilityMacros.h \
   /System/Library/Frameworks/vecLib.framework/Headers/cblas.h \
   /usr/include/gcc/darwin/4.0/c++/iostream \
   /usr/include/gcc/darwin/4.0/c++/powerpc-apple-darwin8/bits/c++config.h \
@@ -44,7 +45,6 @@ grid2.o: grid2.cc /usr/include/unistd.h /usr/include/_types.h \
   /usr/include/gcc/darwin/4.0/c++/ctime /usr/include/wchar.h \
   /usr/lib/gcc/powerpc-apple-darwin8/4.0.0/include/stdarg.h \
   /usr/include/_wctype.h \
-  /usr/lib/gcc/powerpc-apple-darwin8/4.0.0/include/stdint.h \
   /usr/include/gcc/darwin/4.0/c++/bits/functexcept.h \
   /usr/include/gcc/darwin/4.0/c++/exception_defines.h \
   /usr/include/gcc/darwin/4.0/c++/exception \
@@ -64,7 +64,6 @@ grid2.o: grid2.cc /usr/include/unistd.h /usr/include/_types.h \
   /usr/include/gcc/darwin/4.0/c++/bits/stl_iterator.h \
   /usr/include/gcc/darwin/4.0/c++/debug/debug.h \
   /usr/include/gcc/darwin/4.0/c++/cassert \
-  /usr/include/gcc/darwin/4.0/c++/bits/type_traits.h \
   /usr/include/gcc/darwin/4.0/c++/bits/localefwd.h \
   /usr/include/gcc/darwin/4.0/c++/bits/ios_base.h \
   /usr/include/gcc/darwin/4.0/c++/bits/atomicity.h \
@@ -96,7 +95,6 @@ grid2.o: grid2.cc /usr/include/unistd.h /usr/include/_types.h \
   /usr/include/gcc/darwin/4.0/c++/powerpc-apple-darwin8/bits/ctype_base.h \
   /usr/include/gcc/darwin/4.0/c++/powerpc-apple-darwin8/bits/ctype_inline.h \
   /usr/include/gcc/darwin/4.0/c++/bits/codecvt.h \
-  /usr/include/gcc/darwin/4.0/c++/powerpc-apple-darwin8/bits/codecvt_specializations.h \
   /usr/include/gcc/darwin/4.0/c++/powerpc-apple-darwin8/bits/time_members.h \
   /usr/include/gcc/darwin/4.0/c++/powerpc-apple-darwin8/bits/messages_members.h \
   /usr/include/gcc/darwin/4.0/c++/bits/basic_ios.tcc \
@@ -139,15 +137,17 @@ grid2.o: grid2.cc /usr/include/unistd.h /usr/include/_types.h \
   /usr/local/include/FL/Fl_Pack.H Fl_Hor_Value_Slider_Input.H \
   /usr/local/include/blitz/array.h /usr/local/include/blitz/array-impl.h \
   /usr/local/include/blitz/blitz.h /usr/local/include/blitz/compiler.h \
-  /usr/local/include/blitz/config.h /usr/local/include/blitz/tuning.h \
-  /usr/local/include/blitz/tau.h /usr/include/gcc/darwin/4.0/c++/iomanip \
+  /usr/local/include/blitz/bzconfig.h \
+  /usr/local/include/blitz/gnu/bzconfig.h \
+  /usr/local/include/blitz/tuning.h /usr/local/include/blitz/tau.h \
+  /usr/include/gcc/darwin/4.0/c++/iomanip \
   /usr/include/gcc/darwin/4.0/c++/functional \
   /usr/include/gcc/darwin/4.0/c++/cmath \
   /usr/include/gcc/darwin/4.0/c++/bits/cmath.tcc \
   /usr/include/gcc/darwin/4.0/c++/complex \
   /usr/local/include/blitz/bzdebug.h /usr/local/include/blitz/memblock.h \
-  /usr/local/include/blitz/numtrait.h \
-  /usr/local/include/blitz/memblock.cc /usr/local/include/blitz/range.h \
+  /usr/local/include/blitz/memblock.cc \
+  /usr/local/include/blitz/numtrait.h /usr/local/include/blitz/range.h \
   /usr/local/include/blitz/vecexprwrap.h \
   /usr/local/include/blitz/wrap-climits.h \
   /usr/local/include/blitz/tinyvec.h /usr/local/include/blitz/listinit.h \
@@ -185,6 +185,8 @@ grid2.o: grid2.cc /usr/include/unistd.h /usr/include/_types.h \
   /usr/local/include/blitz/array/domain.h \
   /usr/local/include/blitz/array/storage.h \
   /usr/local/include/blitz/array/iter.h \
+  /usr/include/gcc/darwin/4.0/c++/iterator \
+  /usr/include/gcc/darwin/4.0/c++/bits/stream_iterator.h \
   /usr/local/include/blitz/array/fastiter.h \
   /usr/local/include/blitz/array/expr.h /usr/local/include/blitz/ops.h \
   /usr/local/include/blitz/shapecheck.h \

@@ -6,8 +6,6 @@ CXX		= g++
 CC		= cc
 #CXX = gxlc++
 #CC = gxlc++
-#CXX		= g++-3.3
-#CC		= gcc-3.3
 MAKEDEPEND	= $(CXX) -M
 
 ifeq ($(platform),Darwin)
@@ -26,6 +24,7 @@ ifeq ($(platform),Darwin)
 #	OPTIM = -O1 -Wall -Wunused -Wno-long-double -Wno-deprecated -fno-exceptions -ffast-math -pipe -fsigned-char -maltivec -mabi=altivec -faltivec -mcpu=7450 -mtune=7450 -mpowerpc -mpowerpc-gpopt -mpowerpc-gfxopt -g -pipe
 else
 	OPTIM = -O2 -Wall -Wunused -ffast-math -fno-exceptions -g  -Wno-deprecated
+	OPTIM = -O0 $(DEBUG) -pipe
 endif
 
 CFLAGS		= $(OPTIM) 
@@ -37,7 +36,7 @@ CXXFLAGS	= $(OPTIM)
 # libraries to link with:
 ifeq ($(platform),Darwin)
 	LIBPATH	= -L/usr/local/lib 
-	LDLIBS = -framework AGL -framework OpenGL -framework Carbon -framework ApplicationServices -framework veclib -lsupc++ -lm -lmx
+	LDLIBS = -framework AGL -framework OpenGL -framework Carbon -framework ApplicationServices -framework veclib -lm -lmx
 else
 	LIBPATH	= -L/u/wk/creon/lib 
 	INCPATH = -I/u/wk/creon/include
@@ -71,8 +70,9 @@ EXEEXT		=
 TARGET =	grid2$(EXEEXT)
 #TARGET =	mgrid$(EXEEXT)
 
+#SRCS =	grid.cc histo.cc
 SRCS =	grid2.cc 
-#SRCS =	mgrid.cc
+#SRCS =	mgrid.cc grid2.cc
 
 OBJS:=	$(SRCS:.cc=.o)
 
