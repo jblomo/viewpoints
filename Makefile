@@ -35,12 +35,13 @@ CXXFLAGS	= $(OPTIM)
 
 # libraries to link with:
 ifeq ($(platform),Darwin)
-	LIBPATH	= -L/usr/local/lib 
-	LDLIBS = -framework AGL -framework OpenGL -framework Carbon -framework ApplicationServices -framework veclib -lm -lmx
+	LIBPATH	= -L/usr/local/lib -L/sw/lib
+	LDLIBS = -framework AGL -framework OpenGL -framework Carbon -framework ApplicationServices -framework veclib -lm -lmx -lgsl
+	INCPATH = -I/sw/include
 else
 	LIBPATH	= -L/u/wk/creon/lib 
-	INCPATH = -I/u/wk/creon/include
-	LDLIBS = -L/usr/X11R6/lib -lGL -lXext -lX11 -llapack -lcblas -lf77blas -latlas -lsupc++ -lm
+	INCPATH = -I/u/wk/creon/include 
+	LDLIBS = -L/usr/X11R6/lib -lGL -lXext -lX11 -lsupc++ -lm -lgsl
 endif
 INCFLEWS	= -I../flews-0.3
 LINKFLEWS	= -L../flews-0.3 -lflews

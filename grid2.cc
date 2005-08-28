@@ -58,12 +58,16 @@
 #    include <GL/glext.h>
 #  endif
 
+// gsl
+#include <gsl/gsl_math.h>
+#include <gsl/gsl_cdf.h>
+
 #include "grid2.H"
 
 using namespace std;
 
-const int nvals_max = 50;  	// maximum number of columns allowed in data file
-const int MAXPOINTS = 500000;	// maximum rows in data file
+const int nvals_max = 256;  	// maximum number of columns allowed in data file
+const int MAXPOINTS = 1200000;	// maximum rows in data file
 const int skip = 0; 			// skip this many columns at the beginning of each row
 
 int npoints = MAXPOINTS;			// actual number of rows in data file
@@ -200,11 +204,12 @@ const int NORMALIZATION_ZEROMAX = 2;
 const int NORMALIZATION_MAXABS	= 3;
 const int NORMALIZATION_THREESIGMA = 4;
 const int NORMALIZATION_RANK = 5;
+const int NORMALIZATION_GAUSSIANIZE = 6;
 
-const char *normalization_style_labels[] = { "none","minmax","zeromax","maxabs","threesigma","rank"};
+const char *normalization_style_labels[] = { "none","minmax","zeromax","maxabs","threesigma","rank","gaussianize"};
 
 int normalization_styles[] = 
-{NORMALIZATION_NONE, NORMALIZATION_MINMAX, NORMALIZATION_ZEROMAX, NORMALIZATION_MAXABS, NORMALIZATION_THREESIGMA, NORMALIZATION_RANK};
+{NORMALIZATION_NONE, NORMALIZATION_MINMAX, NORMALIZATION_ZEROMAX, NORMALIZATION_MAXABS, NORMALIZATION_THREESIGMA, NORMALIZATION_RANK, NORMALIZATION_GAUSSIANIZE};
 
 const int n_normalization_styles = sizeof(normalization_styles)/sizeof(normalization_styles[0]);
 
@@ -577,9 +582,9 @@ float r1=1.0, g1=0.05, b1=0.05, alpha1 = 1.0;
 void plot_window::color_array_from_selection()
 {
 	GLfloat color1[4], color2[4];
-	color1[0] = color2[2] = r1;
-	color1[1] = color2[1] = g1;
-	color1[2] = color2[0] = b1;
+	color1[0] = color2[1] = r1;
+	color1[1] = color2[0] = g1;
+	color1[2] = color2[2] = b1;
 	color1[3] = color2[3] = alpha1;
 	
 	for (int i=0; i<npoints; i++)
@@ -871,12 +876,13 @@ plot_window::normalize (blitz::Array<float,1> a, blitz::Array<int,1> a_rank, int
 		return 1;
 	case NORMALIZATION_ZEROMAX:
 		if (finite(amax) && amax != 0.0)
-			a(NPTS) = a(NPTS)/amax;
+			a(NPTS) = -1 + 2*a(NPTS)/amax;
 		return 1;
 	case NORMALIZATION_MAXABS:
 		amax = fmaxf(fabsf(amin),fabsf(amax));
 		if (finite(amax) && amax != 0.0)
-			a(NPTS) = a(NPTS)/amax;
+			a(NPTS) = -1 + 2*a(NPTS)/amax;
+		a(NPTS) = a(NPTS) / amax;
 		return 1;
 	case NORMALIZATION_THREESIGMA:
 		mu = mean(a(NPTS));
@@ -889,6 +895,12 @@ plot_window::normalize (blitz::Array<float,1> a, blitz::Array<int,1> a_rank, int
 		for(int i=0; i<npoints; i++)
 		{
 			a(a_rank(i)) = 2*float(i) / (float)npoints - 1;
+		}
+		return 1;
+	case NORMALIZATION_GAUSSIANIZE: // around the median
+		for(int i=0; i<npoints; i++)
+		{
+			a(a_rank(i)) = (1.0/3.0)*(float)gsl_cdf_ugaussian_Pinv((double)(float(i+1) / (float)(npoints+2)));
 		}
 		return 1;
 	default:
@@ -1140,6 +1152,60 @@ void read_binary_file()
 		if (ret != nvals*sizeof(float))
 		{
 			if (ret == 0) // EOF
+				break;
+			else
+			{
+				fprintf (stderr, "error reading input occured at line %d\n", i+1);
+				exit (1);
+			}
+		}
+		points(NVALS,i) = vals;
+		if (i>0 && (i%10000 == 0))
+			printf ("read %d lines\n", i);
+	}
+	cout << "read " << i << " lines." << endl;
+	npoints = i;
+}
+
+void read_binary_file_with_headers() 
+{
+	blitz::Array<float,1> vals(nvals);
+	blitz::Range NVALS(0,nvals-1);
+	int i;
+	if (!points.isStorageContiguous())
+	{
+		cerr << "Tried to pass non contigous buffer to read.  Aborting!" << endl;
+		exit (1);
+	}
+		
+	// first line of file has column labels separated by whitespace
+	std::string line;
+	(void) getline (cin, line, '\n');
+	std::stringstream ss(line); // Insert the string into a stream
+	std::string buf;		   // need an intermediate buffer
+	while (ss >> buf)
+		column_labels.push_back(buf);
+	nvals = column_labels.size();
+	if (nvals > nvals_max)
+	{
+		cerr << "Error: too many columns, increase nvals_max and recompile" << endl;
+		exit (1);
+	}
+	cout << "column_labels = ";
+	for( int i=0; i < nvals; i++ )
+	{
+		cout << column_labels[i] << " ";
+	}  
+	cout << endl;
+	cout << "there should be " << nvals << " fields (columns) per record (row)" << endl;
+
+	for (i=0; i<npoints; i++)
+	{
+		unsigned int ret = fread((void *)(vals.data()), sizeof(float), nvals, stdin);
+		// cout << "read " << ret << " values " << endl;
+		if (ret != nvals)
+		{
+			if (ret == 0 || feof(stdin)) // EOF
 				break;
 			else
 			{
@@ -1432,9 +1498,10 @@ int main(int argc, char **argv)
 
 	srand((unsigned int)time(0));
 
+    read_binary_file_with_headers ();
 //  read_binary_file ();
 //	read_ascii_file ();
-	read_ascii_file_with_headers ();
+//	read_ascii_file_with_headers ();
 	
 	resize_global_arrays ();
 
