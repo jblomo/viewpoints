@@ -1,0 +1,36 @@
+usage:
+
+  vp [--format=binary] [--npoints=<integer>]
+
+  format=default
+    ascii, with header line
+    first line contains attribute names, whitespace delimited
+    additional lines each contain all numeric attribute values for one sample, whitespace delimited
+
+  format=binary
+    one line of ascii attribute names, whitespace delimited, ending with newline (\n);
+    immediately followed by raw table of binary floating point values
+
+  npoints=<integer>
+    number of points (samples, or rows) to read.  Default is all.
+
+keys & buttons (in plot windows)
+
+action				key
+
+new selection		left-mouse
+move selection		left-mouse + right-shift
+continue selction	left-mouse + left-shift
+invert selection	i
+display deselected  d
+
+translate			right-mouse
+scale				middle-mouse
+scale histogram		h + middle-mouse
+reset view			r
+quit				q
+
+
+questions, bug reports, feature requests, and/or praise to: 
+
+   creon.levit@nasa.gov

@@ -18,30 +18,30 @@ endif
 # DEBUG		= -ggdb -g3 -Wall -Wunused -DBZ_DEBUG
 DEBUG		= -g -ggdb -g3 -Wall -Wunused -fexceptions
 
-#too bad -O3 breaks blitz on both mac and linux
 ifeq ($(platform),Darwin)
 	OPTIM = -O0 $(DEBUG) -pipe
-#	OPTIM = -O1 -Wall -Wunused -Wno-long-double -Wno-deprecated -fno-exceptions -ffast-math -pipe -fsigned-char -maltivec -mabi=altivec -faltivec -mcpu=7450 -mtune=7450 -mpowerpc -mpowerpc-gpopt -mpowerpc-gfxopt -g -pipe
+#	OPTIM = -O3 -ftree-vectorize -Wno-unused -Wno-long-double -Wno-deprecated -fno-exceptions -ffast-math -pipe -fsigned-char -maltivec -mabi=altivec -faltivec -mcpu=G4 -mtune=G4 -mpowerpc-gfxopt -g
 else
 	OPTIM = -O2 -Wall -Wunused -ffast-math -fno-exceptions -g  -Wno-deprecated
-	OPTIM = -O0 $(DEBUG) -pipe
+#	OPTIM = -O0 $(DEBUG) -pipe
 endif
 
 CFLAGS		= $(OPTIM) 
-CXXFLAGS	= $(OPTIM)
+CXXFLAGS	= $(OPTIM) -DGL_GLEXT_PROTOTYPES
+
 
 #CFLAGS		= $(DEBUG)
 #CXXFLAGS	= $(DEBUG) 
 
 # libraries to link with:
 ifeq ($(platform),Darwin)
+	INCPATH = -I/sw/include
 	LIBPATH	= -L/usr/local/lib -L/sw/lib
 	LDLIBS = -framework AGL -framework OpenGL -framework Carbon -framework ApplicationServices -framework veclib -lm -lmx -lgsl
-	INCPATH = -I/sw/include
 else
+	INCPATH = -I/u/wk/creon/include
 	LIBPATH	= -L/u/wk/creon/lib 
-	INCPATH = -I/u/wk/creon/include 
-	LDLIBS = -L/usr/X11R6/lib -lGL -lXext -lX11 -lsupc++ -lm -lgsl
+	LDLIBS = -L/usr/X11R6/lib -lGL -lXext -lm -lgsl 
 endif
 INCFLEWS	= -I../flews-0.3
 LINKFLEWS	= -L../flews-0.3 -lflews
