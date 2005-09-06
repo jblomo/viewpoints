@@ -125,6 +125,8 @@ protected:
     int handle (int event);
     void handle_selection();
     void color_array_from_selection();
+    void reset_selection_box();
+    void delete_selection();
     void resort();
     int xprev, yprev, xcur, ycur;
     float xdragged, ydragged;
@@ -240,7 +242,7 @@ Fl_Menu_Item normalization_style_menu_items[n_normalization_styles+1];
 plot_window *current_plot_window;
 
 void
-delete_selection ()
+plot_window::delete_selection ()
 {
     blitz::Range NVALS(0,nvals-1);
     int i=0;
@@ -253,10 +255,14 @@ delete_selection ()
 	}
     }
     npoints = i;
+
     selected=0;
+    selection_changed = 1;
+    reset_selection_box ();
     for (int i=0; i<nplots; i++)
     {
 	cps[i]->npts_slider->bounds(1,npoints);
+	cps[i]->npts_slider->value(npoints);
 	cps[i]->extract_and_redraw();
     }
 }
@@ -265,7 +271,7 @@ int plot_window::handle(int event) {
     switch(event) {
     case FL_PUSH:
 	DEBUG(cout << "FL_PUSH at " << xprev << ", " << yprev << endl);
-	// cp->show();	// show (raise) the control panel associated with this plot window.
+	cpt->value(cps[this->index]);	// show the control panel associated with this plot window.
 	xprev = Fl::event_x();
 	yprev = Fl::event_y();
 
@@ -423,6 +429,15 @@ int plot_window::handle(int event) {
 } 
 
 
+void plot_window::reset_selection_box()
+{
+    xdragged = ydragged = 0.0;
+    xzoomcenter = yzoomcenter = 0.0;
+    xdown = ydown = xtracked = ytracked = 0.0;
+    xprev = yprev = xcur = ycur = 0;
+}
+
+
 void plot_window::reset_view()
 {
     xscale = yscale = 0.95;
@@ -431,16 +446,12 @@ void plot_window::reset_view()
     xhscale = xscale;
     yhscale = yscale;
 
-    xdragged = ydragged = 0.0;
-    xzoomcenter = yzoomcenter = 0.0;
-    xdown = ydown = xtracked = ytracked = 0.0;
-    xprev = yprev = xcur = ycur = 0;
-
     angle = 0.0;
     cp->spin->value(0);
     cp->rot_slider->value(0.0);
     cp->dont_clear->value(0);
 
+    reset_selection_box ();
     if (count ==1)
 	color_array_from_selection ();
 
@@ -1275,7 +1286,7 @@ control_panel_window::make_widgets(control_panel_window *cpw)
     // window, set their child widget's coordinates relative to their enclosing
     // window's position.  (I think ;-)
     int xpos = this->x()+50;
-    int ypos = this->y();
+    int ypos = this->y()+10;
 
     Fl_Button *b;
 
@@ -1593,7 +1604,7 @@ int main(int argc, char **argv)
 	read_ascii_file_with_headers ();
     
 //  read_binary_file ();
-//	read_ascii_file ();
+//  read_ascii_file ();
     
     nplots = nrows*ncols;
     resize_global_arrays ();
@@ -1603,27 +1614,37 @@ int main(int argc, char **argv)
 	identity(i)=i;
     
     const int top_frame=50, bottom_frame=5, left_frame=5, right_frame=5;
+
+    // master control panel window
     cp0 = new Fl_Window (Fl::w()-(Fl::h()+50+left_frame+right_frame), Fl::h()-(50+top_frame+bottom_frame),"viewpoints     (questions to creon.levit@nasa.gov)");
     cp0->position(Fl::h()+50, 0);
     cp0->resizable(cp0);
-    cpt = new Fl_Tabs(10, 10, 300, 500);    
 
+    // inside the master control panel, there is a tab widget that contains the sub-panels (groups), one per plot.
+    cpt = new Fl_Tabs(10, 10, Fl::w()-(Fl::h()+50+left_frame+right_frame)-20, 500);    
+    cpt->selection_color(FL_YELLOW);
+
+    // create and add the virtul control panels (groups), one per plot.
     for (int i=0; i<nplots; i++)
     {
 	int row = i/ncols;
 	int col = i%ncols;
 	
-	// create control panel i
+	// create a label
 	ostringstream oss;
 	oss << "plot " << i+1;
 	string labstr = oss.str();
-	Fl_Group::current(cpt);
+
+	// add a new virtual control panel (a group) under the tab widget
+	Fl_Group::current(cpt);	
 	cps[i] = new control_panel_window (10, 30, 300, 480);
 	cps[i]->copy_label(labstr.c_str());
 	cps[i]->resizable(cps[i]);
 	cps[i]->make_widgets(cps[i]);
+
+	// end the group since we want to create a new plot window at the top level.
 	cps[i]->end();
-	Fl_Group::current(0);
+	Fl_Group::current(0); 
 
 	// create plotting window i
 	pws[i] = new plot_window(Fl::h()/ncols, (Fl::h()-50)/nrows);
@@ -1632,7 +1653,7 @@ int main(int argc, char **argv)
 	pws[i]->position(col*(Fl::h()/ncols+left_frame+right_frame)+1,row*(Fl::h()+bottom_frame)/nrows);
 	pws[i]->end();
 		
-	// link plot window and its associated control panel window
+	// link plot window and its associated virtual control panel
 	pws[i]->index = cps[i]->index = i;
 	cps[i]->pw = pws[i];
 	pws[i]->cp = cps[i];
@@ -1645,7 +1666,7 @@ int main(int argc, char **argv)
 	    cps[i]->varindex2->value(1);  
 	    cps[i]->varindex3->value(2);  
 	} else {
-	    // others initially show random picks
+	    // others plots initially show random picks
 	    cps[i]->varindex1->value(rand()%nvals);  
 	    cps[i]->varindex2->value(rand()%nvals);  
 	    cps[i]->varindex3->value(rand()%nvals);
