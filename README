@@ -1,34 +1,50 @@
 usage:
 
-  vp [--format=binary] [--npoints=<integer>]
+  vp [--format={ascii,binary}] [--npoints=<integer>] [--nrows=<integer>] [--ncols=<integer>] < datafile
 
-  format=default
+  --format=ascii (default)
     ascii, with header line
     first line contains attribute names, whitespace delimited
     additional lines each contain all numeric attribute values for one sample, whitespace delimited
 
-  format=binary
+  --format=binary
     one line of ascii attribute names, whitespace delimited, ending with newline (\n);
     immediately followed by raw table of binary floating point values
 
-  npoints=<integer>
+  --npoints=<integer>
     number of points (samples, or rows) to read.  Default is all.
 
-keys & buttons (in plot windows)
+  --nrows=<integer>
+    number of rows of scatterplots, default is 2.
 
-action				key
+  --ncols=<integer>
+    number of columns of scatterplots, default is 2.
 
+Keys & Buttons (in plot windows):
+
+action			key
+------			----
 new selection		left-mouse
 move selection		left-mouse + right-shift
 continue selction	left-mouse + left-shift
 invert selection	i
-display deselected  d
+display deselected 	d
+remove selected points	x (or delete)
 
-translate			right-mouse
-scale				middle-mouse
-scale histogram		h + middle-mouse
-reset view			r
-quit				q
+translate		right-mouse
+scale			middle-mouse
+scale histogram		middle-mouse + h
+reset view		r
+quit			q
+
+
+Controls in control panels:
+
+control		action
+------		------
+npoints		number of points displayed
+
+
 
 
 questions, bug reports, feature requests, and/or praise to: 

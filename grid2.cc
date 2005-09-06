@@ -1,5 +1,5 @@
-/* Add C includes here */
 
+// C includes
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -16,17 +16,9 @@
 #include <float.h>
 #else
 #include <values.h>
-#endif // APPLE
+#endif // __APPLE__
 
-#ifdef __APPLE__
-#include <vecLib/vBLAS.h>
-#elif linux
-//extern "C" {
-//# include <cblas.h>
-//}
-#endif // APPLE
-        
-/* Add C++ includes here */
+//  C++ includes
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -50,49 +42,63 @@
 #include <FL/Fl_Value_Slider_Input.H>
 #include "Fl_Hor_Value_Slider_Input.H"
 
-// Blitz++
-#include <blitz/array.h>
-
+// OpenGL extensions
 #ifdef __APPLE__
 #  include <OpenGL/glext.h>
 #else
 #  include <GL/glext.h>
 #endif
 
-// gsl
+// Blitz++ (C++ array operations via template metaprogramming)
+#include <blitz/array.h>
+
+// gsl (gnu scientific library)
 #include <gsl/gsl_math.h>
 #include <gsl/gsl_cdf.h>
 
+// BLAS
+#ifdef __APPLE__
+#include <vecLib/vBLAS.h>
+#elif linux
+//extern "C" {
+//# include <cblas.h>
+//}
+#endif // __APPLE__
+        
+// debugging and application-specific definitions
 #include "grid2.H"
 
 using namespace std;
 
-int format=ASCII;
+int format=ASCII;		// default file format
 
 const int nvals_max = 256;  	// maximum number of columns allowed in data file
-const int MAXPOINTS = 1200000;	// maximum rows in data file
-const int skip = 0; 			// skip this many columns at the beginning of each row
+const int MAXPOINTS = 1200000;	// maximum number of rows (points, or samples) in data file
+const int skip = 0;		// skip this many columns at the beginning of each row
 
-const int nrows=2, ncols=2;		// layout of plot windows
-const int nplots = nrows*ncols;	// number of plot windows
-class plot_window; 				// love those one-pass compilers.
+Fl_Window *cp0;			// main control panel that contains the tabs for sub-panels
+int nrows=2, ncols=2;		// layout of plot windows
+int nplots = nrows*ncols;	// number of plot windows
+const int maxplots=64;		
+class plot_window; 		// love those one-pass compilers.
 class control_panel_window;
 
-int npoints = MAXPOINTS;			// actual number of rows in data file
-int nvals = nvals_max;				// actual number of columns in data file
+int npoints = MAXPOINTS;	// actual number of rows in data file
+int nvals = nvals_max;		// actual number of columns in data file
 
-int display_deselected = 1;			// display deselected objects in alternate color
-int scale_histogram = 0;			// global toggle between scale histgram & scale view :-(
+int display_deselected = 1;	// display deselected objects in alternate color
+int scale_histogram = 0;	// global toggle between scale histgram & scale view :-(
 
 blitz::Array<float,2> points(nvals_max,MAXPOINTS);	// main data array
-blitz::Array<int,1> identity;
-blitz::Array<int,1> selected;
+blitz::Array<int,1> identity;	// holds a(i)=i.
+blitz::Array<int,1> selected;	// which points are selected
 blitz::Array<float,2> colors, altcolors;
 
-// for interface to normalization routines.  eliminate by using interlaced arrays?
+// For interface to normalization & graphics routines. 
+// Redundant. Eliminate by using interlaced arrays?
 blitz::Array<float,1> xpoints,ypoints,zpoints;  
 
-std::vector<std::string> column_labels; // vector to hold variable names
+std::vector<std::string> column_labels; // vector of strings to hold variable names
 
 float xmin, xmax, gmax;
 
@@ -105,7 +111,9 @@ int dfactor = GL_DST_ALPHA;
 void redraw_all_plots (void);
 void reset_all_plots (void);
 
-
+// the plot_window class is subclass of an ftlk openGL window that also handles
+// certain keyboard & mouse events.  It is where data is displayed.
+// There are usually several open at one time.
 class plot_window : public Fl_Gl_Window {
 protected:
     void draw();
@@ -171,11 +179,12 @@ plot_window::plot_window(int w,int h) : Fl_Gl_Window(w,h)
 }
 
 
-class control_panel_window : public Fl_Window {
+class control_panel_window : public Fl_Window
+{
 protected:
     void maybe_redraw ();
 public:
-    control_panel_window(int w, int h);
+    control_panel_window(int x, int y, int w, int h, const char *title = 0);
     void make_widgets(control_panel_window *cpw);
     void extract_and_redraw ();
     static void static_extract_and_redraw (Fl_Widget *w, control_panel_window *cpw)
@@ -201,11 +210,10 @@ public:
     int index;	// each plot window, and its associated control panel tab, has the same index.
 };
 
-control_panel_window::control_panel_window(int w, int h) : Fl_Window(w, h) {
-}
+control_panel_window::control_panel_window(int x, int y, int w, int h, const char *title) : Fl_Window(x, y, w, h, title) {}
 
-plot_window *pws[nplots];
-control_panel_window *cps[nplots];
+plot_window *pws[maxplots];
+control_panel_window *cps[maxplots];
 
 // these menu related lists should really be class variables in class control_panel_window
 Fl_Menu_Item varindex_menu_items[nvals_max]; 
@@ -1506,6 +1514,8 @@ void usage()
     fprintf(stderr,"Usage:\n");
     fprintf(stderr,"[--format={ascii,binary}] -f\n");
     fprintf(stderr,"[--npoints=<int>] -n\n");
+    fprintf(stderr,"[--nrows=<int>] -r\n");
+    fprintf(stderr,"[--ncols=<int>] -c\n");
     fprintf(stderr,"[--help] -h\n");
     exit(-1);
 }
@@ -1516,20 +1526,32 @@ int main(int argc, char **argv)
     static struct option long_options[] =
 	{
 	    {"npoints",	required_argument,	0, 'n'},
+	    {"nrows",	required_argument,	0, 'r'},
+	    {"ncols",	required_argument,	0, 'c'},
 	    {"format",	required_argument,	0, 'f'},
 	    {"help",	no_argument,		0, 'h'},
 	    {0, 0, 0, 0}
 	};
     
     int c;
-    while((c = getopt_long(argc, argv, "bf:", long_options, NULL)) != -1)
+    while((c = getopt_long(argc, argv, "n:r:c:f:h", long_options, NULL)) != -1)
     {
 	switch (c)
 	{
 		
-	case 'n':		// number of points to read
+	case 'n':		// maximum number of points (samples, rows of data) to read
 	    npoints=atoi(optarg);
-	    if (npoints <= 0)
+	    if (npoints < 1)
+		usage();
+	    break;
+	case 'r':		// number of rows in scatterplot matrix
+	    nrows=atoi(optarg);
+	    if (nrows < 1)
+		usage();
+	    break;
+	case 'c':		// number of columns in scatterplot matrix
+	    ncols=atoi(optarg);
+	    if (ncols < 1)
 		usage();
 	    break;
 	case 'f':		// format of input file
@@ -1558,7 +1580,6 @@ int main(int argc, char **argv)
     argc -= optind;
     argv += optind;
     
-    
     srand((unsigned int)time(0));
     
     assert(format==BINARY || format==ASCII);
@@ -1570,14 +1591,16 @@ int main(int argc, char **argv)
 //  read_binary_file ();
 //	read_ascii_file ();
     
+    nplots = nrows*ncols;
     resize_global_arrays ();
     
     cout << "making identity" << endl;
     for (int i=0; i<npoints; i++)
 	identity(i)=i;
     
-    Fl::scheme(NULL);
-    
+//    cp0 = new Fl_Window (Fl::h()+50, 0, Fl::w()-(Fl::h()+50+left_frame+right_frame), Fl::h()-(50+top_frame+bottom_frame),"viewpoints creon.levit@nasa.gov");
+//    Fl_Tabs* cpt = new Fl_Tabs(10, 10, 300, 500);    
+
     for (int i=0; i<nplots; i++)
     {
 	int row = i/ncols;
@@ -1585,13 +1608,11 @@ int main(int argc, char **argv)
 	const int top_frame=50, bottom_frame=5, left_frame=5, right_frame=5;
 	
 	// create control panel i
-	cps[i] = new control_panel_window (300, (Fl::h()-50)/nrows);
-	cps[i]->resizable(cps[i]);
-	cps[i]->position(Fl::h()+col*(300+left_frame+right_frame)+50,row*(Fl::h()+bottom_frame)/nrows);
 	ostringstream oss;
 	oss << "plot " << i+1;
 	string labstr = oss.str();
-	cps[i]->label(labstr.c_str());
+	cps[i] = new control_panel_window (Fl::h()+col*(300+left_frame+right_frame)+50, row*(Fl::h()+bottom_frame)/nrows, 300, (Fl::h()-50)/nrows, labstr.c_str());
+	cps[i]->resizable(cps[i]);
 	cps[i]->make_widgets(cps[i]);
 	cps[i]->end();
 
@@ -1620,7 +1641,7 @@ int main(int argc, char **argv)
 	    cps[i]->varindex2->value(rand()%nvals);  
 	    cps[i]->varindex3->value(rand()%nvals);
 	}
-	cps[i]->show(argc,argv);
+	cps[i]->show();
 	pws[i]->extract_data_points();
 	pws[i]->show(argc,argv);
 
