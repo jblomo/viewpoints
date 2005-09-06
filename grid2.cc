@@ -34,6 +34,7 @@
 #include <FL/Fl_Hor_Value_Slider.H>
 #include <FL/Fl_Button.H>
 #include <FL/Fl_Group.H>
+#include <FL/Fl_Tabs.H>
 #include <FL/Fl_Choice.H>
 #include <FL/Fl_Gl_Window.H>
 
@@ -77,6 +78,7 @@ const int MAXPOINTS = 1200000;	// maximum number of rows (points, or samples) in
 const int skip = 0;		// skip this many columns at the beginning of each row
 
 Fl_Window *cp0;			// main control panel that contains the tabs for sub-panels
+Fl_Tabs *cpt;			// tabs to hold individual plot's virtual control panels
 int nrows=2, ncols=2;		// layout of plot windows
 int nplots = nrows*ncols;	// number of plot windows
 const int maxplots=64;		
@@ -179,12 +181,12 @@ plot_window::plot_window(int w,int h) : Fl_Gl_Window(w,h)
 }
 
 
-class control_panel_window : public Fl_Window
+class control_panel_window : public Fl_Group
 {
 protected:
     void maybe_redraw ();
 public:
-    control_panel_window(int x, int y, int w, int h, const char *title = 0);
+    control_panel_window(int x, int y, int w, int h);
     void make_widgets(control_panel_window *cpw);
     void extract_and_redraw ();
     static void static_extract_and_redraw (Fl_Widget *w, control_panel_window *cpw)
@@ -210,7 +212,7 @@ public:
     int index;	// each plot window, and its associated control panel tab, has the same index.
 };
 
-control_panel_window::control_panel_window(int x, int y, int w, int h, const char *title) : Fl_Window(x, y, w, h, title) {}
+control_panel_window::control_panel_window(int x, int y, int w, int h) : Fl_Group(x, y, w, h) {}
 
 plot_window *pws[maxplots];
 control_panel_window *cps[maxplots];
@@ -597,10 +599,10 @@ void plot_window::handle_selection()
 	glLineWidth(1.0);
 	glColor4f(0.25,0.25,0.75,0.0);
 	glBegin (GL_LINE_LOOP);
-	glVertex2f (xdown, 		ydown);
+	glVertex2f (xdown, 	ydown);
 	glVertex2f (xtracked,   ydown);
 	glVertex2f (xtracked,   ytracked);
-	glVertex2f (xdown,		ytracked);
+	glVertex2f (xdown,	ytracked);
 	glEnd();
     }
     blitz::Range NPTS(0,npoints-1);	
@@ -1269,9 +1271,11 @@ void read_binary_file_with_headers()
 void
 control_panel_window::make_widgets(control_panel_window *cpw)
 {
-
-    int xpos = 50;
-    int ypos = 0;
+    // since these (virtual) control panels are really groups inside a tab inside a
+    // window, set their child widget's coordinates relative to their enclosing
+    // window's position.  (I think ;-)
+    int xpos = this->x()+50;
+    int ypos = this->y();
 
     Fl_Button *b;
 
@@ -1598,27 +1602,32 @@ int main(int argc, char **argv)
     for (int i=0; i<npoints; i++)
 	identity(i)=i;
     
-//    cp0 = new Fl_Window (Fl::h()+50, 0, Fl::w()-(Fl::h()+50+left_frame+right_frame), Fl::h()-(50+top_frame+bottom_frame),"viewpoints creon.levit@nasa.gov");
-//    Fl_Tabs* cpt = new Fl_Tabs(10, 10, 300, 500);    
+    const int top_frame=50, bottom_frame=5, left_frame=5, right_frame=5;
+    cp0 = new Fl_Window (Fl::w()-(Fl::h()+50+left_frame+right_frame), Fl::h()-(50+top_frame+bottom_frame),"viewpoints     (questions to creon.levit@nasa.gov)");
+    cp0->position(Fl::h()+50, 0);
+    cp0->resizable(cp0);
+    cpt = new Fl_Tabs(10, 10, 300, 500);    
 
     for (int i=0; i<nplots; i++)
     {
 	int row = i/ncols;
 	int col = i%ncols;
-	const int top_frame=50, bottom_frame=5, left_frame=5, right_frame=5;
 	
 	// create control panel i
 	ostringstream oss;
 	oss << "plot " << i+1;
 	string labstr = oss.str();
-	cps[i] = new control_panel_window (Fl::h()+col*(300+left_frame+right_frame)+50, row*(Fl::h()+bottom_frame)/nrows, 300, (Fl::h()-50)/nrows, labstr.c_str());
+	Fl_Group::current(cpt);
+	cps[i] = new control_panel_window (10, 30, 300, 480);
+	cps[i]->copy_label(labstr.c_str());
 	cps[i]->resizable(cps[i]);
 	cps[i]->make_widgets(cps[i]);
 	cps[i]->end();
+	Fl_Group::current(0);
 
 	// create plotting window i
 	pws[i] = new plot_window(Fl::h()/ncols, (Fl::h()-50)/nrows);
-	pws[i]->label(labstr.c_str());
+	pws[i]->copy_label(labstr.c_str());
 	pws[i]->resizable(pws[i]);
 	pws[i]->position(col*(Fl::h()/ncols+left_frame+right_frame)+1,row*(Fl::h()+bottom_frame)/nrows);
 	pws[i]->end();
@@ -1631,7 +1640,7 @@ int main(int argc, char **argv)
 
 	if (i==0)
 	{
-	    // first plot initially shows first three variables
+	    // the first plot initially shows first three attributes
 	    cps[i]->varindex1->value(0);  
 	    cps[i]->varindex2->value(1);  
 	    cps[i]->varindex3->value(2);  
@@ -1640,12 +1649,14 @@ int main(int argc, char **argv)
 	    cps[i]->varindex1->value(rand()%nvals);  
 	    cps[i]->varindex2->value(rand()%nvals);  
 	    cps[i]->varindex3->value(rand()%nvals);
+	    // initially, only the first tab isn't hidden
+	    cps[i]->hide();	
 	}
-	cps[i]->show();
 	pws[i]->extract_data_points();
 	pws[i]->show(argc,argv);
-
     }
+
+    cp0->show();     // now we can show the main control panel and all its supanels
 
     Fl::add_idle(redraw_if_changing);
 //	Fl::add_check(redraw_if_changing);
