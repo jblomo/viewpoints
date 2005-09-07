@@ -13,3 +13,91 @@ of coordinates and other (e.g. slider) variables.  E.g. a texture coord
 can represent energy, or distance from some n-d point, or how many
 times a region has been brushed by an airbrush, etc....
 
+18:57:25 06 Sep 05
+
+Functionality to add (see also project plan):
+
+***tuning
+- remember normalization & ranking
+  - don't repeatedly rerank and/or renormalize the same var
+  - fast reranking after "delete selected points"?
+- don't require multiple copies of vertices
+  - interleaved vs. not
+- histogram speedups
+
+***misc
+- tile windows correctly
+- dynamically couple to running sims on another machine(!)
+
+***global controls to non-tabbed panel
+- npoints
+- start, end, stride for npoints
+- random points (repsecting start & end)
+- reset all views
+- reset selection
+- complement selection
+- dont display deselected
+- add to selection
+- subtract from selection
+- brush selection
+- move selection
+- new selection (as opposed to brush or move, works for add & subtract)
+- delete selected points
+- write data to file
+
+***per-view controls, in tab
+- reset view
+- selection color (or should this be on global panel?)
+- better axis labels
+  - labels smaller
+  - labels display axis transformations (x+y, polar, normalizations, ranking...)
+- tickmarks on axes (per axis?)
+- polar grids?
+- logarithmic axes
+  - via normalzation option
+  - show in labels
+- atanh (logistic) normalization
+- histogram enhancements
+  - speed them up when changing bin counts
+    - should be very fast for equi-depth case, when data is sorted: O(nbins).
+  - histogram bin counts independent for x and y
+  - default bin counts using Kevin Knuth's algorithm
+  - equi-depth option
+  - extend KK's algorithm for equi-depth case
+  - offsets for histogram
+  - better coloring for histograms 
+    - better alphs, or edges on lines
+    - colored same as selection color
+  - selection via histograms
+- boxplots
+- density estimates
+  - binned kdes?
+  - point sprites (same thing?)
+- multiple axes
+  - ND rotation
+- time series
+- vector variables
+- rework normalization
+  - separate scaling, centering, windowing
+  - separate axes and windowing ?
+
+***plot window enhancements
+- tie plot window keys to tab keys (shortcuts?), where possible
+- trackballs for 3d rotation
+- scale w.r.t. mouse down as center
+- move point to center ?
+  - show center glyph, like flashearth
+- lock aspect ratio to 1:1
+  - even when window aspect ratio is not 1:1
+- fancy texture hacking, as above
+
+***additional kinds of vis
+- parallel coordinates
+- vectors
+- glyphs
+- color by scalar
+- MDS
+- laplacian eigenmaps, LLE, other dim. reduction....
+- classification (SOM....)
+.....
+

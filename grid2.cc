@@ -473,8 +473,8 @@ void plot_window::draw()
 	glDisable(GL_LIGHTING);
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_BLEND);
-	glEnable(GL_POINT_SMOOTH);
-	glHint(GL_POINT_SMOOTH_HINT,GL_NICEST);
+	//	glEnable(GL_POINT_SMOOTH);
+	//	glHint(GL_POINT_SMOOTH_HINT,GL_NICEST);
 	glEnableClientState(GL_VERTEX_ARRAY);
 	glEnableClientState(GL_COLOR_ARRAY);
 #ifdef __APPLE__
@@ -658,7 +658,9 @@ void plot_window::color_array_from_selection()
 	    colors(i,1) = color1[1];
 	    colors(i,2) = color1[2];
 	    colors(i,3) = color1[3];
-	    altcolors(i,0) = altcolors(i,1) = altcolors(i,2) = altcolors(i,3) = 0.0;
+	    // altcolors(i,0) = altcolors(i,1) = altcolors(i,2) = altcolors(i,3) = 0.0;
+	    // setting alpha=0 will cause these deslected points to be culled in draw_data_points
+	    altcolors(i,3) = 0.0;  
 	}
     }
 }
@@ -703,8 +705,6 @@ void plot_window::draw_data_points()
 //	glEnable(GL_POINT_SMOOTH);
 //	glHint(GL_POINT_SMOOTH_HINT,GL_NICEST);
 
-    glEnable(GL_ALPHA_TEST);
-    glAlphaFunc (GL_ALWAYS, 0.0);
 
     glPointSize(cp->pointsize_slider->value());
 
@@ -728,25 +728,30 @@ void plot_window::draw_data_points()
     }
     else
     {
-	glAlphaFunc (GL_GEQUAL, 0.5);  // this should stop any deselected points (alpha=0.0) from being drawn, whatever the blendfunc.
 	glColorPointer (4, GL_FLOAT, 0, altcp);
+	// cull any deselected points (alpha==0.0), whatever the blendfunc:
+	glEnable(GL_ALPHA_TEST);
+	glAlphaFunc (GL_GEQUAL, 0.5);  
     }
 
     // tell the GPU where to find the vertices;
     glVertexPointer (3, GL_FLOAT, 0, vp);
 
 #ifdef __APPLE__
+#define FAST_APPLE_VERTEX_EXTENSIONS
 #ifdef FAST_APPLE_VERTEX_EXTENSIONS
     glVertexArrayRangeAPPLE (3*npoints*sizeof(GLfloat),(GLvoid *)vp);
     glVertexArrayParameteriAPPLE (GL_VERTEX_ARRAY_STORAGE_HINT_APPLE, GL_STORAGE_CACHED_APPLE);  // for static data
-    glVertexArrayParameteriAPPLE (GL_VERTEX_ARRAY_STORAGE_HINT_APPLE, GL_STORAGE_SHARED_APPLE);  // for dynamic data
+//  glVertexArrayParameteriAPPLE (GL_VERTEX_ARRAY_STORAGE_HINT_APPLE, GL_STORAGE_SHARED_APPLE);  // for dynamic data
 #endif // FAST_APPLE_VERTEX_EXTENSIONS
 #endif // __APPLE__
 
-    // tell teh GPU to draw the vertices.
+    // tell the GPU to draw the vertices.
     glDrawArrays (GL_POINTS, 0, npoints);
 
-    glDisable(GL_ALPHA_TEST);
+    if (!display_deselected)
+	glDisable(GL_ALPHA_TEST);
+
 //	glEnable(GL_DEPTH_TEST);
 }
 
