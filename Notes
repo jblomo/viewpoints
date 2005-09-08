@@ -28,6 +28,7 @@ Functionality to add (see also project plan):
 ***misc
 - tile windows correctly
 - dynamically couple to running sims on another machine(!)
+- mapped files?
 
 ***global controls to non-tabbed panel
 - npoints
@@ -44,6 +45,7 @@ Functionality to add (see also project plan):
 - new selection (as opposed to brush or move, works for add & subtract)
 - delete selected points
 - write data to file
+- global versions of local controls (size, nbins, etc)
 
 ***per-view controls, in tab
 - reset view
