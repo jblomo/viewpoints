@@ -91,7 +91,8 @@ int scale_histogram = 0;	// global toggle between scale histgram & scale view :-
 
 blitz::Array<float,2> points(nvals_max,MAXPOINTS);	// main data array
 blitz::Array<int,1> identity;	// holds a(i)=i.
-blitz::Array<int,1> selected;	// which points are selected
+blitz::Array<int,1> selected;	// true iff a point is in the selected set
+blitz::Array<int,1> selected_previously;	// used when adding to selection
 blitz::Array<float,2> colors, altcolors;
 
 // For interface to normalization & graphics routines. 
@@ -118,9 +119,10 @@ void reset_all_plots (void);
 
 // Main control panel, and its global sub-widgets.
 Fl_Window *main_control_panel;
-Fl_Hor_Value_Slider_Input *npoints_slider;
 Fl_Tabs *cpt;			// tabs to hold individual plot's virtual control panels
 
+Fl_Hor_Value_Slider_Input *npoints_slider;
+Fl_Button *add_to_selection_button, *clear_selection_button;
 
 // the plot_window class is subclass of an ftlk openGL window that also handles
 // certain keyboard & mouse events.  It is where data is displayed.
@@ -133,8 +135,7 @@ protected:
     void draw_data_points();
     int handle (int event);
     void handle_selection();
-    void color_array_from_selection();
-    void reset_selection_box();
+	void invert_selection();
     void delete_selection();
     void resort();
     int xprev, yprev, xcur, ycur;
@@ -165,6 +166,8 @@ public:
     int index;	// each plot window, and its associated control panel tab, has the same index.
     int extract_data_points();
     int transform_2d();
+    void reset_selection_box();
+    void color_array_from_selection();
     void reset_view();
     float angle;
     int needs_redraw;
@@ -247,7 +250,26 @@ const int n_normalization_styles = sizeof(normalization_styles)/sizeof(normaliza
 
 Fl_Menu_Item normalization_style_menu_items[n_normalization_styles+1];
   
-plot_window *current_plot_window;
+void
+plot_window::invert_selection ()
+{
+	selected(blitz::Range(0,npoints-1)) = 1-selected(blitz::Range(0,npoints-1));
+	color_array_from_selection ();
+	redraw_all_plots ();
+}
+
+void
+clear_selection (Fl_Widget *o)
+{
+	selected = 0;
+	selected_previously = 0;
+	for (int i=0; i<nplots; i++)
+	{
+		pws[i]->reset_selection_box ();
+	}
+	pws[0]->color_array_from_selection (); // So, I'm lazy.
+	redraw_all_plots ();
+}
 
 void
 plot_window::delete_selection ()
@@ -263,13 +285,11 @@ plot_window::delete_selection ()
 		}
     }
     npoints = i;
-
-    selected=0;
-    selection_changed = 1;
-    reset_selection_box ();
-
     npoints_slider->bounds(1,npoints);
     npoints_slider->value(npoints);
+
+	clear_selection ((Fl_Widget *)NULL);
+	
 	for (int j=0; j<nplots; j++)
 	{
 		cps[j]->extract_and_redraw();
@@ -299,6 +319,8 @@ plot_window::handle(int event) {
 
 		if (Fl::event_state() & FL_BUTTON1) // left button down = start new selection
 		{
+			selected_previously(blitz::Range(0,npoints-1)) = selected(blitz::Range(0,npoints-1));
+			
 			if (! (Fl::event_key(FL_Shift_L) || Fl::event_key(FL_Shift_R))) // not moving or extending old selection
 			{
 				extend_selection = 0;
@@ -397,9 +419,10 @@ plot_window::handle(int event) {
 			delete_selection ();
 			return 1;
 		case 'i': // invert or restore (uninvert) selection
-			selected(blitz::Range(0,npoints-1)) = 1-selected(blitz::Range(0,npoints-1));
-			color_array_from_selection ();
-			redraw_all_plots ();
+			invert_selection ();
+			return 1;
+		case 'c': // clear selection
+			clear_selection ((Fl_Widget *)NULL);
 			return 1;
 		case 'd': // don't display / display deselected dots
 			display_deselected = 1 - display_deselected;
@@ -487,11 +510,9 @@ void plot_window::draw()
 		//	glHint(GL_POINT_SMOOTH_HINT,GL_NICEST);
 		glEnableClientState(GL_VERTEX_ARRAY);
 		glEnableClientState(GL_COLOR_ARRAY);
-#ifdef __APPLE__
 #ifdef FAST_APPLE_VERTEX_EXTENSIONS
 		glEnableClientState(GL_VERTEX_ARRAY_RANGE_APPLE);
 #endif // FAST_APPLE_VERTEX_EXTENSIONS
-#endif // __APPLE__		
     }
   
     glMatrixMode(GL_MODELVIEW);
@@ -627,7 +648,20 @@ void plot_window::handle_selection()
 		glEnd();
     }
     blitz::Range NPTS(0,npoints-1);	
-    if (extend_selection)
+	
+	if (add_to_selection_button->value())
+	{
+		selected(NPTS) = where((vertices(NPTS,0)>fmaxf(xdown,xtracked) || vertices(NPTS,0)<fminf(xdown,xtracked) ||
+								vertices(NPTS,1)>fmaxf(ydown,ytracked) || vertices(NPTS,1)<fminf(ydown,ytracked)),
+							   0,1) || selected_previously(NPTS);
+	} else {
+		selected(NPTS) = where((vertices(NPTS,0)>fmaxf(xdown,xtracked) || vertices(NPTS,0)<fminf(xdown,xtracked) ||
+								vertices(NPTS,1)>fmaxf(ydown,ytracked) || vertices(NPTS,1)<fminf(ydown,ytracked)),
+							   0,1);
+	}			
+
+#if 0
+    if (extend_selection || add_to_selection_button->value())
     {
 		selected(NPTS) = where((vertices(NPTS,0)>fmaxf(xdown,xtracked) || vertices(NPTS,0)<fminf(xdown,xtracked) ||
 								vertices(NPTS,1)>fmaxf(ydown,ytracked) || vertices(NPTS,1)<fminf(ydown,ytracked)),
@@ -637,6 +671,8 @@ void plot_window::handle_selection()
 								vertices(NPTS,1)>fmaxf(ydown,ytracked) || vertices(NPTS,1)<fminf(ydown,ytracked)),
 							   0,1);
     }
+
+#endif // 0
 
     color_array_from_selection ();
 
@@ -747,14 +783,11 @@ void plot_window::draw_data_points()
     // tell the GPU where to find the vertices;
     glVertexPointer (3, GL_FLOAT, 0, vp);
 
-#ifdef __APPLE__
-#define FAST_APPLE_VERTEX_EXTENSIONS
 #ifdef FAST_APPLE_VERTEX_EXTENSIONS
-    glVertexArrayRangeAPPLE (3*npoints*sizeof(GLfloat),(GLvoid *)vp);
     glVertexArrayParameteriAPPLE (GL_VERTEX_ARRAY_STORAGE_HINT_APPLE, GL_STORAGE_CACHED_APPLE);  // for static data
 //  glVertexArrayParameteriAPPLE (GL_VERTEX_ARRAY_STORAGE_HINT_APPLE, GL_STORAGE_SHARED_APPLE);  // for dynamic data
+    glVertexArrayRangeAPPLE (3*npoints*sizeof(GLfloat),(GLvoid *)vp);
 #endif // FAST_APPLE_VERTEX_EXTENSIONS
-#endif // __APPLE__
 
     // tell the GPU to draw the vertices.
     glDrawArrays (GL_POINTS, 0, npoints);
@@ -984,7 +1017,6 @@ plot_window::normalize (blitz::Array<float,1> a, blitz::Array<int,1> a_rank, int
 void
 plot_window::compute_rank (blitz::Array<float,1> a, blitz::Array<int,1> a_rank)
 {
-    current_plot_window = this;
     blitz::Range NPTS(0,npoints-1);
     if (!a_rank.isStorageContiguous() || !a.isStorageContiguous())
     {
@@ -1068,12 +1100,7 @@ plot_window::extract_data_points ()
 
     compute_histograms ();
 
-#ifdef __APPLE___
-#ifdef FAST_APPLE_VERTEX_EXTENSIONS
-    GLvoid *vp = (GLvoid *)vertices.data();
-    glFlushVertexArrayRangeAPPLE(3*npoints*sizeof(GLfloat), vp);
-#endif FAST_APPLE_VERTEX_EXTENSIONS
-#endif // __APPLE__
+
     return 1;
 }
 
@@ -1081,8 +1108,15 @@ void
 control_panel_window::extract_and_redraw ()
 {
     if (pw->extract_data_points())
+	{
+#ifdef FAST_APPLE_VERTEX_EXTENSIONS
+		GLvoid *vp = (GLvoid *)pw->vertices.data();
+		glFlushVertexArrayRangeAPPLE(3*npoints*sizeof(GLfloat), vp);
+#endif // FAST_APPLE_VERTEX_EXTENSIONS
+
 		//pw->redraw ();
 		pw->needs_redraw = 1;
+	}
 }
 
 // normalize data array using global max magnitude
@@ -1527,6 +1561,7 @@ resize_global_arrays ()
     altcolors.resize(npoints,4);
     identity.resize(npoints);
     selected.resize(npoints);
+    selected_previously.resize(npoints);
 
     for (int i=0; i<npoints; i++)
 		selected(i)=0;
@@ -1542,6 +1577,29 @@ void usage()
     fprintf(stderr,"[--help] -h\n");
     exit(-1);
 }
+
+void make_global_widgets ()
+{
+	Fl_Button *b;
+
+	int xpos=40, ypos=500;
+    npoints_slider = new Fl_Hor_Value_Slider_Input(xpos, ypos+=25, 300-60, 20, "npts");
+    npoints_slider->align(FL_ALIGN_LEFT);
+    npoints_slider->callback(npoints_changed);
+    npoints_slider->value(npoints);
+    npoints_slider->step(1);
+    npoints_slider->bounds(1,npoints);
+
+	add_to_selection_button = b = new Fl_Button(xpos, ypos+=25, 20, 20, "add to selection");
+	b->shortcut(FL_CTRL + '+');
+    b->align(FL_ALIGN_RIGHT); b->type(FL_TOGGLE_BUTTON); b->selection_color(FL_YELLOW);	b->value(0);	
+
+	clear_selection_button = b = new Fl_Button(xpos, ypos+=25, 20, 20, "clear selection");
+	b->shortcut(FL_CTRL + ' ');
+    b->align(FL_ALIGN_RIGHT); b->selection_color(FL_YELLOW); b->callback(clear_selection);
+
+}
+
 
 int main(int argc, char **argv)
 {
@@ -1621,11 +1679,6 @@ int main(int argc, char **argv)
     for (int i=0; i<npoints; i++)
 		identity(i)=i;
     
-	// approximate values of window manager borders
-    const int top_frame=20, bottom_frame=5, left_frame=4, right_frame=5;
-	// approximate values of desktop borders - stay out of these
-	const int top_safe = 1, bottom_safe=10, left_safe=10, right_safe=1;
-
 	// main control panel size and position
 	const int main_w = 350, main_h = 700;
 	const int main_x = Fl::w() - (main_w + left_frame + right_frame + right_safe), main_y = top_frame+top_safe;
@@ -1634,9 +1687,15 @@ int main(int argc, char **argv)
     main_control_panel = new Fl_Window (main_x, main_y, main_w, main_h, "viewpoints -> creon@nas.nasa.gov");
     main_control_panel->resizable(main_control_panel);
 
+    // add the rest of the global widgets to control panel
+	make_global_widgets ();
+
     // inside the main control panel, there is a tab widget that contains the sub-panels (groups), one per plot.
     cpt = new Fl_Tabs(10, 10, main_w-20, 500);    
     cpt->selection_color(FL_YELLOW);
+
+	// done creating main control panel (except for tabbed sup-panels, below)
+    main_control_panel->end();
 
     // create and add the virtul sub-panels (groups), one per plot.
     for (int i=0; i<nplots; i++)
@@ -1698,18 +1757,6 @@ int main(int argc, char **argv)
 		pws[i]->show(argc,argv);
     }
 
-    // add global widgets to control panel
-    Fl_Group::current(main_control_panel);
-	int xpos=40, ypos=500;
-    npoints_slider = new Fl_Hor_Value_Slider_Input(xpos, ypos+=25, 300-60, 20, "npts");
-    npoints_slider->align(FL_ALIGN_LEFT);
-    npoints_slider->callback(npoints_changed);
-    npoints_slider->value(npoints);
-    npoints_slider->step(1);
-    npoints_slider->bounds(1,npoints);
-
-
-    main_control_panel->end();
     main_control_panel->show();     // now we can show the main control panel and all its supanels
 
     Fl::add_idle(redraw_if_changing);

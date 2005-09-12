@@ -23,10 +23,13 @@ Functionality to add (see also project plan):
   - fast reranking after "delete selected points"?
 - don't require multiple copies of vertices
   - interleaved vs. not
+- have a binary file format which has each variable contiguous, so that they can be mapped. 
+  - This is the transpose of the current binary format
 - histogram speedups
 
 ***misc
 - tile windows correctly
+- set pointsize based on npoints
 - dynamically couple to running sims on another machine(!)
 - mapped files?
 
@@ -84,7 +87,13 @@ Functionality to add (see also project plan):
   - separate axes and windowing ?
 
 ***plot window enhancements
-- tie plot window keys to tab keys (shortcuts?), where possible
+- multiple selections
+- selection color chooser (global & local)
+- fix relationship between color, depth, seletion visibility
+  - for 2D, alpha=0, selected points should never be obscured
+  - separate 3rd axis=NONE to force 2D
+    - then we can use z to make selected points draw on top of non-selected points
+- tie plot window keys to control panel keys (shortcuts?), where possible
 - trackballs for 3d rotation
 - scale w.r.t. mouse down as center
 - move point to center ?
@@ -92,6 +101,7 @@ Functionality to add (see also project plan):
 - lock aspect ratio to 1:1
   - even when window aspect ratio is not 1:1
 - fancy texture hacking, as above
+
 
 ***additional kinds of vis
 - parallel coordinates
