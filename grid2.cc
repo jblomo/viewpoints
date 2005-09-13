@@ -218,7 +218,7 @@ public:
     Fl_Button *spin, *dont_clear, *show_points, *show_axes, *show_grid, *show_labels, *show_histogram;
 //	Fl_Button *x_equals_delta_x, *y_equals_delta_x;
     Fl_Group *transform_style;
-    Fl_Button *sum_vs_difference, *polar, *ratio, *no_transform;
+    Fl_Button *sum_vs_difference, *polar, *no_transform;
     Fl_Choice *x_normalization_style, *y_normalization_style, *z_normalization_style;
 
     plot_window *pw;  // pointer to the plot window associated with this control panel
@@ -231,7 +231,7 @@ plot_window *pws[maxplots];
 control_panel_window *cps[maxplots];
 
 // these menu related lists should really be class variables in class control_panel_window
-Fl_Menu_Item varindex_menu_items[nvals_max]; 
+Fl_Menu_Item varindex_menu_items[nvals_max+2]; 
 
 const int NORMALIZATION_NONE 	= 0;
 const int NORMALIZATION_MINMAX 	= 1;
@@ -950,10 +950,6 @@ plot_window::transform_2d ()
 		vertices(NPTS,0) = (sqrt(2.0)/2.0) * (tmp1 + tmp2);
 		vertices(NPTS,1) = (sqrt(2.0)/2.0) * (tmp1 - tmp2);
     }
-    if (cp->ratio->value())
-    {
-		vertices(NPTS,0) = tmp1 / vertices(NPTS,2);
-    }
     else if (cp->polar->value())
     {
 		vertices(NPTS,0) = atan2(tmp1, tmp2);
@@ -1043,22 +1039,13 @@ plot_window::compute_rank (blitz::Array<float,1> a, blitz::Array<int,1> a_rank)
 		cerr << "problems computing rank index order" << endl;
 		return;
     }
-    cout << "a_rank(0)=" << a_rank(0) << ", a(a_rank(0))=" << a(a_rank(0)) << endl;
-    cout << "a_rank(npoints-1)=" << a_rank(npoints-1) << ", a(a_rank(npoints-1))=" << a(a_rank(npoints-1)) << endl;
+//    cout << "a_rank(0)=" << a_rank(0) << ", a(a_rank(0))=" << a(a_rank(0)) << endl;
+//    cout << "a_rank(npoints-1)=" << a_rank(npoints-1) << ", a(a_rank(npoints-1))=" << a(a_rank(npoints-1)) << endl;
 }
 
 int
 plot_window::extract_data_points ()
 {
-#if 0
-    int t1 = (int)(cp->t1_slider->value());
-    int dt = (int)(cp->dt_slider->value());
-    int t2 = t1 + dt;
-    if (t1 < 0)
-		return 0;
-    if (t2 > nvals)
-		return 0;
-#endif
     // get the labels for the plot's axes
     int t1 = (int)(cp->varindex1->mvalue()->user_data());
     int t2 = (int)(cp->varindex2->mvalue()->user_data());
@@ -1066,36 +1053,75 @@ plot_window::extract_data_points ()
 
     xlabel = column_labels[t1];
     ylabel = column_labels[t2];
-    zlabel = column_labels[t3];
-
+	if (t3 != nvals)
+		zlabel = column_labels[t3];
+	else
+		zlabel = "";
+	
     blitz::Range NPTS(0,npoints-1);
 
+#ifdef FAST_COPYING
+    xpoints.reference(points(t1,NPTS));
+    ypoints.reference(points(t2,NPTS));
+	if (t3 != nvals)
+		zpoints.reference(points(t3,NPTS));
+#else // FAST_COPYING
     xpoints(NPTS) = points(t1,NPTS);
     ypoints(NPTS) = points(t2,NPTS);
-    zpoints(NPTS) = points(t3,NPTS);
+	if (t3 != nvals)
+		zpoints(NPTS) = points(t3,NPTS);
+#endif // FAST_COPYING
 
-    cout << "computing rank of " << xlabel << endl;
+	cout << "pre-normalization: " << endl;
+
     compute_rank(xpoints,x_rank);
-    cout << "computing rank of " << ylabel << endl;
+    cout << "  min: " << xlabel << "(" << x_rank(0) << ") = " << xpoints(x_rank(0));
+    cout << "  max: " << xlabel << "(" << x_rank(npoints-1) << ") = " << xpoints(x_rank(npoints-1)) << endl;
+    
     compute_rank(ypoints,y_rank);
-    cout << "computing rank of " << zlabel << endl;
-    compute_rank(zpoints,z_rank);
+    cout << "  min: " << ylabel << "(" << y_rank(0) << ") = " << ypoints(y_rank(0));
+    cout << "  max: " << ylabel << "(" << y_rank(npoints-1) << ") = " << ypoints(y_rank(npoints-1)) << endl;
+
+	if (t3 != nvals)
+	{
+		compute_rank(zpoints,z_rank);
+		cout << "  min: " << zlabel << "(" << z_rank(0) << ") = " << zpoints(z_rank(0));
+		cout << "  max: " << zlabel << "(" << z_rank(npoints-1) << ") = " << zpoints(z_rank(npoints-1)) << endl;
+	}
+
+	cout << "post-normalization: " << endl;
 
     (void) normalize (xpoints, x_rank, cp->x_normalization_style->value());
     amin[0] = xpoints(x_rank(0));
     amax[0] = xpoints(x_rank(npoints-1));
-
+    cout << "  min: " << xlabel << "(" << x_rank(0) << ") = " << xpoints(x_rank(0));
+    cout << "  max: " << xlabel << "(" << x_rank(npoints-1) << ") = " << xpoints(x_rank(npoints-1)) << endl;
+    
     (void) normalize (ypoints, y_rank, cp->y_normalization_style->value());
     amin[1] = ypoints(y_rank(0));
     amax[1] = ypoints(y_rank(npoints-1));
+    cout << "  min: " << ylabel << "(" << y_rank(0) << ") = " << ypoints(y_rank(0));
+    cout << "  max: " << ylabel << "(" << y_rank(npoints-1) << ") = " << ypoints(y_rank(npoints-1)) << endl;
 
-    (void) normalize (zpoints, z_rank, cp->z_normalization_style->value());
-    amin[2] = zpoints(z_rank(0));
-    amax[2] = zpoints(z_rank(npoints-1));
+	if (t3 != nvals)
+	{
+		(void) normalize (zpoints, z_rank, cp->z_normalization_style->value());
+		amin[2] = zpoints(z_rank(0));
+		amax[2] = zpoints(z_rank(npoints-1));
+		cout << "  min: " << zlabel << "(" << z_rank(0) << ") = " << zpoints(z_rank(0));
+		cout << "  max: " << zlabel << "(" << z_rank(npoints-1) << ") = " << zpoints(z_rank(npoints-1)) << endl;
+	}
 
     vertices(NPTS,0) = xpoints(NPTS);
     vertices(NPTS,1) = ypoints(NPTS);
-    vertices(NPTS,2) = zpoints(NPTS);
+
+	if (t3 != nvals)
+	{
+		vertices(NPTS,2) = zpoints(NPTS);
+	} else {
+		vertices(NPTS,2) = 0;
+	}
+
     (void) transform_2d ();
 
     compute_histograms ();
@@ -1147,17 +1173,18 @@ void read_ascii_file_with_headers()
     std::string buf;		   // need an intermediate buffer
     while (ss >> buf)
 		column_labels.push_back(buf);
-    nvals = column_labels.size();
     if (nvals > nvals_max)
     {
 		cerr << "Error: too many columns, increase nvals_max and recompile" << endl;
 		exit (1);
     }
     cout << "column_labels = ";
-    for( int i=0; i < nvals; i++ )
+	column_labels.push_back(string("- none -"));
+    for( unsigned int i=0; i < column_labels.size(); i++ )
     {
 		cout << column_labels[i] << " ";
     }  
+
     cout << endl;
     cout << "there should be " << nvals << " fields (columns) per record (row)" << endl;
 
@@ -1298,13 +1325,16 @@ void read_binary_file_with_headers()
 		cerr << "Error: too many columns, increase nvals_max and recompile" << endl;
 		exit (1);
     }
+	column_labels.push_back(string("- none -"));
     cout << "column_labels = ";
-    for( int i=0; i < nvals; i++ )
+    for( unsigned int i=0; i < column_labels.size(); i++ )
     {
 		cout << column_labels[i] << " ";
     }  
     cout << endl;
     cout << "there should be " << nvals << " fields (columns) per record (row)" << endl;
+
+	column_labels.push_back("-- none --");
 
     for (i=0; i<npoints; i++)
     {
@@ -1316,15 +1346,15 @@ void read_binary_file_with_headers()
 				break;
 			else
 			{
-				fprintf (stderr, "error reading input occured at line %d\n", i+1);
+				fprintf (stderr, "error reading input occured at row %d\n", i+1);
 				exit (1);
 			}
 		}
 		points(NVALS,i) = vals;
 		if (i>0 && (i%10000 == 0))
-			printf ("read %d lines\n", i);
+			printf ("read %d rows\n", i);
     }
-    cout << "read " << i << " lines." << endl;
+    cout << "read " << i << " rows." << endl;
     npoints = i;
 }
 
@@ -1383,13 +1413,13 @@ control_panel_window::make_widgets(control_panel_window *cpw)
 
     // dynamically build the variables menu
     // cout << "starting menu build, nvals = " << nvals << endl;
-    for (int i=0; i<nvals; i++)
+    for (int i=0; i<=nvals; i++)
     {
 		// cout << "label " << i << " = " << column_labels[i].c_str() << endl;
 		varindex_menu_items[i].label((const char *)(column_labels[i].c_str()));
 		varindex_menu_items[i].user_data((void *)i);
     }
-    varindex_menu_items[nvals].label(0);
+    varindex_menu_items[nvals+1].label(0);
 
     xpos = 10;
 
@@ -1409,6 +1439,7 @@ control_panel_window::make_widgets(control_panel_window *cpw)
     varindex3->align(FL_ALIGN_TOP);
     varindex3->textsize(12);
     varindex3->menu(varindex_menu_items);
+	varindex3->value(nvals);  // initially, axis3 == "--none--"
     varindex3->callback((Fl_Callback*)static_extract_and_redraw, this);
 
     for (int i=0; i<n_normalization_styles; i++)
@@ -1463,10 +1494,6 @@ control_panel_window::make_widgets(control_panel_window *cpw)
     b->callback((Fl_Callback*)static_extract_and_redraw, this);
     b->align(FL_ALIGN_RIGHT); b->type(FL_RADIO_BUTTON); b->selection_color(FL_YELLOW);
 		
-    ratio = b = new Fl_Button(xpos2, ypos+=25, 20, 20, "x/z vs y");
-    b->callback((Fl_Callback*)static_extract_and_redraw, this);
-    b->align(FL_ALIGN_RIGHT); b->type(FL_RADIO_BUTTON); b->selection_color(FL_YELLOW);
-		
     polar = b = new Fl_Button(xpos2, ypos+=25, 20, 20, "polar");
     b->callback((Fl_Callback*)static_extract_and_redraw, this);
     b->align(FL_ALIGN_RIGHT); b->type(FL_RADIO_BUTTON); b->selection_color(FL_YELLOW);
@@ -1494,7 +1521,7 @@ control_panel_window::make_widgets(control_panel_window *cpw)
     b->align(FL_ALIGN_RIGHT); b->type(FL_TOGGLE_BUTTON); b->selection_color(FL_YELLOW);	b->value(1);
 
     show_histogram = b = new Fl_Button(xpos, ypos+=25, 20, 20, "histogram");
-    b->callback((Fl_Callback*)static_maybe_redraw, this);
+    b->callback((Fl_Callback*)static_extract_and_redraw, this);
     b->align(FL_ALIGN_RIGHT); b->type(FL_TOGGLE_BUTTON); b->selection_color(FL_YELLOW);	b->value(0);
 }
 
@@ -1741,15 +1768,13 @@ int main(int argc, char **argv)
 
 		if (i==0)
 		{
-			// the first plot initially shows first three attributes
+			// the first plot initially shows first two attributes
 			cps[i]->varindex1->value(0);  
 			cps[i]->varindex2->value(1);  
-			cps[i]->varindex3->value(2);  
 		} else {
-			// others plots initially show random picks
+			// others plots initially show random bivariate picks
 			cps[i]->varindex1->value(rand()%nvals);  
 			cps[i]->varindex2->value(rand()%nvals);  
-			cps[i]->varindex3->value(rand()%nvals);
 			// initially, only the first tab isn't hidden
 			cps[i]->hide();	
 		}
