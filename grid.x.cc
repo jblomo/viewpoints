@@ -58,7 +58,6 @@ const int skip = 0; 			// skip this many columns at the beginning of each row
 
 int npoints = MAXPOINTS;			// actual number of rows in data file
 int nvals = nvals_max;				// actual number of columns in data file
-int display_deselected = 1;			// display deselected objects in alternate color
 
 blitz::Array<float,2> points(nvals_max,MAXPOINTS);	// main data array
 blitz::Array<int,1> identity;
@@ -597,7 +596,7 @@ void plot_window::draw_data_points()
 	GLfloat *altcp = (GLfloat *)altcolors.data();
 
 	// draw all the points
-	if (display_deselected)
+	if (display_deselected_button->value())
 		glColorPointer (4, GL_FLOAT, 0, cp);
 	else
 		glColorPointer (4, GL_FLOAT, 0, altcp);

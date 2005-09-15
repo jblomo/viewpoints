@@ -80,18 +80,14 @@ OBJS:=	$(SRCS:.cc=.o)
 default:	$(TARGET)
 
 clean:
-	rm -f $(ALL) *.o $(TARGET) grid2 core TAGS *.gch
-	touch makedepend
+	rm -f $(ALL) *.o $(TARGET) grid2 core TAGS *.gch makedepend
 
 depend:	$(SRCS)
-	echo "" > makedepend
+	touch makedepend
 	$(MAKEDEPEND) $(INCBLITZ) $(INCPATH) $(INCFLEWS) -o makedepend $(SRCS)
 
-# Automatically generated dependencies...
-include makedepend
-
 # there has to be a better way....
-tags:	$(SRCS)
+tags:	$(SRCS) depend
 	etags --declarations --defines --members -o TAGS $(SRCS) `cat makedepend`
 
 stable.h.gch:	stable.h

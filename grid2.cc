@@ -86,7 +86,7 @@ class control_panel_window;
 int npoints = MAXPOINTS;	// actual number of rows in data file
 int nvals = nvals_max;		// actual number of columns in data file
 
-int display_deselected = 1;	// display deselected objects in alternate color
+//int display_deselected = 1;	// display deselected objects in alternate color
 int scale_histogram = 0;	// global toggle between scale histgram & scale view :-(
 
 blitz::Array<float,2> points(nvals_max,MAXPOINTS);	// main data array
@@ -122,7 +122,8 @@ Fl_Window *main_control_panel;
 Fl_Tabs *cpt;			// tabs to hold individual plot's virtual control panels
 
 Fl_Hor_Value_Slider_Input *npoints_slider;
-Fl_Button *add_to_selection_button, *clear_selection_button;
+Fl_Button *add_to_selection_button, *clear_selection_button, *delete_selection_button;
+Fl_Button *display_deselected_button;
 
 // the plot_window class is subclass of an ftlk openGL window that also handles
 // certain keyboard & mouse events.  It is where data is displayed.
@@ -136,7 +137,6 @@ protected:
     int handle (int event);
     void handle_selection();
 	void invert_selection();
-    void delete_selection();
     void resort();
     int xprev, yprev, xcur, ycur;
     float xdragged, ydragged;
@@ -259,6 +259,16 @@ plot_window::invert_selection ()
 }
 
 void
+toggle_display_delected(Fl_Widget *o)
+{
+	redraw_all_plots (); // something wrong here....
+	// Toggle the value of the button manually, but only if we were called via a keypress in a plot window
+	// Shouldn't there be an easier way?
+	if (o == NULL)
+		display_deselected_button->value(1 - display_deselected_button->value());
+}
+
+void
 clear_selection (Fl_Widget *o)
 {
 	selected = 0;
@@ -272,7 +282,7 @@ clear_selection (Fl_Widget *o)
 }
 
 void
-plot_window::delete_selection ()
+delete_selection (Fl_Widget *o)
 {
     blitz::Range NVALS(0,nvals-1);
     int i=0;
@@ -414,9 +424,14 @@ plot_window::handle(int event) {
 		DEBUG ( cout << "FL_KEYDOWN, event_key() = " << Fl::event_key() << endl);
 		switch (Fl::event_key())
 		{
+		// XXX should figure out how to share shortcuts between plot windows and control panels... later
+		case 'q': // exit
+		case '\027':
+			// quit
+			exit (0);
 		case 'x': // delete slected points from all future processing
 		case FL_Delete:
-			delete_selection ();
+			delete_selection ((Fl_Widget *)NULL);
 			return 1;
 		case 'i': // invert or restore (uninvert) selection
 			invert_selection ();
@@ -425,8 +440,7 @@ plot_window::handle(int event) {
 			clear_selection ((Fl_Widget *)NULL);
 			return 1;
 		case 'd': // don't display / display deselected dots
-			display_deselected = 1 - display_deselected;
-			redraw_all_plots ();
+			toggle_display_delected ((Fl_Widget *)NULL);
 			return 1;
 		case 'r':
 			reset_view ();
@@ -435,10 +449,6 @@ plot_window::handle(int event) {
 		case 'h':
 			scale_histogram=1;
 			return 1;
-		case 'q':
-		case '\027':
-			// quit
-			exit (0);
 		default:
 			return 0;
 		}
@@ -768,7 +778,7 @@ void plot_window::draw_data_points()
     GLfloat *altcp = (GLfloat *)altcolors.data();
 
     // tell the GPU where to find the correct colors for each vertex.
-    if (display_deselected)
+    if (display_deselected_button->value())
     {
 		glColorPointer (4, GL_FLOAT, 0, cp);
     }
@@ -792,7 +802,7 @@ void plot_window::draw_data_points()
     // tell the GPU to draw the vertices.
     glDrawArrays (GL_POINTS, 0, npoints);
 
-    if (!display_deselected)
+    if (!display_deselected_button->value())
 		glDisable(GL_ALPHA_TEST);
 
 //	glEnable(GL_DEPTH_TEST);
@@ -1617,13 +1627,17 @@ void make_global_widgets ()
     npoints_slider->step(1);
     npoints_slider->bounds(1,npoints);
 
+	display_deselected_button = b = new Fl_Button(xpos, ypos+=25, 20, 20, "display deselected");
+    b->align(FL_ALIGN_RIGHT); b->type(FL_TOGGLE_BUTTON); b->selection_color(FL_YELLOW);	b->value(1);	
+
 	add_to_selection_button = b = new Fl_Button(xpos, ypos+=25, 20, 20, "add to selection");
-	b->shortcut(FL_CTRL + '+');
     b->align(FL_ALIGN_RIGHT); b->type(FL_TOGGLE_BUTTON); b->selection_color(FL_YELLOW);	b->value(0);	
 
 	clear_selection_button = b = new Fl_Button(xpos, ypos+=25, 20, 20, "clear selection");
-	b->shortcut(FL_CTRL + ' ');
     b->align(FL_ALIGN_RIGHT); b->selection_color(FL_YELLOW); b->callback(clear_selection);
+
+	delete_selection_button = b = new Fl_Button(xpos, ypos+=25, 20, 20, "delete points");
+    b->align(FL_ALIGN_RIGHT); b->selection_color(FL_YELLOW); b->callback(delete_selection);
 
 }
 
@@ -1702,6 +1716,8 @@ int main(int argc, char **argv)
     nplots = nrows*ncols;
     resize_global_arrays ();
     
+	pointsize = max(1.0, 6.0 - (int)log10f((float)npoints));  // fewer points -> bigger starting pointsize
+
     cout << "making identity" << endl;
     for (int i=0; i<npoints; i++)
 		identity(i)=i;
