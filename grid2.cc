@@ -25,6 +25,7 @@
 #include <vector>
 #include <string>
 #include <sstream>
+#include <algorithm>
  
 // FLTK 
 #include <FL/math.h>
@@ -73,7 +74,7 @@ using namespace std;
 
 int format=ASCII;		// default file format
 
-const int nvals_max = 256;  	// maximum number of columns allowed in data file
+const int nvars_max = 256;  	// maximum number of columns allowed in data file
 const int MAXPOINTS = 1200000;	// maximum number of rows (points, or samples) in data file
 const int skip = 0;		// skip this many columns at the beginning of each row
 
@@ -84,13 +85,16 @@ class plot_window; 		// love those one-pass compilers.
 class control_panel_window;
 
 int npoints = MAXPOINTS;	// actual number of rows in data file
-int nvals = nvals_max;		// actual number of columns in data file
+int nvars = nvars_max;		// actual number of columns in data file
 
 //int display_deselected = 1;	// display deselected objects in alternate color
 int scale_histogram = 0;	// global toggle between scale histgram & scale view :-(
 
-blitz::Array<float,2> points(nvals_max,MAXPOINTS);	// main data array
+blitz::Array<float,2> points(nvars_max,MAXPOINTS);	// main data array
+blitz::Array<int,2> ranked_points;					// main data, ranked, as needed.
+blitz::Array<int,1> ranked;							// flag: 1->column is ranked, 0->it is not
 blitz::Array<int,1> identity;	// holds a(i)=i.
+
 blitz::Array<int,1> selected;	// true iff a point is in the selected set
 blitz::Array<int,1> selected_previously;	// used when adding to selection
 blitz::Array<float,2> colors, altcolors;
@@ -99,15 +103,15 @@ blitz::Array<float,2> colors, altcolors;
 // Redundant. Eliminate by using interlaced arrays?
 blitz::Array<float,1> xpoints,ypoints,zpoints;  
 
+// temporary array (reference) for qsort
+blitz::Array<float,1> tmp_points;
+float *tpoints;
+
 std::vector<std::string> column_labels; // vector of strings to hold variable names
 
 float xmin, xmax, gmax;
 
-#ifdef __APPLE__
-float pointsize = 2.0;  // wish it wasn't so...
-#else
 float pointsize = 1.0;
-#endif // __APPLE__
 
 int istart = 0;
 
@@ -123,7 +127,7 @@ Fl_Tabs *cpt;			// tabs to hold individual plot's virtual control panels
 
 Fl_Hor_Value_Slider_Input *npoints_slider;
 Fl_Button *add_to_selection_button, *clear_selection_button, *delete_selection_button;
-Fl_Button *display_deselected_button;
+Fl_Button *display_deselected_button, *invert_selection_button;
 
 // the plot_window class is subclass of an ftlk openGL window that also handles
 // certain keyboard & mouse events.  It is where data is displayed.
@@ -136,8 +140,6 @@ protected:
     void draw_data_points();
     int handle (int event);
     void handle_selection();
-	void invert_selection();
-    void resort();
     int xprev, yprev, xcur, ycur;
     float xdragged, ydragged;
     float xcenter, ycenter, xscale, yscale;
@@ -156,14 +158,15 @@ public:
     blitz::Array<float,2> vertices;
     blitz::Array<int,1> x_rank, y_rank, z_rank;
     float amin[3], amax[3]; // min and max for data's bounding box in x, y, and z;
-    void compute_rank (blitz::Array<float,1>, blitz::Array<int,1>);
+    void compute_rank (blitz::Array<float,1> a, blitz::Array<int,1> a_rank, int var_index);
     static const int nbins_default = 128;
     static const int nbins_max = 1024;
     void compute_histograms ();
     int normalize(blitz::Array<float,1>, blitz::Array<int,1>, int);
     std::string xlabel, ylabel, zlabel;
-    control_panel_window *cp;	// pointer to the control panel associated with this plot window
+    control_panel_window *cp;	// pointer to the control panel (tab) associated with this plot window
     int index;	// each plot window, and its associated control panel tab, has the same index.
+	int row, column; // initial ordering of windows on screen. Upper left window is (1,1)
     int extract_data_points();
     int transform_2d();
     void reset_selection_box();
@@ -231,7 +234,7 @@ plot_window *pws[maxplots];
 control_panel_window *cps[maxplots];
 
 // these menu related lists should really be class variables in class control_panel_window
-Fl_Menu_Item varindex_menu_items[nvals_max+2]; 
+Fl_Menu_Item varindex_menu_items[nvars_max+2]; 
 
 const int NORMALIZATION_NONE 	= 0;
 const int NORMALIZATION_MINMAX 	= 1;
@@ -251,21 +254,22 @@ const int n_normalization_styles = sizeof(normalization_styles)/sizeof(normaliza
 Fl_Menu_Item normalization_style_menu_items[n_normalization_styles+1];
   
 void
-plot_window::invert_selection ()
+invert_selection ()
 {
 	selected(blitz::Range(0,npoints-1)) = 1-selected(blitz::Range(0,npoints-1));
-	color_array_from_selection ();
+	pws[0]->color_array_from_selection ();
 	redraw_all_plots ();
 }
 
 void
 toggle_display_delected(Fl_Widget *o)
 {
-	redraw_all_plots (); // something wrong here....
 	// Toggle the value of the button manually, but only if we were called via a keypress in a plot window
 	// Shouldn't there be an easier way?
 	if (o == NULL)
 		display_deselected_button->value(1 - display_deselected_button->value());
+	pws[0]->color_array_from_selection (); // So, I'm lazy.
+	redraw_all_plots (); // something wrong here....
 }
 
 void
@@ -284,25 +288,30 @@ clear_selection (Fl_Widget *o)
 void
 delete_selection (Fl_Widget *o)
 {
-    blitz::Range NVALS(0,nvals-1);
-    int i=0;
+    blitz::Range NVARS(0,nvars-1);
+    int ipoint=0;
     for (int n=0; n<npoints; n++)
     {
 		if (!selected(n))
 		{
-			points(NVALS,i) = points(NVALS,n);
-			i++;
+			points(NVARS,ipoint) = points(NVARS,n);
+			ipoint++;
 		}
     }
-    npoints = i;
-    npoints_slider->bounds(1,npoints);
-    npoints_slider->value(npoints);
-
-	clear_selection ((Fl_Widget *)NULL);
-	
-	for (int j=0; j<nplots; j++)
+	if (ipoint != npoints)  // some point(s) got deleted
 	{
-		cps[j]->extract_and_redraw();
+		ranked = 0;	// everyone's ranking needs to be recomputed
+
+		npoints = ipoint;
+		npoints_slider->bounds(1,npoints);
+		npoints_slider->value(npoints);
+
+		clear_selection ((Fl_Widget *)NULL);
+	
+		for (int j=0; j<nplots; j++)
+		{
+			cps[j]->extract_and_redraw();
+		}
 	}
 }
 
@@ -721,27 +730,6 @@ void plot_window::color_array_from_selection()
     }
 }
 
-int xorder (const void *i, const void *j)
-{
-    if(xpoints(*(int *)i) < xpoints(*(int *)j))
-		return -1;
-    return (xpoints(*(int *)i) > xpoints(*(int *)j));
-}
-
-int yorder (const void *i, const void *j)
-{
-    if(ypoints(*(int *)i) < ypoints(*(int *)j))
-		return -1;
-    return (ypoints(*(int *)i) > ypoints(*(int *)j));
-}
-
-int zorder (const void *i, const void *j)
-{
-    if(zpoints(*(int *)i) < zpoints(*(int *)j))
-		return -1;
-    return (zpoints(*(int *)i) > zpoints(*(int *)j));
-}
-
 void clearAlphaPlanes()
 {
     glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_TRUE);
@@ -973,11 +961,19 @@ plot_window::normalize (blitz::Array<float,1> a, blitz::Array<int,1> a_rank, int
 {
     if (style == NORMALIZATION_NONE)
 		return 1;
+
     blitz::Range NPTS(0,npoints-1);
+
+#ifdef CHECK_FOR_NANS_IN_NORMALIZATION
     blitz::Array<int,1> inrange(npoints);
     inrange = where(((a(NPTS) < MAXFLOAT) && (a(NPTS) > -MAXFLOAT)), 1, 0);
     float amin = min(where(inrange,a(NPTS), MAXFLOAT));
     float amax = max(where(inrange,a(NPTS),-MAXFLOAT));
+#else // CHECK_FOR_NANS_IN_NORMALIZATION
+	float amin = a(a_rank(0));
+	float amax = a(a_rank(npoints-1));
+#endif // CHECK_FOR_NANS_IN_NORMALIZATION
+
     float mu,sigma;
 
     switch (style)
@@ -1020,38 +1016,43 @@ plot_window::normalize (blitz::Array<float,1> a, blitz::Array<int,1> a_rank, int
     }
 }
 
-void
-plot_window::compute_rank (blitz::Array<float,1> a, blitz::Array<int,1> a_rank)
+class myCompare
 {
-    blitz::Range NPTS(0,npoints-1);
-    if (!a_rank.isStorageContiguous() || !a.isStorageContiguous())
-    {
-		cerr << "Tried to pass non-contigous data to qsort.  Aborting!" << endl;
-		exit (1);
-    }
-    a_rank(NPTS) = identity(NPTS);
+public:
+	bool operator()(const int i, const int j)
+		{  
+			// return tmp_points(i) < tmp_points(j);
+			return (tpoints[i]<tpoints[j]);
+		}
+};
+
+void
+plot_window::compute_rank (blitz::Array<float,1> a, blitz::Array<int,1> a_rank, int var_index)
+{
+	blitz::Range NPTS(0,npoints-1);
+	if (!ranked(var_index))
+	{
+		if (!a_rank.isStorageContiguous() || !a.isStorageContiguous())
+		{
+			cerr << "Tried to pass non-contigous data to qsort.  Aborting!" << endl;
+			exit (1);
+		}
+		a_rank(NPTS) = identity(NPTS);
 		
-    // this is ugly.  should replace with... C++ sort?
-    if (a.data() == xpoints.data())
-    {
-		qsort(a_rank.data(),npoints,sizeof(int),xorder); 
-    }
-    else if (a.data() == ypoints.data())
-    {
-		qsort(a_rank.data(),npoints,sizeof(int),yorder); 
-    }
-    else if (a.data() == zpoints.data())
-    {
-		qsort(a_rank.data(),npoints,sizeof(int),zorder); 
-    }
-    else
-    {
-		cerr << "problems computing rank index order" << endl;
-		return;
-    }
-//    cout << "a_rank(0)=" << a_rank(0) << ", a(a_rank(0))=" << a(a_rank(0)) << endl;
-//    cout << "a_rank(npoints-1)=" << a_rank(npoints-1) << ", a(a_rank(npoints-1))=" << a(a_rank(npoints-1)) << endl;
+		// tmp_points.reference(a);
+		tpoints=a.data();
+		int *lo = a_rank.data(), *hi = lo + npoints;
+		std::stable_sort(lo, hi, myCompare());
+		ranked(var_index) = 1;  						// now we are ranked
+		ranked_points(var_index,NPTS) = a_rank(NPTS);	// and our rank is cached!
+		cout << "  cache STORE at index " << var_index << endl;
+	} else {
+		// a_rank.reference(ranked_points(var_index,NPTS));// why does this mess everythign up?
+		a_rank=ranked_points(var_index,NPTS);// use previously cached rank!
+		cout << "  CACHE HIT   at index " << var_index << endl;
+	}
 }
+
 
 int
 plot_window::extract_data_points ()
@@ -1063,7 +1064,7 @@ plot_window::extract_data_points ()
 
     xlabel = column_labels[t1];
     ylabel = column_labels[t2];
-	if (t3 != nvals)
+	if (t3 != nvars)
 		zlabel = column_labels[t3];
 	else
 		zlabel = "";
@@ -1073,33 +1074,35 @@ plot_window::extract_data_points ()
 #ifdef FAST_COPYING
     xpoints.reference(points(t1,NPTS));
     ypoints.reference(points(t2,NPTS));
-	if (t3 != nvals)
+	if (t3 != nvars)
 		zpoints.reference(points(t3,NPTS));
 #else // FAST_COPYING
     xpoints(NPTS) = points(t1,NPTS);
     ypoints(NPTS) = points(t2,NPTS);
-	if (t3 != nvals)
+	if (t3 != nvars)
 		zpoints(NPTS) = points(t3,NPTS);
 #endif // FAST_COPYING
 
-	cout << "pre-normalization: " << endl;
+	cout << "plot " << row << ", " << column << endl;
 
-    compute_rank(xpoints,x_rank);
+	cout << " pre-normalization: " << endl;
+
+    compute_rank(xpoints,x_rank,t1);
     cout << "  min: " << xlabel << "(" << x_rank(0) << ") = " << xpoints(x_rank(0));
     cout << "  max: " << xlabel << "(" << x_rank(npoints-1) << ") = " << xpoints(x_rank(npoints-1)) << endl;
     
-    compute_rank(ypoints,y_rank);
+    compute_rank(ypoints,y_rank,t2);
     cout << "  min: " << ylabel << "(" << y_rank(0) << ") = " << ypoints(y_rank(0));
     cout << "  max: " << ylabel << "(" << y_rank(npoints-1) << ") = " << ypoints(y_rank(npoints-1)) << endl;
 
-	if (t3 != nvals)
+	if (t3 != nvars)
 	{
-		compute_rank(zpoints,z_rank);
+		compute_rank(zpoints,z_rank,t3);
 		cout << "  min: " << zlabel << "(" << z_rank(0) << ") = " << zpoints(z_rank(0));
 		cout << "  max: " << zlabel << "(" << z_rank(npoints-1) << ") = " << zpoints(z_rank(npoints-1)) << endl;
 	}
 
-	cout << "post-normalization: " << endl;
+	cout << " post-normalization: " << endl;
 
     (void) normalize (xpoints, x_rank, cp->x_normalization_style->value());
     amin[0] = xpoints(x_rank(0));
@@ -1113,7 +1116,7 @@ plot_window::extract_data_points ()
     cout << "  min: " << ylabel << "(" << y_rank(0) << ") = " << ypoints(y_rank(0));
     cout << "  max: " << ylabel << "(" << y_rank(npoints-1) << ") = " << ypoints(y_rank(npoints-1)) << endl;
 
-	if (t3 != nvals)
+	if (t3 != nvars)
 	{
 		(void) normalize (zpoints, z_rank, cp->z_normalization_style->value());
 		amin[2] = zpoints(z_rank(0));
@@ -1125,7 +1128,7 @@ plot_window::extract_data_points ()
     vertices(NPTS,0) = xpoints(NPTS);
     vertices(NPTS,1) = ypoints(NPTS);
 
-	if (t3 != nvals)
+	if (t3 != nvars)
 	{
 		vertices(NPTS,2) = zpoints(NPTS);
 	} else {
@@ -1160,12 +1163,12 @@ void normalize_minmax ()
 {
     float limit = 1.0e20;  // anything with higher magnitude is assumed to be bogus.
     blitz::Range NPTS(0,npoints-1);
-    blitz::Range NVALS(skip,nvals-1);
-    xmin = min(where(points(NVALS,NPTS)<-limit, 0.0, points(NVALS,NPTS)));
-    xmax = max(where(points(NVALS,NPTS)>+limit, 0.0, points(NVALS,NPTS)));
+    blitz::Range NVARS(skip,nvars-1);
+    xmin = min(where(points(NVARS,NPTS)<-limit, 0.0, points(NVARS,NPTS)));
+    xmax = max(where(points(NVARS,NPTS)>+limit, 0.0, points(NVARS,NPTS)));
     gmax = (fabs(xmin)>fabs(xmax)) ? fabs(xmin) : fabs(xmax);
     cout << "global min = " << xmin << ", global max = " << xmax << ", scaling all data by " << 1.0/gmax << endl;
-    points(NVALS,NPTS) = points(NVALS,NPTS) / gmax;
+    points(NVARS,NPTS) = points(NVARS,NPTS) / gmax;
 }
   
 void npoints_changed(Fl_Widget *o) 
@@ -1183,9 +1186,10 @@ void read_ascii_file_with_headers()
     std::string buf;		   // need an intermediate buffer
     while (ss >> buf)
 		column_labels.push_back(buf);
-    if (nvals > nvals_max)
+    nvars = column_labels.size();
+    if (nvars > nvars_max)
     {
-		cerr << "Error: too many columns, increase nvals_max and recompile" << endl;
+		cerr << "Error: too many columns, increase nvars_max and recompile" << endl;
 		exit (1);
     }
     cout << "column_labels = ";
@@ -1196,7 +1200,7 @@ void read_ascii_file_with_headers()
     }  
 
     cout << endl;
-    cout << "there should be " << nvals << " fields (columns) per record (row)" << endl;
+    cout << "there should be " << nvars << " fields (columns) per record (row)" << endl;
 
     int i=0;
     while (!cin.eof() && i<npoints)
@@ -1206,25 +1210,25 @@ void read_ascii_file_with_headers()
 		if (line.length() == 0)
 			continue;
 		std::stringstream ss(line); // Insert the string into a stream
-		for (int j=0; j<nvals; j++)
+		for (int j=0; j<nvars; j++)
 		{
 			double x;
 			ss >> x;
 			points(j,i) = (float)x;
 // FIX THIS MISSING DATA STUFF!! IT IS BROKEN.
-			if (ss.eof() && j<nvals-1)
+			if (ss.eof() && j<nvars-1)
 			{
 				cerr << "not enough data on line " << i+2 << ", aborting!" << endl;
 				exit(1);
 			}
-			if (!ss.good() && j<nvals-1)
+			if (!ss.good() && j<nvars-1)
 			{
 				cerr << "bad data at line " << i+1 << " column " << j+1 << ", skipping entire line." << endl;
 				goto nextline;
 			}
 			DEBUG (cout << "points(" << j << "," << i << ") = " << points(j,i) << endl);
 		}
-		for (int j=0; j<nvals; j++)
+		for (int j=0; j<nvars; j++)
 			if (points(j,i) == -9999)
 			{
 				cerr << "bad data at line " << i << ", column " << j << " - skipping entire line\n";
@@ -1243,7 +1247,7 @@ void read_ascii_file_with_headers()
 void read_ascii_file() 
 {
     int i;
-    char line[50*nvals+1];	// 50 characters better hold one value + delimiters
+    char line[50*nvars+1];	// 50 characters better hold one value + delimiters
     for (i=0; i<npoints; i++)
     {
 		if (!fgets ((char *)&(line[0]), sizeof(line), stdin))
@@ -1260,7 +1264,7 @@ void read_ascii_file()
 		float val = 0.0;
 		int ret, nchars = 0;
 		int offset = 0;
-		for (int j=0; j<nvals; j++)
+		for (int j=0; j<nvars; j++)
 		{
 			ret = sscanf((char *)&(line[offset]),"%f%n",&val,&nchars);
 //			printf ("i = %d, j = %d, offset = %d, ret = %d, nchars = %d, val = %f\n", i, j, offset, ret, nchars, val);
@@ -1281,8 +1285,8 @@ void read_ascii_file()
 
 void read_binary_file() 
 {
-    blitz::Array<float,1> vals(nvals);
-    blitz::Range NVALS(0,nvals-1);
+    blitz::Array<float,1> vars(nvars);
+    blitz::Range NVARS(0,nvars-1);
     int i;
     if (!points.isStorageContiguous())
     {
@@ -1292,8 +1296,8 @@ void read_binary_file()
 		
     for (i=0; i<npoints; i++)
     {
-		unsigned int ret = read(0, (void *)(vals.data()), nvals*sizeof(float));
-		if (ret != nvals*sizeof(float))
+		unsigned int ret = read(0, (void *)(vars.data()), nvars*sizeof(float));
+		if (ret != nvars*sizeof(float))
 		{
 			if (ret == 0) // EOF
 				break;
@@ -1303,7 +1307,7 @@ void read_binary_file()
 				exit (1);
 			}
 		}
-		points(NVALS,i) = vals;
+		points(NVARS,i) = vars;
 		if (i>0 && (i%10000 == 0))
 			printf ("read %d lines\n", i);
     }
@@ -1313,8 +1317,8 @@ void read_binary_file()
 
 void read_binary_file_with_headers() 
 {
-    blitz::Array<float,1> vals(nvals);
-    blitz::Range NVALS(0,nvals-1);
+    blitz::Array<float,1> vars(nvars);
+    blitz::Range NVARS(0,nvars-1);
     int i;
     if (!points.isStorageContiguous())
     {
@@ -1329,10 +1333,10 @@ void read_binary_file_with_headers()
     std::string buf;		   // need an intermediate buffer
     while (ss >> buf)
 		column_labels.push_back(buf);
-    nvals = column_labels.size();
-    if (nvals > nvals_max)
+    nvars = column_labels.size();
+    if (nvars > nvars_max)
     {
-		cerr << "Error: too many columns, increase nvals_max and recompile" << endl;
+		cerr << "Error: too many columns, increase nvars_max and recompile" << endl;
 		exit (1);
     }
 	column_labels.push_back(string("- none -"));
@@ -1342,15 +1346,15 @@ void read_binary_file_with_headers()
 		cout << column_labels[i] << " ";
     }  
     cout << endl;
-    cout << "there should be " << nvals << " fields (columns) per record (row)" << endl;
+    cout << "there should be " << nvars << " fields (columns) per record (row)" << endl;
 
 	column_labels.push_back("-- none --");
 
     for (i=0; i<npoints; i++)
     {
-		unsigned int ret = fread((void *)(vals.data()), sizeof(float), nvals, stdin);
+		unsigned int ret = fread((void *)(vars.data()), sizeof(float), nvars, stdin);
 		// cout << "read " << ret << " values " << endl;
-		if (ret != (unsigned int)nvals)
+		if (ret != (unsigned int)nvars)
 		{
 			if (ret == 0 || feof(stdin)) // EOF
 				break;
@@ -1360,7 +1364,7 @@ void read_binary_file_with_headers()
 				exit (1);
 			}
 		}
-		points(NVALS,i) = vals;
+		points(NVARS,i) = vars;
 		if (i>0 && (i%10000 == 0))
 			printf ("read %d rows\n", i);
     }
@@ -1422,14 +1426,14 @@ control_panel_window::make_widgets(control_panel_window *cpw)
     nbins_slider->bounds(2,plot_window::nbins_max);
 
     // dynamically build the variables menu
-    // cout << "starting menu build, nvals = " << nvals << endl;
-    for (int i=0; i<=nvals; i++)
+    // cout << "starting menu build, nvars = " << nvars << endl;
+    for (int i=0; i<=nvars; i++)
     {
 		// cout << "label " << i << " = " << column_labels[i].c_str() << endl;
 		varindex_menu_items[i].label((const char *)(column_labels[i].c_str()));
 		varindex_menu_items[i].user_data((void *)i);
     }
-    varindex_menu_items[nvals+1].label(0);
+    varindex_menu_items[nvars+1].label(0);
 
     xpos = 10;
 
@@ -1449,7 +1453,7 @@ control_panel_window::make_widgets(control_panel_window *cpw)
     varindex3->align(FL_ALIGN_TOP);
     varindex3->textsize(12);
     varindex3->menu(varindex_menu_items);
-	varindex3->value(nvals);  // initially, axis3 == "--none--"
+	varindex3->value(nvars);  // initially, axis3 == "--none--"
     varindex3->callback((Fl_Callback*)static_extract_and_redraw, this);
 
     for (int i=0; i<n_normalization_styles; i++)
@@ -1590,9 +1594,18 @@ busy:
 void
 resize_global_arrays ()
 {
+	points.resizeAndPreserve(nvars,npoints);	// XXX this *may* screw things up royally.   Not sure.....
+
+	ranked_points.resize(nvars,npoints);	 	// XXX and this could cause a segfault, later, I think.
+
+	ranked.resize(nvars);
+	ranked = 0;	// initially, no ranking has been done.
+
     xpoints.resize(npoints);
     ypoints.resize(npoints);
     zpoints.resize(npoints);
+
+	tmp_points(npoints);  // for sort
 
     colors.resize(npoints,4);
     altcolors.resize(npoints,4);
@@ -1600,8 +1613,7 @@ resize_global_arrays ()
     selected.resize(npoints);
     selected_previously.resize(npoints);
 
-    for (int i=0; i<npoints; i++)
-		selected(i)=0;
+	selected=0;
 }
 
 void usage()
@@ -1628,13 +1640,19 @@ void make_global_widgets ()
     npoints_slider->bounds(1,npoints);
 
 	display_deselected_button = b = new Fl_Button(xpos, ypos+=25, 20, 20, "display deselected");
-    b->align(FL_ALIGN_RIGHT); b->type(FL_TOGGLE_BUTTON); b->selection_color(FL_YELLOW);	b->value(1);	
+    b->align(FL_ALIGN_RIGHT); b->selection_color(FL_YELLOW); b->type(FL_TOGGLE_BUTTON);	b->value(1);
+	b->callback((Fl_Callback*)toggle_display_delected);
 
 	add_to_selection_button = b = new Fl_Button(xpos, ypos+=25, 20, 20, "add to selection");
-    b->align(FL_ALIGN_RIGHT); b->type(FL_TOGGLE_BUTTON); b->selection_color(FL_YELLOW);	b->value(0);	
+    b->align(FL_ALIGN_RIGHT); b->selection_color(FL_YELLOW); b->type(FL_TOGGLE_BUTTON);	b->value(0);	
+
+	invert_selection_button = b = new Fl_Button(xpos, ypos+=25, 20, 20, "invert selection");
+    b->align(FL_ALIGN_RIGHT); b->selection_color(FL_YELLOW);
+	b->callback((Fl_Callback*)invert_selection);
 
 	clear_selection_button = b = new Fl_Button(xpos, ypos+=25, 20, 20, "clear selection");
-    b->align(FL_ALIGN_RIGHT); b->selection_color(FL_YELLOW); b->callback(clear_selection);
+    b->align(FL_ALIGN_RIGHT); b->selection_color(FL_YELLOW);
+	b->callback(clear_selection);
 
 	delete_selection_button = b = new Fl_Button(xpos, ypos+=25, 20, 20, "delete points");
     b->align(FL_ALIGN_RIGHT); b->selection_color(FL_YELLOW); b->callback(delete_selection);
@@ -1734,8 +1752,8 @@ int main(int argc, char **argv)
 	make_global_widgets ();
 
     // inside the main control panel, there is a tab widget that contains the sub-panels (groups), one per plot.
-    cpt = new Fl_Tabs(10, 10, main_w-20, 500);    
-    cpt->selection_color(FL_YELLOW);
+    cpt = new Fl_Tabs(3, 10, main_w-6, 500);    
+    cpt->selection_color(FL_YELLOW); cpt->labelsize(10);
 
 	// done creating main control panel (except for tabbed sup-panels, below)
     main_control_panel->end();
@@ -1755,13 +1773,14 @@ int main(int argc, char **argv)
 		
 		// create a label
 		ostringstream oss;
-		oss << "plot " << i+1;
+		oss << "" << i+1;
 		string labstr = oss.str();
 
 		// add a new virtual control panel (a group) under the tab widget
 		Fl_Group::current(cpt);	
-		cps[i] = new control_panel_window (10, 30, 300, 480);
+		cps[i] = new control_panel_window (3, 30, main_w-6, 480);
 		cps[i]->copy_label(labstr.c_str());
+		cps[i]->labelsize(10);
 		cps[i]->resizable(cps[i]);
 		cps[i]->make_widgets(cps[i]);
 
@@ -1774,6 +1793,7 @@ int main(int argc, char **argv)
 		pws[i]->copy_label(labstr.c_str());
 		pws[i]->resizable(pws[i]);
 		pws[i]->position(pw_x, pw_y);
+		pws[i]->row = row; pws[i]->column = col;
 		pws[i]->end();
 		
 		// link plot window and its associated virtual control panel
@@ -1789,8 +1809,8 @@ int main(int argc, char **argv)
 			cps[i]->varindex2->value(1);  
 		} else {
 			// others plots initially show random bivariate picks
-			cps[i]->varindex1->value(rand()%nvals);  
-			cps[i]->varindex2->value(rand()%nvals);  
+			cps[i]->varindex1->value(rand()%nvars);  
+			cps[i]->varindex2->value(rand()%nvars);  
 			// initially, only the first tab isn't hidden
 			cps[i]->hide();	
 		}

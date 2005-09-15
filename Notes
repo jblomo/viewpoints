@@ -23,13 +23,10 @@ Functionality to add (see also project plan):
   - fast reranking after "delete selected points"?
 - don't require multiple copies of vertices
   - interleaved vs. not
-- have a binary file format which has each variable contiguous, so that they can be mapped. 
-  - This is the transpose of the current binary format
 - histogram speedups
 
 ***misc
 - tile windows correctly
-- set pointsize based on npoints
 - dynamically couple to running sims on another machine(!)
 - mapped files?
 

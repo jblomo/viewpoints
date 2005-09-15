@@ -19,8 +19,8 @@ endif
 DEBUG		= -g -ggdb -g3 -Wall -Wunused -fexceptions
 
 ifeq ($(platform),Darwin)
-	OPTIM = -O0 $(DEBUG) -pipe
-#	OPTIM = -O3 -ftree-vectorize -ftree-vectorizer-verbose=0 -Wall -Wno-unused -Wno-long-double -Wno-deprecated -fno-exceptions -ffast-math -pipe -fsigned-char -maltivec -mabi=altivec -faltivec -mcpu=G4 -mtune=G4 -mpowerpc-gfxopt -g
+#	OPTIM = -O0 $(DEBUG) -pipe
+	OPTIM = -O3 -ftree-vectorize -ftree-vectorizer-verbose=0 -Wall -Wno-unused -Wno-long-double -Wno-deprecated -fno-exceptions -ffast-math -pipe -fsigned-char -maltivec -mabi=altivec -faltivec -mcpu=G4 -mtune=G4 -mpowerpc-gfxopt -g
 else
 #	OPTIM = -O4 -Wall -Wunused -ffast-math -fno-exceptions -g  -Wno-deprecated
 	OPTIM = -O0 $(DEBUG) -pipe
@@ -60,18 +60,17 @@ EXEEXT		=
 	$(CXX) $(CXXFLAGS) $< $(LIBPATH) $(LINKFLEWS) $(LINKFLTK) $(LINKBLITZ) $(LDLIBS) -o $@
 	$(POSTBUILD) $@ ../FL/mac.r
 
-.c.o:
+.c.o:	
 	echo Compiling $<...
 	$(CC) -I.. $(CFLAGS) -c $<
 
-.cc.o:
+.cc.o:	
 	echo Compiling $<...
 	$(CXX) $(INCPATH) $(INCFLEWS) -I.. $(CXXFLAGS) -c $<
 
 TARGET =	grid2$(EXEEXT)
 #TARGET =	mgrid$(EXEEXT)
 
-#SRCS =	grid.cc histo.cc
 SRCS =	grid2.cc 
 #SRCS =	mgrid.cc grid2.cc
 
@@ -83,12 +82,15 @@ clean:
 	rm -f $(ALL) *.o $(TARGET) grid2 core TAGS *.gch makedepend
 
 depend:	$(SRCS)
-	touch makedepend
 	$(MAKEDEPEND) $(INCBLITZ) $(INCPATH) $(INCFLEWS) -o makedepend $(SRCS)
 
+# Automatically generated dependencies if they are there...
+#-include makedepend
+include makedepend
+
 # there has to be a better way....
-tags:	$(SRCS) depend
-	etags --declarations --defines --members -o TAGS $(SRCS) `cat makedepend`
+tags:	$(SRCS)
+	etags --defines --members -o TAGS $(SRCS) `cat makedepend | sed -e"s/.*://g; s/\\\\\//"`
 
 stable.h.gch:	stable.h
 	echo pre-compiling $<...
@@ -105,16 +107,4 @@ grid2$(EXEEXT): $(OBJS)
 
 #for gfortan
 F77LIBS = /usr/local/lib/libgfortran.a
-
-#	g77 -g -c mercury6_2.for
-#	g77 -g -c mercury6_2.for -O5 -funroll-loops
-mercury6_2.o:	mercury6_2.for mercury.inc swift.inc
-		gfortran mercury6_2.for -ffixed-line-length-none -ftree-vectorize -maltivec -ftree-vectorizer-verbose=2 -c -O3 -force_cpusubtype_ALL -g
-
-
-mgrid:	mercury6_2.o mgrid.o
-		echo Linking $@...
-		$(CXX) -I.. $(CXXFLAGS) -o $@ $(OBJS) mercury6_2.o $(LIBPATH) $(LINKFLEWS) $(LINKFLTKGL) $(LINKBLITZ) $(LINKFLTK) $(LDLIBS) $(F77LIBS)
-		$(POSTBUILD) $@ mac.r
-
 
