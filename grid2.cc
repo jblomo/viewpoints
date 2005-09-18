@@ -38,6 +38,7 @@
 #include <FL/Fl_Tabs.H>
 #include <FL/Fl_Choice.H>
 #include <FL/Fl_Gl_Window.H>
+#include <FL/Fl_File_Chooser.H>
 
 // flews (FLTK extenstion) extras
 #include <FL/Fl_flews.h>
@@ -121,13 +122,15 @@ int dfactor = GL_DST_ALPHA;
 void redraw_all_plots (void);
 void reset_all_plots (void);
 
-// Main control panel, and its global sub-widgets.
+// Main control panel
 Fl_Window *main_control_panel;
-Fl_Tabs *cpt;			// tabs to hold individual plot's virtual control panels
 
-Fl_Hor_Value_Slider_Input *npoints_slider;
+// Main control panel's top level (global) widgets:
+Fl_Tabs *cpt;			// tabs to hold individual plot's virtual control panels
+Fl_Hor_Value_Slider_Input *npoints_slider;	// maximum number of points to display in all plots
 Fl_Button *add_to_selection_button, *clear_selection_button, *delete_selection_button;
 Fl_Button *display_deselected_button, *invert_selection_button;
+Fl_Button *write_data_button;
 
 // the plot_window class is subclass of an ftlk openGL window that also handles
 // certain keyboard & mouse events.  It is where data is displayed.
@@ -1177,6 +1180,39 @@ void npoints_changed(Fl_Widget *o)
     redraw_all_plots ();
 }
 
+void
+write_data (Fl_Widget *o)
+{
+	char *output_file_name = fl_file_chooser("write binary output to file", NULL, NULL, 0);
+
+	if (output_file_name)
+	{
+		blitz::Array<float,1> vars(nvars);
+		blitz::Range NVARS(0,nvars-1);
+		ofstream os;
+		os.open (output_file_name, fstream::out | fstream::trunc | fstream::binary);
+		if (os.fail())
+		{
+			cerr << "Error opening" << output_file_name << "for writing" << endl;
+			return;
+		}
+		for( unsigned int i=0; i < column_labels.size()-1; i++ ) // remember, last column label is "-nothing-"
+		{
+			os << column_labels[i] << " ";
+		}  
+		os << endl;
+		for (int i=0; i<npoints; i++) {
+			vars = points(NVARS,i);
+			os.write ((const char *)vars.data(), nvars*sizeof(float));
+			if (os.fail())
+			{
+				cerr << "Error writing to" << output_file_name << endl;
+				return;
+			}
+		}
+	}
+}
+
 void read_ascii_file_with_headers() 
 {
     // first line of file has column labels separated by whitespace
@@ -1192,8 +1228,8 @@ void read_ascii_file_with_headers()
 		cerr << "Error: too many columns, increase nvars_max and recompile" << endl;
 		exit (1);
     }
+	column_labels.push_back(string("-nothing-"));
     cout << "column_labels = ";
-	column_labels.push_back(string("- none -"));
     for( unsigned int i=0; i < column_labels.size(); i++ )
     {
 		cout << column_labels[i] << " ";
@@ -1339,7 +1375,7 @@ void read_binary_file_with_headers()
 		cerr << "Error: too many columns, increase nvars_max and recompile" << endl;
 		exit (1);
     }
-	column_labels.push_back(string("- none -"));
+	column_labels.push_back(string("-nothing-"));
     cout << "column_labels = ";
     for( unsigned int i=0; i < column_labels.size(); i++ )
     {
@@ -1347,9 +1383,6 @@ void read_binary_file_with_headers()
     }  
     cout << endl;
     cout << "there should be " << nvars << " fields (columns) per record (row)" << endl;
-
-	column_labels.push_back("-- none --");
-
     for (i=0; i<npoints; i++)
     {
 		unsigned int ret = fread((void *)(vars.data()), sizeof(float), nvars, stdin);
@@ -1453,7 +1486,7 @@ control_panel_window::make_widgets(control_panel_window *cpw)
     varindex3->align(FL_ALIGN_TOP);
     varindex3->textsize(12);
     varindex3->menu(varindex_menu_items);
-	varindex3->value(nvars);  // initially, axis3 == "--none--"
+	varindex3->value(nvars);  // initially, axis3 == "-nothing-"
     varindex3->callback((Fl_Callback*)static_extract_and_redraw, this);
 
     for (int i=0; i<n_normalization_styles; i++)
@@ -1656,6 +1689,9 @@ void make_global_widgets ()
 
 	delete_selection_button = b = new Fl_Button(xpos, ypos+=25, 20, 20, "delete points");
     b->align(FL_ALIGN_RIGHT); b->selection_color(FL_YELLOW); b->callback(delete_selection);
+
+	write_data_button = b = new Fl_Button(xpos, ypos+=25, 20, 20, "write data");
+    b->align(FL_ALIGN_RIGHT); b->selection_color(FL_YELLOW); b->callback(write_data);
 
 }
 
