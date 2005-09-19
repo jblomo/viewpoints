@@ -39,6 +39,8 @@
 #include <FL/Fl_Choice.H>
 #include <FL/Fl_Gl_Window.H>
 #include <FL/Fl_File_Chooser.H>
+#include <FL/Fl_Color_Chooser.H>
+
 
 // flews (FLTK extenstion) extras
 #include <FL/Fl_flews.h>
@@ -99,6 +101,8 @@ blitz::Array<int,1> identity;	// holds a(i)=i.
 blitz::Array<int,1> selected;	// true iff a point is in the selected set
 blitz::Array<int,1> selected_previously;	// used when adding to selection
 blitz::Array<float,2> colors, altcolors;
+
+double r_deselected=1.0, g_deselected=0.0, b_deselected=0.0;
 
 // For interface to normalization & graphics routines. 
 // Redundant. Eliminate by using interlaced arrays?
@@ -174,6 +178,7 @@ public:
     int transform_2d();
     void reset_selection_box();
     void color_array_from_selection();
+	double r_selected, g_selected, b_selected;
     void reset_view();
     float angle;
     int needs_redraw;
@@ -191,6 +196,7 @@ plot_window::plot_window(int w,int h) : Fl_Gl_Window(w,h)
     nbins = nbins_default;
     counts.resize(nbins_max,3);
     counts_selected.resize(nbins_max,3);
+	r_selected = 0.0;	g_selected = 0.0;	b_selected = 1.0;
 #if 0
     if (can_do(FL_RGB8|FL_DOUBLE|FL_ALPHA|FL_DEPTH))
 		mode(FL_RGB8|FL_DOUBLE|FL_ALPHA|FL_DEPTH);  // Can't seem to make this work on PBG4 OSX 
@@ -216,6 +222,7 @@ public:
     static void replot (Fl_Widget *w, control_panel_window *cpw)
 		{ /* cpw->pw->redraw(); */ cpw->pw->needs_redraw=1;}
     Fl_Hor_Value_Slider_Input *pointsize_slider;
+	Fl_Button *choose_selection_color_button, *choose_deselected_color_button;
     Fl_Hor_Value_Slider_Input *Bkg, *Lum, *Alph;
     Fl_Hor_Value_Slider_Input *rot_slider;
     Fl_Hor_Value_Slider_Input *nbins_slider;
@@ -227,11 +234,13 @@ public:
     Fl_Button *sum_vs_difference, *polar, *no_transform;
     Fl_Choice *x_normalization_style, *y_normalization_style, *z_normalization_style;
 
-    plot_window *pw;  // pointer to the plot window associated with this control panel
+    plot_window *pw;  // pointer to the plot window associated with this control panel (tab)
     int index;	// each plot window, and its associated control panel tab, has the same index.
 };
 
-control_panel_window::control_panel_window(int x, int y, int w, int h) : Fl_Group(x, y, w, h) {}
+control_panel_window::control_panel_window(int x, int y, int w, int h) : Fl_Group(x, y, w, h)
+{
+}
 
 plot_window *pws[maxplots];
 control_panel_window *cps[maxplots];
@@ -286,6 +295,19 @@ clear_selection (Fl_Widget *o)
 	}
 	pws[0]->color_array_from_selection (); // So, I'm lazy.
 	redraw_all_plots ();
+}
+
+void
+choose_selection_color (Fl_Widget *o)
+{
+	plot_window *pw = ((control_panel_window *)o->parent())->pw;
+	(void) fl_color_chooser("selected", pw->r_selected, pw->g_selected, pw->b_selected);
+}
+
+void
+choose_deselected_color (Fl_Widget *o)
+{
+	(void) fl_color_chooser("deselected", r_deselected, g_deselected, b_deselected);
 }
 
 void
@@ -637,7 +659,7 @@ void plot_window::draw_labels ()
     glDisable(GL_DEPTH_TEST);
     glPushMatrix ();
     glLoadIdentity();
-    gl_font (FL_HELVETICA, 14);
+    gl_font (FL_COURIER | FL_BOLD, 10);
     if (cp->Bkg->value() <= 0.5)
 		glColor4f(0.8,0.8,0.8,0.0);
     else
@@ -708,10 +730,23 @@ float r1=1.0, g1=0.05, b1=0.05, alpha1 = 1.0;
 void plot_window::color_array_from_selection()
 {
     GLfloat color1[4], color2[4];
+#if 0
     color1[0] = color2[2] = r1;
     color1[1] = color2[1] = g1;
     color1[2] = color2[0] = b1;
     color1[3] = color2[3] = alpha1;
+#endif // 0
+
+    color1[0] = r_deselected;
+    color1[1] = g_deselected;
+    color1[2] = b_deselected;
+    color1[3] = alpha1;
+ 
+    color2[0] = (float)r_selected;
+    color2[1] = (float)g_selected;
+    color2[2] = (float)b_selected;
+    color2[3] = alpha1;
+
 	
     for (int i=0; i<npoints; i++)
     {
@@ -1444,6 +1479,12 @@ control_panel_window::make_widgets(control_panel_window *cpw)
     Alph->bounds(0,1.0);
     Alph->value(1.0);
 
+	choose_selection_color_button = b = new Fl_Button(xpos, ypos+=25, 20, 20, "selected color");
+    b->align(FL_ALIGN_RIGHT); b->selection_color(FL_YELLOW); b->callback((Fl_Callback*)choose_selection_color);
+
+	choose_deselected_color_button = b = new Fl_Button(xpos+130, ypos, 20, 20, "deselected color");
+    b->align(FL_ALIGN_RIGHT); b->selection_color(FL_YELLOW); b->callback((Fl_Callback*)choose_deselected_color);
+
     rot_slider = new Fl_Hor_Value_Slider_Input (xpos, ypos+=25, cpw->w()-60, 20, "rot");
     rot_slider->align(FL_ALIGN_LEFT);
     rot_slider->callback((Fl_Callback*)replot, this);
@@ -1570,6 +1611,7 @@ control_panel_window::make_widgets(control_panel_window *cpw)
     show_histogram = b = new Fl_Button(xpos, ypos+=25, 20, 20, "histogram");
     b->callback((Fl_Callback*)static_extract_and_redraw, this);
     b->align(FL_ALIGN_RIGHT); b->type(FL_TOGGLE_BUTTON); b->selection_color(FL_YELLOW);	b->value(0);
+
 }
 
 void
@@ -1627,7 +1669,7 @@ busy:
 void
 resize_global_arrays ()
 {
-	points.resizeAndPreserve(nvars,npoints);	// XXX this *may* screw things up royally.   Not sure.....
+	points.resizeAndPreserve(nvars,npoints);	
 
 	ranked_points.resize(nvars,npoints);	 	// XXX and this could cause a segfault, later, I think.
 
@@ -1680,12 +1722,10 @@ void make_global_widgets ()
     b->align(FL_ALIGN_RIGHT); b->selection_color(FL_YELLOW); b->type(FL_TOGGLE_BUTTON);	b->value(0);	
 
 	invert_selection_button = b = new Fl_Button(xpos, ypos+=25, 20, 20, "invert selection");
-    b->align(FL_ALIGN_RIGHT); b->selection_color(FL_YELLOW);
-	b->callback((Fl_Callback*)invert_selection);
+    b->align(FL_ALIGN_RIGHT); b->selection_color(FL_YELLOW); b->callback((Fl_Callback*)invert_selection);
 
 	clear_selection_button = b = new Fl_Button(xpos, ypos+=25, 20, 20, "clear selection");
-    b->align(FL_ALIGN_RIGHT); b->selection_color(FL_YELLOW);
-	b->callback(clear_selection);
+    b->align(FL_ALIGN_RIGHT); b->selection_color(FL_YELLOW); b->callback(clear_selection);
 
 	delete_selection_button = b = new Fl_Button(xpos, ypos+=25, 20, 20, "delete points");
     b->align(FL_ALIGN_RIGHT); b->selection_color(FL_YELLOW); b->callback(delete_selection);
@@ -1845,8 +1885,9 @@ int main(int argc, char **argv)
 			cps[i]->varindex2->value(1);  
 		} else {
 			// others plots initially show random bivariate picks
-			cps[i]->varindex1->value(rand()%nvars);  
-			cps[i]->varindex2->value(rand()%nvars);  
+			int axis1 = rand()%nvars;  
+			cps[i]->varindex1->value(axis1);
+			cps[i]->varindex2->value((axis1 + ((rand()%(nvars-1)) + 1))%nvars); // avoid duplicating axis1
 			// initially, only the first tab isn't hidden
 			cps[i]->hide();	
 		}

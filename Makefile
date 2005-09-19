@@ -15,12 +15,13 @@ else
 endif
 
 # flags for C++ compiler:
+# PROFILE		= -pg
 # DEBUG		= -ggdb -g3 -Wall -Wunused -DBZ_DEBUG
 DEBUG		= -g -ggdb -g3 -Wall -Wunused -fexceptions
 
 ifeq ($(platform),Darwin)
-#	OPTIM = -O0 $(DEBUG) -pipe
-	OPTIM = -O3 -ftree-vectorize -ftree-vectorizer-verbose=0 -Wall -Wno-unused -Wno-long-double -Wno-deprecated -fno-exceptions -ffast-math -pipe -fsigned-char -maltivec -mabi=altivec -faltivec -mcpu=G4 -mtune=G4 -mpowerpc-gfxopt -g
+	OPTIM = -O0 $(DEBUG) -pipe
+#	OPTIM = -O3 -ftree-vectorize -ftree-vectorizer-verbose=0 -Wall -Wno-unused -Wno-long-double -Wno-deprecated -fno-exceptions -ffast-math -pipe -fsigned-char -maltivec -mabi=altivec -faltivec -mcpu=G4 -mtune=G4 -mpowerpc-gfxopt -g
 else
 #	OPTIM = -O4 -Wall -Wunused -ffast-math -fno-exceptions -g  -Wno-deprecated
 	OPTIM = -O0 $(DEBUG) -pipe
@@ -43,7 +44,9 @@ else
 	LIBPATH	= -L/u/wk/creon/lib 
 	LDLIBS = -L/usr/X11R6/lib -lGL -lXext -lm -lgsl 
 endif
+
 INCFLEWS	= -I../flews-0.3
+
 LINKFLEWS	= -L../flews-0.3 -lflews
 LINKFLTK	= -lfltk
 LINKFLTKGL	= -lfltk_gl
@@ -85,8 +88,7 @@ depend:	$(SRCS)
 	$(MAKEDEPEND) $(INCBLITZ) $(INCPATH) $(INCFLEWS) -o makedepend $(SRCS)
 
 # Automatically generated dependencies if they are there...
-#-include makedepend
-include makedepend
+-include makedepend
 
 # there has to be a better way....
 tags:	$(SRCS)
