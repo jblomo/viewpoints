@@ -20,11 +20,11 @@ endif
 DEBUG		= -g -ggdb -g3 -Wall -Wunused -fexceptions
 
 ifeq ($(platform),Darwin)
-	OPTIM = -O0 $(DEBUG) -pipe
-#	OPTIM = -O3 -ftree-vectorize -ftree-vectorizer-verbose=0 -Wall -Wno-unused -Wno-long-double -Wno-deprecated -fno-exceptions -ffast-math -pipe -fsigned-char -maltivec -mabi=altivec -faltivec -mcpu=G4 -mtune=G4 -mpowerpc-gfxopt -g
+#	OPTIM = -O0 $(DEBUG) -pipe
+	OPTIM = -O4 -ftree-vectorize -ftree-vectorizer-verbose=0 -Wall -Wno-unused -Wno-long-double -Wno-deprecated -fno-exceptions -ffast-math -pipe -fsigned-char -maltivec -mabi=altivec -faltivec -mcpu=G4 -mtune=G4 -mpowerpc-gfxopt -g
 else
-#	OPTIM = -O4 -Wall -Wunused -ffast-math -fno-exceptions -g  -Wno-deprecated
-	OPTIM = -O0 $(DEBUG) -pipe
+#	OPTIM = -O0 $(DEBUG) -pipe
+	OPTIM = -O4 -Wall -Wunused -ffast-math -fno-exceptions -g  -Wno-deprecated
 endif
 
 CFLAGS		= $(OPTIM) 
@@ -82,7 +82,7 @@ OBJS:=	$(SRCS:.cc=.o)
 default:	$(TARGET)
 
 clean:
-	rm -f $(ALL) *.o $(TARGET) grid2 core TAGS *.gch makedepend
+	rm -f $(ALL) *.o $(TARGET) grid2 core* TAGS *.gch makedepend 
 
 depend:	$(SRCS)
 	$(MAKEDEPEND) $(INCBLITZ) $(INCPATH) $(INCFLEWS) -o makedepend $(SRCS)

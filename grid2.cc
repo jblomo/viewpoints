@@ -90,7 +90,6 @@ class control_panel_window;
 int npoints = MAXPOINTS;	// actual number of rows in data file
 int nvars = nvars_max;		// actual number of columns in data file
 
-//int display_deselected = 1;	// display deselected objects in alternate color
 int scale_histogram = 0;	// global toggle between scale histgram & scale view :-(
 
 blitz::Array<float,2> points(nvars_max,MAXPOINTS);	// main data array
@@ -98,11 +97,12 @@ blitz::Array<int,2> ranked_points;					// main data, ranked, as needed.
 blitz::Array<int,1> ranked;							// flag: 1->column is ranked, 0->it is not
 blitz::Array<int,1> identity;	// holds a(i)=i.
 
-blitz::Array<int,1> selected;	// true iff a point is in the selected set
-blitz::Array<int,1> selected_previously;	// used when adding to selection
+blitz::Array<int,1> newly_selected;	// true iff a point is in the newly selected set
+blitz::Array<int,1> selected;	// used when adding to selection
 blitz::Array<float,2> colors, altcolors;
 
-double r_deselected=1.0, g_deselected=0.0, b_deselected=0.0;
+double r_selected=0.01, g_selected=0.01, b_selected=1.0;
+double r_deselected=1.0, g_deselected=0.01, b_deselected=0.01;
 
 // For interface to normalization & graphics routines. 
 // Redundant. Eliminate by using interlaced arrays?
@@ -135,6 +135,7 @@ Fl_Hor_Value_Slider_Input *npoints_slider;	// maximum number of points to displa
 Fl_Button *add_to_selection_button, *clear_selection_button, *delete_selection_button;
 Fl_Button *display_deselected_button, *invert_selection_button;
 Fl_Button *write_data_button;
+Fl_Button *choose_color_selected_button, *choose_color_deselected_button;
 
 // the plot_window class is subclass of an ftlk openGL window that also handles
 // certain keyboard & mouse events.  It is where data is displayed.
@@ -153,6 +154,7 @@ protected:
     float xzoomcenter, yzoomcenter;
     float xdown, ydown, xtracked, ytracked;
     int selection_changed, extend_selection;
+	void set_selection_colors ();
     static int count;
     // histograms
     int nbins;
@@ -177,8 +179,9 @@ public:
     int extract_data_points();
     int transform_2d();
     void reset_selection_box();
+    void color_array_from_new_selection();
     void color_array_from_selection();
-	double r_selected, g_selected, b_selected;
+	GLfloat color1[4], color2[4]; // color of selected and deselected points, respectively
     void reset_view();
     float angle;
     int needs_redraw;
@@ -196,7 +199,6 @@ plot_window::plot_window(int w,int h) : Fl_Gl_Window(w,h)
     nbins = nbins_default;
     counts.resize(nbins_max,3);
     counts_selected.resize(nbins_max,3);
-	r_selected = 0.0;	g_selected = 0.0;	b_selected = 1.0;
 #if 0
     if (can_do(FL_RGB8|FL_DOUBLE|FL_ALPHA|FL_DEPTH))
 		mode(FL_RGB8|FL_DOUBLE|FL_ALPHA|FL_DEPTH);  // Can't seem to make this work on PBG4 OSX 
@@ -211,6 +213,7 @@ class control_panel_window : public Fl_Group
 {
 protected:
     void maybe_redraw ();
+
 public:
     control_panel_window(int x, int y, int w, int h);
     void make_widgets(control_panel_window *cpw);
@@ -221,13 +224,15 @@ public:
 		{ cpw->maybe_redraw() ;}
     static void replot (Fl_Widget *w, control_panel_window *cpw)
 		{ /* cpw->pw->redraw(); */ cpw->pw->needs_redraw=1;}
+	static void reset_view (Fl_Widget *w, control_panel_window *cpw)
+		{ cpw->pw->reset_view() ;}
     Fl_Hor_Value_Slider_Input *pointsize_slider;
-	Fl_Button *choose_selection_color_button, *choose_deselected_color_button;
     Fl_Hor_Value_Slider_Input *Bkg, *Lum, *Alph;
     Fl_Hor_Value_Slider_Input *rot_slider;
     Fl_Hor_Value_Slider_Input *nbins_slider;
     Fl_Choice *varindex1, *varindex2, *varindex3;
 	
+	Fl_Button *reset_view_button;
     Fl_Button *spin, *dont_clear, *show_points, *show_axes, *show_grid, *show_labels, *show_histogram;
 //	Fl_Button *x_equals_delta_x, *y_equals_delta_x;
     Fl_Group *transform_style;
@@ -280,32 +285,30 @@ toggle_display_delected(Fl_Widget *o)
 	// Shouldn't there be an easier way?
 	if (o == NULL)
 		display_deselected_button->value(1 - display_deselected_button->value());
-	pws[0]->color_array_from_selection (); // So, I'm lazy.
 	redraw_all_plots (); // something wrong here....
 }
 
 void
 clear_selection (Fl_Widget *o)
 {
-	selected = 0;
-	selected_previously = 0;
 	for (int i=0; i<nplots; i++)
 	{
 		pws[i]->reset_selection_box ();
 	}
+	newly_selected = 0;
+	selected = 0;
 	pws[0]->color_array_from_selection (); // So, I'm lazy.
 	redraw_all_plots ();
 }
 
 void
-choose_selection_color (Fl_Widget *o)
+choose_color_selected (Fl_Widget *o)
 {
-	plot_window *pw = ((control_panel_window *)o->parent())->pw;
-	(void) fl_color_chooser("selected", pw->r_selected, pw->g_selected, pw->b_selected);
+	(void) fl_color_chooser("selected", r_selected, g_selected, b_selected);
 }
 
 void
-choose_deselected_color (Fl_Widget *o)
+choose_color_deselected (Fl_Widget *o)
 {
 	(void) fl_color_chooser("deselected", r_deselected, g_deselected, b_deselected);
 }
@@ -363,7 +366,7 @@ plot_window::handle(int event) {
 
 		if (Fl::event_state() & FL_BUTTON1) // left button down = start new selection
 		{
-			selected_previously(blitz::Range(0,npoints-1)) = selected(blitz::Range(0,npoints-1));
+			selected(blitz::Range(0,npoints-1)) = selected(blitz::Range(0,npoints-1));
 			
 			if (! (Fl::event_key(FL_Shift_L) || Fl::event_key(FL_Shift_R))) // not moving or extending old selection
 			{
@@ -659,7 +662,7 @@ void plot_window::draw_labels ()
     glDisable(GL_DEPTH_TEST);
     glPushMatrix ();
     glLoadIdentity();
-    gl_font (FL_COURIER | FL_BOLD, 10);
+    gl_font (FL_HELVETICA, 10);
     if (cp->Bkg->value() <= 0.5)
 		glColor4f(0.8,0.8,0.8,0.0);
     else
@@ -693,61 +696,43 @@ void plot_window::handle_selection()
     }
     blitz::Range NPTS(0,npoints-1);	
 	
+	newly_selected(NPTS) = where((vertices(NPTS,0)>fmaxf(xdown,xtracked) || vertices(NPTS,0)<fminf(xdown,xtracked) ||
+								  vertices(NPTS,1)>fmaxf(ydown,ytracked) || vertices(NPTS,1)<fminf(ydown,ytracked)),
+								 0,1);
 	if (add_to_selection_button->value())
 	{
-		selected(NPTS) = where((vertices(NPTS,0)>fmaxf(xdown,xtracked) || vertices(NPTS,0)<fminf(xdown,xtracked) ||
-								vertices(NPTS,1)>fmaxf(ydown,ytracked) || vertices(NPTS,1)<fminf(ydown,ytracked)),
-							   0,1) || selected_previously(NPTS);
+		selected(NPTS) |= newly_selected(NPTS);
 	} else {
-		selected(NPTS) = where((vertices(NPTS,0)>fmaxf(xdown,xtracked) || vertices(NPTS,0)<fminf(xdown,xtracked) ||
-								vertices(NPTS,1)>fmaxf(ydown,ytracked) || vertices(NPTS,1)<fminf(ydown,ytracked)),
-							   0,1);
+		selected(NPTS) = newly_selected(NPTS);
 	}			
 
-#if 0
-    if (extend_selection || add_to_selection_button->value())
-    {
-		selected(NPTS) = where((vertices(NPTS,0)>fmaxf(xdown,xtracked) || vertices(NPTS,0)<fminf(xdown,xtracked) ||
-								vertices(NPTS,1)>fmaxf(ydown,ytracked) || vertices(NPTS,1)<fminf(ydown,ytracked)),
-							   0,1) || selected(NPTS);
-    } else {
-		selected(NPTS) = where((vertices(NPTS,0)>fmaxf(xdown,xtracked) || vertices(NPTS,0)<fminf(xdown,xtracked) ||
-								vertices(NPTS,1)>fmaxf(ydown,ytracked) || vertices(NPTS,1)<fminf(ydown,ytracked)),
-							   0,1);
-    }
-
-#endif // 0
-
-    color_array_from_selection ();
+    color_array_from_new_selection ();
 
     // done flagging selection for this plot
     selection_changed = 0;
 	
 }
 	
-float r1=1.0, g1=0.05, b1=0.05, alpha1 = 1.0;
+float mincolor= 0.01, alpha1 = 1.0;
+
+void plot_window::set_selection_colors ()
+{
+	color1[0] = fmax(r_deselected, mincolor);
+    color1[1] = fmax(g_deselected, mincolor);
+    color1[2] = fmax(b_deselected, mincolor);
+    color1[3] = alpha1;
+ 
+    color2[0] = fmax(r_selected, mincolor);
+    color2[1] = fmax(g_selected, mincolor);
+    color2[2] = fmax(b_selected, mincolor);
+    color2[3] = alpha1;
+}
+
 
 void plot_window::color_array_from_selection()
 {
-    GLfloat color1[4], color2[4];
-#if 0
-    color1[0] = color2[2] = r1;
-    color1[1] = color2[1] = g1;
-    color1[2] = color2[0] = b1;
-    color1[3] = color2[3] = alpha1;
-#endif // 0
+	set_selection_colors ();
 
-    color1[0] = r_deselected;
-    color1[1] = g_deselected;
-    color1[2] = b_deselected;
-    color1[3] = alpha1;
- 
-    color2[0] = (float)r_selected;
-    color2[1] = (float)g_selected;
-    color2[2] = (float)b_selected;
-    color2[3] = alpha1;
-
-	
     for (int i=0; i<npoints; i++)
     {
 		if (selected(i))
@@ -766,6 +751,26 @@ void plot_window::color_array_from_selection()
 			altcolors(i,3) = 0.0;  
 		}
     }
+}
+
+void plot_window::color_array_from_new_selection()
+{
+	if (add_to_selection_button->value())
+	{
+		set_selection_colors ();
+		for (int i=0; i<npoints; i++)
+		{
+			if (newly_selected(i))
+			{
+				colors(i,0) = altcolors(i,0) = color2[0];
+				colors(i,1) = altcolors(i,1) = color2[1];
+				colors(i,2) = altcolors(i,2) = color2[2];
+				colors(i,3) = altcolors(i,3) = color2[3];
+			} 
+		}
+	} else {
+		color_array_from_selection ();
+	}
 }
 
 void clearAlphaPlanes()
@@ -1479,18 +1484,12 @@ control_panel_window::make_widgets(control_panel_window *cpw)
     Alph->bounds(0,1.0);
     Alph->value(1.0);
 
-	choose_selection_color_button = b = new Fl_Button(xpos, ypos+=25, 20, 20, "selected color");
-    b->align(FL_ALIGN_RIGHT); b->selection_color(FL_YELLOW); b->callback((Fl_Callback*)choose_selection_color);
-
-	choose_deselected_color_button = b = new Fl_Button(xpos+130, ypos, 20, 20, "deselected color");
-    b->align(FL_ALIGN_RIGHT); b->selection_color(FL_YELLOW); b->callback((Fl_Callback*)choose_deselected_color);
-
     rot_slider = new Fl_Hor_Value_Slider_Input (xpos, ypos+=25, cpw->w()-60, 20, "rot");
     rot_slider->align(FL_ALIGN_LEFT);
     rot_slider->callback((Fl_Callback*)replot, this);
     rot_slider->value(0.0);
     rot_slider->step(0.001);
-    rot_slider->bounds(-90.0, 90.0);
+    rot_slider->bounds(-180.0, 180.0);
 
     nbins_slider = new Fl_Hor_Value_Slider_Input(xpos, ypos+=25, cpw->w()-60, 20, "nbins");
     nbins_slider->align(FL_ALIGN_LEFT);
@@ -1561,10 +1560,13 @@ control_panel_window::make_widgets(control_panel_window *cpw)
     int xpos2 = xpos;
     int ypos2 = ypos;
 
-    spin = new Fl_Button(xpos2, ypos+=25, 20, 20, "spin");
-    spin->align(FL_ALIGN_RIGHT);
-    spin->type(FL_TOGGLE_BUTTON);
-    spin->selection_color(FL_YELLOW);
+    reset_view_button = b = new Fl_Button(xpos2, ypos+=25, 20, 20, "reset view ");
+    b->align(FL_ALIGN_RIGHT); b->selection_color(FL_YELLOW);
+	b->callback((Fl_Callback*) reset_view, this);
+
+    spin = b= new Fl_Button(xpos2, ypos+=25, 20, 20, "spin");
+    b->align(FL_ALIGN_RIGHT); b->selection_color(FL_YELLOW);
+    b->type(FL_TOGGLE_BUTTON);
 
     dont_clear = new Fl_Button(xpos2, ypos+=25, 20, 20, "don't clear");
     dont_clear->align(FL_ALIGN_RIGHT);
@@ -1685,8 +1687,8 @@ resize_global_arrays ()
     colors.resize(npoints,4);
     altcolors.resize(npoints,4);
     identity.resize(npoints);
+    newly_selected.resize(npoints);
     selected.resize(npoints);
-    selected_previously.resize(npoints);
 
 	selected=0;
 }
@@ -1706,13 +1708,15 @@ void make_global_widgets ()
 {
 	Fl_Button *b;
 
-	int xpos=40, ypos=500;
-    npoints_slider = new Fl_Hor_Value_Slider_Input(xpos, ypos+=25, 300-60, 20, "npts");
+	int xpos=10, ypos=500;
+    npoints_slider = new Fl_Hor_Value_Slider_Input(xpos+30, ypos+=25, 300-30, 20, "npts");
     npoints_slider->align(FL_ALIGN_LEFT);
     npoints_slider->callback(npoints_changed);
     npoints_slider->value(npoints);
     npoints_slider->step(1);
     npoints_slider->bounds(1,npoints);
+
+	int xpos1 = xpos, ypos1 = ypos;
 
 	display_deselected_button = b = new Fl_Button(xpos, ypos+=25, 20, 20, "display deselected");
     b->align(FL_ALIGN_RIGHT); b->selection_color(FL_YELLOW); b->type(FL_TOGGLE_BUTTON);	b->value(1);
@@ -1732,6 +1736,14 @@ void make_global_widgets ()
 
 	write_data_button = b = new Fl_Button(xpos, ypos+=25, 20, 20, "write data");
     b->align(FL_ALIGN_RIGHT); b->selection_color(FL_YELLOW); b->callback(write_data);
+
+	xpos = xpos1 + 150; ypos = ypos1;
+
+	choose_color_selected_button = b = new Fl_Button(xpos, ypos+=25, 20, 20, "selected color");
+    b->align(FL_ALIGN_RIGHT); b->selection_color(FL_YELLOW); b->callback((Fl_Callback*)choose_color_selected);
+
+	choose_color_deselected_button = b = new Fl_Button(xpos, ypos+=25, 20, 20, "deselected color");
+    b->align(FL_ALIGN_RIGHT); b->selection_color(FL_YELLOW); b->callback((Fl_Callback*)choose_color_deselected);
 
 }
 
