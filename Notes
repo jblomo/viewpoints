@@ -204,3 +204,17 @@ histogram rescale slders
 data scales
 resizable windows (fix)
 rotation of axis
+
+Thu Sep 22 2005
+
+fix centers too, in normalization routines
+fix no redraw in (some) other windows when selection changes
+fix z normalization (z-scale?) - rotation seems screwed up
+add scale numbers
+tickmarks......
+add priority to selected when in 2d (use Z = z+1 for each new selection)
+texture based selection "colors"
+timeseries
+randomize vars ?
+histo scale sliders!
+swapbuffers timing
