@@ -111,6 +111,8 @@ float *tpoints;
 
 std::vector<std::string> column_labels; // vector of strings to hold variable names
 
+const float initial_pscale = 0.8; // initial fraction of the window for datapoints, to allow room for axes, etc.
+
 float xmin, xmax, gmax;
 
 float pointsize = 1.0;
@@ -148,6 +150,7 @@ protected:
 	void draw_center_glyph ();
     int handle (int event);
     void handle_selection();
+	void screen_to_world(float xs, float ys, float &x, float &y);
     int xprev, yprev, xcur, ycur;
     float xdragged, ydragged;
     float xcenter, ycenter, zcenter;
@@ -413,8 +416,12 @@ plot_window::handle(int event)
 		// translate = drag with right mouse (or alt-left-mouse)
 		if ((Fl::event_state() == FL_BUTTON3) || (Fl::event_state() == (FL_BUTTON1 | FL_ALT)))
 		{
-			xcenter -= xdragged*(1/xscale)*(2.0/w());
-			ycenter -= ydragged*(1/yscale)*(2.0/h());
+			float xmove = xdragged*(1/xscale)*(2.0/w());
+			float ymove = ydragged*(1/yscale)*(2.0/h());
+			xcenter -= xmove;
+			ycenter -= ymove;
+			//			wmin[0] -= xmove; wmax[0] -= xmove;
+			//			wmin[1] -= ymove; wmax[1] -= ymove;
 			DEBUG ( cout << "xcenter, ycenter: " << xcenter << ", " << ycenter << endl);
 			// redraw ();
 			show_center_glyph = 1;
@@ -431,6 +438,9 @@ plot_window::handle(int event)
 			} else {
 				xscale *= 1 + xdragged*(2.0/w());
 				yscale *= 1 + ydragged*(2.0/h());
+				// not quite.... maybe try another approach.
+				//				wmin[0] /= 1 + xdragged*(2.0/w()); wmax[0] /= 1 + xdragged*(2.0/w());
+				//				wmin[1] /= 1 + ydragged*(2.0/h()); wmax[1] /= 1 + ydragged*(2.0/h());
 				DEBUG ( cout << "xscale, yscale: " << xscale << ", " << yscale << endl );
 			}
 			// redraw();
@@ -508,7 +518,7 @@ plot_window::handle(int event)
 			toggle_display_delected ((Fl_Widget *)NULL);
 			return 1;
 		case 'r':
-			reset_view ();
+			extract_data_points ();
 			//redraw();
 			return 1;
 		case 'h':
@@ -558,9 +568,9 @@ void plot_window::reset_view()
 	else
 		zscale = 1.0;
 	
-	xscale *= 0.8; // datapoints only span 0.8 of the window dimensions, initially
-	yscale *= 0.8; // which allows room around the edges for labels, tickmarks, histograms....
-	zscale *= 0.8; // which allows room around the edges for labels, tickmarks, histograms....
+	xscale *= initial_pscale; // datapoints only span 0.8 of the window dimensions, initially
+	yscale *= initial_pscale; // which allows room around the edges for labels, tickmarks, histograms....
+	zscale *= initial_pscale; // which allows room around the edges for labels, tickmarks, histograms....
 
 	xcenter = (wmin[0]+wmax[0]) / 2.0;
 	ycenter = (wmin[1]+wmax[1]) / 2.0;
@@ -690,20 +700,51 @@ void plot_window::draw_grid()
     }
 }
 
+void plot_window::screen_to_world (float xscreen, float yscreen, float &xworld, float &yworld)
+{
+	//xworld = + (2.0*(xscreen/(float)w()) -1.0) ; // window -> [-1,1]
+	xworld = (xworld / xscale) + xcenter;
+
+	//yworld = - (2.0*(yscreen/(float)h()) -1.0) ; // window -> [-1,1]
+	yworld = (yworld / yscale) + ycenter;
+}
+
+
 void plot_window::draw_axes ()
 {
     if (cp->show_axes->value())
 		{
+			
+			glPushMatrix ();
+			glLoadIdentity();
+
+			float a = 0.1; // extra (relative) distance that axes extend past leftmost and rightmost tickmarks.
+			float b = 1.5; //  scale factor for tickmark length. b<1 -> inwards, b>1 -> outwards, b==1 -> no tick.
+			float c = initial_pscale;
+			glScalef(c, c, c);
+
 			glBlendFunc(GL_ONE, GL_ZERO);
 			if (cp->Bkg->value() <= 0.4)
 				glColor4f(0.6,0.6,0.0,0.0);
 			else
 				glColor4f(0.4*cp->Bkg->value(), 0.4*cp->Bkg->value(), 0.0*cp->Bkg->value(), 0.0);
+
 			glBegin (GL_LINES);
-			glVertex3f (wmin[0],  wmin[1], wmin[2]); glVertex3f (wmax[0],  wmin[1], wmin[2]); // x axis
-			glVertex3f (wmin[0],  wmin[1], wmin[2]); glVertex3f (wmin[0],  wmax[1], wmin[2]); // y axis
-			glVertex3f (wmin[0],  wmin[1], wmin[2]); glVertex3f (wmin[0],  wmin[1], wmax[2]); // z axis
+
+			glVertex3f (-(1+a), -(1+a), -(1+a)); glVertex3f (+(1+a), -(1+a), -(1+a)); // X axis
+			glVertex3f (-(1+a), -(1+a), -(1+a)); glVertex3f (-(1+a), +(1+a), -(1+a)); // Y axis
+			glVertex3f (-(1+a), -(1+a), -(1+a)); glVertex3f (-(1+a), -(1+a), +(1+a)); // Z axis
+
+			glVertex3f (-1, -(1+a), -(1+a)); glVertex3f (-1, -(1+b*a), -(1+a)); // lower X-axis tick
+			glVertex3f (+1, -(1+a), -(1+a)); glVertex3f (+1, -(1+b*a), -(1+a)); // upper X-axis tick
+			glVertex3f (-(1+a), -1, -(1+a)); glVertex3f (-(1+b*a), -1, -(1+a)); // lower Y-axis tick
+			glVertex3f (-(1+a), +1, -(1+a)); glVertex3f (-(1+b*a), +1, -(1+a)); // upper Y-axis tick
+			b = 1; // XXX Z-axis ticks clutter 2D plots
+			glVertex3f (-(1+a), -(1+a), -1); glVertex3f (-(1+b*a), -(1+a), -1); // lower Z-axis tick
+			glVertex3f (-(1+a), -(1+a), +1); glVertex3f (-(1+b*a), -(1+a), +1); // upper Z-axis tick
+
 			glEnd();
+			glPopMatrix ();
 		}
 }
 
@@ -1281,6 +1322,9 @@ plot_window::extract_data_points ()
 		amax[2] = zpoints(z_rank(npoints-1));
 		cout << "  min: " << zlabel << "(" << z_rank(0) << ") = " << zpoints(z_rank(0));
 		cout << "  max: " << zlabel << "(" << z_rank(npoints-1) << ") = " << zpoints(z_rank(npoints-1)) << endl;
+	} else {
+		amin[2] = -1.0;
+		amax[2] = +1.0;
 	}
 
 	reset_view ();
