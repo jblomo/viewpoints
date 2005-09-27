@@ -100,6 +100,7 @@ blitz::Array<int,1> identity;	// holds a(i)=i.
 
 blitz::Array<int,1> newly_selected;	// true iff a point is in the newly selected set
 blitz::Array<int,1> selected;	// used when adding to selection
+int nselected = 0;	// number of points currently selected
 blitz::Array<float,2> colors, altcolors;
 
 double r_selected=0.01, g_selected=0.01, b_selected=1.0;
@@ -144,8 +145,8 @@ protected:
     void draw();
     void draw_grid();
     void draw_axes();
-    void draw_labels();
-    void draw_summary();
+	//    void draw_labels();
+	//    void draw_scale();
     void draw_data_points();
 	void draw_center_glyph ();
     int handle (int event);
@@ -207,13 +208,18 @@ plot_window::plot_window(int w,int h) : Fl_Gl_Window(w,h)
     nbins = nbins_default;
     counts.resize(nbins_max,3);
     counts_selected.resize(nbins_max,3);
-#if 0
-    if (can_do(FL_RGB8|FL_DOUBLE|FL_ALPHA|FL_DEPTH))
-		mode(FL_RGB8|FL_DOUBLE|FL_ALPHA|FL_DEPTH);  // Can't seem to make this work on PBG4 OSX 
+    if (can_do(FL_RGB|FL_DOUBLE|FL_ALPHA|FL_DEPTH))
+		{
+			mode(FL_RGB|FL_DOUBLE|FL_ALPHA|FL_DEPTH);  // Can't seem to make this work on PBG4 OSX
+		}
     else
-		mode(FL_RGB|FL_DOUBLE|FL_ALPHA);
-#endif
+		{
+			cout << "Warning: depth buffering not enabled" << endl;
+			mode(FL_RGB|FL_DOUBLE|FL_ALPHA);
+		}
+#if 0
     mode(FL_RGB8|FL_DOUBLE|FL_ALPHA);
+#endif
 }
 
 
@@ -244,7 +250,7 @@ public:
 	
 	Fl_Button *reset_view_button;
     Fl_Button *spin, *dont_clear, *show_points, *show_axes, *show_grid, *show_labels, *show_histogram;
-	Fl_Button *show_summary;
+	Fl_Button *show_scale;
 //	Fl_Button *x_equals_delta_x, *y_equals_delta_x;
     Fl_Group *transform_style;
     Fl_Button *sum_vs_difference, *polar, *no_transform;
@@ -285,6 +291,7 @@ void
 invert_selection ()
 {
 	selected(blitz::Range(0,npoints-1)) = 1-selected(blitz::Range(0,npoints-1));
+	nselected = npoints-nselected;
 	pws[0]->color_array_from_selection ();
 	redraw_all_plots (0);
 }
@@ -308,6 +315,7 @@ clear_selection (Fl_Widget *o)
 	}
 	newly_selected = 0;
 	selected = 0;
+	nselected = 0;
 	pws[0]->color_array_from_selection (); // So, I'm lazy.
 	redraw_all_plots (0);
 }
@@ -420,8 +428,6 @@ plot_window::handle(int event)
 			float ymove = ydragged*(1/yscale)*(2.0/h());
 			xcenter -= xmove;
 			ycenter -= ymove;
-			//			wmin[0] -= xmove; wmax[0] -= xmove;
-			//			wmin[1] -= ymove; wmax[1] -= ymove;
 			DEBUG ( cout << "xcenter, ycenter: " << xcenter << ", " << ycenter << endl);
 			// redraw ();
 			show_center_glyph = 1;
@@ -438,10 +444,6 @@ plot_window::handle(int event)
 			} else {
 				xscale *= 1 + xdragged*(2.0/w());
 				yscale *= 1 + ydragged*(2.0/h());
-				// not quite.... maybe try another approach.
-				//				wmin[0] /= 1 + xdragged*(2.0/w()); wmax[0] /= 1 + xdragged*(2.0/w());
-				//				wmin[1] /= 1 + ydragged*(2.0/h()); wmax[1] /= 1 + ydragged*(2.0/h());
-				DEBUG ( cout << "xscale, yscale: " << xscale << ", " << yscale << endl );
 			}
 			// redraw();
 			needs_redraw = 1;
@@ -482,6 +484,8 @@ plot_window::handle(int event)
 					redraw_all_plots (index);
 				}
 		}
+		screen_to_world (-1, -1, wmin[0], wmin[1]);
+		screen_to_world (+1, +1, wmax[0], wmax[1]);
 		return 1;
     case FL_RELEASE:   
 		// mouse up
@@ -570,7 +574,7 @@ void plot_window::reset_view()
 	
 	xscale *= initial_pscale; // datapoints only span 0.8 of the window dimensions, initially
 	yscale *= initial_pscale; // which allows room around the edges for labels, tickmarks, histograms....
-	zscale *= initial_pscale; // which allows room around the edges for labels, tickmarks, histograms....
+	zscale *= initial_pscale; 
 
 	xcenter = (wmin[0]+wmax[0]) / 2.0;
 	ycenter = (wmin[1]+wmax[1]) / 2.0;
@@ -607,7 +611,7 @@ void plot_window::draw()
 		glOrtho(-1, 1, -1, 1, -MAXFLOAT, MAXFLOAT);
 		glViewport(0, 0, w(), h());
 		glDisable(GL_LIGHTING);
-		glEnable(GL_DEPTH_TEST);
+		// glEnable(GL_DEPTH_TEST);
 		glEnable(GL_BLEND);
 		//	glEnable(GL_POINT_SMOOTH);
 		//	glHint(GL_POINT_SMOOTH_HINT,GL_NICEST);
@@ -621,12 +625,12 @@ void plot_window::draw()
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
     glTranslatef (xzoomcenter*xscale, yzoomcenter*yscale, zzoomcenter*zscale);
-    glScalef (xscale, yscale, zscale);
     if (cp->spin->value())
 		angle += cp->rot_slider->value()/100.0;
     else
 		angle = cp->rot_slider->value();
     glRotatef(angle, 0.0, 1.0, 0.1);
+    glScalef (xscale, yscale, zscale);
     glTranslatef (-xcenter, -ycenter, -zcenter);
     glTranslatef (-xzoomcenter, -yzoomcenter, -zzoomcenter);
 
@@ -638,8 +642,8 @@ void plot_window::draw()
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		draw_grid();
 		draw_axes();
-		draw_labels();
-		draw_summary();
+		//		draw_labels();
+		//		draw_scale();
     }
 
     if (selection_changed)
@@ -702,11 +706,11 @@ void plot_window::draw_grid()
 
 void plot_window::screen_to_world (float xscreen, float yscreen, float &xworld, float &yworld)
 {
-	//xworld = + (2.0*(xscreen/(float)w()) -1.0) ; // window -> [-1,1]
-	xworld = (xworld / xscale) + xcenter;
-
-	//yworld = - (2.0*(yscreen/(float)h()) -1.0) ; // window -> [-1,1]
-	yworld = (yworld / yscale) + ycenter;
+	//cout << "screen_to_world" << endl;
+	//cout << "  before" << xscreen << " " << yscreen << " " << xworld << " " << yworld << endl;
+	xworld = (xscreen*initial_pscale / xscale) + xcenter;
+	yworld = (yscreen*initial_pscale / yscale) + ycenter;
+	//cout << "  after " << xscreen << " " << yscreen << " " << xworld << " " << yworld << endl;
 }
 
 
@@ -719,10 +723,10 @@ void plot_window::draw_axes ()
 			glLoadIdentity();
 
 			float a = 0.1; // extra (relative) distance that axes extend past leftmost and rightmost tickmarks.
-			float b = 1.5; //  scale factor for tickmark length. b<1 -> inwards, b>1 -> outwards, b==1 -> no tick.
 			float c = initial_pscale;
 			glScalef(c, c, c);
 
+			gl_font (FL_HELVETICA, 10);
 			glBlendFunc(GL_ONE, GL_ZERO);
 			if (cp->Bkg->value() <= 0.4)
 				glColor4f(0.6,0.6,0.0,0.0);
@@ -735,18 +739,44 @@ void plot_window::draw_axes ()
 			glVertex3f (-(1+a), -(1+a), -(1+a)); glVertex3f (-(1+a), +(1+a), -(1+a)); // Y axis
 			glVertex3f (-(1+a), -(1+a), -(1+a)); glVertex3f (-(1+a), -(1+a), +(1+a)); // Z axis
 
-			glVertex3f (-1, -(1+a), -(1+a)); glVertex3f (-1, -(1+b*a), -(1+a)); // lower X-axis tick
-			glVertex3f (+1, -(1+a), -(1+a)); glVertex3f (+1, -(1+b*a), -(1+a)); // upper X-axis tick
-			glVertex3f (-(1+a), -1, -(1+a)); glVertex3f (-(1+b*a), -1, -(1+a)); // lower Y-axis tick
-			glVertex3f (-(1+a), +1, -(1+a)); glVertex3f (-(1+b*a), +1, -(1+a)); // upper Y-axis tick
-			b = 1; // XXX Z-axis ticks clutter 2D plots
-			glVertex3f (-(1+a), -(1+a), -1); glVertex3f (-(1+b*a), -(1+a), -1); // lower Z-axis tick
-			glVertex3f (-(1+a), -(1+a), +1); glVertex3f (-(1+b*a), -(1+a), +1); // upper Z-axis tick
-
 			glEnd();
+
+			char buf[1024];
+			float b = 1.5; //  offset factor for tickmark length. b<1 -> inwards, b>1 -> outwards, b==1 -> no tick.
+	
+			if (cp->show_scale->value())
+				{
+					glBegin (GL_LINES);
+
+					glVertex3f (-1, -(1+a), -(1+a)); glVertex3f (-1, -(1+b*a), -(1+a)); // lower X-axis tick
+					glVertex3f (+1, -(1+a), -(1+a)); glVertex3f (+1, -(1+b*a), -(1+a)); // upper X-axis tick
+					glVertex3f (-(1+a), -1, -(1+a)); glVertex3f (-(1+b*a), -1, -(1+a)); // lower Y-axis tick
+					glVertex3f (-(1+a), +1, -(1+a)); glVertex3f (-(1+b*a), +1, -(1+a)); // upper Y-axis tick
+					b = 1; // XXX Z-axis ticks clutter 2D plots
+					glVertex3f (-(1+a), -(1+a), -1); glVertex3f (-(1+b*a), -(1+a), -1); // lower Z-axis tick
+					glVertex3f (-(1+a), -(1+a), +1); glVertex3f (-(1+b*a), -(1+a), +1); // upper Z-axis tick
+					glEnd();
+			
+					b = 2;  //  offset for scale values. b<1 -> inwards, b>1 -> outwards, b==1 -> on axis.
+					snprintf(buf, sizeof(buf), "% .3g", wmin[0]); 					// lower X-axis scale value
+					gl_draw((const char *)buf, -1.0-gl_width((const char *)buf)/(w()), -(1+b*a));
+		
+					snprintf(buf, sizeof(buf), "% .3g", wmax[0]); 					// upper X-axis scale value
+					gl_draw((const char *)buf, +1.0-gl_width((const char *)buf)/(w()), -(1+b*a));
+		
+				}
+
+			if (cp->show_labels->value())
+				{
+					b = 2;  //  offset for axis labels values. b<1 -> inwards, b>1 -> outwards, b==1 -> on axis.
+					float wid = gl_width(xlabel.c_str())/(float)(w());
+					gl_draw((const char *)(xlabel.c_str()), -wid, -(1+b*a));
+					//	gl_draw((const char *)(ylabel.c_str()), offset, 1.0F-2*offset);
+				}
 			glPopMatrix ();
 		}
 }
+
 
 void plot_window::draw_center_glyph ()
 {
@@ -766,59 +796,6 @@ void plot_window::draw_center_glyph ()
 	glEnd ();
     glPopMatrix ();
 }
-
-void plot_window::draw_summary ()
-{
-    if (!cp->show_summary->value())
-		return;
-
-    int axis0 = (int)(cp->varindex1->mvalue()->user_data());
-    //int axis1 = (int)(cp->varindex2->mvalue()->user_data());
-    //int axis2 = (int)(cp->varindex3->mvalue()->user_data());
-
-    // note: perhaps we should not bother with one if it is too close to the origin?
-    glDisable(GL_DEPTH_TEST);
-    glPushMatrix ();
-    glLoadIdentity();
-    gl_font (FL_HELVETICA, 10);
-    if (cp->Bkg->value() <= 0.5)
-		glColor4f(0.8,0.8,0.8,0.0);
-    else
-		glColor4f(0.2,0.2,0.2,0.0);
-	
-	ostringstream ss1,ss2;
-	ss1 << "var\tmin\tmax";
-	gl_draw((const char *)(ss1.str().c_str()), 0.0f, -.90f);
-	ss2 << xlabel << "\t" << points(axis0,ranked_points(axis0,0)) << '\t' << points(axis0,ranked_points(axis0,npoints-1));
-	gl_draw((const char *)(ss2.str().c_str()), 0.0f, -.95f);
-		
-    glPopMatrix ();
-}
-
-void plot_window::draw_labels ()
-{
-    if (!cp->show_labels->value())
-		return;
-    // note: perhaps we should not bother with one if it is too close to the origin?
-    glDisable(GL_DEPTH_TEST);
-    glPushMatrix ();
-    glLoadIdentity();
-    gl_font (FL_HELVETICA, 10);
-    if (cp->Bkg->value() <= 0.5)
-		glColor4f(0.8,0.8,0.8,0.0);
-    else
-		glColor4f(0.2,0.2,0.2,0.0);
-	
-    float xlabel_width = 2.0 * gl_width(xlabel.c_str())/(float)(this->w());
-//	float ylabel_width = 2.0 * gl_width(ylabel.c_str())/(float)(this->w());
-    float offset = 0.05;  // how far label should be from end of vector
-	
-    gl_draw((const char *)(xlabel.c_str()), 1.0F-(offset+xlabel_width), 0.0F-offset);
-    gl_draw((const char *)(ylabel.c_str()), offset, 1.0F-2*offset);
-    glPopMatrix ();
-    glEnable(GL_DEPTH_TEST);
-}
-
 
 void plot_window::handle_selection()
 {
@@ -847,6 +824,7 @@ void plot_window::handle_selection()
 		selected(NPTS) = newly_selected(NPTS);
 	}			
 
+	nselected = sum(selected(NPTS));
     color_array_from_new_selection ();
 
     // done flagging selection for this plot
@@ -927,7 +905,7 @@ void plot_window::draw_data_points()
 	// cout << "pw[" << index << "]: draw_data_points() " << endl;
     if (!cp->show_points->value())
 		return;
-//	glDisable(GL_DEPTH_TEST);
+	glDisable(GL_DEPTH_TEST);
 
 //  the following are done once if necessary in the plot_window::draw()
 //	glEnable(GL_BLEND);
@@ -978,7 +956,6 @@ void plot_window::draw_data_points()
     if (!display_deselected_button->value())
 		glDisable(GL_ALPHA_TEST);
 
-//	glEnable(GL_DEPTH_TEST);
 }
 
 void plot_window::compute_histogram(int axis)
@@ -1021,8 +998,7 @@ void plot_window::draw_histograms()
 		return;
     // draw histogram
 	
-    glEnable(GL_DEPTH_TEST);
-    glPushMatrix();
+	glPushMatrix();
 
     // x axis histograms
     glLoadIdentity();
@@ -1042,37 +1018,41 @@ void plot_window::draw_histograms()
     glBegin(GL_LINE_STRIP);
     glVertex2f(x,0.0);					
     for (int bin=0; bin<nbins; bin++)
-    {
-		// left edge
-		glVertex2f(x,counts(bin,0));			
-		// top edge
-		glVertex2f(x+xwidth,counts(bin,0));	
-		// right edge 
-		//glVertex2f(x+xwidth,0.0);
-		x+=xwidth;
-    }
+		{
+			// left edge
+			glVertex2f(x,counts(bin,0));			
+			// top edge
+			glVertex2f(x+xwidth,counts(bin,0));	
+			// right edge 
+			//glVertex2f(x+xwidth,0.0);
+			x+=xwidth;
+		}
     glVertex2f(x,0.0);					
     glEnd();
 
-    // Refactor this!
-    // x axis histogram (selected points)
-    x = amin[0];
-    glColor4f (0.25, 1.0, 0.25, 1.0);
-    glBegin(GL_LINE_STRIP);
-    glVertex2f(x,0.0);					
-    for (int bin=0; bin<nbins; bin++)
-    {
-		// left edge
-		glVertex2f(x,counts_selected(bin,0));			
-		// top edge
-		glVertex2f(x+xwidth,counts_selected(bin,0));	
-		// right edge 
-		//glVertex2f(x+xwidth,0.0);
-		x+=xwidth;
-    }
-    glVertex2f(x,0.0);					
-    glEnd();
+	if (nselected > 0)
+		{
 
+			// Refactor this!
+			// x axis histogram (selected points)
+			x = amin[0];
+			glColor4f (0.25, 1.0, 0.25, 1.0);
+			glBegin(GL_LINE_STRIP);
+			glVertex2f(x,0.0);					
+			for (int bin=0; bin<nbins; bin++)
+				{
+					// left edge
+					glVertex2f(x,counts_selected(bin,0));			
+					// top edge
+					glVertex2f(x+xwidth,counts_selected(bin,0));	
+					// right edge 
+					//glVertex2f(x+xwidth,0.0);
+					x+=xwidth;
+				}
+			glVertex2f(x,0.0);					
+			glEnd();
+		}
+	
     // y axis histograms
     glLoadIdentity();
     glTranslatef (0.0, yzoomcenter*yscale, 0);
@@ -1087,37 +1067,39 @@ void plot_window::draw_histograms()
     glBegin(GL_LINE_STRIP);
     glVertex2f(0.0,y);					
     for (int bin=0; bin<nbins; bin++)
-    {
-		// bottom
-		glVertex2f(counts(bin,1),y);			
-		// right edge
-		glVertex2f(counts(bin,1), y+ywidth);	
-		// top edge 
-		// glVertex2f(0.0, y+ywidth);
-		y+=ywidth;
-    }
+		{
+			// bottom
+			glVertex2f(counts(bin,1),y);			
+			// right edge
+			glVertex2f(counts(bin,1), y+ywidth);	
+			// top edge 
+			// glVertex2f(0.0, y+ywidth);
+			y+=ywidth;
+		}
     glVertex2f(0.0,y);					
     glEnd();
 
-    // Refactor this!
-    // y axis histogram (selected points)
-    y = amin[1];
-    glColor4f (0.25, 1.0, 0.25, 1.0);
-    glBegin(GL_LINE_STRIP);
-    glVertex2f(0.0,y);					
-    for (int bin=0; bin<nbins; bin++)
-    {
-		// bottom
-		glVertex2f(counts_selected(bin,1),y);			
-		// right edge
-		glVertex2f(counts_selected(bin,1), y+ywidth);	
-		// top edge 
-		// glVertex2f(0.0, y+ywidth);
-		y+=ywidth;
-    }
-    glVertex2f(0.0,y);					
-    glEnd();
-
+    if (nselected > 0)
+		{
+			// Refactor this!
+			// y axis histogram (selected points)
+			y = amin[1];
+			glColor4f (0.25, 1.0, 0.25, 1.0);
+			glBegin(GL_LINE_STRIP);
+			glVertex2f(0.0,y);					
+			for (int bin=0; bin<nbins; bin++)
+				{
+					// bottom
+					glVertex2f(counts_selected(bin,1),y);			
+					// right edge
+					glVertex2f(counts_selected(bin,1), y+ywidth);	
+					// top edge 
+					// glVertex2f(0.0, y+ywidth);
+					y+=ywidth;
+				}
+			glVertex2f(0.0,y);					
+			glEnd();
+		}
     glPopMatrix();
 }
 
@@ -1749,28 +1731,28 @@ control_panel_window::make_widgets(control_panel_window *cpw)
     ypos=ypos2;
     xpos=xpos2+100;
 
-    show_grid = b = new Fl_Button(xpos, ypos+=25, 20, 20, "grid");
+    show_points = b = new Fl_Button(xpos, ypos+=25, 20, 20, "show points");
     b->callback((Fl_Callback*)static_maybe_redraw, this);
     b->align(FL_ALIGN_RIGHT); b->type(FL_TOGGLE_BUTTON); b->selection_color(FL_YELLOW);	b->value(1);
 
-    show_summary = b = new Fl_Button(xpos, ypos+=25, 20, 20, "summary");
+    show_axes = b = new Fl_Button(xpos, ypos+=25, 20, 20, "show axes");
     b->callback((Fl_Callback*)static_maybe_redraw, this);
     b->align(FL_ALIGN_RIGHT); b->type(FL_TOGGLE_BUTTON); b->selection_color(FL_YELLOW);	b->value(1);
 
-    show_points = b = new Fl_Button(xpos, ypos+=25, 20, 20, "points");
+    show_labels = b = new Fl_Button(xpos, ypos+=25, 20, 20, "show labels");
     b->callback((Fl_Callback*)static_maybe_redraw, this);
     b->align(FL_ALIGN_RIGHT); b->type(FL_TOGGLE_BUTTON); b->selection_color(FL_YELLOW);	b->value(1);
 
-    show_axes = b = new Fl_Button(xpos, ypos+=25, 20, 20, "axes");
+    show_scale = b = new Fl_Button(xpos, ypos+=25, 20, 20, "show scale");
     b->callback((Fl_Callback*)static_maybe_redraw, this);
     b->align(FL_ALIGN_RIGHT); b->type(FL_TOGGLE_BUTTON); b->selection_color(FL_YELLOW);	b->value(1);
 
-    show_labels = b = new Fl_Button(xpos, ypos+=25, 20, 20, "labels");
+    show_grid = b = new Fl_Button(xpos, ypos+=25, 20, 20, "show grid");
     b->callback((Fl_Callback*)static_maybe_redraw, this);
-    b->align(FL_ALIGN_RIGHT); b->type(FL_TOGGLE_BUTTON); b->selection_color(FL_YELLOW);	b->value(1);
+    b->align(FL_ALIGN_RIGHT); b->type(FL_TOGGLE_BUTTON); b->selection_color(FL_YELLOW);	b->value(0);
 
-    show_histogram = b = new Fl_Button(xpos, ypos+=25, 20, 20, "histogram");
-    b->callback((Fl_Callback*)static_extract_and_redraw, this);
+    show_histogram = b = new Fl_Button(xpos, ypos+=25, 20, 20, "show histogram");
+    b->callback((Fl_Callback*)redraw_one_plot, this);
     b->align(FL_ALIGN_RIGHT); b->type(FL_TOGGLE_BUTTON); b->selection_color(FL_YELLOW);	b->value(0);
 
 }
@@ -1869,11 +1851,11 @@ resize_global_arrays ()
 void usage()
 {
     fprintf(stderr,"Usage:\n");
-    fprintf(stderr,"[--format={ascii,binary}] -f\n");
-    fprintf(stderr,"[--npoints=<int>] -n\n");
-    fprintf(stderr,"[--nrows=<int>] -r\n");
-    fprintf(stderr,"[--ncols=<int>] -c\n");
-    fprintf(stderr,"[--help] -h\n");
+    fprintf(stderr,"[--format={ascii,binary}] (-f)\n");
+    fprintf(stderr,"[--npoints=<int>] (-n)\n");
+    fprintf(stderr,"[--rows=<int>] (-r)\n");
+    fprintf(stderr,"[--cols=<int>] (-c)\n");
+    fprintf(stderr,"[--help] (-h)\n");
     exit(-1);
 }
 
@@ -1927,8 +1909,8 @@ int main(int argc, char **argv)
     static struct option long_options[] =
 		{
 			{"npoints",	required_argument,	0, 'n'},
-			{"nrows",	required_argument,	0, 'r'},
-			{"ncols",	required_argument,	0, 'c'},
+			{"rows",	required_argument,	0, 'r'},
+			{"cols",	required_argument,	0, 'c'},
 			{"format",	required_argument,	0, 'f'},
 			{"help",	no_argument,		0, 'h'},
 			{0, 0, 0, 0}
@@ -1984,13 +1966,12 @@ int main(int argc, char **argv)
     srand((unsigned int)time(0));
     
     assert(format==BINARY || format==ASCII);
+	assert(nrows*ncols <= 200);  // this seems reasonable, for now.
+	
     if (format == BINARY)
 		read_binary_file_with_headers ();
     else if (format == ASCII)
 		read_ascii_file_with_headers ();
-    
-//  read_binary_file ();
-//  read_ascii_file ();
     
 	// if we read a different number of points then we anticipated, we rezise and preserve
 	// note this can take lot of time and memory, temporarily.
@@ -2058,7 +2039,6 @@ int main(int argc, char **argv)
 		// create plotting window i
 		pws[i] = new plot_window(pw_w, pw_h);
 		pws[i]->copy_label(labstr.c_str());
-		pws[i]->resizable(pws[i]);
 		pws[i]->position(pw_x, pw_y);
 		pws[i]->row = row; pws[i]->column = col;
 		pws[i]->end();
@@ -2083,8 +2063,11 @@ int main(int argc, char **argv)
 		}
 		pws[i]->extract_data_points();
 		pws[i]->reset_view();
+		pws[i]->size_range(10, 10);
+		pws[i]->resizable(pws[i]);
 		pws[i]->show(argc,argv);
-    }
+		pws[i]->resizable(pws[i]);
+	}
 
     main_control_panel->show();     // now we can show the main control panel and all its supanels
 
