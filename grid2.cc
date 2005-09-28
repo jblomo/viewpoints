@@ -27,6 +27,11 @@
 #include <sstream>
 #include <algorithm>
  
+// plib font library (for texture-mapped fonts)
+#include "ul.h"
+#include "sg.h"
+#include <plib/fnt.h>
+
 // FLTK 
 #include <FL/math.h>
 #include <FL/gl.h>
@@ -137,6 +142,7 @@ Fl_Button *display_deselected_button, *invert_selection_button;
 Fl_Button *write_data_button;
 Fl_Button *choose_color_selected_button, *choose_color_deselected_button;
 
+
 // the plot_window class is subclass of an ftlk openGL window that also handles
 // certain keyboard & mouse events.  It is where data is displayed.
 // There are usually several open at one time.
@@ -208,6 +214,7 @@ plot_window::plot_window(int w,int h) : Fl_Gl_Window(w,h)
     nbins = nbins_default;
     counts.resize(nbins_max,3);
     counts_selected.resize(nbins_max,3);
+#if TRY_DEPTH
     if (can_do(FL_RGB|FL_DOUBLE|FL_ALPHA|FL_DEPTH))
 		{
 			mode(FL_RGB|FL_DOUBLE|FL_ALPHA|FL_DEPTH);  // Can't seem to make this work on PBG4 OSX
@@ -217,7 +224,7 @@ plot_window::plot_window(int w,int h) : Fl_Gl_Window(w,h)
 			cout << "Warning: depth buffering not enabled" << endl;
 			mode(FL_RGB|FL_DOUBLE|FL_ALPHA);
 		}
-#if 0
+#else
     mode(FL_RGB8|FL_DOUBLE|FL_ALPHA);
 #endif
 }
@@ -599,12 +606,35 @@ void plot_window::reset_view()
 }
 
 
+fntRenderer *mytext;
+fntTexFont *myfont;
+
+void init_plib_fnt ()
+{
+	static int fnt_initialized = 0;
+
+	if (fnt_initialized)
+		return;
+
+	// mytext -> setFont ( new fntTexFont ( "Helvetica-Bold.txf", GL_NEAREST, GL_LINEAR_MIPMAP_LINEAR) ) ;
+	myfont = new fntTexFont();
+	myfont->load("Helvetica-Bold.txf", GL_NEAREST, GL_LINEAR_MIPMAP_LINEAR);
+	myfont->setGap(-0.01);
+
+	mytext = new fntRenderer() ;
+	mytext->setFont(myfont);
+	mytext -> setPointSize ( 0.0666f ) ;
+
+	fnt_initialized = 1;
+}
+
 void plot_window::draw() 
 {
     DEBUG (cout << "in draw: " << xcenter << " " << ycenter << " " << xscale << " " << yscale << endl);
     // the valid() property can avoid reinitializing matrix for each redraw:
     if (!valid())
     {
+		init_plib_fnt ();
 		valid(1);
 		glMatrixMode(GL_PROJECTION);
 		glLoadIdentity();
@@ -620,6 +650,7 @@ void plot_window::draw()
 #ifdef FAST_APPLE_VERTEX_EXTENSIONS
 		glEnableClientState(GL_VERTEX_ARRAY_RANGE_APPLE);
 #endif // FAST_APPLE_VERTEX_EXTENSIONS
+
     }
   
     glMatrixMode(GL_MODELVIEW);
@@ -641,9 +672,6 @@ void plot_window::draw()
 		glClearDepth(0);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		draw_grid();
-		draw_axes();
-		//		draw_labels();
-		//		draw_scale();
     }
 
     if (selection_changed)
@@ -653,6 +681,7 @@ void plot_window::draw()
     draw_data_points();
 	draw_center_glyph();
     draw_histograms ();
+	draw_axes();
 }
 
 void 
@@ -772,6 +801,20 @@ void plot_window::draw_axes ()
 					float wid = gl_width(xlabel.c_str())/(float)(w());
 					gl_draw((const char *)(xlabel.c_str()), -wid, -(1+b*a));
 					//	gl_draw((const char *)(ylabel.c_str()), offset, 1.0F-2*offset);
+
+					glPushAttrib   ( GL_ENABLE_BIT | GL_COLOR_BUFFER_BIT | GL_VIEWPORT_BIT | GL_TRANSFORM_BIT | GL_LIGHTING_BIT ) ;
+					// glEnable       ( GL_ALPHA_TEST ) ;
+					// glAlphaFunc    ( GL_GREATER, 0.1f ) ;
+					glBlendFunc    (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+					
+					mytext -> begin () ;
+ 					  glColor3f ( 1.0f, 1.0f, 0.0f ) ;
+					  mytext -> start2f (0, -(1+a));
+					  mytext -> puts ( "Hello World." ) ;
+					mytext -> end () ;
+
+					glPopAttrib ();
+
 				}
 			glPopMatrix ();
 		}
