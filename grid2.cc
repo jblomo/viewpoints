@@ -84,6 +84,7 @@ const int skip = 0;		// skip this many columns at the beginning of each row
 int nrows=2, ncols=2;		// layout of plot windows
 int nplots = nrows*ncols;	// number of plot windows
 const int maxplots=64;		
+int borderless=0;			// by default, plot windows have window manager borders
 class plot_window; 		// love those one-pass compilers.
 class control_panel_window;
 
@@ -273,17 +274,16 @@ control_panel_window *cps[maxplots];
 Fl_Menu_Item varindex_menu_items[nvars_max+2]; 
 
 const int NORMALIZATION_NONE 	= 0;
-const int NORMALIZATION_MINMAX 	= 1;
-const int NORMALIZATION_ZEROMAX = 2;
-const int NORMALIZATION_MAXABS	= 3;
-const int NORMALIZATION_THREESIGMA = 4;
-const int NORMALIZATION_RANK = 5;
-const int NORMALIZATION_GAUSSIANIZE = 6;
+const int NORMALIZATION_ZEROMAX = 1;
+const int NORMALIZATION_MAXABS	= 2;
+const int NORMALIZATION_THREESIGMA = 3;
+const int NORMALIZATION_RANK = 4;
+const int NORMALIZATION_GAUSSIANIZE = 5;
 
-const char *normalization_style_labels[] = { "none","minmax","zeromax","maxabs","threesigma","rank","gaussianize"};
+const char *normalization_style_labels[] = { "none","zeromax","maxabs","threesigma","rank","gaussianize"};
 
 int normalization_styles[] = 
-{NORMALIZATION_NONE, NORMALIZATION_MINMAX, NORMALIZATION_ZEROMAX, NORMALIZATION_MAXABS, NORMALIZATION_THREESIGMA, NORMALIZATION_RANK, NORMALIZATION_GAUSSIANIZE};
+{NORMALIZATION_NONE, NORMALIZATION_ZEROMAX, NORMALIZATION_MAXABS, NORMALIZATION_THREESIGMA, NORMALIZATION_RANK, NORMALIZATION_GAUSSIANIZE};
 
 const int n_normalization_styles = sizeof(normalization_styles)/sizeof(normalization_styles[0]);
 
@@ -758,20 +758,25 @@ void plot_window::draw_axes ()
 					glEnd();
 			
 					b = 2;  //  offset for scale values. b<1 -> inwards, b>1 -> outwards, b==1 -> on axis.
-					snprintf(buf, sizeof(buf), "% .3g", wmin[0]); 					// lower X-axis scale value
+					snprintf(buf, sizeof(buf), "%+.3g", wmin[0]); 					// lower X-axis scale value
 					gl_draw((const char *)buf, -1.0-gl_width((const char *)buf)/(w()), -(1+b*a));
-		
-					snprintf(buf, sizeof(buf), "% .3g", wmax[0]); 					// upper X-axis scale value
+					snprintf(buf, sizeof(buf), "%+.3g", wmax[0]); 					// upper X-axis scale value
 					gl_draw((const char *)buf, +1.0-gl_width((const char *)buf)/(w()), -(1+b*a));
 		
+					b = 2.4;
+					snprintf(buf, sizeof(buf), "%+.3g", wmin[1]); 					// lower Y-axis scale value
+					gl_draw((const char *)buf, -(1+b*a), -1.0f+a/4);
+					snprintf(buf, sizeof(buf), "%+.3g", wmax[1]); 					// upper Y-axis scale value
+					gl_draw((const char *)buf, -(1+b*a), +1.0f+a/4);
 				}
 
 			if (cp->show_labels->value())
 				{
 					b = 2;  //  offset for axis labels values. b<1 -> inwards, b>1 -> outwards, b==1 -> on axis.
 					float wid = gl_width(xlabel.c_str())/(float)(w());
-					gl_draw((const char *)(xlabel.c_str()), -wid, -(1+b*a));
-					//	gl_draw((const char *)(ylabel.c_str()), offset, 1.0F-2*offset);
+					gl_draw((const char *)(xlabel.c_str()), -wid, -(1+b*a));	
+					b = 2.3;
+					gl_draw((const char *)(ylabel.c_str()), -(1+b*a), 0.0f);
 				}
 			glPopMatrix ();
 		}
@@ -982,8 +987,8 @@ void plot_window::compute_histogram(int axis)
 		if (selected(i))
 			counts_selected(bin,axis)++;
     }
-    counts(BINS,axis) = (3.0*nbins/(float)nbins_default)*counts(BINS,axis)/((float)(npoints));
-    counts_selected(BINS,axis) = (3.0*nbins/(float)nbins_default)*counts_selected(BINS,axis)/((float)(npoints));
+    counts(BINS,axis) = (5.0*nbins/(float)nbins_default)*counts(BINS,axis)/((float)(npoints));
+    counts_selected(BINS,axis) = (5.0*nbins/(float)nbins_default)*counts_selected(BINS,axis)/((float)(npoints));
 }
 
 void plot_window::compute_histograms ()
@@ -998,6 +1003,8 @@ void plot_window::draw_histograms()
 		return;
     // draw histogram
 	
+	float hoffset = 0.01; // histograms base is this far from edge of window
+
 	glPushMatrix();
 
     // x axis histograms
@@ -1006,6 +1013,7 @@ void plot_window::draw_histograms()
     glScalef (xscale, yhscale, 1.0);
     glTranslatef (-xcenter, -1.0/yhscale, 0.0);
     glTranslatef (-xzoomcenter, 0.0, 0);
+    glTranslatef (0, hoffset, 0);
     // histograms cover pointclouds
     glTranslatef (0.0, 0.0, 0.1);
     float xwidth = (amax[0]-amin[0]) / (float)(nbins);
@@ -1059,6 +1067,7 @@ void plot_window::draw_histograms()
     glScalef (xhscale, yscale, 1.0);
     glTranslatef (-1.0/xhscale, -ycenter, 0.0);
     glTranslatef (0.0, -yzoomcenter, 0);
+    glTranslatef (hoffset, 0, 0);
     float ywidth = (amax[1]-amin[1]) / (float)(nbins);
 
     // y axis histogram (all points)
@@ -1149,7 +1158,6 @@ plot_window::normalize (blitz::Array<float,1> a, blitz::Array<int,1> a_rank, int
     switch (style)
     {
 	case NORMALIZATION_NONE:
-    case NORMALIZATION_MINMAX:  // all data fits in window
 		wmin[axis_index] = tmin;
 		wmax[axis_index] = tmax;
 		return 1;
@@ -1186,7 +1194,7 @@ plot_window::normalize (blitz::Array<float,1> a, blitz::Array<int,1> a_rank, int
     case NORMALIZATION_GAUSSIANIZE: // gaussianize the data, with the cnter of the gaussian at the median.
 		for(int i=0; i<npoints; i++)
 		{
-			a(a_rank(i)) = (1.0/3.0)*(float)gsl_cdf_ugaussian_Pinv((double)(float(i+1) / (float)(npoints+2)));
+			a(a_rank(i)) = (1.0/5.0)*(float)gsl_cdf_ugaussian_Pinv((double)(float(i+1) / (float)(npoints+2)));
 		}
 		wmin[axis_index] = -1.0;
 		wmax[axis_index] = +1.0;
@@ -1855,6 +1863,7 @@ void usage()
     fprintf(stderr,"[--npoints=<int>] (-n)\n");
     fprintf(stderr,"[--rows=<int>] (-r)\n");
     fprintf(stderr,"[--cols=<int>] (-c)\n");
+    fprintf(stderr,"[--borderless] (-b)\n");
     fprintf(stderr,"[--help] (-h)\n");
     exit(-1);
 }
@@ -1908,20 +1917,31 @@ int main(int argc, char **argv)
 
     static struct option long_options[] =
 		{
+			{"format",	required_argument,	0, 'f'},
 			{"npoints",	required_argument,	0, 'n'},
 			{"rows",	required_argument,	0, 'r'},
 			{"cols",	required_argument,	0, 'c'},
-			{"format",	required_argument,	0, 'f'},
+			{"borderless",	no_argument,	0, 'b'},
 			{"help",	no_argument,		0, 'h'},
 			{0, 0, 0, 0}
 		};
     
     int c;
-    while((c = getopt_long(argc, argv, "n:r:c:f:h", long_options, NULL)) != -1)
+    while((c = getopt_long(argc, argv, "n:r:c:f:bh", long_options, NULL)) != -1)
     {
 		switch (c)
 		{
-		
+		case 'f':		// format of input file
+			if (!strncmp(optarg,"binary",1))
+				format=BINARY;
+			else if (!strncmp(optarg,"ascii",1))
+				format=ASCII;
+			else
+			{
+				usage();
+				exit(-1);
+			}
+			break;
 		case 'n':		// maximum number of points (samples, rows of data) to read
 			npoints_cmd_line = atoi(optarg);
 			if (npoints_cmd_line < 1)
@@ -1937,16 +1957,8 @@ int main(int argc, char **argv)
 			if (ncols < 1)
 				usage();
 			break;
-		case 'f':		// format of input file
-			if (!strncmp(optarg,"binary",1))
-				format=BINARY;
-			else if (!strncmp(optarg,"ascii",1))
-				format=ASCII;
-			else
-			{
-				usage();
-				exit(-1);
-			}
+		case 'b':		// turn off window manager borders on plot windows
+			borderless = 1;
 			break;
 		case 'h':
 		case ':':
@@ -2013,6 +2025,8 @@ int main(int argc, char **argv)
 		int col = i%ncols;
 
 		// plot window size
+		if (borderless)
+			top_frame = bottom_frame = left_frame = right_frame = 1;
 		int pw_w = ((Fl::w() - (main_w+left_frame+right_frame+right_safe+left_safe+20)) / ncols) - (left_frame + right_frame);
 		int pw_h = ((Fl::h() - (top_safe+bottom_safe))/ nrows) - (top_frame + bottom_frame);
 
@@ -2065,6 +2079,8 @@ int main(int argc, char **argv)
 		pws[i]->reset_view();
 		pws[i]->size_range(10, 10);
 		pws[i]->resizable(pws[i]);
+		if (borderless)
+			pws[i]->border(0);
 		pws[i]->show(argc,argv);
 		pws[i]->resizable(pws[i]);
 	}

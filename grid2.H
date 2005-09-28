@@ -8,11 +8,11 @@ int debugging = 0;
 
 // approximate values of window manager borders & desktop borders (stay out of these)
 #ifdef __APPLE__
-const int top_frame=30, bottom_frame=0, left_frame=0, right_frame=2;
-const int top_safe = 1, bottom_safe=5, left_safe=5, right_safe=1;
+ int top_frame=30, bottom_frame=0, left_frame=0, right_frame=2;
+ int top_safe = 1, bottom_safe=5, left_safe=5, right_safe=1;
 #else // __APPLE__
-const int top_frame=20, bottom_frame=5, left_frame=4, right_frame=5;
-const int top_safe = 1, bottom_safe=10, left_safe=10, right_safe=1;
+ int top_frame=20, bottom_frame=5, left_frame=4, right_frame=5;
+ int top_safe = 1, bottom_safe=10, left_safe=10, right_safe=1;
 #endif // __APPLE__
 
 #ifdef __APPLE__
