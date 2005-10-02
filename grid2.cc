@@ -27,7 +27,7 @@
 #include <sstream>
 #include <algorithm>
  
-// FLTK 
+// FLTK (fast light tool kit)
 #include <FL/math.h>
 #include <FL/gl.h>
 #include <FL/Fl.H>
@@ -42,10 +42,10 @@
 #include <FL/Fl_Color_Chooser.H>
 
 
-// flews (FLTK extenstion) extras
+// flews (FLTK extenstions)
 #include <FL/Fl_flews.h>
 #include <FL/Fl_Value_Slider_Input.H>
-#include "Fl_Hor_Value_Slider_Input.H"
+#include "Fl_Hor_Value_Slider_Input.H"  // my modified flews slider
 
 // OpenGL extensions
 #ifdef __APPLE__
@@ -274,16 +274,17 @@ control_panel_window *cps[maxplots];
 Fl_Menu_Item varindex_menu_items[nvars_max+2]; 
 
 const int NORMALIZATION_NONE 	= 0;
-const int NORMALIZATION_ZEROMAX = 1;
-const int NORMALIZATION_MAXABS	= 2;
-const int NORMALIZATION_THREESIGMA = 3;
-const int NORMALIZATION_RANK = 4;
-const int NORMALIZATION_GAUSSIANIZE = 5;
+const int NORMALIZATION_MINMAX 	= 1;
+const int NORMALIZATION_ZEROMAX = 2;
+const int NORMALIZATION_MAXABS	= 3;
+const int NORMALIZATION_THREESIGMA = 4;
+const int NORMALIZATION_RANK = 5;
+const int NORMALIZATION_GAUSSIANIZE = 6;
 
-const char *normalization_style_labels[] = { "none","zeromax","maxabs","threesigma","rank","gaussianize"};
+const char *normalization_style_labels[] = { "none","minmax","zeromax","maxabs","threesigma","rank","gaussianize"};
 
 int normalization_styles[] = 
-{NORMALIZATION_NONE, NORMALIZATION_ZEROMAX, NORMALIZATION_MAXABS, NORMALIZATION_THREESIGMA, NORMALIZATION_RANK, NORMALIZATION_GAUSSIANIZE};
+	{NORMALIZATION_NONE, NORMALIZATION_MINMAX, NORMALIZATION_ZEROMAX, NORMALIZATION_MAXABS, NORMALIZATION_THREESIGMA, NORMALIZATION_RANK, NORMALIZATION_GAUSSIANIZE};
 
 const int n_normalization_styles = sizeof(normalization_styles)/sizeof(normalization_styles[0]);
 
@@ -912,12 +913,6 @@ void plot_window::draw_data_points()
 		return;
 	glDisable(GL_DEPTH_TEST);
 
-//  the following are done once if necessary in the plot_window::draw()
-//	glEnable(GL_BLEND);
-//	glEnable(GL_POINT_SMOOTH);
-//	glHint(GL_POINT_SMOOTH_HINT,GL_NICEST);
-
-
     glPointSize(cp->pointsize_slider->value());
 
     float const_color[4];
@@ -1158,6 +1153,10 @@ plot_window::normalize (blitz::Array<float,1> a, blitz::Array<int,1> a_rank, int
     switch (style)
     {
 	case NORMALIZATION_NONE:
+		wmin[axis_index] = -1;
+		wmax[axis_index] = +1;
+		return 1;
+	case NORMALIZATION_MINMAX:
 		wmin[axis_index] = tmin;
 		wmax[axis_index] = tmax;
 		return 1;
@@ -1685,21 +1684,21 @@ control_panel_window::make_widgets(control_panel_window *cpw)
     x_normalization_style->align(FL_ALIGN_TOP);
     x_normalization_style->textsize(12);
     x_normalization_style->menu(normalization_style_menu_items);
-    x_normalization_style->value(NORMALIZATION_NONE);
+    x_normalization_style->value(NORMALIZATION_MINMAX);
     x_normalization_style->callback((Fl_Callback*)static_extract_and_redraw, this);
  
     y_normalization_style = new Fl_Choice (xpos+100, ypos, 100, 25, "normalize y");
     y_normalization_style->align(FL_ALIGN_TOP);
     y_normalization_style->textsize(12);
     y_normalization_style->menu(normalization_style_menu_items);
-    y_normalization_style->value(NORMALIZATION_NONE); 
+    y_normalization_style->value(NORMALIZATION_MINMAX); 
     y_normalization_style->callback((Fl_Callback*)static_extract_and_redraw, this);
  
     z_normalization_style = new Fl_Choice (xpos+200, ypos, 100, 25, "normalize z");
     z_normalization_style->align(FL_ALIGN_TOP);
     z_normalization_style->textsize(12);
     z_normalization_style->menu(normalization_style_menu_items);
-    z_normalization_style->value(NORMALIZATION_NONE); 
+    z_normalization_style->value(NORMALIZATION_MINMAX); 
     z_normalization_style->callback((Fl_Callback*)static_extract_and_redraw, this);
  
     int xpos2 = xpos;

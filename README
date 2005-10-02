@@ -1,52 +1,85 @@
 usage:
 
-  vp [--format={ascii,binary}] [--npoints=<integer>] [--nrows=<integer>] [--ncols=<integer>] < datafile
+ vp [args] < datafile
 
-  --format=ascii (default)
+ optional args are:
+
+  --format=ascii (default) [shortcut: -f a]
     ascii, with header line
     first line contains attribute names, whitespace delimited
     additional lines each contain all numeric attribute values for one sample, whitespace delimited
 
-  --format=binary
+  --format=binary [shortcut: -f b]
     one line of ascii attribute names, whitespace delimited, ending with newline (\n);
     immediately followed by raw table of binary floating point values
 
-  --npoints=<integer>
-    number of points (samples, or rows) to read.  Default is all.
+  --npoints=<integer> [shortcut: -n <int>] (default all)
+    number of datapoints (samples, rows in file) to read.  
 
-  --nrows=<integer>
-    number of rows of scatterplots, default is 2.
+  --rows=<integer> [shortcut: -r <int>] (default 2)
+    number of rows of scatterplots
 
-  --ncols=<integer>
-    number of columns of scatterplots, default is 2.
+  --cols=<integer> [shortcut: -c <int>] (default 2)
+    number of columns of scatterplots
+
+  --bordeless [shortcut: -b]
+    attempt to maximize plot windows' usable area by removing window manager decorations.
+    note: this seems to cause problems with keyboard shortcuts in plot windows on OSX
+
+  --help [shortcut: -h]
+    print short help message.
+
 
 Keys & Buttons (in plot windows):
 
-action			key
-------			----
-new selection		left-mouse
-move selection		left-mouse + right-shift
-continue selction	left-mouse + left-shift
-invert selection	i
-display deselected 	d
-remove selected points	x (or delete)
+  action		key
+  ------		----
+  new selection		left-mouse
+  move selection	left-mouse + shift
+  invert selection	i
+  display deselected 	d
+  clear selection	c
+  kill selected points	x
+  reset view		r
+  quit			q
 
-translate		right-mouse
-scale			middle-mouse
-scale histogram		middle-mouse + h
-reset view		r
-quit			q
+
+Mouse Gestures (in plot windows):
+
+  action		gesture
+  ------		-------
+  select points		left-mouse
+  translate		right-mouse  (opt-mouse on OSX)
+  scale			middle-mouse (ctl-mouse on OSX)
+  scale histogram	middle-mouse + h (ctl-mouse + h on OSX)
 
 
 Controls in control panels:
 
-control		action
-------		------
-npoints		number of points displayed
+  control	action
+  ------	------
+  npoints	number of points displayed
+  alpha		point opacity.
+  lum		point brightness
+  bkg		background color (try bkg=0.5, lum=0.2)
+  size		point size, in pixels
+  nbins		number of histogram bins
+  rot		rotation angle in 3D (please select something for the 3rd axis to display)
+  spin		continuous rotation
+  sum vs. diff	plot (x+y) vs. (x-y)
+  polar		x<-r, y<-theta
 
+Normalizations (per axis)
 
+  none		show all data, center of window at median
+  zeromax	show all positive data
+  maxabs	show all data, center of window at zero
+  threesigma	center of window at sample mean, window spans +/- three sigma.
+  rank		plot rank of x (instead of x)
+                  (i.e. nonuniform rescaling to force uniform marginal)
+  gaussianize	plot inverse of Gaussian cummulative distribution function of x
+  		  (i.e. nonuniform rescaling to force Gaussian marginal)
 
-
-questions, bug reports, feature requests, and/or praise to: 
+Questions, bug reports, feature requests, and/or praise to: 
 
    creon.levit@nasa.gov

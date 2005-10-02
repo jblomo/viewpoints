@@ -196,20 +196,31 @@ Functionality to add (see also project plan):
 - MDS
 - laplacian eigenmaps, LLE, other dim. reduction....
 - classification (SOM....)
+- co-clustering, info bottleneck, real gaussianization
+- new random choice for axes
+- slider for axis
+- choose axes by MI
+- high-d rotations
+- predfined views (45 degree rotations....)
+- projection pursuit in multiple plots at once.
+- linked scaling/translation on idenitcal axes in separate plots
 .....
 
 Priorities (?)
 
 histogram rescale slders
-data scales
-resizable windows (fix)
-rotation of axis
+data scales (done, almost)
+resizable windows (fix) (done)
+mouse buttons test for translate & rotate, fix
+rotation of (2D & 3D) axis
+multiple tickmarks
+normalization NONE -> zero to center of screen, -1 to left, +1 to right
 
 Thu Sep 22 2005
 
 fix centers too, in normalization routines
 fix no redraw in (some) other windows when selection changes
-fix z normalization (z-scale?) - rotation seems screwed up
+fix z normalization (z-scale?) - rotation seems screwed up (done)
 add scale numbers
 tickmarks......
 add priority to selected when in 2d (use Z = z+1 for each new selection)
@@ -218,3 +229,21 @@ timeseries
 randomize vars ?
 histo scale sliders!
 swapbuffers timing
+
+11:04:38 30 Sep 05
+
+Timeseries / spectra (UGRIZ, orderbook, etc) ideas.
+ - timeseries (including timeseries of spectra)
+   - timeseries are handled by utilizing row index of point as timestamp.
+   - offset value (slider) for an axis displaces its row index values i by a constant k, so we can plot x_i vs. x_{i+k} (or vs y_{i+k})...
+   - npoints slider will need min, max, and "offset" sliders.  offset rigidly moves min and max.
+ - spectra (books, parallel coordinates)
+   - spectra are stored for each point in its row (like ugriz).
+   - choose vis type (parallel coords, scatterplots...)
+   - for parallel coord vis type, column index is used as (implicit?) axis
+   - need to be able to choose (limits) for row indices that will be used as a set of parallel coordinates
+      - is there an fltk mutiple chooser we can use for this? (yes - class Fl_Multi_Browser ?)
+   - for parallel coord vis, plot glLines instead of glPoints
+   - use column labels as axis tick labels
+   - how to handle selections?
+  
