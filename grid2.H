@@ -3,8 +3,12 @@ int debugging = 0;
 #define DEBUG(x) do {if (debugging) x;} while (0)
 
 // file formats
-#define BINARY 1
 #define ASCII 0
+#define BINARY 1
+
+// data ordering
+#define ROW_MAJOR 0
+#define COLUMN_MAJOR 1
 
 // approximate values of window manager borders & desktop borders (stay out of these)
 #ifdef __APPLE__

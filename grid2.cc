@@ -75,10 +75,11 @@
 
 using namespace std;
 
-int format=ASCII;		// default file format
+int format=ASCII;		// default input file format
+int ordering=COLUMN_MAJOR; // default input data ordering
 
-const int nvars_max = 256;  	// maximum number of columns allowed in data file
-const int MAXPOINTS = 1200000;	// maximum number of rows (points, or samples) in data file
+const int nvars_max = 64;  	// maximum number of columns allowed in data file
+const int MAXPOINTS = 3000000;	// maximum number of rows (points, or samples) in data file
 const int skip = 0;		// skip this many columns at the beginning of each row
 
 int nrows=2, ncols=2;		// layout of plot windows
@@ -137,7 +138,7 @@ Fl_Button *add_to_selection_button, *clear_selection_button, *delete_selection_b
 Fl_Button *display_deselected_button, *invert_selection_button;
 Fl_Button *write_data_button;
 Fl_Button *choose_color_selected_button, *choose_color_deselected_button;
-
+Fl_Button *change_all_axes_button; Fl_Button *link_all_axes_button;
 
 // the plot_window class is subclass of an ftlk openGL window that also handles
 // certain keyboard & mouse events.  It is where data is displayed.
@@ -151,6 +152,7 @@ protected:
 	//    void draw_scale();
     void draw_data_points();
 	void draw_center_glyph ();
+	void update_linked_transforms ();
     int handle (int event);
     void handle_selection();
 	void screen_to_world(float xs, float ys, float &x, float &y);
@@ -193,6 +195,7 @@ public:
 	GLfloat color1[4], color2[4]; // color of selected and deselected points, respectively
     void reset_view();
     void redraw_one_plot();
+    void change_axes();
     float angle;
     int needs_redraw;
 };
@@ -253,7 +256,7 @@ public:
 	
 	Fl_Button *reset_view_button;
     Fl_Button *spin, *dont_clear, *show_points, *show_axes, *show_grid, *show_labels, *show_histogram;
-	Fl_Button *show_scale;
+	Fl_Button *show_scale, *lock_axes_button;
 //	Fl_Button *x_equals_delta_x, *y_equals_delta_x;
     Fl_Group *transform_style;
     Fl_Button *sum_vs_difference, *polar, *no_transform;
@@ -277,14 +280,18 @@ const int NORMALIZATION_NONE 	= 0;
 const int NORMALIZATION_MINMAX 	= 1;
 const int NORMALIZATION_ZEROMAX = 2;
 const int NORMALIZATION_MAXABS	= 3;
-const int NORMALIZATION_THREESIGMA = 4;
-const int NORMALIZATION_RANK = 5;
-const int NORMALIZATION_GAUSSIANIZE = 6;
+const int NORMALIZATION_TRIM_1E2 = 4;
+const int NORMALIZATION_TRIM_1E3 = 5;
+const int NORMALIZATION_THREESIGMA = 6;
+const int NORMALIZATION_RANK = 7;
+const int NORMALIZATION_GAUSSIANIZE = 8;
 
-const char *normalization_style_labels[] = { "none","minmax","zeromax","maxabs","threesigma","rank","gaussianize"};
+const char *normalization_style_labels[] = { "none","minmax","zeromax","maxabs","trim 10^-2", "trim 10^-3", "threesigma","rank","gaussianize"};
 
-int normalization_styles[] = 
-	{NORMALIZATION_NONE, NORMALIZATION_MINMAX, NORMALIZATION_ZEROMAX, NORMALIZATION_MAXABS, NORMALIZATION_THREESIGMA, NORMALIZATION_RANK, NORMALIZATION_GAUSSIANIZE};
+int normalization_styles[] = {
+	NORMALIZATION_NONE, NORMALIZATION_MINMAX, NORMALIZATION_ZEROMAX, NORMALIZATION_MAXABS, 
+	NORMALIZATION_TRIM_1E2, NORMALIZATION_TRIM_1E3, NORMALIZATION_THREESIGMA, NORMALIZATION_RANK, NORMALIZATION_GAUSSIANIZE
+};
 
 const int n_normalization_styles = sizeof(normalization_styles)/sizeof(normalization_styles[0]);
 
@@ -365,6 +372,97 @@ delete_selection (Fl_Widget *o)
 	}
 }
 
+// increment row index i and column index j "down and to the right" in an upper triangular matrix, with wrapping;
+void upper_triangle_incr (int &i, int &j, const int nvars)
+{
+	assert (i >= 0 && i < nvars && j > 0 && j < nvars);
+	if (j == nvars-1) // generic wrap condition
+	{
+		if (i == 0) // special wrap condition
+		{
+			j = 1;
+		} else {
+			j = nvars-i;
+			i = 0;
+		}
+	} else { // generic condition
+		i++;
+		j++;
+	}
+}
+
+void plot_window::change_axes ()
+{
+	if (cp->lock_axes_button->value())
+		return;
+	// this seems a little verbose.....
+	int i=cp->varindex1->value();
+	int j=cp->varindex2->value();
+	for (int k=0; k<nplots; k++)
+		upper_triangle_incr(i,j,nvars);
+	cp->varindex1->value(i);
+	cp->varindex2->value(j);
+	cp->extract_and_redraw();
+}
+
+void
+change_all_axes (Fl_Widget *o)
+{
+	for (int i=0; i<nplots; i++)
+	{
+		pws[i]->change_axes();
+	}
+}
+
+
+// use current plot's scale and offset to update all the others
+// that show (any of) the same axes (using the same normalization).
+void plot_window::update_linked_transforms ()
+{
+	if (!link_all_axes_button->value())
+		return;
+
+	// get this plot's axis indices and normalization styles
+	int axis1=cp->varindex1->value(); int style1 = cp->x_normalization_style->value();
+	int axis2=cp->varindex2->value(); int style2 = cp->y_normalization_style->value();
+
+    // find other plot windows that have any of the same axis indices active
+    // and the same normalization style.
+	// and update the appropriate translation and scale values for them.
+	for (int i=0; i<nplots; i++)
+	{
+		plot_window *p = pws[i];
+		if (p == this) // don't need to update ourself
+			continue; 
+		if (p->cp->lock_axes_button->value()) // individual plots may override this "feature"
+			continue;
+		// finally, figure out what me may want to change and how
+		if (p->cp->varindex1->value() == axis1 && p->cp->x_normalization_style->value() == style1)
+		{
+			p->xscale = xscale; p->xcenter = xcenter;
+			p->needs_redraw = 1;
+		}
+		else if (p->cp->varindex1->value() == axis2 && p->cp->x_normalization_style->value() == style2)
+		{
+			p->xscale = yscale; p->xcenter = ycenter;
+			p->needs_redraw = 1;
+		}
+		if (p->cp->varindex2->value() == axis1 && p->cp->y_normalization_style->value() == style1)
+		{
+			p->yscale = xscale; p->ycenter = xcenter;
+			p->needs_redraw = 1;
+		}
+		else if (p->cp->varindex2->value() == axis2 && p->cp->y_normalization_style->value() == style2)
+		{
+			p->yscale = yscale; p->ycenter = ycenter;
+			p->needs_redraw = 1;
+		}
+		// this is needed to make sure the scale marks on the axis are updated
+		p->screen_to_world(-1, -1, p->wmin[0], p->wmin[1]);
+		p->screen_to_world(+1, +1, p->wmax[0], p->wmax[1]);
+	}
+}
+
 int 
 plot_window::handle(int event)
 {
@@ -409,7 +507,7 @@ plot_window::handle(int event)
 			}
 		}
 		// start translating
-		if ((Fl::event_state() == FL_BUTTON3) || (Fl::event_state() == (FL_BUTTON1 | FL_ALT)))
+		if (Fl::event_state(FL_BUTTON3) || ( Fl::event_state(FL_BUTTON1) && Fl::event_state(FL_ALT)))
 		{
 			show_center_glyph = 1;
 			needs_redraw = 1;
@@ -425,20 +523,21 @@ plot_window::handle(int event)
 		yprev = ycur;
 
 		// translate = drag with right mouse (or alt-left-mouse)
-		if ((Fl::event_state() == FL_BUTTON3) || (Fl::event_state() == (FL_BUTTON1 | FL_ALT)))
+		if (Fl::event_state(FL_BUTTON3) || (Fl::event_state(FL_BUTTON1) && Fl::event_state(FL_ALT)))
 		{
 			float xmove = xdragged*(1/xscale)*(2.0/w());
 			float ymove = ydragged*(1/yscale)*(2.0/h());
 			xcenter -= xmove;
 			ycenter -= ymove;
-			DEBUG ( cout << "xcenter, ycenter: " << xcenter << ", " << ycenter << endl);
+			DEBUG ( cout << "translating (xcenter, ycenter) = (" << xcenter << ", " << ycenter << ")" << endl);
 			// redraw ();
 			show_center_glyph = 1;
 			needs_redraw = 1;
+			update_linked_transforms ();
 		}
 
 		// scale = drag with middle-mouse (or c-left-mouse)
-		else if ((Fl::event_state() == FL_BUTTON2) || (Fl::event_state() == (FL_BUTTON1 | FL_CTRL)))
+		else if (Fl::event_state(FL_BUTTON2) || (Fl::event_state(FL_BUTTON1) && Fl::event_state(FL_CTRL)))
 		{
 			if (scale_histogram)
 			{
@@ -447,14 +546,15 @@ plot_window::handle(int event)
 			} else {
 				xscale *= 1 + xdragged*(2.0/w());
 				yscale *= 1 + ydragged*(2.0/h());
+				DEBUG ( cout << "scaling (xscale, yscale) = (" << xscale << ", " << yscale << ")" << endl);
 			}
 			// redraw();
 			needs_redraw = 1;
-
+			update_linked_transforms ();
 		}
 
 		// continue selection = drag with left mouse
-		else if (Fl::event_state() & FL_BUTTON1)
+		else if (Fl::event_state(FL_BUTTON1))
 		{
 			// right key down = move selection
 			// left shift down = extend selection (bug on OSX - no left key events)
@@ -730,7 +830,7 @@ void plot_window::draw_axes ()
 			gl_font (FL_HELVETICA, 10);
 			glBlendFunc(GL_ONE, GL_ZERO);
 			if (cp->Bkg->value() <= 0.4)
-				glColor4f(0.6,0.6,0.0,0.0);
+				glColor4f(0.7,0.7,0.0,0.0);
 			else
 				glColor4f(0.4*cp->Bkg->value(), 0.4*cp->Bkg->value(), 0.0*cp->Bkg->value(), 0.0);
 
@@ -1146,6 +1246,7 @@ plot_window::normalize (blitz::Array<float,1> a, blitz::Array<int,1> a_rank, int
 #else // CHECK_FOR_NANS_IN_NORMALIZATION
 	float tmin = a(a_rank(0));
 	float tmax = a(a_rank(npoints-1));
+	blitz::Array<float, 1> tmp(npoints);
 #endif // CHECK_FOR_NANS_IN_NORMALIZATION
 
     float mu,sigma;
@@ -1172,6 +1273,44 @@ plot_window::normalize (blitz::Array<float,1> a, blitz::Array<int,1> a_rank, int
 				wmax[axis_index] = tmax;
 			}
 		return 1;
+    case NORMALIZATION_TRIM_1E2:  // median at center of axis, axis extends to include at least 99% of data
+	{
+		float median = a(a_rank(npoints/2));
+		tmp =  abs(a(NPTS)-median); // distance of each point to median
+		// start at median (tmp = 0) and march outwards by increasing distance until 99% is included
+		int left = npoints/2, right = (npoints/2)+1;
+		for (int i=1; i<(int)(0.99*npoints)-1; i++)
+		{
+			if ((tmp(a_rank(left)) >= tmp(a_rank(right))) && (right < npoints-1))
+				right++;
+			else {
+				if (left > 1)  // don't step off left hand side
+					left--;
+			}
+		}
+		wmin[axis_index] = a(a_rank(left));
+		wmax[axis_index] = a(a_rank(right));
+		return 1;
+	}
+    case NORMALIZATION_TRIM_1E3:  // median at center of axis, axis extends to include at least 99.9% of data
+	{
+		float median = a(a_rank(npoints/2));
+		tmp =  abs(a(NPTS)-median); // distance of each point to median
+		// start at median (tmp = 0) and march outwards by increasing distance until 99% is included
+		int left = npoints/2, right = (npoints/2)+1;
+		for (int i=1; i<(int)(0.999*npoints)-1; i++)
+		{
+			if ((tmp(a_rank(left)) >= tmp(a_rank(right))) && (right < npoints-1))
+				right++;
+			else {
+				if (left > 1)  // don't step off left hand side
+					left--;
+			}
+		}
+		wmin[axis_index] = a(a_rank(left));
+		wmax[axis_index] = a(a_rank(right));
+		return 1;
+	}
     case NORMALIZATION_THREESIGMA:  // mean at center of axis, axis extends to +/- 3*sigma
 		mu = mean(a(NPTS));
 		sigma = sqrt((1.0/(float)npoints)*sum(pow2(a(NPTS)-mu)));
@@ -1549,9 +1688,6 @@ void read_binary_file_with_headers()
     cout << endl;
     cout << "there should be " << nvars << " fields (columns) per record (row)" << endl;
 
-    blitz::Array<float,1> vars(nvars);
-    blitz::Range NVARS(0,nvars-1);
-
 	// now we know the number of variables (nvars), so if we know the number of points (e.g. from the command line)
 	// we can size the main points array once and for all, and not waste memory.
 	if (npoints_cmd_line != 0)
@@ -1566,27 +1702,80 @@ void read_binary_file_with_headers()
 		// exit (1);
     }
 		
-    int i;
-    for (i=0; i<npoints; i++)
-    {
-		unsigned int ret = fread((void *)(vars.data()), sizeof(float), nvars, stdin);
-		// cout << "read " << ret << " values " << endl;
-		if (ret != (unsigned int)nvars)
+	assert (ordering == COLUMN_MAJOR || ordering == ROW_MAJOR);
+
+	if (ordering == COLUMN_MAJOR)
+	{
+		cout << "attempting to read binary file in columnmajor order" << endl;
+		blitz::Array<float,1> vars(nvars);
+		blitz::Range NVARS(0,nvars-1);
+		if (!vars.isStorageContiguous())
 		{
-			if (ret == 0 || feof(stdin)) // EOF
-				break;
-			else
-			{
-				fprintf (stderr, "error reading input occured at row %d\n", i+1);
-				exit (1);
-			}
+			cerr << "Error: tried to read into noncontiguous buffer." << endl;
+			exit (-1);
 		}
-		points(NVARS,i) = vars;
-		if (i>0 && (i%10000 == 0))
-			printf ("read %d rows\n", i);
-    }
-    cout << "read " << i << " rows." << endl;
-    npoints = i;
+
+		int i;
+		for (i=0; i<npoints; i++)
+		{
+			unsigned int ret = fread((void *)(vars.data()), sizeof(float), nvars, stdin);
+			// cout << "read " << ret << " values " << endl;
+			if (ret != (unsigned int)nvars)
+			{
+				if (ret == 0 || feof(stdin)) // EOF
+					break;
+				else
+				{
+					fprintf (stderr, "error reading input occured at row %d\n", i+1);
+					exit (1);
+				}
+			}
+			points(NVARS,i) = vars;
+			if (i>0 && (i%10000 == 0))
+				printf ("read %d rows\n", i);
+		}
+		cout << "read " << i << " rows." << endl;
+		npoints = i;
+	}
+	if (ordering == ROW_MAJOR)
+	{
+		cout << "attempting to read binary file in rowmajor order, nvars=" << nvars << ", npoints=" << npoints << endl;
+		if (npoints_cmd_line == 0)
+		{
+			cerr << "Error: --npoints must be specified for --inputformat=rowmajor" << endl;
+			exit (-1);
+		} else {
+			npoints = npoints_cmd_line;
+		}
+		
+		blitz::Array<float,1> vars(npoints);
+		blitz::Range NPTS(0,npoints-1);
+		if (!vars.isStorageContiguous())
+		{
+			cerr << "Error: tried to read into noncontiguous buffer." << endl;
+			exit (-1);
+		}
+
+		int i;
+		for (i=0; i<nvars; i++)
+		{
+			unsigned int ret = fread((void *)(vars.data()), sizeof(float), npoints, stdin);
+			cout << "read " << ret << " values " << endl;
+			if (ret != (unsigned int)npoints)
+			{
+				if (ret == 0 || feof(stdin)) // EOF
+					break;
+				else
+				{
+					fprintf (stderr, "error reading input occured at column %d\n", i+1);
+					exit (1);
+				}
+			}
+			points(i,NPTS) = vars(NPTS);
+			printf ("read %d columns\n", i+1);
+		}
+	}
+
 }
 
 void
@@ -1738,28 +1927,34 @@ control_panel_window::make_widgets(control_panel_window *cpw)
     ypos=ypos2;
     xpos=xpos2+100;
 
-    show_points = b = new Fl_Button(xpos, ypos+=25, 20, 20, "show points");
+    show_points = b = new Fl_Button(xpos, ypos+=25, 20, 20, "points");
     b->callback((Fl_Callback*)static_maybe_redraw, this);
     b->align(FL_ALIGN_RIGHT); b->type(FL_TOGGLE_BUTTON); b->selection_color(FL_YELLOW);	b->value(1);
 
-    show_axes = b = new Fl_Button(xpos, ypos+=25, 20, 20, "show axes");
+    show_axes = b = new Fl_Button(xpos, ypos+=25, 20, 20, "axes");
     b->callback((Fl_Callback*)static_maybe_redraw, this);
     b->align(FL_ALIGN_RIGHT); b->type(FL_TOGGLE_BUTTON); b->selection_color(FL_YELLOW);	b->value(1);
 
-    show_labels = b = new Fl_Button(xpos, ypos+=25, 20, 20, "show labels");
+    show_labels = b = new Fl_Button(xpos, ypos+=25, 20, 20, "labels");
     b->callback((Fl_Callback*)static_maybe_redraw, this);
     b->align(FL_ALIGN_RIGHT); b->type(FL_TOGGLE_BUTTON); b->selection_color(FL_YELLOW);	b->value(1);
 
-    show_scale = b = new Fl_Button(xpos, ypos+=25, 20, 20, "show scale");
+    show_scale = b = new Fl_Button(xpos, ypos+=25, 20, 20, "scales");
     b->callback((Fl_Callback*)static_maybe_redraw, this);
     b->align(FL_ALIGN_RIGHT); b->type(FL_TOGGLE_BUTTON); b->selection_color(FL_YELLOW);	b->value(1);
 
-    show_grid = b = new Fl_Button(xpos, ypos+=25, 20, 20, "show grid");
+    show_grid = b = new Fl_Button(xpos, ypos+=25, 20, 20, "grid");
     b->callback((Fl_Callback*)static_maybe_redraw, this);
     b->align(FL_ALIGN_RIGHT); b->type(FL_TOGGLE_BUTTON); b->selection_color(FL_YELLOW);	b->value(0);
 
-    show_histogram = b = new Fl_Button(xpos, ypos+=25, 20, 20, "show histogram");
+    show_histogram = b = new Fl_Button(xpos, ypos+=25, 20, 20, "histograms");
     b->callback((Fl_Callback*)redraw_one_plot, this);
+    b->align(FL_ALIGN_RIGHT); b->type(FL_TOGGLE_BUTTON); b->selection_color(FL_YELLOW);	b->value(0);
+
+    ypos=ypos2;
+    xpos=xpos2+200;
+
+    lock_axes_button = b = new Fl_Button(xpos, ypos+=25, 20, 20, "lock axes");
     b->align(FL_ALIGN_RIGHT); b->type(FL_TOGGLE_BUTTON); b->selection_color(FL_YELLOW);	b->value(0);
 
 }
@@ -1767,6 +1962,7 @@ control_panel_window::make_widgets(control_panel_window *cpw)
 void
 plot_window::redraw_one_plot ()
 {
+	DEBUG( cout << "in redraw_one_plot" << endl ) ;
 	compute_histograms();
 	redraw();
 	Fl::flush();
@@ -1776,7 +1972,7 @@ plot_window::redraw_one_plot ()
 void
 redraw_all_plots (int p)
 {
-	// cout << "calling redraw_all_plots(" << p << ")" << endl;
+	DEBUG( cout << "in redraw_all_plots(" << p << ")" << endl ) ;
 
 	// redraw all plots, cyclically, sarting with plot p
 	// p is important, since the draw() routine for a plot handles the selection region
@@ -1804,8 +2000,10 @@ reset_all_plots ()
 void
 redraw_if_changing (void * dummy)
 {
+//	DEBUG( cout << "in redraw_if_changing" << endl) ;
     for (int i=0; i<nplots; i++)
     {
+//		DEBUG ( cout << "  i=" << i << ", needs_redraw=" << pws[i]->needs_redraw << endl );
 		if (cps[i]->spin->value() || pws[i]->needs_redraw)
 		{
 			pws[i]->redraw();
@@ -1881,7 +2079,7 @@ void make_global_widgets ()
 
 	int xpos1 = xpos, ypos1 = ypos;
 
-	display_deselected_button = b = new Fl_Button(xpos, ypos+=25, 20, 20, "display deselected");
+	display_deselected_button = b = new Fl_Button(xpos, ypos+=25, 20, 20, "show nonselected");
     b->align(FL_ALIGN_RIGHT); b->selection_color(FL_YELLOW); b->type(FL_TOGGLE_BUTTON);	b->value(1);
 	b->callback((Fl_Callback*)toggle_display_delected);
 
@@ -1894,7 +2092,7 @@ void make_global_widgets ()
 	clear_selection_button = b = new Fl_Button(xpos, ypos+=25, 20, 20, "clear selection");
     b->align(FL_ALIGN_RIGHT); b->selection_color(FL_YELLOW); b->callback(clear_selection);
 
-	delete_selection_button = b = new Fl_Button(xpos, ypos+=25, 20, 20, "delete points");
+	delete_selection_button = b = new Fl_Button(xpos, ypos+=25, 20, 20, "kill selected");
     b->align(FL_ALIGN_RIGHT); b->selection_color(FL_YELLOW); b->callback(delete_selection);
 
 	write_data_button = b = new Fl_Button(xpos, ypos+=25, 20, 20, "write data");
@@ -1908,6 +2106,12 @@ void make_global_widgets ()
 	choose_color_deselected_button = b = new Fl_Button(xpos, ypos+=25, 20, 20, "deselected color");
     b->align(FL_ALIGN_RIGHT); b->selection_color(FL_YELLOW); b->callback((Fl_Callback*)choose_color_deselected);
 
+	change_all_axes_button = b = new Fl_Button(xpos, ypos+=25, 20, 20, "change axes");
+    b->align(FL_ALIGN_RIGHT); b->selection_color(FL_YELLOW); b->callback((Fl_Callback*)change_all_axes);
+
+	link_all_axes_button = b = new Fl_Button(xpos, ypos+=25, 20, 20, "link axes");
+    b->align(FL_ALIGN_RIGHT); b->selection_color(FL_YELLOW); b->type(FL_TOGGLE_BUTTON); b->value(0);
+
 }
 
 
@@ -1918,6 +2122,7 @@ int main(int argc, char **argv)
 		{
 			{"format",	required_argument,	0, 'f'},
 			{"npoints",	required_argument,	0, 'n'},
+			{"ordering", required_argument,	0, 'o'},
 			{"rows",	required_argument,	0, 'r'},
 			{"cols",	required_argument,	0, 'c'},
 			{"borderless",	no_argument,	0, 'b'},
@@ -1926,7 +2131,7 @@ int main(int argc, char **argv)
 		};
     
     int c;
-    while((c = getopt_long(argc, argv, "n:r:c:f:bh", long_options, NULL)) != -1)
+    while((c = getopt_long(argc, argv, "f:n:o:r:c:bh", long_options, NULL)) != -1)
     {
 		switch (c)
 		{
@@ -1945,6 +2150,17 @@ int main(int argc, char **argv)
 			npoints_cmd_line = atoi(optarg);
 			if (npoints_cmd_line < 1)
 				usage();
+			break;
+		case 'o':		// ordering of input file ("columnmajor or rowmajor")
+			if (!strncmp(optarg,"columnmajor",1))
+				ordering=COLUMN_MAJOR;
+			else if (!strncmp(optarg,"rowmajor",1))
+				ordering=ROW_MAJOR;
+			else
+			{
+				usage();
+				exit(-1);
+			}
 			break;
 		case 'r':		// number of rows in scatterplot matrix
 			nrows=atoi(optarg);
@@ -2061,19 +2277,20 @@ int main(int argc, char **argv)
 		cps[i]->pw = pws[i];
 		pws[i]->cp = cps[i];
 
+		// determine which variables to plot, initially
+		int ivar, jvar;
 		if (i==0)
 		{
-			// the first plot initially shows first two attributes
-			cps[i]->varindex1->value(0);  
-			cps[i]->varindex2->value(1);  
-		} else {
-			// others plots initially show random bivariate picks
-			int axis1 = rand()%nvars;  
-			cps[i]->varindex1->value(axis1);
-			cps[i]->varindex2->value((axis1 + ((rand()%(nvars-1)) + 1))%nvars); // avoid duplicating axis1
-			// initially, only the first tab isn't hidden
+			ivar = 0; jvar = 1;
+			// Initially the first plot's tab is shown, and its axes are locked.
+			cps[i]->lock_axes_button->value(1);
 			cps[i]->hide();	
+		} else {
+			upper_triangle_incr (ivar, jvar, nvars);
 		}
+		cps[i]->varindex1->value(ivar);  
+		cps[i]->varindex2->value(jvar);  
+
 		pws[i]->extract_data_points();
 		pws[i]->reset_view();
 		pws[i]->size_range(10, 10);

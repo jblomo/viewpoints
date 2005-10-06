@@ -247,3 +247,68 @@ Timeseries / spectra (UGRIZ, orderbook, etc) ideas.
    - use column labels as axis tick labels
    - how to handle selections?
   
+17:19:37 01 Oct 05
+
+Simplest "parellel coord" implementation - levl 0
+  - extract vertices as huge array, 3*npoints*nvars in size, x=all vav values, y=column index, z=row index (or 0).
+  - no good.  back out.
+
+Added new starting axes (nonrandom). Added "choose new axes" which changes all axes to new ones.
+  - this could be on a per plot basis, too.
+
+lock axis
+  - global
+  - per plot / axis
+
+Tue Oct  4 11:26:29 2005
+
+controls should have local and global versions
+
+add trackball controls
+
+data ideas
+  chemistry
+  final.txt DR4
+    + add xyz (done)
+	+ add colors (both k-corrected and raw)
+     + include far colors (u-r, G-K, etc)
+     + rename z->spectro_z, M-z->z', M_Z->Z
+    + add extra vars from vagc
+    + add extra vars from photo, spectra
+    + add extra vars from aux VAGC files
+    + add density estimators from knn
+    + add moment of intertia eigenvalues & summaries...
+    + binned KDEs and derivatives
+  CFD / etc from tim?
+  machine learning data repository
+
+4D rotation from one 2D plot to another
+  - frame interp. ala Asimov
+  - use opengl w/4d vertices
+  - use 4D rotation matrix: (s = sin(theta), c = cos(theta))
+      c  0  s  0
+      0  c  0  s
+     -s  0  c  0
+      0 -s  0  c
+  - generalization: use mouse-x, mouse-y to control two rotation angles, t1 & t2, and use matrix:
+    with c1 = cos(t1), etc.
+      c1  0  s1  0
+      0  c2  0  s2
+     -s1  0  c1  0
+      0 -s2  0  c2
+  - both plots get same set of 4d vertices, one plot uses the above matrix, the other plot uses
+    the above matrix with upper & lower half swapped.  Or, swap x1,x2 with x3,x4 in 4d vertex array.
+
+-- need "90%" and "99%" normalization styles, which trim the top 1% and top 10% of outliers, repectively.
+
+-- change "add to selction" to "or selection"
+  - add "and with selection" (or some such wording)
+
+15:05:22 02 Oct 05
+
+  - "display deselected" should be local (optionally).  How about "d" vs. "D".
+ 
+09:02:56 05 Oct 05
+
+  - "The Dependence of Clustering on Galaxy Properties" http://xxx.lanl.gov/abs/astro-ph/0509873  uses:  (in addition to M_r(0.1)) D_4000 (which is "better thatn color g-r),  H_alpha,  "stellar" Mass M_*, surface density d_*, concenntration index C (as a proxy for hubble type), 
+
