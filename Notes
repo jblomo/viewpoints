@@ -312,3 +312,13 @@ data ideas
 
   - "The Dependence of Clustering on Galaxy Properties" http://xxx.lanl.gov/abs/astro-ph/0509873  uses:  (in addition to M_r(0.1)) D_4000 (which is "better thatn color g-r),  H_alpha,  "stellar" Mass M_*, surface density d_*, concenntration index C (as a proxy for hubble type), 
 
+Thu Oct  6 17:40:13 2005
+
+ - need local versions of "display deselected".
+ - need size for selected.
+ - need to spped things up.  Bogs down on > 1M points.
+   - e.g. (multi)-texture idea.  No "color-array-from-selection()", but a 2D texture is painted using selection tools, and that 2D texture is applied to all points.  Selections in multiple windows are handled with multi-textures.
+
+ - LIBRARIES WRONG ON LINUX10?  I need to link with /usr/lib/libGL.so.1.0.7667 and *not* with /usr/lib/libGL.so -> ../../usr/X11R6/lib/libGL.so
+  (see ftp://download.nvidia.com/XFree86/Linux-x86/1.0-7676/README.txt)
+

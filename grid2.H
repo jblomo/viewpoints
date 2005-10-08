@@ -2,11 +2,11 @@ int debugging = 0;
 
 #define DEBUG(x) do {if (debugging) x;} while (0)
 
-// file formats
+// input file formats
 #define ASCII 0
 #define BINARY 1
 
-// data ordering
+// input data orderings
 #define ROW_MAJOR 0
 #define COLUMN_MAJOR 1
 

@@ -135,9 +135,9 @@ Fl_Window *main_control_panel;
 Fl_Tabs *cpt;			// tabs to hold individual plot's virtual control panels
 Fl_Hor_Value_Slider_Input *npoints_slider;	// maximum number of points to display in all plots
 Fl_Button *add_to_selection_button, *clear_selection_button, *delete_selection_button;
-Fl_Button *display_deselected_button, *invert_selection_button;
+Fl_Button *show_deselected_button, *invert_selection_button;
 Fl_Button *write_data_button;
-Fl_Button *choose_color_selected_button, *choose_color_deselected_button;
+Fl_Button *choose_color_selected_button, *choose_color_deselected_button, *dont_paint_button;
 Fl_Button *change_all_axes_button; Fl_Button *link_all_axes_button;
 
 // the plot_window class is subclass of an ftlk openGL window that also handles
@@ -182,7 +182,7 @@ public:
     static const int nbins_default = 128;
     static const int nbins_max = 1024;
     void compute_histograms ();
-    int normalize(blitz::Array<float,1>, blitz::Array<int,1>, int, int);
+    int normalize(blitz::Array<float,1> a, blitz::Array<int,1> a_rank, int style, int axis_index);
     std::string xlabel, ylabel, zlabel;
     control_panel_window *cp;	// pointer to the control panel (tab) associated with this plot window
     int index;	// each plot window, and its associated control panel tab, has the same index.
@@ -255,7 +255,7 @@ public:
     Fl_Choice *varindex1, *varindex2, *varindex3;
 	
 	Fl_Button *reset_view_button;
-    Fl_Button *spin, *dont_clear, *show_points, *show_axes, *show_grid, *show_labels, *show_histogram;
+    Fl_Button *spin, *dont_clear, *show_points, *show_deselected_points, *show_axes, *show_grid, *show_labels, *show_histogram;
 	Fl_Button *show_scale, *lock_axes_button;
 //	Fl_Button *x_equals_delta_x, *y_equals_delta_x;
     Fl_Group *transform_style;
@@ -283,14 +283,17 @@ const int NORMALIZATION_MAXABS	= 3;
 const int NORMALIZATION_TRIM_1E2 = 4;
 const int NORMALIZATION_TRIM_1E3 = 5;
 const int NORMALIZATION_THREESIGMA = 6;
-const int NORMALIZATION_RANK = 7;
-const int NORMALIZATION_GAUSSIANIZE = 8;
+const int NORMALIZATION_LOG10 = 7;
+const int NORMALIZATION_SQUASH = 8;
+const int NORMALIZATION_RANK = 9;
+const int NORMALIZATION_GAUSSIANIZE = 10;
 
-const char *normalization_style_labels[] = { "none","minmax","zeromax","maxabs","trim 10^-2", "trim 10^-3", "threesigma","rank","gaussianize"};
+const char *normalization_style_labels[] = { "none","minmax","zeromax","maxabs","trim 10^-2", "trim 10^-3", "threesigma","log_10","squash","rank","gaussianize"};
 
 int normalization_styles[] = {
 	NORMALIZATION_NONE, NORMALIZATION_MINMAX, NORMALIZATION_ZEROMAX, NORMALIZATION_MAXABS, 
-	NORMALIZATION_TRIM_1E2, NORMALIZATION_TRIM_1E3, NORMALIZATION_THREESIGMA, NORMALIZATION_RANK, NORMALIZATION_GAUSSIANIZE
+	NORMALIZATION_TRIM_1E2, NORMALIZATION_TRIM_1E3, NORMALIZATION_THREESIGMA, NORMALIZATION_LOG10,
+	NORMALIZATION_SQUASH, NORMALIZATION_RANK, NORMALIZATION_GAUSSIANIZE
 };
 
 const int n_normalization_styles = sizeof(normalization_styles)/sizeof(normalization_styles[0]);
@@ -312,7 +315,7 @@ toggle_display_delected(Fl_Widget *o)
 	// Toggle the value of the button manually, but only if we were called via a keypress in a plot window
 	// Shouldn't there be an easier way?
 	if (o == NULL)
-		display_deselected_button->value(1 - display_deselected_button->value());
+		show_deselected_button->value(1 - show_deselected_button->value());
 	redraw_all_plots (0); // something wrong here....
 }
 
@@ -715,13 +718,11 @@ void plot_window::draw()
 		glDisable(GL_LIGHTING);
 		// glEnable(GL_DEPTH_TEST);
 		glEnable(GL_BLEND);
-		//	glEnable(GL_POINT_SMOOTH);
-		//	glHint(GL_POINT_SMOOTH_HINT,GL_NICEST);
 		glEnableClientState(GL_VERTEX_ARRAY);
 		glEnableClientState(GL_COLOR_ARRAY);
-#ifdef FAST_APPLE_VERTEX_EXTENSIONS
+#ifdef GL_APPLE_vertex_array_range
 		glEnableClientState(GL_VERTEX_ARRAY_RANGE_APPLE);
-#endif // FAST_APPLE_VERTEX_EXTENSIONS
+#endif // GL_APPLE_vertex_array_range
 
     }
   
@@ -958,6 +959,13 @@ void plot_window::color_array_from_selection()
 {
 	set_selection_colors ();
 
+	if (dont_paint_button->value())
+	{
+		blitz::Range NPTS(0,npoints-1);	
+		altcolors(NPTS,3) = where(selected(NPTS), alpha1, 0.0);
+		return ;
+	}
+
     for (int i=0; i<npoints; i++)
     {
 		if (selected(i))
@@ -976,6 +984,7 @@ void plot_window::color_array_from_selection()
 			altcolors(i,3) = 0.0;  
 		}
     }
+	
 }
 
 void plot_window::color_array_from_new_selection()
@@ -1024,38 +1033,39 @@ void plot_window::draw_data_points()
 
     glBlendFunc(sfactor, dfactor);
 
-    GLfloat *vp = (GLfloat *)vertices.data();
-    GLfloat *cp = (GLfloat *)colors.data();
-    GLfloat *altcp = (GLfloat *)altcolors.data();
+    GLfloat *vertexp = (GLfloat *)vertices.data();
+    GLfloat *colorp = (GLfloat *)colors.data();
+    GLfloat *altcolorp = (GLfloat *)altcolors.data();
 
     // tell the GPU where to find the correct colors for each vertex.
-    if (display_deselected_button->value())
+	int tmp_alpha_test = 0;
+    if (show_deselected_button->value() && cp->show_deselected_points->value()) // XXX need to resolve local/global controls issue
     {
-		glColorPointer (4, GL_FLOAT, 0, cp);
+		glColorPointer (4, GL_FLOAT, 0, colorp);
     }
     else
     {
-		glColorPointer (4, GL_FLOAT, 0, altcp);
+		glColorPointer (4, GL_FLOAT, 0, altcolorp);
 		// cull any deselected points (alpha==0.0), whatever the blendfunc:
 		glEnable(GL_ALPHA_TEST);
 		glAlphaFunc (GL_GEQUAL, 0.5);  
+		tmp_alpha_test = 1;
     }
 
     // tell the GPU where to find the vertices;
-    glVertexPointer (3, GL_FLOAT, 0, vp);
+    glVertexPointer (3, GL_FLOAT, 0, vertexp);
 
-#ifdef FAST_APPLE_VERTEX_EXTENSIONS
+#if GL_APPLE_vertex_array_range
     glVertexArrayParameteriAPPLE (GL_VERTEX_ARRAY_STORAGE_HINT_APPLE, GL_STORAGE_CACHED_APPLE);  // for static data
 //  glVertexArrayParameteriAPPLE (GL_VERTEX_ARRAY_STORAGE_HINT_APPLE, GL_STORAGE_SHARED_APPLE);  // for dynamic data
-    glVertexArrayRangeAPPLE (3*npoints*sizeof(GLfloat),(GLvoid *)vp);
-#endif // FAST_APPLE_VERTEX_EXTENSIONS
+    glVertexArrayRangeAPPLE (3*npoints*sizeof(GLfloat),(GLvoid *)vertexp);
+#endif // GL_APPLE_vertex_array_range
 
     // tell the GPU to draw the vertices.
     glDrawArrays (GL_POINTS, 0, npoints);
 
-    if (!display_deselected_button->value())
+    if (tmp_alpha_test == 1 )
 		glDisable(GL_ALPHA_TEST);
-
 }
 
 void plot_window::compute_histogram(int axis)
@@ -1275,40 +1285,16 @@ plot_window::normalize (blitz::Array<float,1> a, blitz::Array<int,1> a_rank, int
 		return 1;
     case NORMALIZATION_TRIM_1E2:  // median at center of axis, axis extends to include at least 99% of data
 	{
-		float median = a(a_rank(npoints/2));
-		tmp =  abs(a(NPTS)-median); // distance of each point to median
-		// start at median (tmp = 0) and march outwards by increasing distance until 99% is included
-		int left = npoints/2, right = (npoints/2)+1;
-		for (int i=1; i<(int)(0.99*npoints)-1; i++)
-		{
-			if ((tmp(a_rank(left)) >= tmp(a_rank(right))) && (right < npoints-1))
-				right++;
-			else {
-				if (left > 1)  // don't step off left hand side
-					left--;
-			}
-		}
-		wmin[axis_index] = a(a_rank(left));
-		wmax[axis_index] = a(a_rank(right));
+		float trim = 1e-2;
+		wmin[axis_index] = a(a_rank((int)((0.0 + (0.5*trim))*npoints)));
+		wmax[axis_index] = a(a_rank((int)((1.0 - (0.5*trim))*npoints)));
 		return 1;
 	}
     case NORMALIZATION_TRIM_1E3:  // median at center of axis, axis extends to include at least 99.9% of data
 	{
-		float median = a(a_rank(npoints/2));
-		tmp =  abs(a(NPTS)-median); // distance of each point to median
-		// start at median (tmp = 0) and march outwards by increasing distance until 99% is included
-		int left = npoints/2, right = (npoints/2)+1;
-		for (int i=1; i<(int)(0.999*npoints)-1; i++)
-		{
-			if ((tmp(a_rank(left)) >= tmp(a_rank(right))) && (right < npoints-1))
-				right++;
-			else {
-				if (left > 1)  // don't step off left hand side
-					left--;
-			}
-		}
-		wmin[axis_index] = a(a_rank(left));
-		wmax[axis_index] = a(a_rank(right));
+		float trim = 1e-3;
+		wmin[axis_index] = a(a_rank((int)((0.0 + (0.5*trim))*npoints)));
+		wmax[axis_index] = a(a_rank((int)((1.0 - (0.5*trim))*npoints)));
 		return 1;
 	}
     case NORMALIZATION_THREESIGMA:  // mean at center of axis, axis extends to +/- 3*sigma
@@ -1320,6 +1306,21 @@ plot_window::normalize (blitz::Array<float,1> a, blitz::Array<int,1> a_rank, int
 				wmin[axis_index] = mu - 3*sigma;
 				wmax[axis_index] = mu + 3*sigma;
 			}
+		return 1;
+    case NORMALIZATION_LOG10: // negative numbers get assigned a log of zero.
+		if (tmin <= 0.0) {
+			cerr << "Warning: attempted to take logarithms of nonpositive numbers. Those logs were set to zero." << endl;
+		}
+		// find smallest positive element
+		float pmin = min(where(a(NPTS)>0, a(NPTS), MAXFLOAT));
+		a(NPTS) = where(a(NPTS) > 0, log10(a(NPTS)), 0);
+		wmin[axis_index] = log10(pmin);
+		wmax[axis_index] = a(a_rank(npoints-1));
+		return 1;
+    case NORMALIZATION_SQUASH: // simple sigmoid, (-inf,0,+inf) -> (-1,0,+1)
+		a(NPTS) = a(NPTS)/(1+abs(a(NPTS)));
+		wmin[axis_index] = a(a_rank(0));
+		wmax[axis_index] = a(a_rank(npoints-1));
 		return 1;
     case NORMALIZATION_RANK:	// replace each item with its rank, normalized from 0 to 1
 		for(int i=0; i<npoints; i++)
@@ -1419,8 +1420,8 @@ plot_window::extract_data_points ()
 
 	cout << " post-normalization: " << endl;
 
-    vertices(NPTS,0) = points(axis0,NPTS);
-	blitz::Array<float,1> xpoints = vertices(NPTS,0);
+    vertices(NPTS,0) = points(axis0,NPTS);  // this copies the data
+	blitz::Array<float,1> xpoints = vertices(NPTS,0); // but this doesn't. See blitz++ manual.
 
     vertices(NPTS,1) = points(axis1,NPTS);
 	blitz::Array<float,1> ypoints = vertices(NPTS,1);
@@ -1457,6 +1458,11 @@ plot_window::extract_data_points ()
 
 	reset_view ();
     (void) transform_2d ();
+	
+	// XXX need to refactor this
+	// this is needed to make sure the scale marks on the axis are updated
+	screen_to_world(-1, -1, wmin[0], wmin[1]);
+	screen_to_world(+1, +1, wmax[0], wmax[1]);
 
     compute_histograms ();
 
@@ -1469,10 +1475,10 @@ control_panel_window::extract_and_redraw ()
 {
     if (pw->extract_data_points())
 	{
-#ifdef FAST_APPLE_VERTEX_EXTENSIONS
-		GLvoid *vp = (GLvoid *)pw->vertices.data();
-		glFlushVertexArrayRangeAPPLE(3*npoints*sizeof(GLfloat), vp);
-#endif // FAST_APPLE_VERTEX_EXTENSIONS
+#if GL_APPLE_vertex_array_range
+		GLvoid *vertexp = (GLvoid *)pw->vertices.data();
+		glFlushVertexArrayRangeAPPLE(3*npoints*sizeof(GLfloat), vertexp);
+#endif // GL_APPLE_vertex_array_range
 
 		//pw->redraw ();
 		pw->needs_redraw = 1;
@@ -1931,6 +1937,10 @@ control_panel_window::make_widgets(control_panel_window *cpw)
     b->callback((Fl_Callback*)static_maybe_redraw, this);
     b->align(FL_ALIGN_RIGHT); b->type(FL_TOGGLE_BUTTON); b->selection_color(FL_YELLOW);	b->value(1);
 
+    show_deselected_points = b = new Fl_Button(xpos, ypos+=25, 20, 20, " unselected");
+    b->callback((Fl_Callback*)static_maybe_redraw, this);
+    b->align(FL_ALIGN_RIGHT); b->type(FL_TOGGLE_BUTTON); b->selection_color(FL_YELLOW);	b->value(1);
+
     show_axes = b = new Fl_Button(xpos, ypos+=25, 20, 20, "axes");
     b->callback((Fl_Callback*)static_maybe_redraw, this);
     b->align(FL_ALIGN_RIGHT); b->type(FL_TOGGLE_BUTTON); b->selection_color(FL_YELLOW);	b->value(1);
@@ -2079,7 +2089,7 @@ void make_global_widgets ()
 
 	int xpos1 = xpos, ypos1 = ypos;
 
-	display_deselected_button = b = new Fl_Button(xpos, ypos+=25, 20, 20, "show nonselected");
+	show_deselected_button = b = new Fl_Button(xpos, ypos+=25, 20, 20, "show nonselected");
     b->align(FL_ALIGN_RIGHT); b->selection_color(FL_YELLOW); b->type(FL_TOGGLE_BUTTON);	b->value(1);
 	b->callback((Fl_Callback*)toggle_display_delected);
 
@@ -2100,11 +2110,14 @@ void make_global_widgets ()
 
 	xpos = xpos1 + 150; ypos = ypos1;
 
-	choose_color_selected_button = b = new Fl_Button(xpos, ypos+=25, 20, 20, "selected color");
+	choose_color_selected_button = b = new Fl_Button(xpos, ypos+=25, 20, 20, "selection color");
     b->align(FL_ALIGN_RIGHT); b->selection_color(FL_YELLOW); b->callback((Fl_Callback*)choose_color_selected);
 
-	choose_color_deselected_button = b = new Fl_Button(xpos, ypos+=25, 20, 20, "deselected color");
+	choose_color_deselected_button = b = new Fl_Button(xpos, ypos+=25, 20, 20, "unselected color");
     b->align(FL_ALIGN_RIGHT); b->selection_color(FL_YELLOW); b->callback((Fl_Callback*)choose_color_deselected);
+
+	dont_paint_button = b = new Fl_Button(xpos, ypos+=25, 20, 20, "don't paint");
+    b->align(FL_ALIGN_RIGHT); b->selection_color(FL_YELLOW); b->type(FL_TOGGLE_BUTTON);
 
 	change_all_axes_button = b = new Fl_Button(xpos, ypos+=25, 20, 20, "change axes");
     b->align(FL_ALIGN_RIGHT); b->selection_color(FL_YELLOW); b->callback((Fl_Callback*)change_all_axes);
