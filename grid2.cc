@@ -78,8 +78,8 @@ using namespace std;
 int format=ASCII;		// default input file format
 int ordering=COLUMN_MAJOR; // default input data ordering
 
-const int nvars_max = 64;  	// maximum number of columns allowed in data file
-const int MAXPOINTS = 3000000;	// maximum number of rows (points, or samples) in data file
+const int nvars_max = 20;  	// maximum number of columns allowed in data file
+const int MAXPOINTS = 2000000;	// maximum number of rows (points, or samples) in data file
 const int skip = 0;		// skip this many columns at the beginning of each row
 
 int nrows=2, ncols=2;		// layout of plot windows
@@ -104,6 +104,7 @@ blitz::Array<int,1> newly_selected;	// true iff a point is in the newly selected
 blitz::Array<int,1> selected;	// used when adding to selection
 int nselected = 0;	// number of points currently selected
 blitz::Array<float,2> colors, altcolors;
+blitz::Array<float,1> textures;
 
 double r_selected=0.01, g_selected=0.01, b_selected=1.0;
 double r_deselected=1.0, g_deselected=0.01, b_deselected=0.01;
@@ -584,7 +585,7 @@ plot_window::handle(int event)
 			}
 			int isdrag = !Fl::event_is_click();
 			// printf ("FL_DRAG & FL_BUTTON1, event_state: %x  isdrag = %d  xdragged=%f  ydragged=%f\n", Fl::event_state(), isdrag, xdragged, ydragged);
-			if (isdrag==1 && ((abs(xdragged)+abs(ydragged))>1))
+			if (isdrag==1 && ((abs(xdragged)+abs(ydragged))>=1))
 				{
 					selection_changed = 1;
 					redraw_all_plots (index);
@@ -719,7 +720,10 @@ void plot_window::draw()
 		// glEnable(GL_DEPTH_TEST);
 		glEnable(GL_BLEND);
 		glEnableClientState(GL_VERTEX_ARRAY);
+#if 0
 		glEnableClientState(GL_COLOR_ARRAY);
+#endif 0
+		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 #ifdef GL_APPLE_vertex_array_range
 		glEnableClientState(GL_VERTEX_ARRAY_RANGE_APPLE);
 #endif // GL_APPLE_vertex_array_range
@@ -904,6 +908,7 @@ void plot_window::draw_center_glyph ()
     glPopMatrix ();
 }
 
+
 void plot_window::handle_selection()
 {
     int draw_selection_box = 1;
@@ -959,31 +964,17 @@ void plot_window::color_array_from_selection()
 {
 	set_selection_colors ();
 
+	blitz::Range NPTS(0,npoints-1);	
+
 	if (dont_paint_button->value())
 	{
-		blitz::Range NPTS(0,npoints-1);	
-		altcolors(NPTS,3) = where(selected(NPTS), alpha1, 0.0);
+#if 0
+		alttextures(NPTS) = where(selected(NPTS),texture2(index),texture_invisible(index));
 		return ;
+#endif 0
 	}
 
-    for (int i=0; i<npoints; i++)
-    {
-		if (selected(i))
-		{
-			colors(i,0) = altcolors(i,0) = color2[0];
-			colors(i,1) = altcolors(i,1) = color2[1];
-			colors(i,2) = altcolors(i,2) = color2[2];
-			colors(i,3) = altcolors(i,3) = color2[3];
-		} else {
-			colors(i,0) = color1[0];
-			colors(i,1) = color1[1];
-			colors(i,2) = color1[2];
-			colors(i,3) = color1[3];
-			// altcolors(i,0) = altcolors(i,1) = altcolors(i,2) = altcolors(i,3) = 0.0;
-			// setting alpha=0 will cause these deslected points to be culled in draw_data_points
-			altcolors(i,3) = 0.0;  
-		}
-    }
+	textures(NPTS)    = where(selected(NPTS),-1.0, 1.0);
 	
 }
 
@@ -991,6 +982,7 @@ void plot_window::color_array_from_new_selection()
 {
 	if (add_to_selection_button->value())
 	{
+#if 0
 		set_selection_colors ();
 		for (int i=0; i<npoints; i++)
 		{
@@ -1002,6 +994,7 @@ void plot_window::color_array_from_new_selection()
 				colors(i,3) = altcolors(i,3) = color2[3];
 			} 
 		}
+#endif // 0
 	} else {
 		color_array_from_selection ();
 	}
@@ -1015,12 +1008,36 @@ void clearAlphaPlanes()
     glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 }
 
+GLubyte texture1[] = {(GLubyte)255, (GLubyte)2,   (GLubyte)2,   (GLubyte)255,
+					  (GLubyte)2,   (GLubyte)2,   (GLubyte)255, (GLubyte)255};
+
+GLuint texname1, texname2;
+int textures_initialized = 0;
+
+void initialize_textures()
+{
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+	glGenTextures(1,&texname1);
+	glBindTexture(GL_TEXTURE_1D, texname1);
+	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexImage1D (GL_TEXTURE_1D, 0, GL_RGBA8, 2, 0, GL_RGBA, GL_UNSIGNED_BYTE, texture1);
+	textures_initialized = 1;
+}
+
 void plot_window::draw_data_points()
 {
 	// cout << "pw[" << index << "]: draw_data_points() " << endl;
     if (!cp->show_points->value())
 		return;
 	glDisable(GL_DEPTH_TEST);
+
+	if (!textures_initialized)
+		initialize_textures ();
+
+	glEnable(GL_TEXTURE_1D);
+	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+	glBindTexture (GL_TEXTURE_1D, texname1);
 
     glPointSize(cp->pointsize_slider->value());
 
@@ -1036,20 +1053,26 @@ void plot_window::draw_data_points()
     GLfloat *vertexp = (GLfloat *)vertices.data();
     GLfloat *colorp = (GLfloat *)colors.data();
     GLfloat *altcolorp = (GLfloat *)altcolors.data();
+    GLfloat *texturep = (GLfloat *)textures.data();
 
     // tell the GPU where to find the correct colors for each vertex.
 	int tmp_alpha_test = 0;
     if (show_deselected_button->value() && cp->show_deselected_points->value()) // XXX need to resolve local/global controls issue
     {
+#if 0
 		glColorPointer (4, GL_FLOAT, 0, colorp);
+#endif // 0
+		glTexCoordPointer (1, GL_FLOAT, 0, texturep);
     }
     else
     {
+#if 0
 		glColorPointer (4, GL_FLOAT, 0, altcolorp);
 		// cull any deselected points (alpha==0.0), whatever the blendfunc:
 		glEnable(GL_ALPHA_TEST);
 		glAlphaFunc (GL_GEQUAL, 0.5);  
 		tmp_alpha_test = 1;
+#endif // 0
     }
 
     // tell the GPU where to find the vertices;
@@ -1057,7 +1080,7 @@ void plot_window::draw_data_points()
 
 #if GL_APPLE_vertex_array_range
     glVertexArrayParameteriAPPLE (GL_VERTEX_ARRAY_STORAGE_HINT_APPLE, GL_STORAGE_CACHED_APPLE);  // for static data
-//  glVertexArrayParameteriAPPLE (GL_VERTEX_ARRAY_STORAGE_HINT_APPLE, GL_STORAGE_SHARED_APPLE);  // for dynamic data
+	//  glVertexArrayParameteriAPPLE (GL_VERTEX_ARRAY_STORAGE_HINT_APPLE, GL_STORAGE_SHARED_APPLE);  // for dynamic data
     glVertexArrayRangeAPPLE (3*npoints*sizeof(GLfloat),(GLvoid *)vertexp);
 #endif // GL_APPLE_vertex_array_range
 
@@ -1066,6 +1089,7 @@ void plot_window::draw_data_points()
 
     if (tmp_alpha_test == 1 )
 		glDisable(GL_ALPHA_TEST);
+	glDisable (GL_TEXTURE_1D);
 }
 
 void plot_window::compute_histogram(int axis)
@@ -2056,6 +2080,7 @@ resize_global_arrays ()
 
     colors.resize(npoints,4);
     altcolors.resize(npoints,4);
+    textures.resize(npoints);
     identity.resize(npoints);
     newly_selected.resize(npoints);
     selected.resize(npoints);

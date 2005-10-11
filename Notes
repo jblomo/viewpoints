@@ -322,3 +322,13 @@ Thu Oct  6 17:40:13 2005
  - LIBRARIES WRONG ON LINUX10?  I need to link with /usr/lib/libGL.so.1.0.7667 and *not* with /usr/lib/libGL.so -> ../../usr/X11R6/lib/libGL.so
   (see ftp://download.nvidia.com/XFree86/Linux-x86/1.0-7676/README.txt)
 
+11:20:26 09 Oct 05
+
+- the best way to render this data with openGL on linux and osx is probably to use vertex buffer objects (VBOs).  That way, the vertex coordinates can be static (they hardly ever change), and the color (or texture) coordinates can be dynamic (if necessary). There would need to be N+!, probably.  N static ones for the vertex data and one for the (dynamic) color or texture data. 
+
+ - using textures insetad of colors for selection.
+   - initial imp; one selection color only.  
+   - then, one texture for "show deleselcted", another for "dont show deselected".
+   - then, handle multiple colors and "add to selection".
+   - then (maybe) handle "don't paint".
+
