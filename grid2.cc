@@ -78,8 +78,8 @@ using namespace std;
 int format=ASCII;		// default input file format
 int ordering=COLUMN_MAJOR; // default input data ordering
 
-const int nvars_max = 20;  	// maximum number of columns allowed in data file
-const int MAXPOINTS = 2000000;	// maximum number of rows (points, or samples) in data file
+const int nvars_max = 255;  	// maximum number of columns allowed in data file
+const int MAXPOINTS = 300000;	// maximum number of rows (points, or samples) in data file
 const int skip = 0;		// skip this many columns at the beginning of each row
 
 int nrows=2, ncols=2;		// layout of plot windows
@@ -104,7 +104,7 @@ blitz::Array<int,1> newly_selected;	// true iff a point is in the newly selected
 blitz::Array<int,1> selected;	// used when adding to selection
 int nselected = 0;	// number of points currently selected
 blitz::Array<float,2> colors, altcolors;
-blitz::Array<float,1> textures;
+blitz::Array<GLshort,1> textures;
 
 double r_selected=0.01, g_selected=0.01, b_selected=1.0;
 double r_deselected=1.0, g_deselected=0.01, b_deselected=0.01;
@@ -722,11 +722,11 @@ void plot_window::draw()
 		glEnableClientState(GL_VERTEX_ARRAY);
 #if 0
 		glEnableClientState(GL_COLOR_ARRAY);
-#endif 0
+#endif // 0
 		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-#ifdef GL_APPLE_vertex_array_range
+#ifdef FAST_APPLE_VERTEX_EXTENSIONS
 		glEnableClientState(GL_VERTEX_ARRAY_RANGE_APPLE);
-#endif // GL_APPLE_vertex_array_range
+#endif // FAST_APPLE_VERTEX_EXTENSIONS
 
     }
   
@@ -971,10 +971,10 @@ void plot_window::color_array_from_selection()
 #if 0
 		alttextures(NPTS) = where(selected(NPTS),texture2(index),texture_invisible(index));
 		return ;
-#endif 0
+#endif // 0
 	}
 
-	textures(NPTS)    = where(selected(NPTS),-1.0, 1.0);
+	textures(NPTS)    = where(selected(NPTS), (GLshort)0, (GLshort)1);
 	
 }
 
@@ -1008,22 +1008,33 @@ void clearAlphaPlanes()
     glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 }
 
-GLubyte texture1[] = {(GLubyte)255, (GLubyte)2,   (GLubyte)2,   (GLubyte)255,
-					  (GLubyte)2,   (GLubyte)2,   (GLubyte)255, (GLubyte)255};
+GLfloat texture_images[][8] = {
+	{(GLfloat)1.0, (GLfloat)0.02,   (GLfloat)0.02,   (GLfloat)2.0,
+	 (GLfloat)0.02,(GLfloat)0.02,   (GLfloat)1.0,    (GLfloat)1.0},
+	{(GLfloat)1.0, (GLfloat)0.02,   (GLfloat)0.02,   (GLfloat)2.0,
+	 (GLfloat)0.0, (GLfloat)0.0,    (GLfloat)0.0,    (GLfloat)0.0}};
 
-GLuint texname1, texname2;
+GLuint texnames[2];
+
 int textures_initialized = 0;
 
 void initialize_textures()
 {
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-	glGenTextures(1,&texname1);
-	glBindTexture(GL_TEXTURE_1D, texname1);
-	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexImage1D (GL_TEXTURE_1D, 0, GL_RGBA8, 2, 0, GL_RGBA, GL_UNSIGNED_BYTE, texture1);
+	glGenTextures(2,texnames);
+	for (unsigned int i=0; i<sizeof(texnames)/sizeof(texnames[0]); i++)
+	{
+		glBindTexture(GL_TEXTURE_1D, texnames[i]);
+		glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexImage1D (GL_TEXTURE_1D, 0, GL_RGBA8, 2, 0, GL_RGBA, GL_FLOAT, texture_images[i]);
+	}
 	textures_initialized = 1;
 }
+
+GLfloat pointscolor[4] = {1,1,1,2.0};
+GLfloat texenvcolor[4] = {1.0,1.0,1.0,1.0};
 
 void plot_window::draw_data_points()
 {
@@ -1036,8 +1047,9 @@ void plot_window::draw_data_points()
 		initialize_textures ();
 
 	glEnable(GL_TEXTURE_1D);
-	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-	glBindTexture (GL_TEXTURE_1D, texname1);
+	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+	glColor4fv(pointscolor);
+	glTexEnvfv(GL_TEXTURE_ENV, GL_TEXTURE_ENV_COLOR, texenvcolor); // GL_MODULATE ignores this
 
     glPointSize(cp->pointsize_slider->value());
 
@@ -1045,27 +1057,24 @@ void plot_window::draw_data_points()
 
     const_color[0] = const_color[1] = const_color[2] = cp->Lum->value(); 
     const_color[3] = cp->Alph->value();
-
     glBlendColor (const_color[0], const_color[1], const_color[2], const_color[3]);
 
     glBlendFunc(sfactor, dfactor);
 
-    GLfloat *vertexp = (GLfloat *)vertices.data();
-    GLfloat *colorp = (GLfloat *)colors.data();
-    GLfloat *altcolorp = (GLfloat *)altcolors.data();
-    GLfloat *texturep = (GLfloat *)textures.data();
+//    GLfloat *colorp = (GLfloat *)colors.data();
+//    GLfloat *altcolorp = (GLfloat *)altcolors.data();
+    GLshort *texturep = (GLshort *)textures.data();
+	glTexCoordPointer (1, GL_SHORT, 0, texturep);
 
     // tell the GPU where to find the correct colors for each vertex.
 	int tmp_alpha_test = 0;
     if (show_deselected_button->value() && cp->show_deselected_points->value()) // XXX need to resolve local/global controls issue
     {
-#if 0
-		glColorPointer (4, GL_FLOAT, 0, colorp);
-#endif // 0
-		glTexCoordPointer (1, GL_FLOAT, 0, texturep);
+		glBindTexture (GL_TEXTURE_1D, texnames[0]);
     }
     else
     {
+		glBindTexture (GL_TEXTURE_1D, texnames[1]);
 #if 0
 		glColorPointer (4, GL_FLOAT, 0, altcolorp);
 		// cull any deselected points (alpha==0.0), whatever the blendfunc:
@@ -1076,13 +1085,14 @@ void plot_window::draw_data_points()
     }
 
     // tell the GPU where to find the vertices;
+    GLfloat *vertexp = (GLfloat *)vertices.data();
     glVertexPointer (3, GL_FLOAT, 0, vertexp);
 
-#if GL_APPLE_vertex_array_range
+#ifdef FAST_APPLE_VERTEX_EXTENSIONS
     glVertexArrayParameteriAPPLE (GL_VERTEX_ARRAY_STORAGE_HINT_APPLE, GL_STORAGE_CACHED_APPLE);  // for static data
 	//  glVertexArrayParameteriAPPLE (GL_VERTEX_ARRAY_STORAGE_HINT_APPLE, GL_STORAGE_SHARED_APPLE);  // for dynamic data
     glVertexArrayRangeAPPLE (3*npoints*sizeof(GLfloat),(GLvoid *)vertexp);
-#endif // GL_APPLE_vertex_array_range
+#endif // FAST_APPLE_VERTEX_EXTENSIONS
 
     // tell the GPU to draw the vertices.
     glDrawArrays (GL_POINTS, 0, npoints);
@@ -1499,10 +1509,10 @@ control_panel_window::extract_and_redraw ()
 {
     if (pw->extract_data_points())
 	{
-#if GL_APPLE_vertex_array_range
+#ifdef FAST_APPLE_VERTEX_EXTENSIONS
 		GLvoid *vertexp = (GLvoid *)pw->vertices.data();
 		glFlushVertexArrayRangeAPPLE(3*npoints*sizeof(GLfloat), vertexp);
-#endif // GL_APPLE_vertex_array_range
+#endif // FAST_APPLE_VERTEX_EXTENSIONS
 
 		//pw->redraw ();
 		pw->needs_redraw = 1;
@@ -1828,7 +1838,7 @@ control_panel_window::make_widgets(control_panel_window *cpw)
 
     Bkg = new Fl_Hor_Value_Slider_Input(xpos, ypos+=25, cpw->w()-60, 20, "Bkg");
     Bkg->align(FL_ALIGN_LEFT);
-    Bkg->step(0.001);
+    Bkg->step(0.0001);
     Bkg->bounds(0.0,1.0);
     Bkg->callback((Fl_Callback*)replot, this);
     Bkg->value(0.0);
@@ -1836,16 +1846,16 @@ control_panel_window::make_widgets(control_panel_window *cpw)
     Lum = new Fl_Hor_Value_Slider_Input (xpos, ypos+=25, cpw->w()-60, 20, "Lum");
     Lum->align(FL_ALIGN_LEFT);
     Lum->callback((Fl_Callback*)replot, this);
-    Lum->step(0.001);
+    Lum->step(0.0001);
     Lum->bounds(0,1.0);
-    Lum->value(0.85);
+    Lum->value(1.0);
 
     Alph = new Fl_Hor_Value_Slider_Input (xpos, ypos+=25, cpw->w()-60, 20, "Alph");
     Alph->align(FL_ALIGN_LEFT);
     Alph->callback((Fl_Callback*)replot, this);
-    Alph->step(0.001);
-    Alph->bounds(0,1.0);
-    Alph->value(1.0);
+    Alph->step(0.0001);
+    Alph->bounds(0.25,0.5);
+    Alph->value(0.5);
 
     rot_slider = new Fl_Hor_Value_Slider_Input (xpos, ypos+=25, cpw->w()-60, 20, "rot");
     rot_slider->align(FL_ALIGN_LEFT);
