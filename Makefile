@@ -20,9 +20,20 @@ endif
 DEBUG		= -g -ggdb -g3 -Wall -Wunused -fexceptions
 
 ifeq ($(platform),Darwin)
+
+# for debugging
 #	OPTIM = $(DEBUG) -pipe
+
+# optimize for G4
 	OPTIM = -O6 -ftree-vectorize -ftree-vectorizer-verbose=0 -Wall -Wno-unused -Wno-long-double -Wno-deprecated -fno-exceptions -ffast-math -pipe -fsigned-char -maltivec -mabi=altivec -faltivec -mcpu=G4 -mtune=G4 -mpowerpc-gfxopt -g
+
+# optimize for G5
+#	OPTIM = -O6 -ftree-vectorize -ftree-vectorizer-verbose=0 -Wall -Wno-unused -Wno-long-double -Wno-deprecated -fno-exceptions -ffast-math -pipe -fsigned-char -maltivec -mabi=altivec -faltivec -mcpu=G5 -mtune=G5 -mpowerpc-gfxopt -g
 else
+
+
+
+
 #	OPTIM = -O0 $(DEBUG) -pipe
 	OPTIM = -O6 -Wall -Wunused -ffast-math -fno-exceptions -g  -Wno-deprecated
 endif
@@ -38,11 +49,12 @@ CXXFLAGS	= $(OPTIM) -DGL_GLEXT_PROTOTYPES
 ifeq ($(platform),Darwin)
 	INCPATH = -I/sw/include
 	LIBPATH	= -L/usr/local/lib -L/sw/lib
-	LDLIBS = -framework AGL -framework OpenGL -framework Carbon -framework ApplicationServices -framework veclib -lm -lmx -lgsl 
+#	LDLIBS = -framework AGL -framework OpenGL -framework Carbon -framework ApplicationServices -framework veclib -lm -lmx -lgsl 
+	LDLIBS = -framework AGL -framework OpenGL -framework Carbon -framework ApplicationServices -lm -lmx -lgsl 
 else
 	INCPATH = -I/u/wk/creon/include
 	LIBPATH	= -L/u/wk/creon/lib 
-	LDLIBS = -L/usr/X11R6/lib -lGL -lXext -lm -lgsl 
+	LDLIBS = -lGL -L/usr/X11R6/lib -lXext -lm -lgsl 
 endif
 
 INCFLEWS	= -I../flews-0.3

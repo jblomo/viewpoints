@@ -78,8 +78,8 @@ using namespace std;
 int format=ASCII;		// default input file format
 int ordering=COLUMN_MAJOR; // default input data ordering
 
-const int nvars_max = 255;  	// maximum number of columns allowed in data file
-const int MAXPOINTS = 300000;	// maximum number of rows (points, or samples) in data file
+const int nvars_max = 350;  	// maximum number of columns allowed in data file
+const int MAXPOINTS = 700000;	// maximum number of rows (points, or samples) in data file
 const int skip = 0;		// skip this many columns at the beginning of each row
 
 int nrows=2, ncols=2;		// layout of plot windows
@@ -980,24 +980,7 @@ void plot_window::color_array_from_selection()
 
 void plot_window::color_array_from_new_selection()
 {
-	if (add_to_selection_button->value())
-	{
-#if 0
-		set_selection_colors ();
-		for (int i=0; i<npoints; i++)
-		{
-			if (newly_selected(i))
-			{
-				colors(i,0) = altcolors(i,0) = color2[0];
-				colors(i,1) = altcolors(i,1) = color2[1];
-				colors(i,2) = altcolors(i,2) = color2[2];
-				colors(i,3) = altcolors(i,3) = color2[3];
-			} 
-		}
-#endif // 0
-	} else {
-		color_array_from_selection ();
-	}
+	color_array_from_selection ();
 }
 
 void clearAlphaPlanes()
@@ -1077,11 +1060,11 @@ void plot_window::draw_data_points()
 		glBindTexture (GL_TEXTURE_1D, texnames[1]);
 #if 0
 		glColorPointer (4, GL_FLOAT, 0, altcolorp);
+#endif // 0
 		// cull any deselected points (alpha==0.0), whatever the blendfunc:
 		glEnable(GL_ALPHA_TEST);
 		glAlphaFunc (GL_GEQUAL, 0.5);  
 		tmp_alpha_test = 1;
-#endif // 0
     }
 
     // tell the GPU where to find the vertices;
