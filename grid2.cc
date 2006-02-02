@@ -1,3 +1,5 @@
+// viewpoints - interactive linked scatterplots and more.
+// copyright 2005 Creon Levit, all rights reserved.
 
 // C includes
 #include <unistd.h>
@@ -157,6 +159,7 @@ protected:
     int handle (int event);
     void handle_selection();
 	void screen_to_world(float xs, float ys, float &x, float &y);
+	void print_selection_stats();
     int xprev, yprev, xcur, ycur;
     float xdragged, ydragged;
     float xcenter, ycenter, zcenter;
@@ -881,8 +884,8 @@ void plot_window::draw_axes ()
 					b = 2;  //  offset for axis labels values. b<1 -> inwards, b>1 -> outwards, b==1 -> on axis.
 					float wid = gl_width(xlabel.c_str())/(float)(w());
 					gl_draw((const char *)(xlabel.c_str()), -wid, -(1+b*a));	
-					b = 2.3;
-					gl_draw((const char *)(ylabel.c_str()), -(1+b*a), 0.0f);
+					b = 1.5;
+					gl_draw((const char *)(ylabel.c_str()), -(1+b*a), 1+b*a);
 				}
 			glPopMatrix ();
 		}
@@ -894,22 +897,45 @@ void plot_window::draw_center_glyph ()
     if (!show_center_glyph)
 		return;
     glDisable(GL_DEPTH_TEST);
+	glEnable(GL_COLOR_LOGIC_OP);
+	glLogicOp(GL_INVERT);
+	
     glPushMatrix ();
     glLoadIdentity();
-    if (cp->Bkg->value() <= 0.5)
-		glColor4f(0.7,0.7,0.7,0.0);
-    else
-		glColor4f(0.2,0.2,0.2,0.0);
+	glBlendFunc(GL_ONE, GL_ZERO);
 	glBegin (GL_LINES);
+
+	glColor4f(0.7,0.7,0.7,0.0);
 	glVertex3f (-0.025, 0.0, 0.0); glVertex3f (0.025, 0.0, 0.0);
 	glVertex3f (0.0, -0.025, 0.0); glVertex3f (0.0, 0.025, 0.0);
-	glVertex3f (0.0, 0.0, -0.025); glVertex3f (0.0, 0.0, 0.025);
+
 	glEnd ();
     glPopMatrix ();
+	glDisable(GL_COLOR_LOGIC_OP);
 }
 
 
-void plot_window::handle_selection()
+void plot_window::print_selection_stats ()
+{
+    glDisable(GL_DEPTH_TEST);
+	glEnable(GL_COLOR_LOGIC_OP);
+	glLogicOp(GL_INVERT);
+	glPushMatrix ();
+	glLoadIdentity ();
+	gl_font (FL_COURIER, 10);
+	glBlendFunc (GL_ONE, GL_ZERO);
+	if (cp->Bkg->value() <= 0.4)
+		glColor4f (0.7,0.7,0.0,0.0);
+	else
+		glColor4f (0.4*cp->Bkg->value(), 0.4*cp->Bkg->value(), 0.0*cp->Bkg->value(), 0.0);
+	char buf[1024];
+	snprintf (buf, sizeof(buf), "%8d/%d (%5.2f%%) selected", nselected, npoints, 100.0*nselected/(float)npoints);
+	gl_draw ((const char *)buf, 0.0f, 0.9f);
+	glPopMatrix ();
+	glDisable(GL_COLOR_LOGIC_OP);
+}
+
+void plot_window::handle_selection ()
 {
     int draw_selection_box = 1;
     if (draw_selection_box)
@@ -937,6 +963,7 @@ void plot_window::handle_selection()
 	}			
 
 	nselected = sum(selected(NPTS));
+	print_selection_stats();
     color_array_from_new_selection ();
 
     // done flagging selection for this plot
@@ -2309,7 +2336,7 @@ int main(int argc, char **argv)
 		pws[i]->cp = cps[i];
 
 		// determine which variables to plot, initially
-		int ivar, jvar;
+		int ivar=0, jvar=1;
 		if (i==0)
 		{
 			ivar = 0; jvar = 1;
