@@ -91,7 +91,8 @@ depend:	$(SRCS)
 -include makedepend
 
 # there has to be a better way....
-tags:	depend $(SRCS)
+tags:	TAGS
+TAGS:	depend $(SRCS)
 	etags --defines --members -o TAGS $(SRCS) `cat makedepend | sed -e"s/.*://g; s/\\\\\//"`
 
 stable.h.gch:	stable.h

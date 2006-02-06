@@ -332,3 +332,43 @@ Thu Oct  6 17:40:13 2005
    - then, handle multiple colors and "add to selection".
    - then (maybe) handle "don't paint".
 
+17:35:15 04 Feb 06
+
+features to add:
+  get good data for SDSS, genetic (www) domains, statarb, china study, cfd (alan?), chemistry, ....
+  multiple colors
+  color = nwindows...2*nwindows-1 as t coord with one additional intersection color at t=2*nwindows.  Add colors valuess for multiple selections, clamp t at t>=2*nwindows.
+  line plots
+    vector variabls 
+    parellel coords
+  subject-observer pattern for multiple views
+  can we use sprites and colors?
+  how to use pixel textures for hue maps/lightness maps.
+  better blending control.
+  selected points should render on top of non-selected points.
+  are there too many redraws?  Why do plot windows swap one at a time?
+  scale for z axis needs to be sensible
+  add trackball rotation for 3D
+  separate 3D and 2D rendering?
+  separate histogram scale sliders?
+  separate histogram nbins sliders?
+  Jeff's default histogram nbins?
+  how to handle multiple screens?
+  windows overlap on macs is still wrong.
+  is there a monospaced sans serif font?
+  selection stats are too small, and should be rendered with logicop, or above main points.
+  need global control panel
+   size
+   normalization
+   colors?
+   blend?
+   lock axes
+   .....
+   chooser to omit certain panels from global ops.
+  need per axis control to skip certain axes on "change axes"
+  npoints stride?  random?
+  skip columns that only have one value (cmd line arg to override)
+  bail if too many input errors in a row..
+  comments in input files?
+  fine control on sliders - how? 
+  

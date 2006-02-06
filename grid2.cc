@@ -199,7 +199,7 @@ public:
 	GLfloat color1[4], color2[4]; // color of selected and deselected points, respectively
     void reset_view();
     void redraw_one_plot();
-    void change_axes();
+    void change_axes(int nchange);
     float angle;
     int needs_redraw;
 };
@@ -341,12 +341,14 @@ void
 choose_color_selected (Fl_Widget *o)
 {
 	(void) fl_color_chooser("selected", r_selected, g_selected, b_selected);
+	set_selection_colors ();
 }
 
 void
 choose_color_deselected (Fl_Widget *o)
 {
 	(void) fl_color_chooser("deselected", r_deselected, g_deselected, b_deselected);
+	set_selection_colors ();
 }
 
 void
@@ -382,30 +384,34 @@ delete_selection (Fl_Widget *o)
 // increment row index i and column index j "down and to the right" in an upper triangular matrix, with wrapping;
 void upper_triangle_incr (int &i, int &j, const int nvars)
 {
-	assert (i >= 0 && i < nvars && j > 0 && j < nvars);
-	if (j == nvars-1) // generic wrap condition
-	{
-		if (i == 0) // special wrap condition
+	static int offset = 1;
+	i++;
+	j++;
+	if (j > nvars-1)
 		{
-			j = 1;
-		} else {
-			j = nvars-i;
 			i = 0;
+			offset++;
+			j  = i+offset;
 		}
-	} else { // generic condition
-		i++;
-		j++;
-	}
+	// start all over if we need to.
+	if (j > nvars-1)
+		{
+			i = 0;
+			j = 1;
+			offset = 1;
+		}
+	assert (i >= 0);
+	assert (j > 0);
+	assert (i < nvars-1);
+	assert (j < nvars);
 }
 
-void plot_window::change_axes ()
+void plot_window::change_axes (int nchange)
 {
-	if (cp->lock_axes_button->value())
-		return;
 	// this seems a little verbose.....
 	int i=cp->varindex1->value();
 	int j=cp->varindex2->value();
-	for (int k=0; k<nplots; k++)
+	for (int k=0; k<nchange; k++)
 		upper_triangle_incr(i,j,nvars);
 	cp->varindex1->value(i);
 	cp->varindex2->value(j);
@@ -415,10 +421,17 @@ void plot_window::change_axes ()
 void
 change_all_axes (Fl_Widget *o)
 {
+	int nchange = 0;
 	for (int i=0; i<nplots; i++)
-	{
-		pws[i]->change_axes();
-	}
+		{
+			if (!cps[i]->lock_axes_button->value())
+				nchange++;
+		}
+	for (int i=0; i<nplots; i++)
+		{
+			if (!cps[i]->lock_axes_button->value())
+				pws[i]->change_axes (nchange);
+		}
 }
 
 
@@ -703,7 +716,7 @@ void plot_window::reset_view()
 
     reset_selection_box ();
     if (count ==1)
-		color_array_from_selection ();
+		//		color_array_from_selection ();
 
     needs_redraw = 1;
 }
@@ -973,22 +986,57 @@ void plot_window::handle_selection ()
 	
 float mincolor= 0.01, alpha1 = 1.0;
 
-void plot_window::set_selection_colors ()
+GLfloat texture_images[][8] = {
+	{(GLfloat)1.0, (GLfloat)0.02,   (GLfloat)0.02,   (GLfloat)2.0,
+	 (GLfloat)0.02,(GLfloat)0.02,   (GLfloat)1.0,    (GLfloat)1.0},
+	{(GLfloat)1.0, (GLfloat)0.02,   (GLfloat)0.02,   (GLfloat)2.0,
+	 (GLfloat)0.0, (GLfloat)0.0,    (GLfloat)0.0,    (GLfloat)0.0}};
+
+GLfloat pointscolor[4] = {1,1,1,2.0};
+GLfloat texenvcolor[4] = {1.0,1.0,1.0,1.0};
+
+GLuint texnames[2];
+
+int textures_initialized = 0;
+
+void initialize_textures()
 {
-	color1[0] = fmax(r_deselected, mincolor);
-    color1[1] = fmax(g_deselected, mincolor);
-    color1[2] = fmax(b_deselected, mincolor);
-    color1[3] = alpha1;
- 
-    color2[0] = fmax(r_selected, mincolor);
-    color2[1] = fmax(g_selected, mincolor);
-    color2[2] = fmax(b_selected, mincolor);
-    color2[3] = alpha1;
+	if (textures_initialized)
+		return;
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+	glGenTextures(2,texnames);
+	for (unsigned int i=0; i<sizeof(texnames)/sizeof(texnames[0]); i++)
+	{
+		glBindTexture(GL_TEXTURE_1D, texnames[i]);
+		glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexImage1D (GL_TEXTURE_1D, 0, GL_RGBA8, 2, 0, GL_RGBA, GL_FLOAT, texture_images[i]);
+	}
+	textures_initialized = 1;
 }
 
+void plot_window::set_selection_colors ()
+{
+	// colors when showing deselected points
+	texture_images[0][0] = r_selected;   texture_images[0][1] = g_selected;   texture_images[0][2] = b_selected;   texture_images[0][3] = 1.0; 
+	texture_images[0][4] = r_deselected; texture_images[0][5] = g_deselected; texture_images[0][6] = b_deselected; texture_images[0][7] = 1.0; 
+	// colors when hiding deselected points
+	texture_images[1][0] = r_selected;   texture_images[1][1] = g_selected;   texture_images[1][2] = b_selected;   texture_images[1][3] = 1.0; 
+	texture_images[1][4] = 0.0;          texture_images[1][5] = 0.0;          texture_images[1][6] = 0.0;          texture_images[1][7] = 0.0; 
+
+	for (unsigned int i=0; i<sizeof(texnames)/sizeof(texnames[0]); i++)
+	{
+		glBindTexture(GL_TEXTURE_1D, texnames[i]);
+		glTexImage1D (GL_TEXTURE_1D, 0, GL_RGBA8, 2, 0, GL_RGBA, GL_FLOAT, texture_images[i]);
+	}
+
+}
 
 void plot_window::color_array_from_selection()
 {
+
+	initialize_textures ();
 	set_selection_colors ();
 
 	blitz::Range NPTS(0,npoints-1);	
@@ -1018,43 +1066,12 @@ void clearAlphaPlanes()
     glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 }
 
-GLfloat texture_images[][8] = {
-	{(GLfloat)1.0, (GLfloat)0.02,   (GLfloat)0.02,   (GLfloat)2.0,
-	 (GLfloat)0.02,(GLfloat)0.02,   (GLfloat)1.0,    (GLfloat)1.0},
-	{(GLfloat)1.0, (GLfloat)0.02,   (GLfloat)0.02,   (GLfloat)2.0,
-	 (GLfloat)0.0, (GLfloat)0.0,    (GLfloat)0.0,    (GLfloat)0.0}};
-
-GLuint texnames[2];
-
-int textures_initialized = 0;
-
-void initialize_textures()
-{
-	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-	glGenTextures(2,texnames);
-	for (unsigned int i=0; i<sizeof(texnames)/sizeof(texnames[0]); i++)
-	{
-		glBindTexture(GL_TEXTURE_1D, texnames[i]);
-		glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		glTexImage1D (GL_TEXTURE_1D, 0, GL_RGBA8, 2, 0, GL_RGBA, GL_FLOAT, texture_images[i]);
-	}
-	textures_initialized = 1;
-}
-
-GLfloat pointscolor[4] = {1,1,1,2.0};
-GLfloat texenvcolor[4] = {1.0,1.0,1.0,1.0};
-
 void plot_window::draw_data_points()
 {
 	// cout << "pw[" << index << "]: draw_data_points() " << endl;
     if (!cp->show_points->value())
 		return;
 	glDisable(GL_DEPTH_TEST);
-
-	if (!textures_initialized)
-		initialize_textures ();
 
 	glEnable(GL_TEXTURE_1D);
 	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
@@ -1071,12 +1088,10 @@ void plot_window::draw_data_points()
 
     glBlendFunc(sfactor, dfactor);
 
-//    GLfloat *colorp = (GLfloat *)colors.data();
-//    GLfloat *altcolorp = (GLfloat *)altcolors.data();
     GLshort *texturep = (GLshort *)textures.data();
 	glTexCoordPointer (1, GL_SHORT, 0, texturep);
 
-    // tell the GPU where to find the correct colors for each vertex.
+    // tell the GPU where to find the correct texture coordinate (colors) for each vertex.
 	int tmp_alpha_test = 0;
     if (show_deselected_button->value() && cp->show_deselected_points->value()) // XXX need to resolve local/global controls issue
     {
@@ -1085,9 +1100,6 @@ void plot_window::draw_data_points()
     else
     {
 		glBindTexture (GL_TEXTURE_1D, texnames[1]);
-#if 0
-		glColorPointer (4, GL_FLOAT, 0, altcolorp);
-#endif // 0
 		// cull any deselected points (alpha==0.0), whatever the blendfunc:
 		glEnable(GL_ALPHA_TEST);
 		glAlphaFunc (GL_GEQUAL, 0.5);  
@@ -1096,7 +1108,11 @@ void plot_window::draw_data_points()
 
     // tell the GPU where to find the vertices;
     GLfloat *vertexp = (GLfloat *)vertices.data();
-    glVertexPointer (3, GL_FLOAT, 0, vertexp);
+	// are we plotting in two dimensions or three ?
+	if (cp->varindex3->value() == nvars) // axis3 == "-nothing-" means 2D plotting
+		glVertexPointer (2, GL_FLOAT, 3*sizeof(GL_FLOAT), vertexp); 
+	else
+		glVertexPointer (3, GL_FLOAT, 0, vertexp); 
 
 #ifdef FAST_APPLE_VERTEX_EXTENSIONS
     glVertexArrayParameteriAPPLE (GL_VERTEX_ARRAY_STORAGE_HINT_APPLE, GL_STORAGE_CACHED_APPLE);  // for static data
@@ -1944,32 +1960,32 @@ control_panel_window::make_widgets(control_panel_window *cpw)
     int ypos2 = ypos;
 
     reset_view_button = b = new Fl_Button(xpos2, ypos+=25, 20, 20, "reset view ");
-    b->align(FL_ALIGN_RIGHT); b->selection_color(FL_YELLOW);
+    b->align(FL_ALIGN_RIGHT); b->selection_color(FL_BLUE);
 	b->callback((Fl_Callback*) reset_view, this);
 
     spin = b= new Fl_Button(xpos2, ypos+=25, 20, 20, "spin");
-    b->align(FL_ALIGN_RIGHT); b->selection_color(FL_YELLOW);
+    b->align(FL_ALIGN_RIGHT); b->selection_color(FL_BLUE);
     b->type(FL_TOGGLE_BUTTON);
 
     dont_clear = new Fl_Button(xpos2, ypos+=25, 20, 20, "don't clear");
     dont_clear->align(FL_ALIGN_RIGHT);
     dont_clear->type(FL_TOGGLE_BUTTON);
-    dont_clear->selection_color(FL_YELLOW);
+    dont_clear->selection_color(FL_BLUE);
     dont_clear->callback((Fl_Callback*)static_maybe_redraw, this);
 
     transform_style = new Fl_Group (xpos2-1, ypos+25-1, 20+2, 4*25+2);
 
     no_transform = b = new Fl_Button(xpos2, ypos+=25, 20, 20, "identity");
     b->callback((Fl_Callback*)static_extract_and_redraw, this);
-    b->align(FL_ALIGN_RIGHT); b->type(FL_RADIO_BUTTON); b->selection_color(FL_YELLOW);
+    b->align(FL_ALIGN_RIGHT); b->type(FL_RADIO_BUTTON); b->selection_color(FL_BLUE);
 		
     sum_vs_difference = b = new Fl_Button(xpos2, ypos+=25, 20, 20, "sum vs. diff.");
     b->callback((Fl_Callback*)static_extract_and_redraw, this);
-    b->align(FL_ALIGN_RIGHT); b->type(FL_RADIO_BUTTON); b->selection_color(FL_YELLOW);
+    b->align(FL_ALIGN_RIGHT); b->type(FL_RADIO_BUTTON); b->selection_color(FL_BLUE);
 		
     polar = b = new Fl_Button(xpos2, ypos+=25, 20, 20, "polar");
     b->callback((Fl_Callback*)static_extract_and_redraw, this);
-    b->align(FL_ALIGN_RIGHT); b->type(FL_RADIO_BUTTON); b->selection_color(FL_YELLOW);
+    b->align(FL_ALIGN_RIGHT); b->type(FL_RADIO_BUTTON); b->selection_color(FL_BLUE);
 		
     transform_style->end();
     no_transform->setonly();
@@ -1979,37 +1995,37 @@ control_panel_window::make_widgets(control_panel_window *cpw)
 
     show_points = b = new Fl_Button(xpos, ypos+=25, 20, 20, "points");
     b->callback((Fl_Callback*)static_maybe_redraw, this);
-    b->align(FL_ALIGN_RIGHT); b->type(FL_TOGGLE_BUTTON); b->selection_color(FL_YELLOW);	b->value(1);
+    b->align(FL_ALIGN_RIGHT); b->type(FL_TOGGLE_BUTTON); b->selection_color(FL_BLUE);	b->value(1);
 
     show_deselected_points = b = new Fl_Button(xpos, ypos+=25, 20, 20, " unselected");
     b->callback((Fl_Callback*)static_maybe_redraw, this);
-    b->align(FL_ALIGN_RIGHT); b->type(FL_TOGGLE_BUTTON); b->selection_color(FL_YELLOW);	b->value(1);
+    b->align(FL_ALIGN_RIGHT); b->type(FL_TOGGLE_BUTTON); b->selection_color(FL_BLUE);	b->value(1);
 
     show_axes = b = new Fl_Button(xpos, ypos+=25, 20, 20, "axes");
     b->callback((Fl_Callback*)static_maybe_redraw, this);
-    b->align(FL_ALIGN_RIGHT); b->type(FL_TOGGLE_BUTTON); b->selection_color(FL_YELLOW);	b->value(1);
+    b->align(FL_ALIGN_RIGHT); b->type(FL_TOGGLE_BUTTON); b->selection_color(FL_BLUE);	b->value(1);
 
     show_labels = b = new Fl_Button(xpos, ypos+=25, 20, 20, "labels");
     b->callback((Fl_Callback*)static_maybe_redraw, this);
-    b->align(FL_ALIGN_RIGHT); b->type(FL_TOGGLE_BUTTON); b->selection_color(FL_YELLOW);	b->value(1);
+    b->align(FL_ALIGN_RIGHT); b->type(FL_TOGGLE_BUTTON); b->selection_color(FL_BLUE);	b->value(1);
 
     show_scale = b = new Fl_Button(xpos, ypos+=25, 20, 20, "scales");
     b->callback((Fl_Callback*)static_maybe_redraw, this);
-    b->align(FL_ALIGN_RIGHT); b->type(FL_TOGGLE_BUTTON); b->selection_color(FL_YELLOW);	b->value(1);
+    b->align(FL_ALIGN_RIGHT); b->type(FL_TOGGLE_BUTTON); b->selection_color(FL_BLUE);	b->value(1);
 
     show_grid = b = new Fl_Button(xpos, ypos+=25, 20, 20, "grid");
     b->callback((Fl_Callback*)static_maybe_redraw, this);
-    b->align(FL_ALIGN_RIGHT); b->type(FL_TOGGLE_BUTTON); b->selection_color(FL_YELLOW);	b->value(0);
+    b->align(FL_ALIGN_RIGHT); b->type(FL_TOGGLE_BUTTON); b->selection_color(FL_BLUE);	b->value(0);
 
     show_histogram = b = new Fl_Button(xpos, ypos+=25, 20, 20, "histograms");
     b->callback((Fl_Callback*)redraw_one_plot, this);
-    b->align(FL_ALIGN_RIGHT); b->type(FL_TOGGLE_BUTTON); b->selection_color(FL_YELLOW);	b->value(0);
+    b->align(FL_ALIGN_RIGHT); b->type(FL_TOGGLE_BUTTON); b->selection_color(FL_BLUE);	b->value(0);
 
     ypos=ypos2;
     xpos=xpos2+200;
 
     lock_axes_button = b = new Fl_Button(xpos, ypos+=25, 20, 20, "lock axes");
-    b->align(FL_ALIGN_RIGHT); b->type(FL_TOGGLE_BUTTON); b->selection_color(FL_YELLOW);	b->value(0);
+    b->align(FL_ALIGN_RIGHT); b->type(FL_TOGGLE_BUTTON); b->selection_color(FL_BLUE);	b->value(0);
 
 }
 
@@ -2135,40 +2151,40 @@ void make_global_widgets ()
 	int xpos1 = xpos, ypos1 = ypos;
 
 	show_deselected_button = b = new Fl_Button(xpos, ypos+=25, 20, 20, "show nonselected");
-    b->align(FL_ALIGN_RIGHT); b->selection_color(FL_YELLOW); b->type(FL_TOGGLE_BUTTON);	b->value(1);
+    b->align(FL_ALIGN_RIGHT); b->selection_color(FL_BLUE); b->type(FL_TOGGLE_BUTTON);	b->value(1);
 	b->callback((Fl_Callback*)toggle_display_delected);
 
 	add_to_selection_button = b = new Fl_Button(xpos, ypos+=25, 20, 20, "add to selection");
-    b->align(FL_ALIGN_RIGHT); b->selection_color(FL_YELLOW); b->type(FL_TOGGLE_BUTTON);	b->value(0);	
+    b->align(FL_ALIGN_RIGHT); b->selection_color(FL_BLUE); b->type(FL_TOGGLE_BUTTON);	b->value(0);	
 
 	invert_selection_button = b = new Fl_Button(xpos, ypos+=25, 20, 20, "invert selection");
-    b->align(FL_ALIGN_RIGHT); b->selection_color(FL_YELLOW); b->callback((Fl_Callback*)invert_selection);
+    b->align(FL_ALIGN_RIGHT); b->selection_color(FL_BLUE); b->callback((Fl_Callback*)invert_selection);
 
 	clear_selection_button = b = new Fl_Button(xpos, ypos+=25, 20, 20, "clear selection");
-    b->align(FL_ALIGN_RIGHT); b->selection_color(FL_YELLOW); b->callback(clear_selection);
+    b->align(FL_ALIGN_RIGHT); b->selection_color(FL_BLUE); b->callback(clear_selection);
 
 	delete_selection_button = b = new Fl_Button(xpos, ypos+=25, 20, 20, "kill selected");
-    b->align(FL_ALIGN_RIGHT); b->selection_color(FL_YELLOW); b->callback(delete_selection);
+    b->align(FL_ALIGN_RIGHT); b->selection_color(FL_BLUE); b->callback(delete_selection);
 
 	write_data_button = b = new Fl_Button(xpos, ypos+=25, 20, 20, "write data");
-    b->align(FL_ALIGN_RIGHT); b->selection_color(FL_YELLOW); b->callback(write_data);
+    b->align(FL_ALIGN_RIGHT); b->selection_color(FL_BLUE); b->callback(write_data);
 
 	xpos = xpos1 + 150; ypos = ypos1;
 
 	choose_color_selected_button = b = new Fl_Button(xpos, ypos+=25, 20, 20, "selection color");
-    b->align(FL_ALIGN_RIGHT); b->selection_color(FL_YELLOW); b->callback((Fl_Callback*)choose_color_selected);
+    b->align(FL_ALIGN_RIGHT); b->selection_color(FL_BLUE); b->callback((Fl_Callback*)choose_color_selected);
 
 	choose_color_deselected_button = b = new Fl_Button(xpos, ypos+=25, 20, 20, "unselected color");
-    b->align(FL_ALIGN_RIGHT); b->selection_color(FL_YELLOW); b->callback((Fl_Callback*)choose_color_deselected);
+    b->align(FL_ALIGN_RIGHT); b->selection_color(FL_BLUE); b->callback((Fl_Callback*)choose_color_deselected);
 
 	dont_paint_button = b = new Fl_Button(xpos, ypos+=25, 20, 20, "don't paint");
-    b->align(FL_ALIGN_RIGHT); b->selection_color(FL_YELLOW); b->type(FL_TOGGLE_BUTTON);
+    b->align(FL_ALIGN_RIGHT); b->selection_color(FL_BLUE); b->type(FL_TOGGLE_BUTTON);
 
 	change_all_axes_button = b = new Fl_Button(xpos, ypos+=25, 20, 20, "change axes");
-    b->align(FL_ALIGN_RIGHT); b->selection_color(FL_YELLOW); b->callback((Fl_Callback*)change_all_axes);
+    b->align(FL_ALIGN_RIGHT); b->selection_color(FL_BLUE); b->callback((Fl_Callback*)change_all_axes);
 
 	link_all_axes_button = b = new Fl_Button(xpos, ypos+=25, 20, 20, "link axes");
-    b->align(FL_ALIGN_RIGHT); b->selection_color(FL_YELLOW); b->type(FL_TOGGLE_BUTTON); b->value(0);
+    b->align(FL_ALIGN_RIGHT); b->selection_color(FL_BLUE); b->type(FL_TOGGLE_BUTTON); b->value(0);
 
 }
 
@@ -2278,6 +2294,7 @@ int main(int argc, char **argv)
 	const int main_x = Fl::w() - (main_w + left_frame + right_frame + right_safe), main_y = top_frame+top_safe;
 
     // main control panel window
+    Fl::scheme("plastic");		// optional
     main_control_panel = new Fl_Window (main_x, main_y, main_w, main_h, "viewpoints -> creon@nas.nasa.gov");
     main_control_panel->resizable(main_control_panel);
 
@@ -2286,7 +2303,7 @@ int main(int argc, char **argv)
 
     // inside the main control panel, there is a tab widget that contains the sub-panels (groups), one per plot.
     cpt = new Fl_Tabs(3, 10, main_w-6, 500);    
-    cpt->selection_color(FL_YELLOW); cpt->labelsize(10);
+    cpt->selection_color(FL_BLUE); cpt->labelsize(10);
 
 	// done creating main control panel (except for tabbed sup-panels, below)
     main_control_panel->end();
@@ -2336,7 +2353,7 @@ int main(int argc, char **argv)
 		pws[i]->cp = cps[i];
 
 		// determine which variables to plot, initially
-		int ivar=0, jvar=1;
+		int ivar, jvar;
 		if (i==0)
 		{
 			ivar = 0; jvar = 1;
