@@ -86,7 +86,7 @@ const int skip = 0;		// skip this many columns at the beginning of each row
 
 int nrows=2, ncols=2;		// layout of plot windows
 int nplots = nrows*ncols;	// number of plot windows
-const int maxplots=64;		
+const int maxplots=64;		// must be a power of two, for textures.  This will cause trouble.
 int borderless=0;			// by default, plot windows have window manager borders
 class plot_window; 		// love those one-pass compilers.
 class control_panel_window;
@@ -102,10 +102,9 @@ blitz::Array<int,2> ranked_points;					// main data, ranked, as needed.
 blitz::Array<int,1> ranked;							// flag: 1->column is ranked, 0->it is not
 blitz::Array<int,1> identity;	// holds a(i)=i.
 
-blitz::Array<int,1> newly_selected;	// true iff a point is in the newly selected set
-blitz::Array<int,1> selected;	// used when adding to selection
+blitz::Array<GLshort,1> newly_selected;	// true iff a point is in the newly selected set
+blitz::Array<GLshort,1> selected;	// true if selected in any window
 int nselected = 0;	// number of points currently selected
-blitz::Array<float,2> colors, altcolors;
 blitz::Array<GLshort,1> textures;
 
 double r_selected=0.01, g_selected=0.01, b_selected=1.0;
@@ -130,6 +129,8 @@ int dfactor = GL_DST_ALPHA;
 
 void redraw_all_plots (int);
 void reset_all_plots (void);
+
+int selection_changed = 1;
 
 // Main control panel
 Fl_Window *main_control_panel;
@@ -166,8 +167,7 @@ protected:
 	float xscale, yscale, zscale;
     float xzoomcenter, yzoomcenter, zzoomcenter;
     float xdown, ydown, xtracked, ytracked;
-    int selection_changed, extend_selection;
-	void set_selection_colors ();
+	int extend_selection;
     static int count;
     // histograms
     int nbins;
@@ -196,7 +196,8 @@ public:
     void reset_selection_box();
     void color_array_from_new_selection();
     void color_array_from_selection();
-	GLfloat color1[4], color2[4]; // color of selected and deselected points, respectively
+	void set_selection_colors ();
+	void choose_color_selected ();
     void reset_view();
     void redraw_one_plot();
     void change_axes(int nchange);
@@ -242,6 +243,8 @@ public:
     control_panel_window(int x, int y, int w, int h);
     void make_widgets(control_panel_window *cpw);
     void extract_and_redraw ();
+	static void choose_color_selected (Fl_Widget *w, control_panel_window *cpw)
+		{ cpw->pw->choose_color_selected() ;}
     static void static_extract_and_redraw (Fl_Widget *w, control_panel_window *cpw)
 		{ cpw->extract_and_redraw(); }
     static void static_maybe_redraw(Fl_Widget *w, control_panel_window *cpw)
@@ -338,7 +341,7 @@ clear_selection (Fl_Widget *o)
 }
 
 void
-choose_color_selected (Fl_Widget *o)
+plot_window::choose_color_selected ()
 {
 	(void) fl_color_chooser("selected", r_selected, g_selected, b_selected);
 	set_selection_colors ();
@@ -348,7 +351,7 @@ void
 choose_color_deselected (Fl_Widget *o)
 {
 	(void) fl_color_chooser("deselected", r_deselected, g_deselected, b_deselected);
-	set_selection_colors ();
+	pws[0]->set_selection_colors (); // XXX 
 }
 
 void
@@ -537,6 +540,7 @@ plot_window::handle(int event)
 		DEBUG (printf ("FL_DRAG, event_state: %x\n", Fl::event_state()));
 		xcur = Fl::event_x();
 		ycur = Fl::event_y();
+
 		xdragged =   xcur - xprev;
 		ydragged = -(ycur - yprev);
 		xprev = xcur;
@@ -566,6 +570,7 @@ plot_window::handle(int event)
 			} else {
 				xscale *= 1 + xdragged*(2.0/w());
 				yscale *= 1 + ydragged*(2.0/h());
+				zscale *= 1 + 0.5 * (xdragged*(2.0/w()) + ydragged*(2.0/h()));  // XXX hack.
 				DEBUG ( cout << "scaling (xscale, yscale) = (" << xscale << ", " << yscale << ")" << endl);
 			}
 			// redraw();
@@ -716,8 +721,9 @@ void plot_window::reset_view()
 
     reset_selection_box ();
     if (count ==1)
-		//		color_array_from_selection ();
-
+		{
+			//		color_array_from_selection (); // HUH????
+		}
     needs_redraw = 1;
 }
 
@@ -736,10 +742,15 @@ void plot_window::draw()
 		// glEnable(GL_DEPTH_TEST);
 		glEnable(GL_BLEND);
 		glEnableClientState(GL_VERTEX_ARRAY);
-#if 0
-		glEnableClientState(GL_COLOR_ARRAY);
-#endif // 0
 		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+
+		// this next idiom is necessary, per window, to map GL_SHORT texture coordinate values
+		// to [0..1] for texturing.
+		glMatrixMode(GL_TEXTURE);
+		glLoadIdentity();	
+		glScalef (1.0/(float)maxplots, 1.0/(float)maxplots, 1.0/(float)maxplots); 
+		glMatrixMode(GL_MODELVIEW);
+
 #ifdef FAST_APPLE_VERTEX_EXTENSIONS
 		glEnableClientState(GL_VERTEX_ARRAY_RANGE_APPLE);
 #endif // FAST_APPLE_VERTEX_EXTENSIONS
@@ -937,10 +948,7 @@ void plot_window::print_selection_stats ()
 	glLoadIdentity ();
 	gl_font (FL_COURIER, 10);
 	glBlendFunc (GL_ONE, GL_ZERO);
-	if (cp->Bkg->value() <= 0.4)
-		glColor4f (0.7,0.7,0.0,0.0);
-	else
-		glColor4f (0.4*cp->Bkg->value(), 0.4*cp->Bkg->value(), 0.0*cp->Bkg->value(), 0.0);
+	glColor4f (0.7,0.7,0.7,0.0);
 	char buf[1024];
 	snprintf (buf, sizeof(buf), "%8d/%d (%5.2f%%) selected", nselected, npoints, 100.0*nselected/(float)npoints);
 	gl_draw ((const char *)buf, 0.0f, 0.9f);
@@ -967,15 +975,15 @@ void plot_window::handle_selection ()
 	
 	newly_selected(NPTS) = where((vertices(NPTS,0)>fmaxf(xdown,xtracked) || vertices(NPTS,0)<fminf(xdown,xtracked) ||
 								  vertices(NPTS,1)>fmaxf(ydown,ytracked) || vertices(NPTS,1)<fminf(ydown,ytracked)),
-								 0,1);
+								 0, index+1);
 	if (add_to_selection_button->value())
 	{
-		selected(NPTS) |= newly_selected(NPTS);
+		selected(NPTS) = where(newly_selected(NPTS),newly_selected(NPTS),selected(NPTS));
 	} else {
 		selected(NPTS) = newly_selected(NPTS);
 	}			
 
-	nselected = sum(selected(NPTS));
+	nselected = blitz::count(selected(NPTS)>0);
 	print_selection_stats();
     color_array_from_new_selection ();
 
@@ -986,14 +994,10 @@ void plot_window::handle_selection ()
 	
 float mincolor= 0.01, alpha1 = 1.0;
 
-GLfloat texture_images[][8] = {
-	{(GLfloat)1.0, (GLfloat)0.02,   (GLfloat)0.02,   (GLfloat)2.0,
-	 (GLfloat)0.02,(GLfloat)0.02,   (GLfloat)1.0,    (GLfloat)1.0},
-	{(GLfloat)1.0, (GLfloat)0.02,   (GLfloat)0.02,   (GLfloat)2.0,
-	 (GLfloat)0.0, (GLfloat)0.0,    (GLfloat)0.0,    (GLfloat)0.0}};
+GLfloat texture_images[2][4*(maxplots)];
 
-GLfloat pointscolor[4] = {1,1,1,2.0};
-GLfloat texenvcolor[4] = {1.0,1.0,1.0,1.0};
+GLfloat pointscolor[4] = {1,1,1,1};
+GLfloat texenvcolor[4] = {1,1,1,1};
 
 GLuint texnames[2];
 
@@ -1005,30 +1009,64 @@ void initialize_textures()
 		return;
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 	glGenTextures(2,texnames);
+	
+	// "color" for de-selected points when they are displayed
+	texture_images[0][0] = r_deselected;
+	texture_images[0][1] = g_deselected;
+	texture_images[0][2] = b_deselected;
+	texture_images[0][3] = 1.0; 
+	// "color" for de-selected points when they are not displayed
+	texture_images[1][0] = 0.00; texture_images[1][1] = 0.00; texture_images[1][2] = 0.00; texture_images[1][3] = 0.0;
+	// "color(s)" for selected points
+	for (int i=1; i<=nplots; i++)
+	{
+		int j=4*i;
+		// colors of selected points when showing deselected points
+		texture_images[0][j+0] = r_selected;
+		texture_images[0][j+1] = g_selected;
+		texture_images[0][j+2] = b_selected;
+		texture_images[0][j+3] = 1.0; 
+		// colors of selected points when hiding deselected points
+		texture_images[1][j+0] = r_selected;
+		texture_images[1][j+1] = g_selected;
+		texture_images[1][j+2] = b_selected;
+		texture_images[1][j+3] = 1.0; 
+	}
 	for (unsigned int i=0; i<sizeof(texnames)/sizeof(texnames[0]); i++)
 	{
 		glBindTexture(GL_TEXTURE_1D, texnames[i]);
 		glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		glTexImage1D (GL_TEXTURE_1D, 0, GL_RGBA8, 2, 0, GL_RGBA, GL_FLOAT, texture_images[i]);
+		glTexImage1D (GL_TEXTURE_1D, 0, GL_RGBA8, maxplots, 0, GL_RGBA, GL_FLOAT, texture_images[i]);
 	}
 	textures_initialized = 1;
 }
 
 void plot_window::set_selection_colors ()
 {
-	// colors when showing deselected points
-	texture_images[0][0] = r_selected;   texture_images[0][1] = g_selected;   texture_images[0][2] = b_selected;   texture_images[0][3] = 1.0; 
-	texture_images[0][4] = r_deselected; texture_images[0][5] = g_deselected; texture_images[0][6] = b_deselected; texture_images[0][7] = 1.0; 
-	// colors when hiding deselected points
-	texture_images[1][0] = r_selected;   texture_images[1][1] = g_selected;   texture_images[1][2] = b_selected;   texture_images[1][3] = 1.0; 
-	texture_images[1][4] = 0.0;          texture_images[1][5] = 0.0;          texture_images[1][6] = 0.0;          texture_images[1][7] = 0.0; 
-
+	// colors of selected points when showing deselected points
+	int j = 4*(index+1);
+	texture_images[0][j+0] = r_selected;
+	texture_images[0][j+1] = g_selected;
+	texture_images[0][j+2] = b_selected;
+	texture_images[0][j+3] = 1.0; 
+	// colors of selected points when hiding deselected points
+	texture_images[1][j+0] = r_selected;
+	texture_images[1][j+1] = g_selected;
+	texture_images[1][j+2] = b_selected;
+	texture_images[1][j+3] = 1.0; 
 	for (unsigned int i=0; i<sizeof(texnames)/sizeof(texnames[0]); i++)
 	{
 		glBindTexture(GL_TEXTURE_1D, texnames[i]);
-		glTexImage1D (GL_TEXTURE_1D, 0, GL_RGBA8, 2, 0, GL_RGBA, GL_FLOAT, texture_images[i]);
+		glTexImage1D (GL_TEXTURE_1D, 0, GL_RGBA8, maxplots, 0, GL_RGBA, GL_FLOAT, texture_images[i]);
+#if 0
+		for (int k=0; k<=nplots; k++)
+		{
+			int j=4*k;
+			printf ("texture_images[%d][%d...%d] = %f %f %f %f\n", i, j, j+3, texture_images[i][j+0], texture_images[i][j+1], texture_images[i][j+2], texture_images[i][j+3]);
+		}
+#endif //0
 	}
 
 }
@@ -1049,8 +1087,8 @@ void plot_window::color_array_from_selection()
 #endif // 0
 	}
 
-	textures(NPTS)    = where(selected(NPTS), (GLshort)0, (GLshort)1);
-	
+	textures(NPTS)    = selected(NPTS);
+
 }
 
 void plot_window::color_array_from_new_selection()
@@ -1075,6 +1113,7 @@ void plot_window::draw_data_points()
 
 	glEnable(GL_TEXTURE_1D);
 	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+//	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE); // for testing
 	glColor4fv(pointscolor);
 	glTexEnvfv(GL_TEXTURE_ENV, GL_TEXTURE_ENV_COLOR, texenvcolor); // GL_MODULATE ignores this
 
@@ -1939,21 +1978,21 @@ control_panel_window::make_widgets(control_panel_window *cpw)
     x_normalization_style->align(FL_ALIGN_TOP);
     x_normalization_style->textsize(12);
     x_normalization_style->menu(normalization_style_menu_items);
-    x_normalization_style->value(NORMALIZATION_MINMAX);
+    x_normalization_style->value(NORMALIZATION_TRIM_1E3);
     x_normalization_style->callback((Fl_Callback*)static_extract_and_redraw, this);
  
     y_normalization_style = new Fl_Choice (xpos+100, ypos, 100, 25, "normalize y");
     y_normalization_style->align(FL_ALIGN_TOP);
     y_normalization_style->textsize(12);
     y_normalization_style->menu(normalization_style_menu_items);
-    y_normalization_style->value(NORMALIZATION_MINMAX); 
+    y_normalization_style->value(NORMALIZATION_TRIM_1E3); 
     y_normalization_style->callback((Fl_Callback*)static_extract_and_redraw, this);
  
     z_normalization_style = new Fl_Choice (xpos+200, ypos, 100, 25, "normalize z");
     z_normalization_style->align(FL_ALIGN_TOP);
     z_normalization_style->textsize(12);
     z_normalization_style->menu(normalization_style_menu_items);
-    z_normalization_style->value(NORMALIZATION_MINMAX); 
+    z_normalization_style->value(NORMALIZATION_TRIM_1E3); 
     z_normalization_style->callback((Fl_Callback*)static_extract_and_redraw, this);
  
     int xpos2 = xpos;
@@ -2023,6 +2062,9 @@ control_panel_window::make_widgets(control_panel_window *cpw)
 
     ypos=ypos2;
     xpos=xpos2+200;
+
+	b = new Fl_Button(xpos, ypos+=25, 20, 20, "selection color");
+    b->align(FL_ALIGN_RIGHT); b->selection_color(FL_BLUE); b->callback((Fl_Callback*)choose_color_selected, this);
 
     lock_axes_button = b = new Fl_Button(xpos, ypos+=25, 20, 20, "lock axes");
     b->align(FL_ALIGN_RIGHT); b->type(FL_TOGGLE_BUTTON); b->selection_color(FL_BLUE);	b->value(0);
@@ -2114,8 +2156,6 @@ resize_global_arrays ()
 
 	tmp_points(npoints);  // for sort
 
-    colors.resize(npoints,4);
-    altcolors.resize(npoints,4);
     textures.resize(npoints);
     identity.resize(npoints);
     newly_selected.resize(npoints);
@@ -2170,9 +2210,6 @@ void make_global_widgets ()
     b->align(FL_ALIGN_RIGHT); b->selection_color(FL_BLUE); b->callback(write_data);
 
 	xpos = xpos1 + 150; ypos = ypos1;
-
-	choose_color_selected_button = b = new Fl_Button(xpos, ypos+=25, 20, 20, "selection color");
-    b->align(FL_ALIGN_RIGHT); b->selection_color(FL_BLUE); b->callback((Fl_Callback*)choose_color_selected);
 
 	choose_color_deselected_button = b = new Fl_Button(xpos, ypos+=25, 20, 20, "unselected color");
     b->align(FL_ALIGN_RIGHT); b->selection_color(FL_BLUE); b->callback((Fl_Callback*)choose_color_deselected);
@@ -2265,9 +2302,11 @@ int main(int argc, char **argv)
     argv += optind;
     
     srand((unsigned int)time(0));
+
     
     assert(format==BINARY || format==ASCII);
-	assert(nrows*ncols <= 200);  // this seems reasonable, for now.
+	assert(nrows*ncols <= maxplots);
+    nplots = nrows*ncols;
 	
     if (format == BINARY)
 		read_binary_file_with_headers ();
@@ -2281,8 +2320,6 @@ int main(int argc, char **argv)
 
 	resize_global_arrays ();
 
-    nplots = nrows*ncols;
-    
 	pointsize = max(1.0, 6.0 - (int)log10f((float)npoints));  // fewer points -> bigger starting pointsize
 
     cout << "making identity" << endl;
@@ -2291,7 +2328,7 @@ int main(int argc, char **argv)
     
 	// main control panel size and position
 	const int main_w = 350, main_h = 700;
-	const int main_x = Fl::w() - (main_w + left_frame + right_frame + right_safe), main_y = top_frame+top_safe;
+	const int main_x = Fl::screen_count()*Fl::w() - (main_w + left_frame + right_frame + right_safe), main_y = top_frame+top_safe;
 
     // main control panel window
     Fl::scheme("plastic");		// optional
@@ -2317,7 +2354,7 @@ int main(int argc, char **argv)
 		// plot window size
 		if (borderless)
 			top_frame = bottom_frame = left_frame = right_frame = 1;
-		int pw_w = ((Fl::w() - (main_w+left_frame+right_frame+right_safe+left_safe+20)) / ncols) - (left_frame + right_frame);
+		int pw_w = ((Fl::screen_count()*Fl::w() - (main_w+left_frame+right_frame+right_safe+left_safe+20)) / ncols) - (left_frame + right_frame);
 		int pw_h = ((Fl::h() - (top_safe+bottom_safe))/ nrows) - (top_frame + bottom_frame);
 
 		int pw_x = left_safe + left_frame + col * (pw_w + left_frame + right_frame);

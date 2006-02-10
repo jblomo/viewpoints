@@ -345,6 +345,7 @@ features to add:
   can we use sprites and colors?
   how to use pixel textures for hue maps/lightness maps.
   better blending control.
+    slider for points_color (again);
   selected points should render on top of non-selected points.
   are there too many redraws?  Why do plot windows swap one at a time?
   scale for z axis needs to be sensible
@@ -372,3 +373,15 @@ features to add:
   comments in input files?
   fine control on sliders - how? 
   
+For demo at apple:
+
+  DONE fix initial startup color (why is it white?)
+  DONE initial startup normalization trim 10^-3
+  DONE set z scale to x&y scale
+  DONE fix "reset view"
+  DONE get and use 2 screen info on mac
+  true multiple colors
+  profile and tune.
+  external program to eliminate columns with no information
+  global panel
+  get slides, data, and DEMO! together
