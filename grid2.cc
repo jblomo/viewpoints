@@ -104,10 +104,10 @@ blitz::Array<int,1> identity;	// holds a(i)=i.
 
 blitz::Array<GLshort,1> newly_selected;	// true iff a point is in the newly selected set
 blitz::Array<GLshort,1> selected;	// true if selected in any window
+blitz::Array<GLshort,1> previously_selected;	// true iff a point was selected before the mouse went down
 int nselected = 0;	// number of points currently selected
-blitz::Array<GLshort,1> textures;
+blitz::Array<GLshort,1> texture_coords;
 
-double r_selected=0.01, g_selected=0.01, b_selected=1.0;
 double r_deselected=1.0, g_deselected=0.01, b_deselected=0.01;
 
 // temporary array (reference) for qsort
@@ -130,7 +130,7 @@ int dfactor = GL_DST_ALPHA;
 void redraw_all_plots (int);
 void reset_all_plots (void);
 
-int selection_changed = 1;
+int selection_changed = 1;   // should fix this.  harder than it looks.
 
 // Main control panel
 Fl_Window *main_control_panel;
@@ -196,8 +196,9 @@ public:
     void reset_selection_box();
     void color_array_from_new_selection();
     void color_array_from_selection();
-	void set_selection_colors ();
+	void update_textures ();
 	void choose_color_selected ();
+	double r_selected, g_selected, b_selected;
     void reset_view();
     void redraw_one_plot();
     void change_axes(int nchange);
@@ -211,6 +212,7 @@ plot_window::plot_window(int w,int h) : Fl_Gl_Window(w,h)
 {
     count++;
 	show_center_glyph = 0;
+	r_selected=0.01, g_selected=0.01, b_selected=1.0;
     vertices.resize(npoints,3);
     x_rank.resize(npoints);
     y_rank.resize(npoints);
@@ -335,6 +337,7 @@ clear_selection (Fl_Widget *o)
 	}
 	newly_selected = 0;
 	selected = 0;
+	previously_selected = 0;
 	nselected = 0;
 	pws[0]->color_array_from_selection (); // So, I'm lazy.
 	redraw_all_plots (0);
@@ -344,14 +347,14 @@ void
 plot_window::choose_color_selected ()
 {
 	(void) fl_color_chooser("selected", r_selected, g_selected, b_selected);
-	set_selection_colors ();
+	update_textures ();
 }
 
 void
 choose_color_deselected (Fl_Widget *o)
 {
 	(void) fl_color_chooser("deselected", r_deselected, g_deselected, b_deselected);
-	pws[0]->set_selection_colors (); // XXX 
+	pws[0]->update_textures (); // XXX 
 }
 
 void
@@ -512,7 +515,11 @@ plot_window::handle(int event)
 
 		if (Fl::event_state() & FL_BUTTON1) // left button down = start new selection
 		{
-			selected(blitz::Range(0,npoints-1)) = selected(blitz::Range(0,npoints-1));
+			static int previous_window, current_window = -1;
+			previous_window = current_window;
+			current_window = index;
+			if (current_window != previous_window)
+				previously_selected(blitz::Range(0,npoints-1)) = selected(blitz::Range(0,npoints-1));
 			
 			if (! (Fl::event_key(FL_Shift_L) || Fl::event_key(FL_Shift_R))) // not moving or extending old selection
 			{
@@ -527,7 +534,10 @@ plot_window::handle(int event)
 				ydown = - (2.0*(ydown/(float)h()) -1.0) ; // window -> [-1,1]
 				ydown = ydown/yscale;
 				ydown = ydown + ycenter;
+			} else {
+				//    previously_selected(blitz::Range(0,npoints-1)) = 0;
 			}
+
 		}
 		// start translating
 		if (Fl::event_state(FL_BUTTON3) || ( Fl::event_state(FL_BUTTON1) && Fl::event_state(FL_ALT)))
@@ -980,7 +990,7 @@ void plot_window::handle_selection ()
 	{
 		selected(NPTS) = where(newly_selected(NPTS),newly_selected(NPTS),selected(NPTS));
 	} else {
-		selected(NPTS) = newly_selected(NPTS);
+		selected(NPTS) = where(newly_selected(NPTS),newly_selected(NPTS),previously_selected(NPTS));
 	}			
 
 	nselected = blitz::count(selected(NPTS)>0);
@@ -1010,27 +1020,24 @@ void initialize_textures()
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 	glGenTextures(2,texnames);
 	
-	// "color" for de-selected points when they are displayed
+	// color for de-selected points when they are displayed
 	texture_images[0][0] = r_deselected;
 	texture_images[0][1] = g_deselected;
 	texture_images[0][2] = b_deselected;
 	texture_images[0][3] = 1.0; 
-	// "color" for de-selected points when they are not displayed
+	// color for de-selected points when they are not displayed
 	texture_images[1][0] = 0.00; texture_images[1][1] = 0.00; texture_images[1][2] = 0.00; texture_images[1][3] = 0.0;
-	// "color(s)" for selected points
-	for (int i=1; i<=nplots; i++)
+
+	// color(s) for selected points
+	for (int i=0; i<nplots; i++)
 	{
-		int j=4*i;
-		// colors of selected points when showing deselected points
-		texture_images[0][j+0] = r_selected;
-		texture_images[0][j+1] = g_selected;
-		texture_images[0][j+2] = b_selected;
-		texture_images[0][j+3] = 1.0; 
-		// colors of selected points when hiding deselected points
-		texture_images[1][j+0] = r_selected;
-		texture_images[1][j+1] = g_selected;
-		texture_images[1][j+2] = b_selected;
-		texture_images[1][j+3] = 1.0; 
+		int j=4*(i+1);  // remember 0th color is for deselected
+		// initial colors of selected points
+		texture_images[0][j+0] = texture_images[1][j+0] = pws[0]->r_selected;  // need to fix this.
+		texture_images[0][j+1] = texture_images[1][j+1] = pws[0]->g_selected;
+		texture_images[0][j+2] = texture_images[1][j+2] = pws[0]->b_selected;
+		texture_images[0][j+3] = texture_images[1][j+3] = 1.0; 
+
 	}
 	for (unsigned int i=0; i<sizeof(texnames)/sizeof(texnames[0]); i++)
 	{
@@ -1043,30 +1050,23 @@ void initialize_textures()
 	textures_initialized = 1;
 }
 
-void plot_window::set_selection_colors ()
+void plot_window::update_textures ()
 {
-	// colors of selected points when showing deselected points
+	// new color for selected points (selection in this window only)
 	int j = 4*(index+1);
-	texture_images[0][j+0] = r_selected;
-	texture_images[0][j+1] = g_selected;
-	texture_images[0][j+2] = b_selected;
-	texture_images[0][j+3] = 1.0; 
-	// colors of selected points when hiding deselected points
-	texture_images[1][j+0] = r_selected;
-	texture_images[1][j+1] = g_selected;
-	texture_images[1][j+2] = b_selected;
-	texture_images[1][j+3] = 1.0; 
+	texture_images[0][j+0] = texture_images[1][j+0] = r_selected;
+	texture_images[0][j+1] = texture_images[1][j+1] = g_selected;
+	texture_images[0][j+2] = texture_images[1][j+2] = b_selected;
+	texture_images[0][j+3] = texture_images[1][j+3] = 1.0; 
+	// color for de-selected points when they are displayed
+	texture_images[0][0] = r_deselected;
+	texture_images[0][1] = g_deselected;
+	texture_images[0][2] = b_deselected;
+	texture_images[0][3] = 1.0; 
 	for (unsigned int i=0; i<sizeof(texnames)/sizeof(texnames[0]); i++)
 	{
 		glBindTexture(GL_TEXTURE_1D, texnames[i]);
 		glTexImage1D (GL_TEXTURE_1D, 0, GL_RGBA8, maxplots, 0, GL_RGBA, GL_FLOAT, texture_images[i]);
-#if 0
-		for (int k=0; k<=nplots; k++)
-		{
-			int j=4*k;
-			printf ("texture_images[%d][%d...%d] = %f %f %f %f\n", i, j, j+3, texture_images[i][j+0], texture_images[i][j+1], texture_images[i][j+2], texture_images[i][j+3]);
-		}
-#endif //0
 	}
 
 }
@@ -1075,19 +1075,15 @@ void plot_window::color_array_from_selection()
 {
 
 	initialize_textures ();
-	set_selection_colors ();
+	update_textures ();
 
 	blitz::Range NPTS(0,npoints-1);	
 
 	if (dont_paint_button->value())
 	{
-#if 0
-		alttextures(NPTS) = where(selected(NPTS),texture2(index),texture_invisible(index));
-		return ;
-#endif // 0
 	}
 
-	textures(NPTS)    = selected(NPTS);
+	texture_coords(NPTS)    = selected(NPTS);
 
 }
 
@@ -1127,7 +1123,7 @@ void plot_window::draw_data_points()
 
     glBlendFunc(sfactor, dfactor);
 
-    GLshort *texturep = (GLshort *)textures.data();
+    GLshort *texturep = (GLshort *)texture_coords.data();
 	glTexCoordPointer (1, GL_SHORT, 0, texturep);
 
     // tell the GPU where to find the correct texture coordinate (colors) for each vertex.
@@ -2156,10 +2152,11 @@ resize_global_arrays ()
 
 	tmp_points(npoints);  // for sort
 
-    textures.resize(npoints);
+    texture_coords.resize(npoints);
     identity.resize(npoints);
     newly_selected.resize(npoints);
     selected.resize(npoints);
+	previously_selected.resize(npoints);
 
 	selected=0;
 }
