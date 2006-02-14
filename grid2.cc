@@ -80,8 +80,8 @@ using namespace std;
 int format=ASCII;		// default input file format
 int ordering=COLUMN_MAJOR; // default input data ordering
 
-const int nvars_max = 350;  	// maximum number of columns allowed in data file
-const int MAXPOINTS = 700000;	// maximum number of rows (points, or samples) in data file
+const int nvars_max = 256;  	// maximum number of columns allowed in data file
+const int MAXPOINTS = 2000000;	// maximum number of rows (points, or samples) in data file
 const int skip = 0;		// skip this many columns at the beginning of each row
 
 int nrows=2, ncols=2;		// layout of plot windows
@@ -97,7 +97,7 @@ int nvars = nvars_max;		// actual number of columns in data file
 
 int scale_histogram = 0;	// global toggle between scale histgram & scale view :-(
 
-blitz::Array<float,2> points(nvars_max,MAXPOINTS);	// main data array
+blitz::Array<float,2> points;						// main data array
 blitz::Array<int,2> ranked_points;					// main data, ranked, as needed.
 blitz::Array<int,1> ranked;							// flag: 1->column is ranked, 0->it is not
 blitz::Array<int,1> identity;	// holds a(i)=i.
@@ -312,7 +312,7 @@ Fl_Menu_Item normalization_style_menu_items[n_normalization_styles+1];
 void
 invert_selection ()
 {
-	selected(blitz::Range(0,npoints-1)) = 1-selected(blitz::Range(0,npoints-1));
+	selected(blitz::Range(0,npoints-1)) = !selected(blitz::Range(0,npoints-1));
 	nselected = npoints-nselected;
 	pws[0]->color_array_from_selection ();
 	redraw_all_plots (0);
@@ -1602,7 +1602,7 @@ write_data (Fl_Widget *o)
 			cerr << "Error opening" << output_file_name << "for writing" << endl;
 			return;
 		}
-		for( unsigned int i=0; i < column_labels.size()-1; i++ ) // remember, last column label is "-nothing-"
+		for(int i=0; i < nvars; i++ )
 		{
 			os << column_labels[i] << " ";
 		}  
@@ -1649,8 +1649,8 @@ void read_ascii_file_with_headers()
 	if (npoints_cmd_line != 0)
 	{
 		npoints = npoints_cmd_line;
-		points.resize(nvars,npoints);
 	}
+	points.resize(nvars,npoints);
 
     int i=0;
     while (!cin.eof() && i<npoints)
@@ -1794,8 +1794,8 @@ void read_binary_file_with_headers()
 	if (npoints_cmd_line != 0)
 	{
 		npoints = npoints_cmd_line;
-		points.resize(nvars,npoints);
 	}
+	points.resize(nvars,npoints);
 		
     if (!points.isStorageContiguous())
     {
@@ -2223,6 +2223,38 @@ void make_global_widgets ()
 }
 
 
+void remove_trivial_columns ()
+{
+	blitz::Range NPTS(0,npoints-1);
+	int nvars_save = nvars;
+	int current=0;
+	while (current<nvars-1)
+	{
+		if (blitz::all(points(current,NPTS) == points(current,0)))
+		{
+			cout << "skipping trivial column " << column_labels[current] << endl;
+			for (int j=current; j<nvars-1; j++)
+			{
+				points(j,NPTS) = points(j+1,NPTS);
+				column_labels[j] = column_labels[j+1];
+			}
+			nvars--;
+			assert (nvars>0);
+		}
+		else
+		{
+			current++;
+		}
+	}
+	if (nvars != nvars_save)
+	{
+		cout << "new data array has " << nvars << " columns." << endl;
+		points.resizeAndPreserve(nvars,npoints);
+		column_labels[nvars] = string("-nothing-");
+		// XXX need to trim column_labels to size nvars+1 
+	}
+}
+
 int main(int argc, char **argv)
 {
 
@@ -2310,6 +2342,8 @@ int main(int argc, char **argv)
     else if (format == ASCII)
 		read_ascii_file_with_headers ();
     
+	remove_trivial_columns ();
+
 	// if we read a different number of points then we anticipated, we rezise and preserve
 	// note this can take lot of time and memory, temporarily.
 	if (npoints != npoints_cmd_line)
