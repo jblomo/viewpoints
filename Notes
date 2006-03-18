@@ -324,9 +324,9 @@ Thu Oct  6 17:40:13 2005
 
 11:20:26 09 Oct 05
 
-- the best way to render this data with openGL on linux and osx is probably to use vertex buffer objects (VBOs).  That way, the vertex coordinates can be static (they hardly ever change), and the color (or texture) coordinates can be dynamic (if necessary). There would need to be N+!, probably.  N static ones for the vertex data and one for the (dynamic) color or texture data. 
+* - the best way to render this data with openGL on linux and osx is probably to use vertex buffer objects (VBOs).  That way, the vertex coordinates can be static (they hardly ever change), and the color (or texture) coordinates can be dynamic (if necessary). There would need to be N+!, probably.  N static ones for the vertex data and one for the (dynamic) color or texture data. 
 
- - using textures insetad of colors for selection.
+DONE - using textures insetad of colors for selection.
    - initial imp; one selection color only.  
    - then, one texture for "show deleselcted", another for "dont show deselected".
    - then, handle multiple colors and "add to selection".
@@ -336,7 +336,7 @@ Thu Oct  6 17:40:13 2005
 
 features to add:
   get good data for SDSS, genetic (www) domains, statarb, china study, cfd (alan?), chemistry, ....
-  multiple colors
+DONE  multiple colors
   color = nwindows...2*nwindows-1 as t coord with one additional intersection color at t=2*nwindows.  Add colors valuess for multiple selections, clamp t at t>=2*nwindows.
   line plots
     vector variabls 
@@ -344,12 +344,14 @@ features to add:
   subject-observer pattern for multiple views
   can we use sprites and colors?
   how to use pixel textures for hue maps/lightness maps.
-  better blending control.
+  better blending
+    more dynamic range on blending
     slider for points_color (again);
   selected points should render on top of non-selected points.
   are there too many redraws?  Why do plot windows swap one at a time?
   scale for z axis needs to be sensible
-  add trackball rotation for 3D
+global reset to initial state
+  * add trackball rotation for 3D
   separate 3D and 2D rendering?
   separate histogram scale sliders?
   separate histogram nbins sliders?
@@ -368,7 +370,7 @@ features to add:
    chooser to omit certain panels from global ops.
   need per axis control to skip certain axes on "change axes"
   npoints stride?  random?
-  skip columns that only have one value (cmd line arg to override)
+  DONE skip columns that only have one value (cmd line arg to override)
   bail if too many input errors in a row..
   comments in input files?
   fine control on sliders - how? 
@@ -380,8 +382,61 @@ For demo at apple:
   DONE set z scale to x&y scale
   DONE fix "reset view"
   DONE get and use 2 screen info on mac
-  true multiple colors
+  DONE (I think) true multiple colors
   profile and tune.
-  external program to eliminate columns with no information
+  DONE eliminate columns with no information
   global panel
-  get slides, data, and DEMO! together
+  DONE get slides, data, and DEMO! together
+
+
+14:29:08 15 Mar 06
+
+todo list from eeting with Paul
+
+Creon
+get svn up on trotsky
+move repository to trotsky
+get windows version checked in
+get svn on paul's machine(s)
+get windows version backported to mac & linux
+global reset to initial state
+new todo list
+single slider (or two, hue and sat) for color selector
+complete splom
+row number as implicit column
+"data set" (see below) as implicit column.
+order plots by mutual information
+table of values for selection (alternate view)
+  all values (max rows)
+  basic stats 
+remove don't paint
+clear selection on new windows, always, or never
+
+
+Paul
+vp web site on trotsky
+finish class file splitting
+fix binary IO
+add header processing
+create/destroy plot windows
+reload input file
+create new window or reset to initial window configuration
+add row / add column
+menu bar design
+compile with optimization
+startup with no data & from icon
+
+
+Paul & Creon
+binaries to vp web site
+read more data (on the fly, or from command line).
+  1) add another column
+  2) add more rows, with an implicit column for which data set.
+
+missing values
+
+
+
+
+
+
