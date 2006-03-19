@@ -1,6 +1,6 @@
 usage:
 
- vp [args] < datafile
+ vp [args] inputfile
 
  optional args are:
 

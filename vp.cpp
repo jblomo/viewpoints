@@ -1,7 +1,77 @@
 // viewpoints - interactive linked scatterplots and more.
 // copyright 2005 Creon Levit, all rights reserved.
+//*****************************************************************
+// File name: vp.cpp
+//
+// Class definitions:
+//
+// Classes referenced:
+//    FLTK 1.1.6 package
+//    FLEWS 0.3 package
+//    OGLEXP 1.2.2 package
+//    GSL 1.6 package for Windows
+//    Blitz++ 0.9
+//
+// Purpose: viewpoints - interactive linked scatterplots and more.
+//
+// General design philosophy:
+//   1) Add comments and get this code to run under Windows.
+//
+// Modification history
+// 13-MAR-2006:
+// -Added the necessary defines and includes for Windows, 
+//  including #define usleep and specific references to GSL.
+// -Identified necessary libraries and the order in which they 
+//  must be referenced.
+// -Moved definition of float pmin in plot_window::normalize
+// -Removed use of Fl::screen_count (fltk 1.7)
+// - #if out #ifdef __APPLE__ includes of glext.h
+// - Moved read_ascii_file_with_headers, read_ascii_file,
+// read_binary_file, read_binary_file_with_headers, usage() for 
+// diagnostic purposes
+// - Add code to extract data filespec explicitly and pass it to
+// file read routines.
+//
+// Author: Creon Levit
+// Modified: P. R. Gazis  10-MAR-2006
+//*****************************************************************
 
-// C includes
+// General note on defines: Several defines are required to account 
+// for definitions that seem to be missing.  This is a temporary 
+// fix that should be replaced as soon as possible
+#ifdef __WINDOWS__
+	#define MAXFLOAT 3.402823466e+38f 
+	#define usleep(v) Sleep(v/1000)
+	// #define INITGUID (not needed?)
+#endif // __WINDOWS__
+
+// General note in includes: The FLTK package should be handled by
+// the Dev-C++ programming environment, but several include 
+// libraries are needed in addition to the regular Dev-C++ and
+// FLTK libraries.  These are listed below
+//
+// Flews
+//   c:\devusr\flews
+// OglExt (Needed to use OpenGL 1.2+)
+//   c:\devuser\oglext\include
+// GSL (Needed for parts of Blitz++)
+//   c:\devuser\GnuWin32\include
+//   c:\devuser\GnuWin32\include\glibc
+// Blitz++
+//   c:\devusr\blitz
+
+// Add C includes here.  Note that some of the relevant libraries
+// are part of GSL rather than the Dev-C++ package.  Locations of
+// some crucial files are described below:
+// <unistd.h>    -- c:\Dev-cpp\include
+// <fcntl.h>     -- c:\Dev-cpp\include
+// <assert.h>    -- c:\Dev-cpp\include
+// <sys/types.h> -- c:\Dev-cpp\include\sys
+// <sys/uio.h>   -- c:\devuser\GnuWin32\include\glibc\sys
+// <sys/stat.h>  -- c:\Dev-cpp\include\sys
+// <sys/time.h>  -- c:\Dev-cpp\include
+//               -- c:\Dev-cpp\include\sys
+//               -- c:\devuser\GnuWin32\include\glibc
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -14,13 +84,17 @@
 #include <sys/time.h>
 #include <getopt.h>
 
+// These includes should all be part of Dev-C++
+// <float.h>  -- c:\Dev-cpp\include
+// <values.h> -- c:\Dev-cpp\include
+//            -- c:\devuser\GnuWin32\include\glibc
 #ifdef __APPLE__
 #include <float.h>
 #else
 #include <values.h>
 #endif // __APPLE__
 
-//  C++ includes
+// Add C++ includes here.  These should all be part of Dev-C++
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -29,7 +103,7 @@
 #include <sstream>
 #include <algorithm>
  
-// FLTK (fast light tool kit)
+// FLTK.  These includes should be handled by Dev-C++
 #include <FL/math.h>
 #include <FL/gl.h>
 #include <FL/Fl.H>
@@ -43,25 +117,38 @@
 #include <FL/Fl_File_Chooser.H>
 #include <FL/Fl_Color_Chooser.H>
 
-
-// flews (FLTK extenstions)
+// flews (FLTK extension) extras.  These should be located in
+// c:\devusr\flews as described above
 #include <FL/Fl_flews.h>
 #include <FL/Fl_Value_Slider_Input.H>
 #include "Fl_Hor_Value_Slider_Input.H"  // my modified flews slider
 
-// OpenGL extensions
+// OpenGL extensions.
 #ifdef __APPLE__
-#  include <OpenGL/glext.h>
-#else
-#  include <GL/glext.h>
-#endif
+	#include <OpenGL/glext.h>
+#endif // __APPLE__
+#ifdef __LINUX__
+	#include <GL/glext.h>
+#endif // __LINUX__
+#ifdef __WINDOWS__
+	// OglExt.  Obtain from c:\devusr\oglext\include as described
+	// above and invoke as described in OGLEXT documentation
+	#define GL_GLEXT_PROTOTYPES
+	#include <glext.h>
+	#include <GL/glext.h>
+#endif // __WINDOWS__
+
+// GSL (Must be included before Blitz++!)
+#ifdef __WINDOWS__
+	#include <C:\devusr\GnuWin32\include\config.h>
+	#include <winx/sys/timex.h>
+#endif // __WINDOWS__
+#include <gsl/gsl_sys.h>
+#include <gsl/gsl_math.h>
+#include <gsl/gsl_cdf.h>
 
 // Blitz++ (C++ array operations via template metaprogramming)
 #include <blitz/array.h>
-
-// gsl (gnu scientific library)
-#include <gsl/gsl_math.h>
-#include <gsl/gsl_cdf.h>
 
 // BLAS
 #ifdef __APPLE__
@@ -73,7 +160,7 @@
 #endif // __APPLE__
         
 // debugging and application-specific definitions
-#include "grid2.H"
+#include "vp.H"
 
 using namespace std;
 
@@ -1355,6 +1442,7 @@ plot_window::normalize (blitz::Array<float,1> a, blitz::Array<int,1> a_rank, int
 #endif // CHECK_FOR_NANS_IN_NORMALIZATION
 
     float mu,sigma;
+    float pmin;
 
     switch (style)
     {
@@ -1407,7 +1495,7 @@ plot_window::normalize (blitz::Array<float,1> a, blitz::Array<int,1> a_rank, int
 			cerr << "Warning: attempted to take logarithms of nonpositive numbers. Those logs were set to zero." << endl;
 		}
 		// find smallest positive element
-		float pmin = min(where(a(NPTS)>0, a(NPTS), MAXFLOAT));
+		pmin = min(where(a(NPTS)>0, a(NPTS), MAXFLOAT));
 		a(NPTS) = where(a(NPTS) > 0, log10(a(NPTS)), 0);
 		wmin[axis_index] = log10(pmin);
 		wmax[axis_index] = a(a_rank(npoints-1));
@@ -1617,266 +1705,6 @@ write_data (Fl_Widget *o)
 			}
 		}
 	}
-}
-
-void read_ascii_file_with_headers() 
-{
-    // first line of file has column labels separated by whitespace
-    std::string line;
-    (void) getline (cin, line, '\n');
-    std::stringstream ss(line); // Insert the string into a stream
-    std::string buf;		   // need an intermediate buffer
-    while (ss >> buf)
-		column_labels.push_back(buf);
-    nvars = column_labels.size();
-    if (nvars > nvars_max)
-    {
-		cerr << "Error: too many columns, increase nvars_max and recompile" << endl;
-		exit (1);
-    }
-	column_labels.push_back(string("-nothing-"));
-    cout << "column_labels = ";
-    for( unsigned int i=0; i < column_labels.size(); i++ )
-    {
-		cout << column_labels[i] << " ";
-    }  
-
-    cout << endl;
-    cout << "there should be " << nvars << " fields (columns) per record (row)" << endl;
-
-	// now we know the number of variables (nvars), so if we know the number of points (e.g. from the command line)
-	// we can size the main points array once and for all, and not waste memory.
-	if (npoints_cmd_line != 0)
-	{
-		npoints = npoints_cmd_line;
-	}
-	points.resize(nvars,npoints);
-
-    int i=0;
-    while (!cin.eof() && i<npoints)
-    {
-		(void) getline (cin, line, '\n');
-		DEBUG (cout << "line is: " << line << endl);
-		if (line.length() == 0)
-			continue;
-		std::stringstream ss(line); // Insert the string into a stream
-		for (int j=0; j<nvars; j++)
-		{
-			double x;
-			ss >> x;
-			points(j,i) = (float)x;
-// FIX THIS MISSING DATA STUFF!! IT IS BROKEN.
-			if (ss.eof() && j<nvars-1)
-			{
-				cerr << "not enough data on line " << i+2 << ", aborting!" << endl;
-				exit(1);
-			}
-			if (!ss.good() && j<nvars-1)
-			{
-				cerr << "bad data (probably non-numeric) at line " << i+1 << " column " << j+1 << ", skipping entire line." << endl;
-				goto nextline;
-			}
-			DEBUG (cout << "points(" << j << "," << i << ") = " << points(j,i) << endl);
-		}
-		for (int j=0; j<nvars; j++)
-			if (points(j,i) == -9999)
-			{
-				cerr << "bad data (-9999) at line " << i << ", column " << j << " - skipping entire line\n";
-				goto nextline;  // one of the only sensible uses...
-			}
-		i++;
-    nextline:	// got a line with bad data, do not increment i
-		if ((i+1)%10000 == 0)
-			cerr << "Read " << i+1 << " lines." << endl;
-		continue;
-    }
-    cout << "Read " << i+1 << " lines total." << endl;
-    npoints = i;
-}
-
-void read_ascii_file() 
-{
-    int i;
-    char line[50*nvars+1];	// 50 characters better hold one value + delimiters
-    for (i=0; i<npoints; i++)
-    {
-		if (!fgets ((char *)&(line[0]), sizeof(line), stdin))
-		{
-			if (feof(stdin))
-				break;
-			if (ferror(stdin))
-			{
-				fprintf (stderr, "error reading input occured at line %d\n", i+1);
-				exit (1);
-			}
-		}
-//		printf ("line %i = |%s|\n", i, (char *)&(line[0]));
-		float val = 0.0;
-		int ret, nchars = 0;
-		int offset = 0;
-		for (int j=0; j<nvars; j++)
-		{
-			ret = sscanf((char *)&(line[offset]),"%f%n",&val,&nchars);
-//			printf ("i = %d, j = %d, offset = %d, ret = %d, nchars = %d, val = %f\n", i, j, offset, ret, nchars, val);
-			if (ret != 1)
-			{
-				fprintf (stderr, "trouble reading input value %d on line %d\n", j+1, i+1);
-				exit (1);
-			}
-			offset += nchars;
-			points(j,i) = val;
-		}
-		if (i>0 && (i%10000 == 0))
-			printf ("read %d lines\n", i);
-    }
-    cout << "read " << i << " lines." << endl;
-    npoints = i;
-}
-
-void read_binary_file() 
-{
-    blitz::Array<float,1> vars(nvars);
-    blitz::Range NVARS(0,nvars-1);
-    int i;
-    if (!points.isStorageContiguous())
-    {
-		cerr << "Tried to pass non contigous buffer to read.  Aborting!" << endl;
-		exit (1);
-    }
-		
-    for (i=0; i<npoints; i++)
-    {
-		unsigned int ret = read(0, (void *)(vars.data()), nvars*sizeof(float));
-		if (ret != nvars*sizeof(float))
-		{
-			if (ret == 0) // EOF
-				break;
-			else
-			{
-				fprintf (stderr, "error reading input occured at line %d\n", i+1);
-				exit (1);
-			}
-		}
-		points(NVARS,i) = vars;
-		if (i>0 && (i%10000 == 0))
-			printf ("read %d lines\n", i);
-    }
-    cout << "read " << i << " lines." << endl;
-    npoints = i;
-}
-
-void read_binary_file_with_headers() 
-{
-    // first line of file has column labels separated by whitespace
-    std::string line;
-    (void) getline (cin, line, '\n');
-    std::stringstream ss(line); // Insert the string into a stream
-    std::string buf;		   // need an intermediate buffer
-    while (ss >> buf)
-		column_labels.push_back(buf);
-    nvars = column_labels.size();
-    if (nvars > nvars_max)
-    {
-		cerr << "Error: too many columns, increase nvars_max and recompile" << endl;
-		exit (1);
-    }
-	column_labels.push_back(string("-nothing-"));
-    cout << "column_labels = ";
-    for( unsigned int i=0; i < column_labels.size(); i++ )
-    {
-		cout << column_labels[i] << " ";
-    }  
-    cout << endl;
-    cout << "there should be " << nvars << " fields (columns) per record (row)" << endl;
-
-	// now we know the number of variables (nvars), so if we know the number of points (e.g. from the command line)
-	// we can size the main points array once and for all, and not waste memory.
-	if (npoints_cmd_line != 0)
-	{
-		npoints = npoints_cmd_line;
-	}
-	points.resize(nvars,npoints);
-		
-    if (!points.isStorageContiguous())
-    {
-		cerr << "Warning: passed non contigous buffer to read." << endl;
-		// exit (1);
-    }
-		
-	assert (ordering == COLUMN_MAJOR || ordering == ROW_MAJOR);
-
-	if (ordering == COLUMN_MAJOR)
-	{
-		cout << "attempting to read binary file in columnmajor order" << endl;
-		blitz::Array<float,1> vars(nvars);
-		blitz::Range NVARS(0,nvars-1);
-		if (!vars.isStorageContiguous())
-		{
-			cerr << "Error: tried to read into noncontiguous buffer." << endl;
-			exit (-1);
-		}
-
-		int i;
-		for (i=0; i<npoints; i++)
-		{
-			unsigned int ret = fread((void *)(vars.data()), sizeof(float), nvars, stdin);
-			// cout << "read " << ret << " values " << endl;
-			if (ret != (unsigned int)nvars)
-			{
-				if (ret == 0 || feof(stdin)) // EOF
-					break;
-				else
-				{
-					fprintf (stderr, "error reading input occured at row %d\n", i+1);
-					exit (1);
-				}
-			}
-			points(NVARS,i) = vars;
-			if (i>0 && (i%10000 == 0))
-				printf ("read %d rows\n", i);
-		}
-		cout << "read " << i << " rows." << endl;
-		npoints = i;
-	}
-	if (ordering == ROW_MAJOR)
-	{
-		cout << "attempting to read binary file in rowmajor order, nvars=" << nvars << ", npoints=" << npoints << endl;
-		if (npoints_cmd_line == 0)
-		{
-			cerr << "Error: --npoints must be specified for --inputformat=rowmajor" << endl;
-			exit (-1);
-		} else {
-			npoints = npoints_cmd_line;
-		}
-		
-		blitz::Array<float,1> vars(npoints);
-		blitz::Range NPTS(0,npoints-1);
-		if (!vars.isStorageContiguous())
-		{
-			cerr << "Error: tried to read into noncontiguous buffer." << endl;
-			exit (-1);
-		}
-
-		int i;
-		for (i=0; i<nvars; i++)
-		{
-			unsigned int ret = fread((void *)(vars.data()), sizeof(float), npoints, stdin);
-			cout << "read " << ret << " values " << endl;
-			if (ret != (unsigned int)npoints)
-			{
-				if (ret == 0 || feof(stdin)) // EOF
-					break;
-				else
-				{
-					fprintf (stderr, "error reading input occured at column %d\n", i+1);
-					exit (1);
-				}
-			}
-			points(i,NPTS) = vars(NPTS);
-			printf ("read %d columns\n", i+1);
-		}
-	}
-
 }
 
 void
@@ -2139,40 +1967,6 @@ busy:
     }
 }
 
-
-void
-resize_global_arrays ()
-{
-	// points.resizeAndPreserve(nvars,npoints);	
-
-	ranked_points.resize(nvars,npoints);
-
-	ranked.resize(nvars);
-	ranked = 0;	// initially, no ranking has been done.
-
-	tmp_points(npoints);  // for sort
-
-    texture_coords.resize(npoints);
-    identity.resize(npoints);
-    newly_selected.resize(npoints);
-    selected.resize(npoints);
-	previously_selected.resize(npoints);
-
-	selected=0;
-}
-
-void usage()
-{
-    fprintf(stderr,"Usage:\n");
-    fprintf(stderr,"[--format={ascii,binary}] (-f)\n");
-    fprintf(stderr,"[--npoints=<int>] (-n)\n");
-    fprintf(stderr,"[--rows=<int>] (-r)\n");
-    fprintf(stderr,"[--cols=<int>] (-c)\n");
-    fprintf(stderr,"[--borderless] (-b)\n");
-    fprintf(stderr,"[--help] (-h)\n");
-    exit(-1);
-}
-
 void make_global_widgets ()
 {
 	Fl_Button *b;
@@ -2223,232 +2017,738 @@ void make_global_widgets ()
 }
 
 
-void remove_trivial_columns ()
+//*****************************************************************
+// resize_global_arrays -- Resize variousa global arrays used to
+// read data
+void resize_global_arrays ()
 {
-	blitz::Range NPTS(0,npoints-1);
-	int nvars_save = nvars;
-	int current=0;
-	while (current<nvars-1)
-	{
-		if (blitz::all(points(current,NPTS) == points(current,0)))
-		{
-			cout << "skipping trivial column " << column_labels[current] << endl;
-			for (int j=current; j<nvars-1; j++)
-			{
-				points(j,NPTS) = points(j+1,NPTS);
-				column_labels[j] = column_labels[j+1];
-			}
-			nvars--;
-			assert (nvars>0);
-		}
-		else
-		{
-			current++;
-		}
-	}
-	if (nvars != nvars_save)
-	{
-		cout << "new data array has " << nvars << " columns." << endl;
-		points.resizeAndPreserve(nvars,npoints);
-		column_labels[nvars] = string("-nothing-");
-		// XXX need to trim column_labels to size nvars+1 
-	}
+  // points.resizeAndPreserve(nvars,npoints);	
+
+  ranked_points.resize(nvars,npoints);
+
+  ranked.resize(nvars);
+  ranked = 0;  // initially, no ranking has been done.
+
+  tmp_points(npoints); // for sort
+
+  texture_coords.resize(npoints);
+  identity.resize(npoints);
+  newly_selected.resize(npoints);
+  selected.resize(npoints);
+  previously_selected.resize(npoints);
+
+  selected=0;
 }
 
-int main(int argc, char **argv)
+//*****************************************************************
+// remove_trivial_columns -- Remove trivial columns while reading
+// header of an ASCII file.
+void remove_trivial_columns()
 {
-
-    static struct option long_options[] =
-		{
-			{"format",	required_argument,	0, 'f'},
-			{"npoints",	required_argument,	0, 'n'},
-			{"ordering", required_argument,	0, 'o'},
-			{"rows",	required_argument,	0, 'r'},
-			{"cols",	required_argument,	0, 'c'},
-			{"borderless",	no_argument,	0, 'b'},
-			{"help",	no_argument,		0, 'h'},
-			{0, 0, 0, 0}
-		};
-    
-    int c;
-    while((c = getopt_long(argc, argv, "f:n:o:r:c:bh", long_options, NULL)) != -1)
-    {
-		switch (c)
-		{
-		case 'f':		// format of input file
-			if (!strncmp(optarg,"binary",1))
-				format=BINARY;
-			else if (!strncmp(optarg,"ascii",1))
-				format=ASCII;
-			else
-			{
-				usage();
-				exit(-1);
-			}
-			break;
-		case 'n':		// maximum number of points (samples, rows of data) to read
-			npoints_cmd_line = atoi(optarg);
-			if (npoints_cmd_line < 1)
-				usage();
-			break;
-		case 'o':		// ordering of input file ("columnmajor or rowmajor")
-			if (!strncmp(optarg,"columnmajor",1))
-				ordering=COLUMN_MAJOR;
-			else if (!strncmp(optarg,"rowmajor",1))
-				ordering=ROW_MAJOR;
-			else
-			{
-				usage();
-				exit(-1);
-			}
-			break;
-		case 'r':		// number of rows in scatterplot matrix
-			nrows=atoi(optarg);
-			if (nrows < 1)
-				usage();
-			break;
-		case 'c':		// number of columns in scatterplot matrix
-			ncols=atoi(optarg);
-			if (ncols < 1)
-				usage();
-			break;
-		case 'b':		// turn off window manager borders on plot windows
-			borderless = 1;
-			break;
-		case 'h':
-		case ':':
-		case '?':
-			usage();
-			exit(-1);
-			break;
-		default:
-			usage();
-			exit(-1);
-			break;
-		}
+  blitz::Range NPTS(0,npoints-1);
+  int nvars_save = nvars;
+  int current=0;
+  while( current<nvars-1) {
+    if( blitz::all(points(current,NPTS) == points(current,0))) {
+      cout << "skipping trivial column " 
+           << column_labels[current] << endl;
+      for( int j=current; j<nvars-1; j++) {
+        points( j, NPTS) = points( j+1, NPTS);
+        column_labels[j] = column_labels[j+1];
+      }
+      nvars--;
+      assert( nvars>0);
     }
-    argc -= optind;
-    argv += optind;
-    
-    srand((unsigned int)time(0));
+    else {
+      current++;
+    }
+  }
+  if( nvars != nvars_save) {
+    cout << "new data array has " << nvars
+         << " columns." << endl;
+    points.resizeAndPreserve(nvars,npoints);
+    column_labels[nvars] = string("-nothing-");
+    // XXX need to trim column_labels to size nvars+1 
+  }
+}
 
-    
-    assert(format==BINARY || format==ASCII);
-	assert(nrows*ncols <= maxplots);
-    nplots = nrows*ncols;
-	
-    if (format == BINARY)
-		read_binary_file_with_headers ();
-    else if (format == ASCII)
-		read_ascii_file_with_headers ();
-    
-	remove_trivial_columns ();
+//*****************************************************************
+// read_ascii_file() -- NOT USED!  Read ASCII file without 
+// headers.  It is assumed that 50 characters is sufficient to 
+// hold each field and its delimiters
+void read_ascii_file() 
+{
+  // Loop: Read successive fields from a line
+  int i;
+  char line[ 50*nvars+1];
+  for( i=0; i<npoints; i++) {
+    if( !fgets ( (char *)&(line[0]), sizeof(line), stdin)) {
+      if( feof( stdin)) break;
+      if( ferror( stdin)) {
+        fprintf( 
+          stderr, "error reading input occured at line %d\n", i+1);
+        exit( 1);
+      }
+  }
 
-	// if we read a different number of points then we anticipated, we rezise and preserve
-	// note this can take lot of time and memory, temporarily.
-	if (npoints != npoints_cmd_line)
-		points.resizeAndPreserve(nvars,npoints);
+  // printf ("line %i = |%s|\n", i, (char *)&(line[0]));
+  float val = 0.0;
+  int ret, nchars = 0;
+  int offset = 0;
 
-	resize_global_arrays ();
+  // Loop: Extract values from line?
+  for( int j=0; j<nvars; j++) {
+    ret = sscanf( (char *)&(line[offset]),"%f%n",&val,&nchars);
+    // printf ("i = %d, j = %d, offset = %d, ret = %d, nchars = %d, val = %f\n", i, j, offset, ret, nchars, val);
+    if( ret != 1) {
+      fprintf( stderr, "trouble reading input value %d on line %d\n", j+1, i+1);
+      exit( 1);
+    }
+    offset += nchars;
+    points( j, i) = val;
+    }
+    if( i>0 && (i%10000 == 0))
+      printf ("read %d lines\n", i);
+  }
+  
+  // Report results
+  cout << "read " << i << " lines." << endl;
+  npoints = i;
+}
 
-	pointsize = max(1.0, 6.0 - (int)log10f((float)npoints));  // fewer points -> bigger starting pointsize
+//*****************************************************************
+// read_binary_file() -- NOT USED!  Read a binary file.
+void read_binary_file() 
+{
+  blitz::Array<float,1> vars(nvars);
+  blitz::Range NVARS(0,nvars-1);
+  if( !points.isStorageContiguous()) {
+    cerr << "Error: "
+         << "Tried to pass non contigous buffer to read.  Aborting!"
+         << endl;
+    exit( 1);
+  }
 
-    cout << "making identity" << endl;
-    for (int i=0; i<npoints; i++)
-		identity(i)=i;
-    
-	// main control panel size and position
-	const int main_w = 350, main_h = 700;
-	const int main_x = Fl::screen_count()*Fl::w() - (main_w + left_frame + right_frame + right_safe), main_y = top_frame+top_safe;
+  // Loop: Read	the file
+  int i;
+  for( i=0; i<npoints; i++) {
+    unsigned int ret = 
+      read(0, (void *)(vars.data()), nvars*sizeof(float));
+    if( ret != nvars*sizeof(float)) {
 
-    // main control panel window
-    Fl::scheme("plastic");		// optional
-    main_control_panel = new Fl_Window (main_x, main_y, main_w, main_h, "viewpoints -> creon@nas.nasa.gov");
-    main_control_panel->resizable(main_control_panel);
+      // Check for EOF
+      if( ret == 0) break;
+      else {
+        fprintf( 
+          stderr, "error reading input occured at line %d\n", i+1);
+        exit( 1);
+      }
+    }
+    points( NVARS,i) = vars;
+    if( i>0 && (i%10000 == 0))
+      printf ("read %d lines\n", i);
+  }
+  
+  // Report results
+  cout << "read " << i << " lines." << endl;
+  npoints = i;
+}
 
-    // add the rest of the global widgets to control panel
-	make_global_widgets ();
+//*****************************************************************
+// read_ascii_file_with_headers( inFileSpec) -- Open an ASCII file 
+// for input, read and discard the headers, read the data block, 
+// and close the file.  In this version, the first line of the
+// file is always assumed to be the header.  Returns 0 if 
+// successful.
+int read_ascii_file_with_headers( char* inFileSpec) 
+{
+  // Attempt to open input file and make sure it exists
+  ifstream inFile;
+  inFile.open( inFileSpec, ios::in);
+  if( inFile.bad()) {
+    cout << "read_ascii_file_with_headers: ERROR, "
+         << "couldn't open " << inFileSpec << "\n";
+    return 1;
+  }
+  
+  // First line of file is assumed to be a header with column 
+  // labels separated by whitespace
+  std::string line;
+  (void) getline( inFile, line, '\n');
+  
+  // Loop: Insert the input string into a stream, define a buffer,
+  // read successive labels into the buffer and load them into the
+  // array of column labels
+  std::stringstream ss( line);
+  std::string buf;
+  while( ss >> buf) column_labels.push_back(buf);
 
-    // inside the main control panel, there is a tab widget that contains the sub-panels (groups), one per plot.
-    cpt = new Fl_Tabs(3, 10, main_w-6, 500);    
-    cpt->selection_color(FL_BLUE); cpt->labelsize(10);
+  // Examine the column labels for errors and report results
+  nvars = column_labels.size();
+  if( nvars > nvars_max) {
+    cerr << "read_ascii_file_with_headers: ERROR, "
+         << "too many columns, increase nvars_max and recompile"
+         << endl;
+    inFile.close();
+    return 1;
+  }
+  column_labels.push_back( string( "-nothing-"));
+  cout << "column_labels = ";
+  for( unsigned int i=0; i < column_labels.size(); i++ ) {
+    cout << column_labels[i] << " ";
+  }  
+  cout << endl;
+  cout << "Examined header of <" << inFileSpec << ">,\n"
+       << "  There should be " << nvars 
+       << " fields (columns) per record (row)" << endl;
 
-	// done creating main control panel (except for tabbed sup-panels, below)
-    main_control_panel->end();
+  // Now we know the number of variables (nvars), so if we know the 
+  // number of points (e.g. from the command line, we can size the 
+  // main points array once and for all, and not waste memory.
+  if( npoints_cmd_line != 0) npoints = npoints_cmd_line;
+  points.resize(nvars,npoints);
 
-    // create and add the virtul sub-panels (each a group under a tab), one per plot.
-    for (int i=0; i<nplots; i++)
-    {
-		int row = i/ncols;
-		int col = i%ncols;
+  // Loop: Read file
+  int i=0;
+  while( !inFile.eof() && i<npoints) {
+  
+    // Get next line and ignore empty lines
+    (void) getline( inFile, line, '\n');
+    DEBUG (cout << "line is: " << line << endl);
+    if( line.length() == 0) continue;
 
-		// plot window size
-		if (borderless)
-			top_frame = bottom_frame = left_frame = right_frame = 1;
-		int pw_w = ((Fl::screen_count()*Fl::w() - (main_w+left_frame+right_frame+right_safe+left_safe+20)) / ncols) - (left_frame + right_frame);
-		int pw_h = ((Fl::h() - (top_safe+bottom_safe))/ nrows) - (top_frame + bottom_frame);
+    // Loop: Insert the string into a stream and read it
+    std::stringstream ss(line); 
+	for( int j=0; j<nvars; j++) {
+      double x;
+      ss >> x;
+      points( j, i) = (float) x;
 
-		int pw_x = left_safe + left_frame + col * (pw_w + left_frame + right_frame);
-		int pw_y = top_safe + top_frame + row * (pw_h + top_frame + bottom_frame);
-		
-		// create a label
-		ostringstream oss;
-		oss << "" << i+1;
-		string labstr = oss.str();
+      // FIX THIS MISSING DATA STUFF!! IT IS BROKEN.
+      if( ss.eof() && j<nvars-1) {
+        cerr << "read_ascii_file_with_headers: ERROR, "
+             << "not enough data on line " << i+2
+             << ", aborting!" << endl;
+        inFile.close();
+        return 1;
+      }
+      if( !ss.good() && j<nvars-1) {
+        cerr << "WARNING: "
+             << "bad data (probably non-numeric) at line " << i+1 
+             << " column " << j+1 
+             << ", skipping entire line." << endl;
+        goto nextline;
+      }
+      DEBUG (cout << "points(" << j << "," << i << ") = " << points(j,i) << endl);
+    }
 
-		// add a new virtual control panel (a group) under the tab widget
-		Fl_Group::current(cpt);	
-		cps[i] = new control_panel_window (3, 30, main_w-6, 480);
-		cps[i]->copy_label(labstr.c_str());
-		cps[i]->labelsize(10);
-		cps[i]->resizable(cps[i]);
-		cps[i]->make_widgets(cps[i]);
+    // Loop: Check for bad data
+    for( int j=0; j<nvars; j++)
+      if( points(j,i) == -9999) {
+        cerr << "WARNING: "
+             << "bad data (-9999) at line " << i 
+             << ", column " << j << " - skipping entire line\n";
+        goto nextline;  // one of the only sensible uses...
+      }
 
-		// end the group since we want to create new plot windows at the top level.
-		cps[i]->end();
-		Fl_Group::current(0); 
+    // Increment number of lines
+    i++;
 
-		// create plotting window i
-		pws[i] = new plot_window(pw_w, pw_h);
-		pws[i]->copy_label(labstr.c_str());
-		pws[i]->position(pw_x, pw_y);
-		pws[i]->row = row; pws[i]->column = col;
-		pws[i]->end();
-		
-		// link plot window and its associated virtual control panel
-		pws[i]->index = cps[i]->index = i;
-		cps[i]->pw = pws[i];
-		pws[i]->cp = cps[i];
+    // If this was a line with bad data, do not increment i
+    nextline:
+      if( (i+1)%10000 == 0)
+        cerr << "Read " << i+1 << " lines." << endl;
+      continue;
+  }
 
-		// determine which variables to plot, initially
-		int ivar, jvar;
-		if (i==0)
-		{
-			ivar = 0; jvar = 1;
-			// Initially the first plot's tab is shown, and its axes are locked.
-			cps[i]->lock_axes_button->value(1);
-			cps[i]->hide();	
-		} else {
-			upper_triangle_incr (ivar, jvar, nvars);
-		}
-		cps[i]->varindex1->value(ivar);  
-		cps[i]->varindex2->value(jvar);  
+  // Close input file, report results of file read operation
+  // to the console, and return success
+  inFile.close();
+  cout << "Read " << i+1 << " lines total." << endl;
+  npoints = i;
+  return 0;
+}
 
-		pws[i]->extract_data_points();
-		pws[i]->reset_view();
-		pws[i]->size_range(10, 10);
-		pws[i]->resizable(pws[i]);
-		if (borderless)
-			pws[i]->border(0);
-		pws[i]->show(argc,argv);
-		pws[i]->resizable(pws[i]);
-	}
+//*****************************************************************
+// read_binary_file_with_headers( inFileSpec) -- Open a binary
+// file for input, read the header block, read the data block, and
+// close the file
+int read_binary_file_with_headers( char* inFileSpec) 
+{
+  // Attempt to open input file and make sure it exists
+  ifstream inFile;
+  inFile.open( inFileSpec, ios::in);
+  if( inFile.bad()) {
+    cout << "read_binary_file_with_headers: ERROR, "
+         << "couldn't open " << inFileSpec << "\n";
+    return 1;
+  }
 
-    main_control_panel->show();     // now we can show the main control panel and all its supanels
+  // Loop: The first record in the input stream is assumed to be 
+  // a header.  Insert into a stream, define a buffer, read 
+  // successive labels into the buffer and load them into the 
+  // array of column labels
+  std::string line;
+  (void) getline( inFile, line, '\n');
+  std::stringstream ss(line);
+  std::string buf;
+  while( ss >> buf) column_labels.push_back(buf);
 
-    Fl::add_idle(redraw_if_changing);
-//	Fl::add_check(redraw_if_changing);
-    int result = Fl::run();  // enter main event loop
-    return result;
+  // Examine and report content of header
+  nvars = column_labels.size();
+  if( nvars > nvars_max) {
+    cerr << "read_binary_file_with_headers: ERROR, "
+         << "too many columns, increase nvars_max and recompile"
+         << endl;
+    inFile.close();
+    return 1;
+  }
+  column_labels.push_back(string("-nothing-"));
+  cout << "column_labels = ";
+  for( unsigned int i=0; i < column_labels.size(); i++ ) {
+    cout << column_labels[i] << " ";
+  }  
+  cout << endl;
+  cout << "read_binary_file_with_headers: there should be " 
+       << nvars << " fields (columns) per record (row)" << endl;
+
+  // Now we know the number of variables (nvars), so if we know the 
+  // number of points (e.g. from the command line) we can size the 
+  // main points array once and for all, and not waste memory.
+  if( npoints_cmd_line != 0) npoints = npoints_cmd_line;
+  points.resize( nvars,npoints);
+
+  // Warn if the input buffer is non-contiguous.
+  if( !points.isStorageContiguous()) {
+    cerr << "read_binary_file_with_headers: WARNING, "
+         << "input buffer appears to be non-contigous."
+         << endl;
+    // exit (1);
+  }
+
+  // Assert possible types or ordering	
+  assert( ordering == COLUMN_MAJOR || ordering == ROW_MAJOR);
+
+  // Read file in Column Major order
+  if( ordering == COLUMN_MAJOR) {
+    cout << "read_binary_file_with_headers: "
+         << "attempting to read binary file in columnmajor order" 
+         << endl;
+    blitz::Array<float,1> vars(nvars);
+    blitz::Range NVARS(0,nvars-1);
+    if( !vars.isStorageContiguous()) {
+      cerr << "readbinary_file_with_headers: ERROR, "
+           << "tried to read into noncontiguous buffer."
+           << endl;
+      inFile.close();
+      return -1;
+    }
+
+    // Loop: Read file
+    int i;
+    for( i=0; i<npoints; i++) {
+         
+      // Read the next NVAR values.  Note difference between old-
+      // and new-style read operations
+      // unsigned int ret = 
+      //   fread( (void *)(vars.data()), sizeof(float), nvars, stdin);
+      inFile.read( (char*)(vars.data()), sizeof(float) * nvars);
+      unsigned int ret = inFile.gcount();
+
+      // If the wrong number of values was returned, check for 
+      // unexpected EOF
+      // cout << "read " << ret << " values " << endl;
+      if( ret != (unsigned int) nvars) {
+        if (ret == 0 || inFile.eof()) break;
+        else {
+          cerr << "readbinary_file_with_headers: ERROR, "
+               << "error reading input occured at row " << i+1
+               << endl;
+          inFile.close();
+          return 1;
+        }
+      }
+
+      // Load data array
+      points( NVARS,i) = vars;
+      if( i>0 && (i%10000 == 0))
+        printf ("read %d rows\n", i);
+    }
+    cout << "read " << i << " rows." << endl;
+    npoints = i;
+  }
+
+  // Read file in Row Major order
+  if( ordering == ROW_MAJOR) {
+    cout << "attempting to read binary file in rowmajor order, nvars=" 
+         << nvars << ", npoints=" << npoints << endl;
+    if( npoints_cmd_line == 0) {
+        cerr << "read_binary_file_with_headers: ERROR, "
+             << " --npoints must be specified for --inputformat=rowmajor"
+             << endl;
+        inFile.close();
+        return 1;
+    }
+    else {
+      npoints = npoints_cmd_line;
+    }
+
+    blitz::Array<float,1> vars(npoints);
+    blitz::Range NPTS(0,npoints-1);
+    if( !vars.isStorageContiguous()) {
+      cerr << "read_binary_file_with_headers: ERROR, "
+           << "tried to read into noncontiguous buffer."
+           << endl;
+        inFile.close();
+        return -1;
+    }
+
+    // Loop: Read file
+    int i;
+    for( i=0; i<nvars; i++) {
+
+      // Read the next NVAR values.  Note difference between old-
+      // and new-style read operations
+      // unsigned int ret = 
+      //   fread( (void *)(vars.data()), sizeof(float), nvars, stdin);
+      inFile.read( (char*)(vars.data()), sizeof(float) * nvars);
+      unsigned int ret = inFile.gcount();
+
+      // If the wrong number of values was returned, check for 
+      // unexpected EOF
+      // cout << "read " << ret << " values " << endl;
+      if( ret != (unsigned int) nvars) {
+        if (ret == 0 || inFile.eof()) break;
+        else {
+          cerr << "readbinary_file_with_headers: ERROR, "
+               << "error reading input occured at column " << i+1
+               << endl;
+          inFile.close();
+          return 1;
+        }
+      }
+
+      // Load data array
+      points(i,NPTS) = vars(NPTS);
+      cout << "read_binary_file_with_headers: read " << i+i
+           << " columns" << endl;
+    }
+  }
+  
+  // Close input file and terminate
+  inFile.close();
+  return 0;
+}
+
+//*****************************************************************
+// usage() -- Print help information
+void usage()
+{
+  fprintf( stderr, "Usage:\n");
+  fprintf( stderr, "[--format={ascii,binary}] (-f)\n");
+  fprintf( stderr, "[--npoints=<int>] (-n)\n");
+  fprintf( stderr, "[--rows=<int>] (-r)\n");
+  fprintf( stderr, "[--cols=<int>] (-c)\n");
+  fprintf( stderr, "[--borderless] (-b)\n");
+  fprintf( stderr, "[--help] (-h)\n");
+  exit( -1);
+}
+
+//*****************************************************************
+// Main routine
+//
+// Purpose: Driver to run everything
+//
+// Functions:
+//   main() -- main routine
+//
+// Author:   Creon Levit   unknown
+// Modified: P. R. Gazis   13-MAR-2006
+//*****************************************************************
+//*****************************************************************
+// Main -- Driver routine
+int main( int argc, char **argv)
+{
+  // DIAGNOSTIC
+  cout << "vp: viewpoints\n";
+  cout << "argc<" << argc << ">\n";
+  for( int i=0; i<argc; i++) {
+    cout << "argv[ " << i << "]: <" << argv[ i] << ">\n";
+  }
+
+  // Define structure to hold command-line options
+  static struct option long_options[] = {
+    { "format", required_argument, 0, 'f'},
+    { "npoints", required_argument, 0, 'n'},
+    { "ordering", required_argument, 0, 'o'},
+    { "rows", required_argument, 0, 'r'},
+    { "cols", required_argument, 0, 'c'},
+    { "inputfile", required_argument, 0, 'i'},
+    { "borderless", no_argument, 0, 'b'},
+    { "help", no_argument, 0, 'h'},
+    { 0, 0, 0, 0}
+  };
+
+  // Loop: Invoke GETOPT_LONG to advance through and parse 
+  // successive command-line arguments (Windows version is
+  // implemented in LIBGW32).  NOTE: This process does NOT
+  // effect arc and argv in any way.
+  int c;
+  char inFileSpec[ 80];
+  strcpy( inFileSpec, "");
+  while( 
+    ( c = getopt_long( 
+        argc, argv, "f:n:o:r:c:i:b:h", long_options, NULL)) != -1) {
+  
+    // Examine command-line options and extract any optional
+    // arguments
+    switch( c) {
+
+      // format: Extract format of input file
+      case 'f':
+        if( !strncmp( optarg, "binary", 1))
+          format = BINARY;
+        else if( !strncmp( optarg, "ascii", 1))
+          format = ASCII;
+        else {
+          usage();
+          exit( -1);
+        }
+        break;
+
+      // npoints: Extract maximum number of points (samples, rows 
+      // of data) to read from the data file
+      case 'n':
+        npoints_cmd_line = atoi( optarg);
+        if( npoints_cmd_line < 1) usage();
+        break;
+        
+      // ordering: Extract the ordering of ("columnmajor or 
+      // rowmajor") of a binary input file
+      case 'o':
+        if( !strncmp( optarg, "columnmajor", 1))
+          ordering=COLUMN_MAJOR;
+        else if ( !strncmp( optarg, "rowmajor", 1))
+          ordering=ROW_MAJOR;
+        else {
+          usage();
+          exit( -1);
+        }
+        break;
+
+      // rows: Extract the number of rows in scatterplot matrix
+      case 'r':
+        nrows = atoi( optarg);
+        if( nrows < 1) usage();
+        break;
+
+      // cols: Extract the number of columns in scatterplot matrix
+      case 'c':
+        ncols = atoi( optarg);
+        if (ncols < 1) usage();
+        break;
+
+      // inputfile: Extract data filespec
+      case 'i':
+        strcpy( inFileSpec, optarg);
+        break;
+
+      // borders: Turn off window manager borders on plot windows
+      case 'b':
+        borderless = 1;
+        break;
+
+      // help: Help
+      case 'h':
+      case ':':
+      case '?':
+        usage();
+        exit( -1);
+        break;
+      
+      // Default
+      default:
+        usage();
+        exit( -1);
+        break;
+    }
+  }
+
+  // If no arguments were specified, then quit
+  if( argc <= 1) {
+    usage();
+    exit( 0);
+  }
+
+  // If no data file was specified, assume the last argument is
+  // the filespec.
+  if( strlen( inFileSpec) <= 0) strcpy( inFileSpec, argv[ argc-1]);
+
+  // Increment pointers to the optional arguments to get the
+  // last argument.
+  argc -= optind;
+  argv += optind;
+
+  // Set random seed
+  srand( (unsigned int) time(0));
+
+  // Restrict format and restruct and set number of plots
+  assert( format==BINARY || format==ASCII);
+  assert( nrows*ncols <= maxplots);
+  nplots = nrows*ncols;
+
+  // Read data file and remove trivial columns
+  cout << "Reading input data from <" << inFileSpec << ">\n";
+  int iReadStatus = 0;
+  if( format == BINARY) 
+    iReadStatus = read_binary_file_with_headers( inFileSpec);
+  else if( format == ASCII)
+    iReadStatus = read_ascii_file_with_headers( inFileSpec);
+  cout << "Finished reading file <" << inFileSpec << ">\n";
+  remove_trivial_columns ();
+
+  // If we read a different number of points then we anticipated, 
+  // we resize and preserve.  Note this can take lot of time and 
+  // memory, temporarily.
+  if( npoints != npoints_cmd_line)
+    points.resizeAndPreserve( nvars, npoints);
+
+  // Resize global arrays
+  resize_global_arrays ();
+
+  // Fewer points -> bigger starting pointsize
+  pointsize = max( 1.0, 6.0 - (int) log10f( (float) npoints));
+
+  // Make identity
+  cout << "making identity" << endl;
+  for( int i=0; i<npoints; i++) identity( i)=i;
+
+  // main control panel size and position
+  #if 0
+    int number_of_screens = Fl::screen_count();
+  #else
+    int number_of_screens = 1;
+  #endif
+  const int main_w = 350, main_h = 700;
+	// const int main_x = Fl::screen_count()*Fl::w() - (main_w + left_frame + right_frame + right_safe), main_y = top_frame+top_safe;
+	const int main_x = 
+      number_of_screens*Fl::w() - 
+      (main_w + left_frame + right_frame + right_safe);
+    const int main_y = top_frame+top_safe;
+
+  // main control panel window
+  Fl::scheme( "plastic");  // optional
+  main_control_panel = 
+    new Fl_Window(
+      main_x, main_y, main_w, main_h, 
+      "viewpoints -> creon@nas.nasa.gov");
+  main_control_panel->resizable( main_control_panel);
+
+  // Add the rest of the global widgets to control panel
+  make_global_widgets ();
+
+  // Inside the main control panel, there is a tab widget that 
+  // contains the sub-panels (groups), one per plot.
+  cpt = new Fl_Tabs( 3, 10, main_w-6, 500);    
+  cpt->selection_color( FL_BLUE);
+  cpt->labelsize( 10);
+
+  // Done creating main control panel (except for tabbed 
+  // sup-panels, below)
+  main_control_panel->end();
+
+  // Create and add the virtul sub-panels (each a group under a 
+  // tab), one per plot.
+  for( int i=0; i<nplots; i++) {
+    int row = i/ncols;
+    int col = i%ncols;
+
+    // Account for borderless option
+    if( borderless)
+      top_frame = bottom_frame = left_frame = right_frame = 1;
+
+    // Plot window size
+    // int pw_w = ((Fl::screen_count()*Fl::w() - (main_w+left_frame+right_frame+right_safe+left_safe+20)) / ncols) - (left_frame + right_frame);
+    int pw_w =
+      ( ( number_of_screens*Fl::w() - 
+          (main_w+left_frame+right_frame+right_safe+left_safe+20)) / ncols) -
+      (left_frame + right_frame);
+    int pw_h = 
+      ( (Fl::h() - (top_safe+bottom_safe))/ nrows) - 
+      (top_frame + bottom_frame);
+
+    int pw_x = 
+      left_safe + left_frame + 
+      col * (pw_w + left_frame + right_frame);
+    int pw_y = 
+      top_safe + top_frame + 
+      row * (pw_h + top_frame + bottom_frame);
+
+    // Create a label
+    ostringstream oss;
+    oss << "" << i+1;
+    string labstr = oss.str();
+
+    // Add a new virtual control panel (a group) under the tab
+    // widget
+    Fl_Group::current(cpt);	
+    cps[i] = new control_panel_window (3, 30, main_w-6, 480);
+    cps[i]->copy_label(labstr.c_str());
+    cps[i]->labelsize(10);
+    cps[i]->resizable(cps[i]);
+    cps[i]->make_widgets(cps[i]);
+
+    // End the group since we want to create new plot windows at 
+    // the top level.
+    cps[i]->end();
+    Fl_Group::current(0); 
+
+    // Create plotting window i
+    pws[i] = new plot_window(pw_w, pw_h);
+    pws[i]->copy_label(labstr.c_str());
+    pws[i]->position(pw_x, pw_y);
+    pws[i]->row = row; pws[i]->column = col;
+    pws[i]->end();
+
+    // Link plot window and its associated virtual control panel
+    pws[i]->index = cps[i]->index = i;
+    cps[i]->pw = pws[i];
+    pws[i]->cp = cps[i];
+
+    // Determine which variables to plot, initially
+    int ivar, jvar;
+    if( i==0) {
+      ivar = 0; jvar = 1;
+
+      // Initially the first plot's tab is shown, and its axes 
+      // are locked.
+      cps[i]->lock_axes_button->value(1);
+      cps[i]->hide();	
+    } 
+    else {
+      upper_triangle_incr (ivar, jvar, nvars);
+    }
+    cps[i]->varindex1->value(ivar);  
+    cps[i]->varindex2->value(jvar);  
+
+    pws[i]->extract_data_points();
+    pws[i]->reset_view();
+    pws[i]->size_range(10, 10);
+    pws[i]->resizable(pws[i]);
+
+    if (borderless) pws[i]->border(0);
+    pws[i]->show(argc,argv);
+    pws[i]->resizable(pws[i]);
+  }
+
+  // now we can show the main control panel and all its supanels
+  main_control_panel->show();
+
+  Fl::add_idle(redraw_if_changing);
+  // Fl::add_check(redraw_if_changing);
+
+  // enter main event loop
+  int result = Fl::run();
+  return result;
 }
 

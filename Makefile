@@ -4,8 +4,6 @@ platform := $(shell uname)
 # compiler names:
 CXX		= g++
 CC		= cc
-#CXX = gxlc++
-#CC = gxlc++
 MAKEDEPEND	= $(CXX) -M
 
 ifeq ($(platform),Darwin)
@@ -38,9 +36,10 @@ CXXFLAGS	= $(OPTIM) -DGL_GLEXT_PROTOTYPES
 
 # libraries to link with:
 ifeq ($(platform),Darwin)
-	INCPATH = -I/sw/include
+	INCPATH = -I/sw/include -I/usr/local/include
 	LIBPATH	= -L./lib -L/usr/local/lib -L/sw/lib
-	LDLIBS = -framework AGL -framework OpenGL -framework Carbon -framework ApplicationServices -framework vecLib -lm -lmx -lgsl 
+	LDLIBS = -framework AGL -framework OpenGL -framework Carbon -framework ApplicationServices -framework vecLib -lm -lmx ./lib/libgsl.a
+
 else
 	INCPATH = -I/u/wk/creon/include
 	LIBPATH	= -L/u/wk/creon/lib 
@@ -50,41 +49,35 @@ endif
 INCFLEWS	= -I../flews-0.3
 
 LINKFLEWS	= -L../flews-0.3 -lflews
-LINKFLTK	= -lfltk
-LINKFLTKGL	= -lfltk_gl
+LINKFLTK	= -lfltk -lfltk_gl
 LINKBLITZ	= -lblitz
 
 # The extension to use for executables...
 EXEEXT		= 
 
-# Build commands and filename extensions...
-.SUFFIXES:	.c .cc .H .h .o $(EXEEXT)
+SRCS =	vp.cpp
 
-.o$(EXEEXT):
-	echo Linking $@...
-	$(CXX) $(CXXFLAGS) $< $(LIBPATH) $(LINKFLEWS) $(LINKFLTK) $(LINKBLITZ) $(LDLIBS) -o $@
-	$(POSTBUILD) $@ ../FL/mac.r
+OBJS =	vp.o
 
-.c.o:	
+TARGET = vp$(EXEEXT)
+
+default: $(TARGET)
+
+%.o : %.c	
 	echo Compiling $<...
 	$(CC) -I.. $(CFLAGS) -c $<
 
-.cc.o:	
+%.o : %.cpp
 	echo Compiling $<...
 	$(CXX) $(INCPATH) $(INCFLEWS) -I.. $(CXXFLAGS) -c $<
 
-TARGET =	grid2$(EXEEXT)
-#TARGET =	mgrid$(EXEEXT)
-
-SRCS =	grid2.cc 
-#SRCS =	mgrid.cc grid2.cc
-
-OBJS:=	$(SRCS:.cc=.o)
-
-default:	$(TARGET)
+$(TARGET):	$(OBJS)
+	echo Linking $@...
+	$(CXX) $(CXXFLAGS) $< $(LIBPATH) $(LINKFLEWS) $(LINKFLTK) $(LINKBLITZ) $(LDLIBS) -o $@
+	$(POSTBUILD) $@ ./mac.r
 
 clean:
-	rm -f $(ALL) *.o $(TARGET) grid2 core* TAGS *.gch makedepend 
+	rm -f $(ALL) *.o $(TARGET) vp core* TAGS *.gch makedepend 
 
 depend:	$(SRCS)
 	$(MAKEDEPEND) $(INCBLITZ) $(INCPATH) $(INCFLEWS) -o makedepend $(SRCS)
@@ -100,16 +93,4 @@ TAGS:	depend $(SRCS)
 stable.h.gch:	stable.h
 	echo pre-compiling $<...
 	$(CXX) $(INCPATH) $(INCFLEWS) -I.. $(CXXFLAGS) -c $<
-
-grid2$(EXEEXT): $(OBJS)
-	echo Linking $@...
-	$(CXX) -I.. $(CXXFLAGS) -o $@ $(OBJS) $(LIBPATH) $(LINKFLEWS) $(LINKFLTKGL) $(LINKBLITZ) $(LINKFLTK) $(LDLIBS) 
-	$(POSTBUILD) $@ mac.r
-
-
-# for g77
-#F77LIBS = /sw/lib/libiberty-g77.a /sw/lib/libg2c.a
-
-#for gfortan
-F77LIBS = /usr/local/lib/libgfortran.a
 
