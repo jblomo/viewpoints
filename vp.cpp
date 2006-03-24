@@ -86,7 +86,6 @@
 // Author: Creon Levit   unknown
 // Modified: P. R. Gazis  14-MAR-2006
 //*****************************************************************
-#define __WINDOWS__
 
 // General note on defines: Several defines are required to account 
 // for variable and function definitions that seem to be missing.  
@@ -95,10 +94,10 @@
 // #ifndef MAXFLOAT 
 //   #define MAXFLOAT 3.402823466e+38f 
 // #endif
-#ifdef __WINDOWS__
+#ifdef WIN32
   #define MAXFLOAT 3.402823466e+38f 
   #define usleep(v) Sleep(v/1000)
-#endif // __WINDOWS__
+#endif // WIN32
 
 // General note in includes: The FLTK package should be handled by
 // the Dev-C++ programming environment, but several include 
@@ -186,19 +185,19 @@
 #ifdef __LINUX__
   #include <GL/glext.h>
 #endif // __LINUX__
-#ifdef __WINDOWS__
+#ifdef WIN32
   // OglExt.  Obtain from c:\devusr\oglext\include as described
   // above and invoke as described in OGLEXT documentation
   #define GL_GLEXT_PROTOTYPES
   #include <glext.h>
   #include <GL/glext.h>
-#endif // __WINDOWS__
+#endif // WIN32
 
 // GSL (Must be included before Blitz++!)
-#ifdef __WINDOWS__
+#ifdef WIN32
   #include <C:\devusr\GnuWin32\include\config.h>
   #include <winx/sys/timex.h>
-#endif // __WINDOWS__
+#endif // WIN32
 #include <gsl/gsl_sys.h>
 #include <gsl/gsl_math.h>
 #include <gsl/gsl_cdf.h>
@@ -2746,7 +2745,7 @@ void remove_trivial_columns()
       
     // Report what columns were removed
     cout << "Removed " << nvars_save - nvars << "columns:";
-    for( int i=0; i<removed_columns.size(); i++) {
+    for( unsigned int i=0; i<removed_columns.size(); i++) {
       int nLineLength = 8;
       nLineLength += 1+column_labels[ i].length();
       if( nLineLength > 80) {
@@ -2832,7 +2831,7 @@ int read_ascii_file_with_headers( char* inFileSpec)
     while( ss >> buf) {
       nvars++;
       char cbuf[ 80];
-      itoa( nvars, cbuf, 10);
+	  (void) sprintf(cbuf, "%d", nvars);
       buf = "Column_";
       buf.append( cbuf);
       column_labels.push_back( buf);
@@ -3379,11 +3378,11 @@ int main( int argc, char **argv)
   // Set main control panel size and position.  NOTE screen_count
   // requires OpenGL 1.7, which was not available under Windows as
   // of 14-MAR-2006.
-  #ifndef __WINDOWS__
+  #ifndef WIN32
     int number_of_screens = Fl::screen_count();
   #else
     int number_of_screens = 1;
-  #endif   // WINDOWS
+  #endif   // WIN32
   const int main_w = 350, main_h = 700;
   // const int main_x = 
   //   Fl::screen_count()*Fl::w() - 
