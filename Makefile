@@ -38,7 +38,7 @@ CXXFLAGS	= $(OPTIM) -DGL_GLEXT_PROTOTYPES
 ifeq ($(platform),Darwin)
 	INCPATH = -I/sw/include -I/usr/local/include
 	LIBPATH	= -L./lib -L/usr/local/lib -L/sw/lib
-	LDLIBS = -framework AGL -framework OpenGL -framework Carbon -framework ApplicationServices -framework vecLib -lm -lmx ./lib/libgsl.a
+	LDLIBS = -framework AGL -framework OpenGL -framework Carbon -framework ApplicationServices -framework vecLib -lm -lmx -lgsl
 
 else
 	INCPATH = -I/u/wk/creon/include
