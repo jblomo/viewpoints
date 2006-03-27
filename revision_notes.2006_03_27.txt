@@ -1,0 +1,154 @@
+Notes for the revision of 27-MAR-2006
+Paul R Gazis
+
+Overview
+  This revision involves a substantial reorganization of the
+viewpoints code for puposes of clarity, maintainability, and to
+consolidate class variables and member functions in the relevant
+classes and files to make the code more object-oriented.  In the
+long run, this should make the code considerably easier to
+understand, maintain, and modify, particularly after its planned
+release to the Open Source community.  There are three aspects to
+this revision:
+
+  1) The code was divided into several separate (and largely
+self-contained) files which are organized on a slightly more
+formal basis that the previous version.
+
+  2) 'Global' variables have been collected in a new header file,
+'global_defintiions_vp.h', that replaces the original 'vp.H'
+header file.  Local variables have been moved to the relevant 
+files and their scope has been restriced as much as possible.
+
+  3) As noted above, variables and member functions have been
+consolidated to make the plot_window and control_panel_window
+classes as self-contained and independant as possible.
+
+  NOTE: With the possiblee exception of toggle_display_delected,
+for which the name may have been altered by a typo, no variable or
+function names have been altered in this revision!  But several
+global variables and functions have been turned into static
+variables or methods of the relevant classes, as noted below.
+
+File structure
+  This revision breaks the code into several files.  Note that all
+of these files except for the main routine contain the necessary
+#ifndef, etc., statements to prevent them from being replicaated 
+if they are included more than once.  Note also that the source
+files for the classes listed below are sufficiently complete that
+they WILL compile!
+
+include_libraries_vp.h -- Include statements.  Under ordinary
+  circumstances, I would have left these in the relevant header
+  files for individual classes, but the includes used by 
+  viewpoints are sufficiently numeraous and involved that is makes
+  sense to consolidate them into a single file.
+
+global_definitions_vp.h -- Debugging flag and definition, global 
+  variables used by all (or almost all) classes and the main 
+  method, and member classes such as myCompare.  This replaces
+  the original vp.H header file.
+
+Fl_Hor_Value_Slider_Input.H -- Creon Levit's horizontal slider
+  widget with additional comments.
+
+control_panel_window.h -- Header for class control_panel_window
+
+plot_window.h -- Header for class plot_window
+
+control_panel_window.cpp -- Source for class control_panel_window
+
+plot_window.cpp -- Source for class plot_window
+
+vp.cpp -- Source for the main routine.
+
+Compilation notes
+  It is assumed that compilation of multiple files will be 
+handled by #include statements in vp.cpp -- i.e. source code for 
+classes control_panel_window and plot_window will be included via 
+#include "control_panel_window.cpp" and #include "plot_window.cpp" 
+statements in vp.cpp and only vp.cpp will be compiled!  If one 
+wishes to compile control_panel_window.cpp, plot_window.cpp, and 
+vp.cpp separately and link the object files together explicitly, 
+it will be necessary to remove the relevant #includes from vp.cpp
+first to avoid confusing the linker with multiple references.
+
+Class structure
+  This code consists of a main routine and two self-contained
+classes, control_panel_window and plot_window, that make minimal 
+use of global variables associated with the main routine.  The 
+classes and main routine contain the following methods:
+
+class control_panel_window
+
+  Non-static member functions:
+    control_panel_window( w, h) -- Constructor
+    maybe_redraw() -- Set redraw flag
+    make_widgets( *cpw) -- Make widgets for this tab
+    extract_and_redraw() -- ???
+
+  Static functions for access by Fl_Button::callback
+    choose_color_selected( *w, *cpw) -- Color of selected points
+    static_extract_and_redraw( *w, *cpw) -- ???
+    static_maybe_redraw( *w, *cpw) -- Set redraw flag
+    replot( *w, *cpw) -- Replot data
+    reset_view( *w, *cpw) -- Reset view
+    redraw_one_plot( *w, *cpw) -- Redraw one plot
+
+
+class plot_window
+
+  Non-static member functions:
+    plot_window( w, h) -- Constructor
+    draw() -- Draw plot
+    draw_grid() -- Draw grid
+    void draw_axes() -- Draw axes
+    draw_data_points() -- Draw data points
+    void draw_center_glyph() -- ???
+    void update_linked_transforms() -- ???
+    handle( event) -- Main event handler
+    handle_selection() -- Handle this selection?
+    void screen_to_world( xs, ys, x, y) -- Screen to word coords?
+    void print_selection_stats() -- ???
+    compute_histogram( int) -- Compute a histogram
+    draw_histograms() -- Draw histograms
+    compute_rank( blitz::Array<float,1>, blitz::Array<int,1>);
+    compute_histograms () -- Compute histograms
+    normalize() -- Normalize data
+    extract_data_points() -- Extract data for these axes
+    transform_2d() -- Transofmr to 2D coords
+    reset_selection_box() -- Reset selection box
+    color_array_from_new_selection() -- ???
+    color_array_from_selection() -- Color selected points?
+    update_textures() -- ???
+    choose_color_selected() -- Choose color of selcted data
+    reset_view() -- Reset plot
+    redraw_one_plot() -- Redraw one plot
+    change_axes( nchange) -- Change axes of this plot
+
+  Static functions moved here from the main routine
+    upper_triangle_incr( i, j, nvars) -- Traverse upper triangle
+    redraw_all_plots( p) -- Redraw all plots
+    delete_selection( *o) -- Delete selcted points
+    invert_selection() -- Invert selected and nonselcted points
+    toggle_display_delected( *o) -- Toggle colors
+    clear_selection( *o) -- Clear selection
+    initialize_textures() -- ???
+
+
+Main routine
+  choose_color_deselected( *o) -- Color of nonselected points
+  change_all_axes( *o) -- Change all axes
+  clearAlphaPlanes() -- Clear alpha planes
+  npoints_changed( *o) -- Update number of points changed
+  write_data( *o) -- Write binary file
+  reset_all_plots( void) -- Reset all plots
+  redraw_if_changing( *dummy) -- Redraw changing plots
+  make_global_widgets() -- Controls for main control panel
+  resize_global_arrays() -- Resize global arrays
+  remove_trivial_columns() -- Remove identical data
+  read_ascii_file_with_headers( *inFileSpec) -- Read ASCII
+  read_binary_file_with_headers( *inFileSpec) -- Read binary
+  usage() -- Print help information
+
+
