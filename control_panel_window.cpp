@@ -36,8 +36,9 @@
 #include "control_panel_window.h"
 
 //*****************************************************************
-// control_panel_window::control_panel_window( w, h) -- 
-// Default constructor.  Do nothing.
+// control_panel_window::control_panel_window( x, y, w, h) -- 
+// Default constructor.  Do nothing except call the constructor 
+// for the parent class, Fl_Group.
 control_panel_window::control_panel_window(
   int x, int y, int w, int h) : Fl_Group( x, y, w, h)
 {}
@@ -55,7 +56,8 @@ void control_panel_window::maybe_redraw()
 }
 
 //*****************************************************************
-// plot_window::extract_and_redraw() --
+// plot_window::extract_and_redraw() -- Extract data for these 
+// (new?) axes and redraw plot.
 void control_panel_window::extract_and_redraw ()
 {
   if( pw->extract_data_points()) {
@@ -75,11 +77,12 @@ void control_panel_window::extract_and_redraw ()
 // control_panel_window::make_widgets( cpw) -- Make widgets
 void control_panel_window::make_widgets( control_panel_window *cpw)
 {
-  // since these (virtual) control panels are really groups inside 
+  // Since these (virtual) control panels are really groups inside 
   // a tab inside a window, set their child widget's coordinates 
   // relative to their enclosing window's position.  (I think ;-)
   int xpos = this->x()+50;
   int ypos = this->y()+20;
+  // int ypos = this->y()+45;  // It appears Creon is right
 
   Fl_Button *b;
 
@@ -211,8 +214,13 @@ void control_panel_window::make_widgets( control_panel_window *cpw)
   z_normalization_style->callback(
     (Fl_Callback*)static_extract_and_redraw, this);
  
+  // XXX Add some additional y-offset
+  ypos+=5;
+
+  // Initialize positions for buttons
   int xpos2 = xpos;
   int ypos2 = ypos;
+  
   
   reset_view_button = b = 
     new Fl_Button(xpos2, ypos+=25, 20, 20, "reset view ");

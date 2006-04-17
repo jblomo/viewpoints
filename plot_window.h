@@ -27,7 +27,7 @@
 //   1) Review and add comments!
 //
 // Author: Creon Levitt   unknown
-// Modified: P. R. Gazis  27-MAR-2006
+// Modified: P. R. Gazis  10-APR-2006
 //*****************************************************************
 
 // Protection to make sure this header is not included twice
@@ -60,6 +60,7 @@
 //
 // Functions:
 //   plot_window( w, h) -- Constructor
+//   initialize() -- Initialization method
 //
 //   draw() -- Draw plot
 //   draw_grid() -- Draw grid
@@ -143,6 +144,7 @@ class plot_window : public Fl_Gl_Window
 
   public:
     plot_window( int w, int h);   // Constructor
+    void initialize();
 
     // min and max for data's bounding box in x, y, and z;
     float amin[3], amax[3];
@@ -181,13 +183,14 @@ class plot_window : public Fl_Gl_Window
     int extract_data_points();
     int transform_2d();
 
-    // Routines and variables to handle selection
+    // Routines and variables to handle point colors and selection
     void reset_selection_box();
     void color_array_from_new_selection();
     void color_array_from_selection();
 	void update_textures ();
 	void choose_color_selected ();
 	double r_selected, g_selected, b_selected;
+    static double r_deselected, g_deselected, b_deselected;
 
     // Routines to redraw plots
     void reset_view();
@@ -196,7 +199,7 @@ class plot_window : public Fl_Gl_Window
     float angle;
     int needs_redraw;
     
-    // Static routines moved here from vp.cpp
+    // Static methods moved here from vp.cpp
     static void upper_triangle_incr( 
       int &i, int &j, const int nvars);
     static void redraw_all_plots( int p);
@@ -205,10 +208,47 @@ class plot_window : public Fl_Gl_Window
     static void toggle_display_deselected( Fl_Widget *o);
     static void clear_selection( Fl_Widget *o);
     static void initialize_textures();
+    
+    // Static variable to hold he initial fraction of the window 
+    // to be used for data to allow room for axes, labels, etc.
+    static const float initial_pscale; 
+
+    // Specify how the RGB and alpha source and destination 
+    // blending factors are computed.
+    static int sfactor;
+    static int dfactor;
+
+    // Static variables used for textures
+    static GLfloat texture_images[ 2][ 4*(maxplots)];
+    static GLfloat pointscolor[ 4];
+    static GLfloat texenvcolor[ 4];
+    static GLuint texnames[ 2];
+    static int textures_initialized;
 };
 
 // Initialize number of plot windows
 int plot_window::count = 0;
+
+// Initial fraction of the window to be used for data
+float const plot_window::initial_pscale = 0.8; 
+
+// RGB and alpha source and destination blending factors
+int plot_window::sfactor = GL_CONSTANT_COLOR;
+int plot_window::dfactor = GL_DST_ALPHA;
+
+// Initialize color for deselected points
+double plot_window::r_deselected=1.0;
+double plot_window::g_deselected=0.01;
+double plot_window::b_deselected=0.01;
+
+// Initialize static variables.  NOTE: These must be initialized
+// here, even if they are later set in the body of the class, to 
+// avoid undefined reference errors in the linker.
+GLfloat plot_window::texture_images[ 2][ 4*(maxplots)] = { 0};
+GLfloat plot_window::pointscolor[ 4] = { 1, 1, 1, 1};
+GLfloat plot_window::texenvcolor[ 4] = { 1, 1, 1, 1};
+GLuint plot_window::texnames[ 2] = { };
+int plot_window::textures_initialized = 0;
 
 #endif   // PLOT_WINDOW_H
 

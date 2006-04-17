@@ -17,7 +17,7 @@
 //   2) Consider putting these variables into a NAMESPACE
 //
 // Author: Creon Levit    unknown
-// Modified: P. R. Gazis  27-MAR-2006
+// Modified: P. R. Gazis  14-APR-2006
 //*****************************************************************
 
 #ifndef VP_GLOBAL_DEFINITIONS_VP_H
@@ -55,13 +55,16 @@ int nvars = nvars_max;		// number of columns in data file
 // Global toggle between scale histogram & scale view :-(
 int scale_histogram = 0;
 
-// Define blitz::Array variables to hold data arrays
+// Define blitz::Arrays to hold raw and ranked (sorted) data 
+// arrays.  Used extensively in many classes, so for reasons of 
+// simplicity and clarity, these are left global
 blitz::Array<float,2> points;  // main data array
 blitz::Array<int,2> ranked_points;   // data, ranked, as needed.
 blitz::Array<int,1> ranked;	  // flag: 1->column is ranked, 0->not
 blitz::Array<int,1> identity;   // holds a(i)=i.
 
-// Define blitz::Arrays to flag selected points
+// Define blitz::Arrays to flag selected points.  As with the raw
+// data, these are left global for simplicity and clarity.
 // newly_selected -- true iff point is in newly selected set
 // selected -- true if point is selected in any window
 // previously_selected -- true iff selected before mouse went down
@@ -74,65 +77,43 @@ int nselected = 0;
 // Texture co-ordinates?
 blitz::Array<GLshort,1> texture_coords;
 
-// Define parameters used by the selection algorithm
-double r_deselected=1.0, g_deselected=0.01, b_deselected=0.01;
-
-// Temporary array (reference) for qsort
+// Temporary array (reference) for use with qsort
 blitz::Array<float,1> tmp_points;
 
-// Define vector of strings to hold variable names
+// Define vector of strings to hold variable names.  Used 
+// extensively by main routine and class control_panel_window
 std::vector<std::string> column_labels; 
 
-// Set the initial fraction of the window to be used for data to 
-// allow room for axes, labels, etc.  (Move to plot_window class?)
-const float initial_pscale = 0.8; 
-
-// Define variable to hold pointsize.  (Move to plot_window class?)
+// Define variable to hold pointsize.  Used in main routine and
+// classes control_panel_window and plot_window.  (Move to class
+// plot_window?)
 float pointsize = 1.0;
 
-// Specify how the RGB and alpha source and destination blending 
-// factors are computed.  (Move to plot_window class?)
-int sfactor = GL_CONSTANT_COLOR;
-int dfactor = GL_DST_ALPHA;
-
 // Flag to indicate that selection has been changed.  Creon notes
-// that this should be fixed, but that this is than it looks.
+// that this should be 'fixed', but this is harder than it looks.
+// For this reason, this variable is left global.
 int selection_changed = 1;
 
 // Define main control panel's top level (global) widgets.  Many 
-// of these must also be accessible to class control_panel_window.
-// cpt -- tabs to hold individual plot's virtual control panels
-// npoints_slider -- max number of points to display in all plots
+// of these must also be accessible to class plot_window and
+// possibly control_panel_window so these are left global.  cpt -- 
+// Tab widget to hold virtual control panels for individual plots.
+// npoints_slider -- maximum number of points to display in all 
+// plots.  Various buttons -- as suggested by their names.
 Fl_Tabs *cpt;  
 Fl_Hor_Value_Slider_Input *npoints_slider;
-Fl_Button *add_to_selection_button, 
+Fl_Button *add_to_selection_button,
           *clear_selection_button, 
           *delete_selection_button;
 Fl_Button *show_deselected_button, 
           *invert_selection_button;
 Fl_Button *write_data_button;
 Fl_Button *choose_color_selected_button, 
-          *choose_color_deselected_button, 
-          *dont_paint_button;
-Fl_Button *change_all_axes_button;
+          *choose_color_deselected_button; 
+Fl_Button *dont_paint_button,
+          *change_all_axes_button;
 Fl_Button *link_all_axes_button;
-
-// Associate integer values with normalization styles.  Used by
-// plot_window::normalize and definition of control_panel_window
-// NOTE: If possible, all the normalization information should
-// become static member variables of class control_panel_window
-const int NORMALIZATION_NONE 	= 0;
-const int NORMALIZATION_MINMAX 	= 1;
-const int NORMALIZATION_ZEROMAX = 2;
-const int NORMALIZATION_MAXABS	= 3;
-const int NORMALIZATION_TRIM_1E2 = 4;
-const int NORMALIZATION_TRIM_1E3 = 5;
-const int NORMALIZATION_THREESIGMA = 6;
-const int NORMALIZATION_LOG10 = 7;
-const int NORMALIZATION_SQUASH = 8;
-const int NORMALIZATION_RANK = 9;
-const int NORMALIZATION_GAUSSIANIZE = 10;
-const int n_normalization_styles = 11;
+Fl_Button *read_data_button;
 
 // Declare classes control_panel_window and plot_window here so 
 // they can be referenced
@@ -145,13 +126,6 @@ class plot_window;
 // these in instances of the <vector> container class.
 plot_window *pws[ maxplots];
 control_panel_window *cps[ maxplots];
-
-// Define parameters used for textures?	
-GLfloat texture_images[2][4*(maxplots)];
-GLfloat pointscolor[4] = {1,1,1,1};
-GLfloat texenvcolor[4] = {1,1,1,1};
-GLuint texnames[2];
-int textures_initialized = 0;
 
 //*****************************************************************
 // Class: myCompare

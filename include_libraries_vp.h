@@ -119,6 +119,10 @@
 #include <FL/Fl_File_Chooser.H>
 #include <FL/Fl_Color_Chooser.H>
 
+// XXX: for main menu bar
+#include <FL/Fl_Menu_Bar.H>
+#include <FL/Fl_Multiline_Output.H>
+
 // flews (FLTK extension) extras.  On the primary Windows system,
 // these should be located in c:\devusr\flews as described above
 #include <FL/Fl_flews.h>

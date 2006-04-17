@@ -28,7 +28,7 @@
 //      normalization schemes used here and by class plot_windows.
 //
 // Author: Creon Levitt   unknown
-// Modified: P. R. Gazis  27-MAR-2006
+// Modified: P. R. Gazis  10-APR-2006
 //*****************************************************************
 
 // Protection to make sure this header is not included twice
@@ -65,7 +65,7 @@
 //
 //   maybe_redraw() -- Set redraw flag
 //   make_widgets( *cpw) -- Make widgets for this tab
-//   extract_and_redraw() -- ???
+//   extract_and_redraw() -- Redraw plot for new axes
 //
 // Static functions for access by Fl_Button::callback
 //   choose_color_selected( *w, *cpw) -- Color of selected points
@@ -135,14 +135,24 @@ class control_panel_window : public Fl_Group
     plot_window *pw;
     int index;	
     
-    // Variables that describe normalization schemes.  These were
-    // moved here from main routine because they are specific to
-    // this class.
+    // Static variables that describe normalization styles.  These 
+    // were moved here from main routine because they are specific 
+    // to this class.
+    static const int n_normalization_styles;
+    static const int 
+      NORMALIZATION_NONE, NORMALIZATION_MINMAX,
+      NORMALIZATION_ZEROMAX, NORMALIZATION_MAXABS, 
+      NORMALIZATION_TRIM_1E2, NORMALIZATION_TRIM_1E3,
+      NORMALIZATION_THREESIGMA, NORMALIZATION_LOG10,
+      NORMALIZATION_SQUASH, NORMALIZATION_RANK,
+      NORMALIZATION_GAUSSIANIZE;
+
+    // Static variables that use and apply different normalization 
+    // styles.
     static Fl_Menu_Item varindex_menu_items[ nvars_max+2]; 
     static int normalization_styles[ 11];
     static char *normalization_style_labels[ 11];
-    static Fl_Menu_Item 
-      normalization_style_menu_items[ n_normalization_styles+1];
+    static Fl_Menu_Item normalization_style_menu_items[ 12];
 };
 
 // Set static member variable to hold menu items.  NOTE: Since
@@ -150,6 +160,21 @@ class control_panel_window : public Fl_Group
 Fl_Menu_Item 
   control_panel_window::varindex_menu_items[ nvars_max+2] = 
   { Fl_Menu_Item()};
+
+// Associate integer values with normalization styles.  Used by
+// plot_window::normalize and definition of control_panel_window
+int const control_panel_window::n_normalization_styles = 11;
+int const control_panel_window::NORMALIZATION_NONE 	= 0;
+int const control_panel_window::NORMALIZATION_MINMAX = 1;
+int const control_panel_window::NORMALIZATION_ZEROMAX = 2;
+int const control_panel_window::NORMALIZATION_MAXABS = 3;
+int const control_panel_window::NORMALIZATION_TRIM_1E2 = 4;
+int const control_panel_window::NORMALIZATION_TRIM_1E3 = 5;
+int const control_panel_window::NORMALIZATION_THREESIGMA = 6;
+int const control_panel_window::NORMALIZATION_LOG10 = 7;
+int const control_panel_window::NORMALIZATION_SQUASH = 8;
+int const control_panel_window::NORMALIZATION_RANK = 9;
+int const control_panel_window::NORMALIZATION_GAUSSIANIZE = 10;
 
 // Set the array of normalization schemes.  NOTE: If possible, 
 // this should be be made CONST.
@@ -172,8 +197,7 @@ char *control_panel_window::normalization_style_labels[ 11] = {
 // styles. NOTE: Since this is an array, this is a complicated 
 // process.
 Fl_Menu_Item 
-  control_panel_window::normalization_style_menu_items[ 
-    n_normalization_styles+1] =
-      { Fl_Menu_Item()};
+  control_panel_window::normalization_style_menu_items[ 12] =
+   { Fl_Menu_Item()};
 
 #endif   // CONTROL_PANEL_WINDOW_H

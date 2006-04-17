@@ -22,7 +22,7 @@
 // Purpose: Source code for <plot_window.h>
 //
 // Author: Creon Levitt   unknown
-// Modified: P. R. Gazis  27-MAR-2006
+// Modified: P. R. Gazis  14-APR-2006
 //*****************************************************************
 
 // Include the necessary include libraries
@@ -38,10 +38,46 @@
 //*****************************************************************
 // plot_window::plot_window( w, h) -- Constructor.  Increment
 // count of plot wndows, resize arrays, and set mode.
-plot_window::plot_window(int w,int h) : Fl_Gl_Window(w,h) 
+plot_window::plot_window( int w, int h) : Fl_Gl_Window( w, h) 
 {
-  // Initialize count and set format parameters.
+  // Update count and invoke initialzation method
   count++;
+  initialize();
+
+  // Old intialization code.  This has been commented out
+  // and the initlaization process moved to a separate method
+  // show_center_glyph = 0;
+  // r_selected=0.01, g_selected=0.01, b_selected=1.0;
+  
+  // Resize arrays
+  // vertices.resize(npoints,3);
+  // x_rank.resize( npoints);
+  // y_rank.resize( npoints);
+  // z_rank.resize( npoints);
+  // nbins = nbins_default;
+  // counts.resize( nbins_max,3);
+  // counts_selected.resize(nbins_max,3);
+
+  // Set mode
+  // #if TRY_DEPTH
+  //   // Creon notes that this doesn't seem to work on PBG4 OSX
+  //   if( can_do(FL_RGB|FL_DOUBLE|FL_ALPHA|FL_DEPTH)) {
+  //     mode( FL_RGB|FL_DOUBLE|FL_ALPHA|FL_DEPTH);
+  //   }
+  //   else {
+  //     cout << "Warning: depth buffering not enabled" << endl;
+  //     mode( FL_RGB|FL_DOUBLE|FL_ALPHA);
+  //   }
+  // #else
+  //   mode( FL_RGB8|FL_DOUBLE|FL_ALPHA);
+  // #endif
+}
+
+//*****************************************************************
+// plot_window::initialize -- Initialize window parameters.  Set
+// flags, set colors, resize arrays, and set mode.
+void plot_window::initialize()
+{
   show_center_glyph = 0;
   r_selected=0.01, g_selected=0.01, b_selected=1.0;
 
@@ -312,14 +348,16 @@ int plot_window::handle( int event)
     // keyboard event, 0 otherwise...
     case FL_KEYDOWN:
       DEBUG ( cout << "FL_KEYDOWN, event_key() = " << Fl::event_key() << endl);
+
+      // XXX should figure out how to share shortcuts between plot 
+      // windows and control panels... later
       switch( Fl::event_key()) {
-		// XXX should figure out how to share shortcuts between plot windows and control panels... later
 
         case 'q':   // exit
         case '\027':  // quit
           exit( 0);
 
-        // delete slected points from all future processing
+        // delete selected points from all future processing
         case 'x':
         case FL_Delete:
           delete_selection( (Fl_Widget *)NULL);
@@ -823,18 +861,17 @@ void plot_window::update_textures ()
 
   // Loop: Set textures for selected points?
   for( unsigned int i=0; 
-       i<sizeof(texnames)/sizeof(texnames[0]); i++) {
-    glBindTexture( GL_TEXTURE_1D, texnames[i]);
+       i < sizeof(texnames)/sizeof(texnames[0]); i++) {
+    glBindTexture( GL_TEXTURE_1D, texnames[ i]);
     glTexImage1D(
       GL_TEXTURE_1D, 0, GL_RGBA8, maxplots, 0, GL_RGBA, 
-      GL_FLOAT, texture_images[i]);
+      GL_FLOAT, texture_images[ i]);
   }
 }
 
 //*****************************************************************
 // plot_window::color_array_from_selection() -- Color selected
-// points?  NOTE: The fact that this calls initialize_textures
-// complicates the class organisation.
+// points.
 void plot_window::color_array_from_selection()
 {
   initialize_textures();
@@ -842,10 +879,10 @@ void plot_window::color_array_from_selection()
 
   blitz::Range NPTS( 0, npoints-1);	
 
-  if (dont_paint_button->value()) {
+  if( dont_paint_button->value()) {
   }
 
-  texture_coords(NPTS) = selected(NPTS);
+  texture_coords( NPTS) = selected( NPTS);
 }
 
 //*****************************************************************
@@ -886,7 +923,7 @@ void plot_window::draw_data_points()
 
   glBlendFunc( sfactor, dfactor);
 
-  GLshort *texturep = (GLshort *)texture_coords.data();
+  GLshort *texturep = (GLshort *) texture_coords.data();
   glTexCoordPointer (1, GL_SHORT, 0, texturep);
 
   // Tell the GPU where to find the correct texture coordinate 
@@ -896,10 +933,10 @@ void plot_window::draw_data_points()
   // XXX need to resolve local/global controls issue
   if( show_deselected_button->value() && 
       cp->show_deselected_points->value()) {
-    glBindTexture( GL_TEXTURE_1D, texnames[0]);
+    glBindTexture( GL_TEXTURE_1D, texnames[ 0]);
   }
   else {
-    glBindTexture( GL_TEXTURE_1D, texnames[1]);
+    glBindTexture( GL_TEXTURE_1D, texnames[ 1]);
     
     // Cull any deselected points (alpha==0.0), whatever the 
     // blendfunc:
@@ -1132,24 +1169,24 @@ int plot_window::normalize(
   float pmin;
 
   switch( style) {
-    case NORMALIZATION_NONE:
+    case control_panel_window::NORMALIZATION_NONE:
       wmin[axis_index] = -1;
       wmax[axis_index] = +1;
       return 1;
 
-    case NORMALIZATION_MINMAX:
+    case control_panel_window::NORMALIZATION_MINMAX:
       wmin[axis_index] = tmin;
       wmax[axis_index] = tmax;
       return 1;
 
     // all positive data fits in window, zero at "left" of axis.
-    case NORMALIZATION_ZEROMAX: 
+    case control_panel_window::NORMALIZATION_ZEROMAX: 
       wmin[axis_index] = 0.0;
       wmax[axis_index] = tmax;
       return 1;
 
     // all data fits in window w/zero at center of axis
-    case NORMALIZATION_MAXABS:  
+    case control_panel_window::NORMALIZATION_MAXABS:  
       tmax = fmaxf(fabsf(tmin),fabsf(tmax));
       if( tmax != 0.0) {
         wmin[axis_index] = -tmax;
@@ -1159,7 +1196,7 @@ int plot_window::normalize(
 
     // median at center of axis, axis extends to include at 
     // least 99% of data
-    case NORMALIZATION_TRIM_1E2:
+    case control_panel_window::NORMALIZATION_TRIM_1E2:
       {
         float trim = 1e-2;
         wmin[axis_index] = 
@@ -1171,7 +1208,7 @@ int plot_window::normalize(
 
     // median at center of axis, axis extends to include at 
     // least 99.9% of data
-    case NORMALIZATION_TRIM_1E3:  
+    case control_panel_window::NORMALIZATION_TRIM_1E3:  
       {
         float trim = 1e-3;
         wmin[axis_index] = 
@@ -1182,7 +1219,7 @@ int plot_window::normalize(
       }
 
     // mean at center of axis, axis extends to +/- 3*sigma
-    case NORMALIZATION_THREESIGMA:  
+    case control_panel_window::NORMALIZATION_THREESIGMA:  
       mu = mean(a(NPTS));
       sigma = sqrt((1.0/(float)npoints)*sum(pow2(a(NPTS)-mu)));
       DEBUG (cout << "mu, sigma = " << mu << ", " << sigma << endl);
@@ -1193,7 +1230,7 @@ int plot_window::normalize(
       return 1;
 
     // negative numbers get assigned a log of zero.
-    case NORMALIZATION_LOG10: 
+    case control_panel_window::NORMALIZATION_LOG10: 
       if( tmin <= 0.0) {
         cerr << "Warning: "
              << "attempted to take logarithms of nonpositive "
@@ -1208,14 +1245,14 @@ int plot_window::normalize(
       return 1;
 
     // simple sigmoid, (-inf,0,+inf) -> (-1,0,+1)
-    case NORMALIZATION_SQUASH: 
+    case control_panel_window::NORMALIZATION_SQUASH: 
       a(NPTS) = a(NPTS)/(1+abs(a(NPTS)));
       wmin[axis_index] = a(a_rank(0));
       wmax[axis_index] = a(a_rank(npoints-1));
       return 1;
 
     // replace each item with its rank, normalized from 0 to 1
-    case NORMALIZATION_RANK:
+    case control_panel_window::NORMALIZATION_RANK:
       for( int i=0; i<npoints; i++) {
         a( a_rank(i)) = float(i) / ((float)npoints-1);
       }
@@ -1225,7 +1262,7 @@ int plot_window::normalize(
       
     // Gaussianize the data, with the cnter of the gaussian 
     // at the median.
-    case NORMALIZATION_GAUSSIANIZE: 
+    case control_panel_window::NORMALIZATION_GAUSSIANIZE: 
       for( int i=0; i<npoints; i++) {
         a( a_rank(i)) = 
           (1.0/5.0) *
@@ -1243,7 +1280,7 @@ int plot_window::normalize(
 }
 
 //*****************************************************************
-// plot_window::compute_rank() -- Order data for nromalization or
+// plot_window::compute_rank() -- Order data for normalization or
 // generation of histograms
 void plot_window::compute_rank(
   blitz::Array<float,1> a, 
@@ -1251,7 +1288,7 @@ void plot_window::compute_rank(
   int var_index)
 {
   blitz::Range NPTS(0,npoints-1);
-  if( !ranked(var_index)) {
+  if( !ranked( var_index)) {
     if( !a.isStorageContiguous()) {
       cerr << "Warning: sorting with non-contiguous data." 
            << endl;
@@ -1261,7 +1298,7 @@ void plot_window::compute_rank(
            << endl;
     }
     a_rank(NPTS) = identity(NPTS);
-		
+    
     tmp_points.reference(a);
     int *lo = a_rank.data(), *hi = lo + npoints;
     std::stable_sort(lo, hi, myCompare());
@@ -1278,37 +1315,40 @@ void plot_window::compute_rank(
 
 //*****************************************************************
 // plot_window::extract_data_points() -- Extract column labels and 
-// data for a set of axes, rank (order) and normalize data, compute 
-// histograms, and compute axes scales.
+// data for a set of axes, rank (order) and normalize and scale
+// data, compute histograms, and compute axes scales.
 int plot_window::extract_data_points ()
 {
-  // get the labels for the plot's axes
+  // Get the labels for the plot's axes
   int axis0 = (int)(cp->varindex1->mvalue()->user_data());
   int axis1 = (int)(cp->varindex2->mvalue()->user_data());
   int axis2 = (int)(cp->varindex3->mvalue()->user_data());
 
-  xlabel = column_labels[axis0];
-  ylabel = column_labels[axis1];
-  if( axis2 != nvars) zlabel = column_labels[axis2];
+  xlabel = column_labels[ axis0];
+  ylabel = column_labels[ axis1];
+  if( axis2 != nvars) zlabel = column_labels[ axis2];
   else zlabel = "";
-	
-  blitz::Range NPTS(0,npoints-1);
+  
+  // Define a Range operator with which to extract subarrays
+  blitz::Range NPTS( 0, npoints-1);
 
+  // Order data to prepare for normalization and scaling and 
+  // report progress
   cout << "plot " << row << ", " << column << endl;
   cout << " pre-normalization: " << endl;
 
-  compute_rank(points(axis0,NPTS),x_rank,axis0);
+  compute_rank( points( axis0, NPTS), x_rank, axis0);
   cout << "  min: " << xlabel << "(" << x_rank(0) 
-       << ") = " << points(axis0,x_rank(0));
+       << ") = " << points( axis0, x_rank(0));
   cout << "  max: " << xlabel 
        << "(" << x_rank(npoints-1) 
-       << ") = " << points(axis0,x_rank(npoints-1)) << endl;
-   
-  compute_rank(points(axis1,NPTS),y_rank,axis1);
+       << ") = " << points( axis0, x_rank(npoints-1)) << endl;
+  
+  compute_rank( points( axis1, NPTS), y_rank,axis1);
   cout << "  min: " << ylabel << "("  << y_rank(0) 
        << ") = " << points(axis1,y_rank(0));
   cout << "  max: " << ylabel << "(" << y_rank(npoints-1) 
-       << ") = " << points(axis1,y_rank(npoints-1)) << endl;
+       << ") = " << points( axis1, y_rank(npoints-1)) << endl;
 
   if( axis2 != nvars) {
     compute_rank( points(axis2,NPTS),z_rank,axis2);
@@ -1318,23 +1358,28 @@ int plot_window::extract_data_points ()
          << ") = " << points(axis2,z_rank(npoints-1)) << endl;
   }
 
+  // Apply the normalize() method to normalize and scale the data 
+  // and report results
   cout << " post-normalization: " << endl;
 
+  // Load vertices and points for the x-axis.
   // This copies the data...
-  vertices(NPTS,0) = points(axis0,NPTS);  
+  vertices( NPTS, 0) = points( axis0, NPTS);  
   // ...but this doesn't. See blitz++ manual.
-  blitz::Array<float,1> xpoints = vertices(NPTS,0); 
+  blitz::Array<float,1> xpoints = vertices( NPTS, 0); 
   
-  vertices(NPTS,1) = points(axis1,NPTS);
-  blitz::Array<float,1> ypoints = vertices(NPTS,1);
+  // Load vertices and points for the y-axis.
+  vertices( NPTS, 1) = points( axis1, NPTS);
+  blitz::Array<float,1> ypoints = vertices( NPTS, 1);
 
+  // Load vertices and points, if any, for the z-axis.  
   if( axis2 != nvars)
-    vertices(NPTS,2) = points(axis2,NPTS);
+    vertices( NPTS, 2) = points( axis2, NPTS);
   else
-    vertices(NPTS,2) = 0;
-
+    vertices( NPTS, 2) = 0;
   blitz::Array<float,1> zpoints = vertices(NPTS,2);
 
+  // Normalize and scale the x-axis
   (void) normalize(
     xpoints, x_rank, cp->x_normalization_style->value(), 0);
   amin[0] = xpoints(x_rank(0));
@@ -1344,6 +1389,7 @@ int plot_window::extract_data_points ()
   cout << "  max: " << xlabel << "(" << x_rank(npoints-1) 
        << ") = " << xpoints(x_rank(npoints-1)) << endl;
     
+  // Normalize and scale the y-axis
   (void) normalize(
     ypoints, y_rank, cp->y_normalization_style->value(), 1);
   amin[1] = ypoints(y_rank(0));
@@ -1353,6 +1399,7 @@ int plot_window::extract_data_points ()
   cout << "  max: " << ylabel << "(" << y_rank(npoints-1) 
        << ") = " << ypoints(y_rank(npoints-1)) << endl;
 
+  // Normalize and scale the z-axis
   if( axis2 != nvars) {
     (void) normalize(
       zpoints, z_rank, cp->z_normalization_style->value(), 2);
@@ -1368,11 +1415,12 @@ int plot_window::extract_data_points ()
     amax[2] = +1.0;
   }
 
+  // Reset pan, zoom, and view-angle
   reset_view();
   (void) transform_2d();
 
-  // XXX need to refactor this.  This is needed to make sure 
-  // the scale marks on the axis are updated
+  // XXX need to refactor this.  This is needed to make sure the
+  // scale marks on the axis are updated
   screen_to_world( -1, -1, wmin[0], wmin[1]);
   screen_to_world( +1, +1, wmax[0], wmax[1]);
 
@@ -1422,7 +1470,7 @@ void plot_window::redraw_all_plots( int p)
 {
   DEBUG( cout << "in redraw_all_plots(" << p << ")" << endl ) ;
 
-  // redraw all plots, cyclically, sarting with plot p.  This p 
+  // redraw all plots, cyclically, starting with plot p.  This p 
   // is important, since the draw() routine for a plot handles 
   // the selection region, and the active plot (the one where we 
   // are making the selection) must update the selected set and 
@@ -1527,6 +1575,7 @@ void plot_window::initialize_textures()
 {
   if( textures_initialized) return;
 
+  // Generate texture names
   glPixelStorei( GL_UNPACK_ALIGNMENT, 1);
   glGenTextures( 2, texnames);
 
@@ -1560,8 +1609,8 @@ void plot_window::initialize_textures()
 
   // Loop: Set textures?
   for( unsigned int i=0; 
-       i<sizeof(texnames)/sizeof(texnames[0]); i++) {
-    glBindTexture( GL_TEXTURE_1D, texnames[i]);
+       i < sizeof(texnames)/sizeof(texnames[0]); i++) {
+    glBindTexture( GL_TEXTURE_1D, texnames[ i]);
     glTexParameteri( 
       GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(
