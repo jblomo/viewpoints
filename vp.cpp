@@ -19,15 +19,17 @@
 //    Blitz++ 0.9 -- Various math routines
 //
 // Compiler directives:
-//   May require D__WIN32__ for the C++ compiler
+//   May require -D__WIN32__ to compile on windows
+//	 See Makefile for linux and OSX compile & link info.
 //
 // Purpose: viewpoints - interactive linked scatterplots and more.
 //
 // General design philosophy:
 //   1) This code is represents a battle between Creon Levit's 
 //      passion for speed and efficiency and Paul Gazis's obsession
-//      with organization and clarity.  Whether the results will be
-//      brilliant or catastrophic remains to be determined...
+//      with organization and clarity, unified by a shared desire to
+//      produce a powerful and easy to use tool for exploratory data
+//      data analysis.
 //
 // Functions:
 //   usage() -- Print help information
@@ -82,7 +84,10 @@ int number_of_screens = 0;
 
 // Approximate values of window manager borders & desktop borders 
 // (stay out of these).  These are used by the main method when 
-// the main control panel window is defined.
+// the main control panel window is defined.  And when the plot
+// windows are tiled to fit the screen.  Too bad they are only
+// "hints" according most window managers (and we all know how
+// well managers take hints).
 #ifdef __APPLE__
  int top_frame=35, bottom_frame=0, left_frame=0, right_frame=5;
  int top_safe = 1, bottom_safe=5, left_safe=5, right_safe=1;
@@ -1344,7 +1349,7 @@ void read_data( Fl_Widget* o, void* user_data)
 //*****************************************************************
 // redraw_if_changing( dummy) -- Callback function for use by FLTK
 // Fl::add_idle.  When an idle callback occurs, redraw any panel
-// that has been spun or otherwise needs to be redrawn.
+// that is spinning or otherwise needs to be redrawn.
 void redraw_if_changing( void *dummy)
 {
   // DEBUG( cout << "in redraw_if_changing" << endl) ;

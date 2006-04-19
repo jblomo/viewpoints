@@ -435,7 +435,29 @@ read more data (on the fly, or from command line).
 
 missing values
 
+10:58:51 01 Apr 06
 
+Mike's suggestions
+
+1. command line args to specify which variables to plot, initially
+2. command line args for initial selection bounds
+3. current position of mouse should be dynamically printed (like the selection statistics)
+4. separate x and y histogram bin count controls
+5. separate point size control for selected points  (hey, this could be like the color: different for each selection.  Just wait till we do it with point sprites.  Then we can have fast open circles, filled circles, squares, X's, +'s, letters, Gaussian humps....)
+
+15:58:48 02 Apr 06
+
+Ideas from simvis http://www.vrvis.at/simvis/
+
+  smooth brushing
+  (smooth) brushing in histograms
+  simple (greyscale) luminance composition for deselected points
+
+ideas from ggobi/rggobi http://www.ggobi.org/
+
+  "replicates"
+  "edge display" / edge brushing (see movies of linked brushing on website)
+  "persistant" vs. "transient" brushing (i.e. "paint/add to selection")
 
 
 

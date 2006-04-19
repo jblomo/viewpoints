@@ -17,14 +17,21 @@ endif
 # DEBUG		= -ggdb -g3 -Wall -Wunused -DBZ_DEBUG
 DEBUG		= -g -ggdb -g3 -Wall -Wunused -fexceptions
 
+
 ifeq ($(platform),Darwin)
+
+# Uncomment for no optimization. For debugging on OSX
 #	OPTIM = $(DEBUG) -pipe
+# Uncomment to optimize for G5 
 #	OPTIM = -O6 -ftree-vectorize -ftree-vectorizer-verbose=0 -Wall -Wno-unused -Wno-long-double -Wno-deprecated -fno-exceptions -ffast-math -pipe -fsigned-char -maltivec -mabi=altivec -faltivec -mcpu=G5 -mtune=G5 -mpowerpc-gfxopt -g
+# Uncomment to optimize for G4
 	OPTIM = -O6 -ftree-vectorize -ftree-vectorizer-verbose=0 -Wall -Wno-unused -Wno-long-double -Wno-deprecated -fno-exceptions -ffast-math -pipe -fsigned-char -maltivec -mabi=altivec -faltivec -mcpu=G4 -mtune=G4 -mpowerpc-gfxopt -g
 
 else
+
 #	OPTIM = -O0 $(DEBUG) -pipe
 	OPTIM = -O6 -Wall -Wunused -ffast-math -fno-exceptions -g  -Wno-deprecated
+
 endif
 
 CFLAGS		= $(OPTIM) 
@@ -37,8 +44,9 @@ CXXFLAGS	= $(OPTIM) -DGL_GLEXT_PROTOTYPES
 # libraries to link with:
 ifeq ($(platform),Darwin)
 	INCPATH = -I/sw/include -I/usr/local/include
-	LIBPATH	= -L./lib -L/usr/local/lib -L/sw/lib
-	LDLIBS = -framework AGL -framework OpenGL -framework Carbon -framework ApplicationServices -framework vecLib -lm -lmx -lgsl
+	LIBPATH	= -L/usr/local/lib -L/sw/lib
+#	LDLIBS = -framework AGL -framework OpenGL -framework Carbon -framework ApplicationServices -framework vecLib -lm -lmx -lgsl
+	LDLIBS = -framework AGL -framework OpenGL -framework Carbon -framework ApplicationServices -framework vecLib -lm -lmx /sw/lib/libgsl.a
 
 else
 	INCPATH = -I/u/wk/creon/include

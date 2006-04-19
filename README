@@ -49,6 +49,7 @@ Mouse Gestures (in plot windows):
   action		gesture
   ------		-------
   select points		left-mouse
+  drag selection	shift + left-mouse
   translate		right-mouse  (opt-mouse on OSX)
   scale			middle-mouse (ctl-mouse on OSX)
   scale histogram	middle-mouse + h (ctl-mouse + h on OSX)

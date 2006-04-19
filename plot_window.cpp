@@ -43,34 +43,6 @@ plot_window::plot_window( int w, int h) : Fl_Gl_Window( w, h)
   // Update count and invoke initialzation method
   count++;
   initialize();
-
-  // Old intialization code.  This has been commented out
-  // and the initlaization process moved to a separate method
-  // show_center_glyph = 0;
-  // r_selected=0.01, g_selected=0.01, b_selected=1.0;
-  
-  // Resize arrays
-  // vertices.resize(npoints,3);
-  // x_rank.resize( npoints);
-  // y_rank.resize( npoints);
-  // z_rank.resize( npoints);
-  // nbins = nbins_default;
-  // counts.resize( nbins_max,3);
-  // counts_selected.resize(nbins_max,3);
-
-  // Set mode
-  // #if TRY_DEPTH
-  //   // Creon notes that this doesn't seem to work on PBG4 OSX
-  //   if( can_do(FL_RGB|FL_DOUBLE|FL_ALPHA|FL_DEPTH)) {
-  //     mode( FL_RGB|FL_DOUBLE|FL_ALPHA|FL_DEPTH);
-  //   }
-  //   else {
-  //     cout << "Warning: depth buffering not enabled" << endl;
-  //     mode( FL_RGB|FL_DOUBLE|FL_ALPHA);
-  //   }
-  // #else
-  //   mode( FL_RGB8|FL_DOUBLE|FL_ALPHA);
-  // #endif
 }
 
 //*****************************************************************
