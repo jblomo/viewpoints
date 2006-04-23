@@ -125,7 +125,9 @@ class plot_window;
 // definitions.  NOTE: In the long run, it might be safer to store 
 // these in instances of the <vector> container class.
 plot_window *pws[ maxplots];
-control_panel_window *cps[ maxplots];
+// There is one extra control_panel_window, with index=maxplots
+// It has no associated plot window - it affects all (unlocked) plots.
+control_panel_window *cps[ maxplots+1]; 
 
 //*****************************************************************
 // Class: myCompare

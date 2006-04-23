@@ -97,7 +97,7 @@ int number_of_screens = 0;
 #endif // __APPLE__
 
 // Define and set maximums for header block
-const int MAX_HEADER_LENGTH = 2000;  // Length of header line
+const int MAX_HEADER_LENGTH = nvars_max*100;  // Length of header line
 const int MAX_HEADER_LINES = 2000;  // Number of header lines
 
 // Define and set default values for file reads
@@ -210,6 +210,7 @@ void make_about_window( Fl_Widget *o)
 // load_data_file( inFileSpec) -- Read an ASCII or binary data 
 // file, resize arrays to allocate meomory, and set identity
 // array.  Returns 0 if successful.
+// MCL XXX - refactor this with read_data()
 int load_data_file( char* inFileSpec) 
 {
   // Read data file and report results
@@ -222,7 +223,7 @@ int load_data_file( char* inFileSpec)
 
   if( iReadStatus != 0) {
     cout << "Problems reading file <" << inFileSpec << ">" << endl;
-    return 1;
+    return -1;
   }
   else
     cout << "Finished reading file <" << inFileSpec << ">" << endl;
@@ -235,7 +236,7 @@ int load_data_file( char* inFileSpec)
   if( npoints <= 1) {
     cout << "Insufficient data, " << npoints
          << " samples." << endl;
-    return 0;
+    return -1;
   }
   else {
     cout << "Loaded " << npoints
@@ -254,6 +255,7 @@ int load_data_file( char* inFileSpec)
   // Load the identity array
   cout << "Making identity array, a(i)=i" << endl;
   for( int i=0; i<npoints; i++) identity( i)=i;
+  return 0;
 }
 
 //*****************************************************************
@@ -501,7 +503,7 @@ int read_binary_file_with_headers( char* inFileSpec)
   // string of header information.
   char cBuf[ MAX_HEADER_LENGTH];
   fgets( cBuf, MAX_HEADER_LENGTH, pInFile);
-  if( strlen( cBuf) >= MAX_HEADER_LENGTH) {
+  if( strlen( cBuf) >= (int)MAX_HEADER_LENGTH) {
     cout << " -ERROR: Header string is too long, "
          << "increase MAX_HEADER_LENGTH and recompile"
          << endl;
@@ -589,7 +591,7 @@ int read_binary_file_with_headers( char* inFileSpec)
       }
       
       // If wrong number of values was returned, report error.
-      if( ret != nvars) {
+      if( ret != (unsigned int)nvars) {
         cerr << " -ERROR reading row[ " << i+1 << "], "
              << "returned values " << ret 
              << " NE number of variables " << nvars << endl;
@@ -650,7 +652,7 @@ int read_binary_file_with_headers( char* inFileSpec)
       }
       
       // If wrong number of values was returned, report error.
-      if( ret != nvars) {
+      if( ret != (unsigned int)nvars) {
         cerr << " -ERROR reading column[ " << i+1 << "], "
              << "returned values " << ret 
              << " NE number of variables " << nvars << endl;
@@ -799,7 +801,7 @@ void resize_global_arrays()
   ranked.resize( nvars);
   ranked = 0;  // initially, no ranking has been done.
 
-  tmp_points(npoints); // for sort
+  tmp_points.resize(npoints); // for sort
 
   texture_coords.resize( npoints);
   identity.resize( npoints);
@@ -841,6 +843,35 @@ void create_main_control_panel(
   // Done creating main control panel (except for the tabbed 
   // sub-panels created by create_plot_window_array)
   main_control_panel->end();
+
+
+}
+
+// Create a special panel (really a group under a tab) with label "+"
+// this group's widgets effect all the others
+// (unless a plot's tab is "locked" - TBI).
+void create_broadcast_group ()
+{
+  Fl_Group::current(cpt);	
+  cps[nplots] = new control_panel_window( cp_widget_x, cp_widget_y, main_w - 6, cp_widget_h);
+  cps[nplots]->label("+");
+  cps[nplots]->labelsize( 10);
+  cps[nplots]->resizable( cps[nplots]);
+  cps[nplots]->make_widgets( cps[nplots]);
+  cps[nplots]->end();
+#if 0 // I didn't like it at the beginning
+  // move this new special group to be the first entry in the tabs
+  // even thought it was defined after the rest of them.
+  cpt->insert(*(Fl_Widget *)cps[nplots],0);
+#endif //
+  // this group's index is, nevertheless, highest (it has no associated plot window)
+  cps[nplots]->index = nplots;
+  // this group's callbacks all broadcast any "event" to the other (unlocked) tabs groups.
+  for (int i=0; i<cps[nplots]->children(); i++)
+  {
+	  Fl_Widget *wp = cps[nplots]->child(i);
+	  wp->callback((Fl_Callback *)(control_panel_window::broadcast_change), cps[nplots]);
+  }
 }
 
 //*****************************************************************
@@ -853,6 +884,29 @@ void create_plot_window_array( int argc, char **argv, int main_w)
   // Create and add the virtual sub-panels, each group under a 
   // tab, one per plot.
   for( int i=0; i<nplots; i++) {
+
+    // Create a label for this tab
+    ostringstream oss;
+    oss << "" << i+1;
+    string labstr = oss.str();
+
+    // Set pointer to the current group to the tab widget defined 
+    // by create_control_panel and add a new virtual control panel
+    // under this tab widget
+    Fl_Group::current(cpt);	
+    cps[i] = new control_panel_window( cp_widget_x, cp_widget_y, main_w - 6, cp_widget_h);
+    cps[i]->copy_label( labstr.c_str());
+    cps[i]->labelsize( 10);
+    cps[i]->resizable( cps[i]);
+    cps[i]->make_widgets( cps[i]);
+
+    // End the group here so that we can create new plot windows 
+    // at the top level, then set the pointer to the current group
+    // to the top level.
+    cps[i]->end();
+    Fl_Group::current(0); 
+
+    // Create plotting window i
     int row = i/ncols;
     int col = i%ncols;
 
@@ -876,30 +930,6 @@ void create_plot_window_array( int argc, char **argv, int main_w)
       top_safe + top_frame + 
       row * (pw_h + top_frame + bottom_frame);
 
-    // Create a label for this tab
-    ostringstream oss;
-    oss << "" << i+1;
-    string labstr = oss.str();
-
-    // Set pointer to the current group to the tab widget defined 
-    // by create_control_panel and add a new virtual control panel
-    // under this tab widget
-    Fl_Group::current(cpt);	
-    // cps[i] = new control_panel_window( 3, 30, main_w - 6, 480);
-    cps[i] = new control_panel_window( 
-      cp_widget_x, cp_widget_y, main_w - 6, cp_widget_h);
-    cps[i]->copy_label( labstr.c_str());
-    cps[i]->labelsize( 10);
-    cps[i]->resizable( cps[i]);
-    cps[i]->make_widgets( cps[i]);
-
-    // End the group here so that we can create new plot windows 
-    // at the top level, then set the pointer to the current group
-    // to the top level.
-    cps[i]->end();
-    Fl_Group::current(0); 
-
-    // Create plotting window i
     pws[i] = new plot_window( pw_w, pw_h);
     pws[i]->copy_label( labstr.c_str());
     pws[i]->position(pw_x, pw_y);
@@ -920,9 +950,8 @@ void create_plot_window_array( int argc, char **argv, int main_w)
       // Initially the first plot's tab is shown, and its axes 
       // are locked.
       cps[i]->lock_axes_button->value(1);
-      cps[i]->hide();	
-    } 
-    else {
+      cps[i]->show();	// ???
+    } else {
       plot_window::upper_triangle_incr( ivar, jvar, nvars);
     }
     cps[i]->varindex1->value(ivar);  
@@ -941,7 +970,10 @@ void create_plot_window_array( int argc, char **argv, int main_w)
     // Could put second of two tests for npoints <=1 here
     if( npoints > 1) pws[i]->show( argc, argv);
     pws[i]->resizable( pws[i]);
+
   }
+
+  create_broadcast_group ();
 }
 
 //*****************************************************************
@@ -1156,6 +1188,7 @@ void reset_all_plots()
 // reload_plot_window_array( o) -- Check to make sure data are
 // available, then delete old tabs, create new tabs, and load data
 // into the associated plot windows.
+// MCL - XXX refactor this with create_plot_window_array()
 void reload_plot_window_array( Fl_Widget *o)
 {
   // Check to make sure data are available
@@ -1172,12 +1205,13 @@ void reload_plot_window_array( Fl_Widget *o)
   // Loop: Create and add new tabbed sub-panels (each a group 
   // under a tab) and load data into the associated plot windows.
   for( int i=0; i<nplots; i++) {
-    int row = i/ncols;
-    int col = i%ncols;
-
-    // Account for borderless option
     if( borderless)
       top_frame = bottom_frame = left_frame = right_frame = 1;
+
+#if 0
+// MCL XXX these are unused here.  Why?
+    int row = i/ncols;
+    int col = i%ncols;
 
     // Determine plot window size and position
     int pw_w =
@@ -1194,6 +1228,7 @@ void reload_plot_window_array( Fl_Widget *o)
     int pw_y = 
       top_safe + top_frame + 
       row * (pw_h + top_frame + bottom_frame);
+#endif // 0 
 
     // Create a label for this tab
     ostringstream oss;
@@ -1555,7 +1590,7 @@ int main( int argc, char **argv)
   nplots = nrows*ncols;
 
   // STEP 2: Read the data file and quit if problems arose
-  if( load_data_file( inFileSpec) <= 1) return 0;
+  if( load_data_file( inFileSpec) < 0) return -1;
 
   // Fewer points -> bigger starting pointsize
   pointsize = max( 1.0, 6.0 - (int) log10f( (float) npoints));

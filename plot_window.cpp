@@ -1418,7 +1418,7 @@ void plot_window::upper_triangle_incr(
   if( j > nvars-1) {
     i = 0;
     offset++;
-    j = i+offset;
+    j = offset;
   }
 
   // Start all over if we need to.

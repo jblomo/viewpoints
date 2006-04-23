@@ -28,8 +28,11 @@
 // Include the necessary include libraries
 #include "include_libraries_vp.h"
 
+#include <typeinfo>
+
 // Include globals
 #include "global_definitions_vp.h"
+
 
 // Include associated headers and source code
 #include "plot_window.h"
@@ -43,8 +46,46 @@ control_panel_window::control_panel_window(
   int x, int y, int w, int h) : Fl_Group( x, y, w, h)
 {}
 
+// broadcast an interaction from the master panel to all (unlocked) panels.
+void control_panel_window::broadcast_change (Fl_Widget *global_widget)
+{
+		const Fl_Group *global_panel = global_widget->parent();
+		assert(global_panel);
+		const int widget_index = global_panel->find(global_widget);
+		assert(widget_index >= 0 && widget_index < global_panel->children());
+		for (int i=0; i<nplots; i++)
+		{
+			Fl_Widget *local_widget = cps[i]->child(widget_index);
+			assert(local_widget);
+			cout << "global_widget: label = " << global_widget->label() << " type = " << typeid(*global_widget).name() << endl;
+			cout << "local_widget:  label = " << local_widget->label() <<  " type = " << typeid(*local_widget).name() << endl;
+			assert (typeid(global_widget) == typeid(local_widget));
+			// MCL XXX value() should be in class widget.  It is not.
+			{
+				Fl_Button *gp, *lp;
+				if ((gp = dynamic_cast <Fl_Button*> (global_widget)) && (lp = dynamic_cast <Fl_Button*> (local_widget)))
+					lp->value(gp->value());
+			}
+			{
+				Fl_Valuator *gp, *lp;
+				if ((gp = dynamic_cast <Fl_Valuator*> (global_widget)) && (lp = dynamic_cast <Fl_Valuator*> (local_widget)))
+					lp->value(gp->value());
+			}
+			{
+				Fl_Choice *gp, *lp;
+				if ((gp = dynamic_cast <Fl_Choice*> (global_widget)) && (lp = dynamic_cast <Fl_Choice*> (local_widget)))
+					lp->value(gp->value());
+			}
+			if (local_widget->callback())
+			{
+				cout << ".. doing callback for widget " << widget_index << " in panel " << i << endl;
+				local_widget->do_callback(local_widget, cps[i]);
+			}
+		}
+}
+
 //*****************************************************************
-// control_panel_window::maybe_draw() -- Check plot windows to see
+// control_panel_window::maybe_draw() -- Check plot window to see
 // if they need to be redrawn.
 void control_panel_window::maybe_redraw() 
 {
@@ -57,18 +98,16 @@ void control_panel_window::maybe_redraw()
 
 //*****************************************************************
 // plot_window::extract_and_redraw() -- Extract data for these 
-// (new?) axes and redraw plot.
+// (new?) axes and redraw plot.  For one local control panel only.
 void control_panel_window::extract_and_redraw ()
 {
   if( pw->extract_data_points()) {
 
     #ifdef FAST_APPLE_VERTEX_EXTENSIONS
       GLvoid *vertexp = (GLvoid *)pw->vertices.data();
-      glFlushVertexArrayRangeAPPLE(
-        3*npoints*sizeof(GLfloat), vertexp);
+      glFlushVertexArrayRangeAPPLE( 3*npoints*sizeof(GLfloat), vertexp);
     #endif // FAST_APPLE_VERTEX_EXTENSIONS
 
-    //pw->redraw ();
     pw->needs_redraw = 1;
   }
 }
@@ -79,10 +118,9 @@ void control_panel_window::make_widgets( control_panel_window *cpw)
 {
   // Since these (virtual) control panels are really groups inside 
   // a tab inside a window, set their child widget's coordinates 
-  // relative to their enclosing window's position.  (I think ;-)
+  // relative to their enclosing window's position. 
   int xpos = this->x()+50;
   int ypos = this->y()+20;
-  // int ypos = this->y()+45;  // It appears Creon is right
 
   Fl_Button *b;
 

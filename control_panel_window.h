@@ -63,17 +63,19 @@
 // Functions:
 //   control_panel_window( w, h) -- Constructor
 //
-//   maybe_redraw() -- Set redraw flag
+//   maybe_redraw() -- Set redraw flag nicely
 //   make_widgets( *cpw) -- Make widgets for this tab
-//   extract_and_redraw() -- Redraw plot for new axes
+//   extract_and_redraw() -- extract a variable, renormalize it, etc.
 //
 // Static functions for access by Fl_Button::callback
 //   choose_color_selected( *w, *cpw) -- Color of selected points
-//   static_extract_and_redraw( *w, *cpw) -- ???
-//   static_maybe_redraw( *w, *cpw) -- Set redraw flag
-//   replot( *w, *cpw) -- Replot data
-//   reset_view( *w, *cpw) -- Reset view
+//   static_extract_and_redraw( *w, *cpw) -- extract a variable, renormalize it, etc.
+//   static_maybe_redraw( *w, *cpw) -- Set redraw flag nicely.
+//   replot( *w, *cpw) -- set redraw flag.
+//   reset_view( *w, *cpw) -- Reset one plot's view
 //   redraw_one_plot( *w, *cpw) -- Redraw one plot
+//
+//   This comment also conveys nothing.
 //
 // Author: Creon Levitt   unknown
 // Modified: P. R. Gazis  27-MAR-2006
@@ -88,7 +90,8 @@ class control_panel_window : public Fl_Group
     void make_widgets( control_panel_window *cpw);
     void extract_and_redraw();
 
-    // Static functions for access by Fl_Button::callback
+    // Static functions for access by Fl Widget callbacks
+	static void broadcast_change (Fl_Widget *global_widget);
     static void choose_color_selected(
       Fl_Widget *w, control_panel_window *cpw)
 		{ cpw->pw->choose_color_selected() ;}
@@ -100,7 +103,7 @@ class control_panel_window : public Fl_Group
         { cpw->maybe_redraw() ;}
     static void replot(
       Fl_Widget *w, control_panel_window *cpw)
-        { /* cpw->pw->redraw(); */ cpw->pw->needs_redraw=1;}
+        { cpw->pw->needs_redraw=1;}
     static void reset_view(
       Fl_Widget *w, control_panel_window *cpw)
         { cpw->pw->reset_view() ;}
@@ -108,14 +111,14 @@ class control_panel_window : public Fl_Group
       Fl_Widget *w, control_panel_window *cpw)
         { cpw->pw->redraw_one_plot();}
 
-    // Pointers to results from sliders
+    // Pointers to sliders & menus
     Fl_Hor_Value_Slider_Input *pointsize_slider;
     Fl_Hor_Value_Slider_Input *Bkg, *Lum, *Alph;
     Fl_Hor_Value_Slider_Input *rot_slider;
     Fl_Hor_Value_Slider_Input *nbins_slider;
     Fl_Choice *varindex1, *varindex2, *varindex3;
 	
-    // Pointers to results from buttons
+    // Pointers to buttons
     Fl_Button *reset_view_button;
     Fl_Button *spin, *dont_clear, *show_points, 
               *show_deselected_points, 
@@ -138,6 +141,7 @@ class control_panel_window : public Fl_Group
     // Static variables that describe normalization styles.  These 
     // were moved here from main routine because they are specific 
     // to this class.
+	// MCL XXX this stuff is now full of icky magic numbers like 11 and 12.  Fix!
     static const int n_normalization_styles;
     static const int 
       NORMALIZATION_NONE, NORMALIZATION_MINMAX,
@@ -150,7 +154,7 @@ class control_panel_window : public Fl_Group
     // Static variables that use and apply different normalization 
     // styles.
     static Fl_Menu_Item varindex_menu_items[ nvars_max+2]; 
-    static int normalization_styles[ 11];
+    static int normalization_styles[ 11];  
     static char *normalization_style_labels[ 11];
     static Fl_Menu_Item normalization_style_menu_items[ 12];
 };
