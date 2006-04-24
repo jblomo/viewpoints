@@ -27,7 +27,7 @@
 //   1) This might be a good place to consolidate references to
 //      normalization schemes used here and by class plot_windows.
 //
-// Author: Creon Levitt   unknown
+// Author: Creon Levit   2005-2006
 // Modified: P. R. Gazis  10-APR-2006
 //*****************************************************************
 
@@ -138,70 +138,27 @@ class control_panel_window : public Fl_Group
     plot_window *pw;
     int index;	
     
-    // Static variables that describe normalization styles.  These 
-    // were moved here from main routine because they are specific 
-    // to this class.
+    // constants that describe normalization styles.  
 	// MCL XXX this stuff is now full of icky magic numbers like 11 and 12.  Fix!
-    static const int n_normalization_styles;
-    static const int 
-      NORMALIZATION_NONE, NORMALIZATION_MINMAX,
-      NORMALIZATION_ZEROMAX, NORMALIZATION_MAXABS, 
-      NORMALIZATION_TRIM_1E2, NORMALIZATION_TRIM_1E3,
-      NORMALIZATION_THREESIGMA, NORMALIZATION_LOG10,
-      NORMALIZATION_SQUASH, NORMALIZATION_RANK,
-      NORMALIZATION_GAUSSIANIZE;
+	static const int control_panel_window::n_normalization_styles = 11;
+	static const int control_panel_window::NORMALIZATION_NONE 	= 0;
+	static const int control_panel_window::NORMALIZATION_MINMAX = 1;
+	static const int control_panel_window::NORMALIZATION_ZEROMAX = 2;
+	static const int control_panel_window::NORMALIZATION_MAXABS = 3;
+	static const int control_panel_window::NORMALIZATION_TRIM_1E2 = 4;
+	static const int control_panel_window::NORMALIZATION_TRIM_1E3 = 5;
+	static const int control_panel_window::NORMALIZATION_THREESIGMA = 6;
+	static const int control_panel_window::NORMALIZATION_LOG10 = 7;
+	static const int control_panel_window::NORMALIZATION_SQUASH = 8;
+	static const int control_panel_window::NORMALIZATION_RANK = 9;
+	static const int control_panel_window::NORMALIZATION_GAUSSIANIZE = 10;
 
     // Static variables that use and apply different normalization 
     // styles.
-    static Fl_Menu_Item varindex_menu_items[ nvars_max+2]; 
-    static int normalization_styles[ 11];  
-    static char *normalization_style_labels[ 11];
-    static Fl_Menu_Item normalization_style_menu_items[ 12];
+    static Fl_Menu_Item varindex_menu_items[]; 
+    static int normalization_styles[];  
+    static char *normalization_style_labels[];
+    static Fl_Menu_Item normalization_style_menu_items[];
 };
-
-// Set static member variable to hold menu items.  NOTE: Since
-// this is an array, this is a complicated process.
-Fl_Menu_Item 
-  control_panel_window::varindex_menu_items[ nvars_max+2] = 
-  { Fl_Menu_Item()};
-
-// Associate integer values with normalization styles.  Used by
-// plot_window::normalize and definition of control_panel_window
-int const control_panel_window::n_normalization_styles = 11;
-int const control_panel_window::NORMALIZATION_NONE 	= 0;
-int const control_panel_window::NORMALIZATION_MINMAX = 1;
-int const control_panel_window::NORMALIZATION_ZEROMAX = 2;
-int const control_panel_window::NORMALIZATION_MAXABS = 3;
-int const control_panel_window::NORMALIZATION_TRIM_1E2 = 4;
-int const control_panel_window::NORMALIZATION_TRIM_1E3 = 5;
-int const control_panel_window::NORMALIZATION_THREESIGMA = 6;
-int const control_panel_window::NORMALIZATION_LOG10 = 7;
-int const control_panel_window::NORMALIZATION_SQUASH = 8;
-int const control_panel_window::NORMALIZATION_RANK = 9;
-int const control_panel_window::NORMALIZATION_GAUSSIANIZE = 10;
-
-// Set the array of normalization schemes.  NOTE: If possible, 
-// this should be be made CONST.
-int control_panel_window::normalization_styles[ 11] = {
-  NORMALIZATION_NONE, NORMALIZATION_MINMAX,
-  NORMALIZATION_ZEROMAX, NORMALIZATION_MAXABS, 
-  NORMALIZATION_TRIM_1E2, NORMALIZATION_TRIM_1E3, 
-  NORMALIZATION_THREESIGMA, NORMALIZATION_LOG10,
-  NORMALIZATION_SQUASH, NORMALIZATION_RANK, 
-  NORMALIZATION_GAUSSIANIZE};
-
-// Set the array of character arrays that describe normalization
-// schemes.  NOTE: If possible, this should be be made CONST.
-char *control_panel_window::normalization_style_labels[ 11] = { 
-  "none", "minmax", "zeromax", "maxabs", "trim 10^-2", 
-  "trim 10^-3", "threesigma", "log_10", "squash", "rank",
-  "gaussianize"};
-
-// Set static member variable to hold menu of normalization 
-// styles. NOTE: Since this is an array, this is a complicated 
-// process.
-Fl_Menu_Item 
-  control_panel_window::normalization_style_menu_items[ 12] =
-   { Fl_Menu_Item()};
 
 #endif   // CONTROL_PANEL_WINDOW_H

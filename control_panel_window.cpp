@@ -21,7 +21,7 @@
 //
 // Purpose: Source code for <control_panel_window.h>
 //
-// Author: Creon Levitt   unknown
+// Author: Creon Levit   2005-2006
 // Modified: P. R. Gazis  27-MAR-2006
 //*****************************************************************
 
@@ -38,6 +38,37 @@
 #include "plot_window.h"
 #include "control_panel_window.h"
 
+// Set static data members for class control_panel_window::
+//
+
+// array to hold menu items for axis menus.  
+Fl_Menu_Item 
+  control_panel_window::varindex_menu_items[ nvars_max+2] = 
+  { Fl_Menu_Item()};
+
+// array to hold menu items for normalization styles
+// MCL XXX this needs to be cleaned up to avoid magic numbers like 11, 12.....
+Fl_Menu_Item 
+  control_panel_window::normalization_style_menu_items[ 12] =
+   { Fl_Menu_Item()};
+
+// Set the array of normalization schemes.  NOTE: If possible, 
+// this should be be made CONST.
+int control_panel_window::normalization_styles[ 11] = {
+  NORMALIZATION_NONE, NORMALIZATION_MINMAX,
+  NORMALIZATION_ZEROMAX, NORMALIZATION_MAXABS, 
+  NORMALIZATION_TRIM_1E2, NORMALIZATION_TRIM_1E3, 
+  NORMALIZATION_THREESIGMA, NORMALIZATION_LOG10,
+  NORMALIZATION_SQUASH, NORMALIZATION_RANK, 
+  NORMALIZATION_GAUSSIANIZE};
+
+// Set the array of character arrays that describe normalization
+// schemes.  NOTE: If possible, this should be be made CONST.
+char *control_panel_window::normalization_style_labels[ 11] = { 
+  "none", "minmax", "zeromax", "maxabs", "trim 10^-2", 
+  "trim 10^-3", "threesigma", "log_10", "squash", "rank",
+  "gaussianize"};
+
 //*****************************************************************
 // control_panel_window::control_panel_window( x, y, w, h) -- 
 // Default constructor.  Do nothing except call the constructor 
@@ -47,39 +78,41 @@ control_panel_window::control_panel_window(
 {}
 
 // broadcast an interaction from the master panel to all (unlocked) panels.
-void control_panel_window::broadcast_change (Fl_Widget *global_widget)
+void control_panel_window::broadcast_change (Fl_Widget *master_widget)
 {
-		const Fl_Group *global_panel = global_widget->parent();
-		assert(global_panel);
-		const int widget_index = global_panel->find(global_widget);
-		assert(widget_index >= 0 && widget_index < global_panel->children());
+		const Fl_Group *master_panel = master_widget->parent();
+		assert(master_panel);
+		const int widget_index = master_panel->find(master_widget);
+		assert(widget_index >= 0 && widget_index < master_panel->children());
 		for (int i=0; i<nplots; i++)
 		{
-			Fl_Widget *local_widget = cps[i]->child(widget_index);
-			assert(local_widget);
-			cout << "global_widget: label = " << global_widget->label() << " type = " << typeid(*global_widget).name() << endl;
-			cout << "local_widget:  label = " << local_widget->label() <<  " type = " << typeid(*local_widget).name() << endl;
-			assert (typeid(global_widget) == typeid(local_widget));
-			// MCL XXX value() should be in class widget.  It is not.
+			Fl_Widget *slave_widget = cps[i]->child(widget_index);
+			assert(slave_widget);
+			// cout << "master_widget: label = " << master_widget->label() << " type = " << typeid(*master_widget).name() << endl;
+			// cout << "slave_widget:  label = " << slave_widget->label() <<  " type = " << typeid(*slave_widget).name() << endl;
+			// MCL XXX downcasting to dispatch on type is considered very bad form.  If value() were a virtual function of Fl_Widget
+			// (like callback() and do_callback() are) it would be cleaner.  Or we could bite the bullet and use one of the fltk
+			// publish/subscribe extensions.  that could clean up all sort of things.....
+			assert (typeid(master_widget) == typeid(slave_widget));
 			{
 				Fl_Button *gp, *lp;
-				if ((gp = dynamic_cast <Fl_Button*> (global_widget)) && (lp = dynamic_cast <Fl_Button*> (local_widget)))
+				if ((gp = dynamic_cast <Fl_Button*> (master_widget)) && (lp = dynamic_cast <Fl_Button*> (slave_widget)))
 					lp->value(gp->value());
 			}
 			{
 				Fl_Valuator *gp, *lp;
-				if ((gp = dynamic_cast <Fl_Valuator*> (global_widget)) && (lp = dynamic_cast <Fl_Valuator*> (local_widget)))
+				if ((gp = dynamic_cast <Fl_Valuator*> (master_widget)) && (lp = dynamic_cast <Fl_Valuator*> (slave_widget)))
 					lp->value(gp->value());
 			}
 			{
 				Fl_Choice *gp, *lp;
-				if ((gp = dynamic_cast <Fl_Choice*> (global_widget)) && (lp = dynamic_cast <Fl_Choice*> (local_widget)))
+				if ((gp = dynamic_cast <Fl_Choice*> (master_widget)) && (lp = dynamic_cast <Fl_Choice*> (slave_widget)))
 					lp->value(gp->value());
 			}
-			if (local_widget->callback())
+			if (slave_widget->callback())
 			{
 				cout << ".. doing callback for widget " << widget_index << " in panel " << i << endl;
-				local_widget->do_callback(local_widget, cps[i]);
+				slave_widget->do_callback(slave_widget, cps[i]);
 			}
 		}
 }

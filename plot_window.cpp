@@ -35,6 +35,33 @@
 #include "plot_window.h"
 #include "control_panel_window.h"
 
+// initialize static data members for class plot_window::
+//
+
+// Initial number of plot windows
+int plot_window::count = 0;
+
+// Initial fraction of the window to be used for showing (normalized) data
+float const plot_window::initial_pscale = 0.8; 
+
+// RGB and alpha source and destination blending factors
+int plot_window::sfactor = GL_CONSTANT_COLOR;
+int plot_window::dfactor = GL_DST_ALPHA;
+
+// color for points (modified per point by texture rgba)
+GLfloat plot_window::pointscolor[4] = { 1, 1, 1, 1};
+
+// Initialize color for deselected points (used in texture rgba)
+double plot_window::r_deselected=1.0;
+double plot_window::g_deselected=0.01;
+double plot_window::b_deselected=0.01;
+
+GLfloat plot_window::texture_images[ 2][ 4*(maxplots)] = { 0};
+GLfloat plot_window::texenvcolor[ 4] = { 1, 1, 1, 1};
+GLuint plot_window::texnames[ 2] = { };
+int plot_window::textures_initialized = 0;
+
+
 //*****************************************************************
 // plot_window::plot_window( w, h) -- Constructor.  Increment
 // count of plot wndows, resize arrays, and set mode.
@@ -88,14 +115,23 @@ void plot_window::choose_color_selected()
 }
 
 //*****************************************************************
-// plot_window::change_axes( nchange) -- Change axes
-void plot_window::change_axes( int nchange)
+// plot_window::change_axes() -- Change axes for a plot to new axes
+// which are far enough away so they are (probably) not duplicates
+// and (probably) don't skip any combinations.
+void plot_window::change_axes()
 {
+  int nchange = 0;
+  for( int i=0; i<nplots; i++) {
+    if( !cps[i]->lock_axes_button->value()) nchange++;
+  }
+  cout << "for window " << index << " nchange=" << nchange << endl;
   // this seems a little verbose.....
   int i=cp->varindex1->value();
   int j=cp->varindex2->value();
+  cout << "  (i,j) before = (" << i << "," << j << ")" << endl;
   for( int k=0; k<nchange; k++)
     upper_triangle_incr( i, j, nvars);
+  cout << "  (i,j) after = (" << i << "," << j << ")" << endl;
   cp->varindex1->value(i);
   cp->varindex2->value(j);
   cp->extract_and_redraw();
@@ -1262,12 +1298,10 @@ void plot_window::compute_rank(
   blitz::Range NPTS(0,npoints-1);
   if( !ranked( var_index)) {
     if( !a.isStorageContiguous()) {
-      cerr << "Warning: sorting with non-contiguous data." 
-           << endl;
+      cerr << "Warning: sorting with non-contiguous data." << endl;
     }
     if( !a_rank.isStorageContiguous()) {
-      cerr << "Warning: sorting with non-contiguous rank." 
-           << endl;
+      cerr << "Warning: sorting with non-contiguous rank." << endl;
     }
     a_rank(NPTS) = identity(NPTS);
     
@@ -1277,11 +1311,11 @@ void plot_window::compute_rank(
 
     ranked(var_index) = 1;  // now we are ranked
 	ranked_points(var_index,NPTS) = a_rank(NPTS);  // and our rank is cached!
-    cout << "  cache STORE at index " << var_index << endl;
+    // cout << "  cache STORE at index " << var_index << endl;
   }
   else {
     a_rank=ranked_points(var_index,NPTS);// use previously cached rank!
-    cout << "  CACHE HIT   at index " << var_index << endl;
+    // cout << "  CACHE HIT   at index " << var_index << endl;
   }
 }
 
@@ -1404,33 +1438,42 @@ int plot_window::extract_data_points ()
 // Define STATIC methods
 
 //*****************************************************************
-// plot_window::upper_triangle_incr( i, j, nvars) -- STATIC method
+// plot_window::upper_triangle_incr( i, j, n) -- STATIC method
 // to increment the row and column indices, (i,j), to traverse an 
 // upper triangular matrix by moving "down and to the right" with
 // wrapping.  A static method used by plot_window::change_axes and
 // in the body of the main routine to select axis labels.
 void plot_window::upper_triangle_incr( 
-  int &i, int &j, const int nvars)
+  int &i, int &j, const int n)
 {
-  static int offset = 1;
-  i++;
-  j++;
-  if( j > nvars-1) {
-    i = 0;
-    offset++;
-    j = offset;
+  cout << "  upper_triangle_incr before: i, j = " << " " << i << " " << j << endl;
+  // diagonals get incremented together, with wrapping
+  if (i==j)
+  {
+	  i=(i+1)%n;
+	  j = i;
   }
-
-  // Start all over if we need to.
-  if( j > nvars-1) {
-    i = 0;
-    j = 1;
-    offset = 1;
+  // upper triangle gets incremented "down and to the right" with diagonal wrapping
+  else if (i<j) {
+	  if (i<n-2 && j<n-1)
+	  {
+		  i++;
+		  j++;
+	  } else {
+		  j = (n-i);
+		  if (j>n-1) j=1;
+		  i = 0;
+	  }
   }
+  // lower triangle gets treated as upprt triangle, with the two axes swapped.
+  else if (i>j) {
+	  upper_triangle_incr( j, i, n);
+  }
+  cout << "  upper_triangle_incr after:  i, j = " << " " << i << " " << j << endl;
   assert( i >= 0);
-  assert( j > 0);
-  assert( i < nvars-1);
-  assert( j < nvars);
+  assert( j >= 0);
+  assert( i < n);
+  assert( j < n);
 }
 
 //*****************************************************************

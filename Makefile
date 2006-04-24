@@ -21,7 +21,7 @@ DEBUG		= -ggdb -g3 -Wall -Wunused -DBZ_DEBUG
 ifeq ($(platform),Darwin)
 
 # Uncomment for no optimization. For debugging on OSX
-	OPTIM = $(DEBUG) -pipe
+	OPTIM = $(DEBUG)
 # Uncomment to optimize for G5 
 #	OPTIM = -O6 -ftree-vectorize -ftree-vectorizer-verbose=0 -Wall -Wno-unused -Wno-long-double -Wno-deprecated -fno-exceptions -ffast-math -pipe -fsigned-char -maltivec -mabi=altivec -faltivec -mcpu=G5 -mtune=G5 -mpowerpc-gfxopt -g
 # Uncomment to optimize for G4
@@ -63,9 +63,10 @@ LINKBLITZ	= -lblitz
 # The extension to use for executables...
 EXEEXT		= 
 
-SRCS =	vp.cpp
+#SRCS =	vp.cpp control_panel_window.cpp plot_window.cpp
+SRCS =	vp.cpp 
 
-OBJS =	vp.o
+OBJS:=	$(SRCS:.cpp=.o)
 
 TARGET = vp$(EXEEXT)
 
@@ -81,7 +82,8 @@ default: $(TARGET)
 
 $(TARGET):	$(OBJS)
 	echo Linking $@...
-	$(CXX) $(CXXFLAGS) $< $(LIBPATH) $(LINKFLEWS) $(LINKFLTK) $(LINKBLITZ) $(LDLIBS) -o $@
+
+	$(CXX) $(CXXFLAGS) $(OBJS) $(LIBPATH) $(LINKFLEWS) $(LINKFLTK) $(LINKBLITZ) $(LDLIBS) -o $@
 	$(POSTBUILD) $@ ./mac.r
 
 clean:

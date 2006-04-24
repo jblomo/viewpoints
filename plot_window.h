@@ -91,7 +91,7 @@
 //   choose_color_selected() -- Choose color of selcted data
 //   reset_view() -- Reset plot
 //   redraw_one_plot() -- Redraw one plot
-//   change_axes( nchange) -- Change axes of this plot
+//   change_axes() -- Change axes of this plot
 //
 // Static functions:
 //   upper_triangle_incr( i, j, nvars) -- Traverse upper triangle
@@ -195,7 +195,7 @@ class plot_window : public Fl_Gl_Window
     // Routines to redraw plots
     void reset_view();
     void redraw_one_plot();
-    void change_axes( int nchange);
+    void change_axes();
     float angle;
     int needs_redraw;
     
@@ -225,30 +225,6 @@ class plot_window : public Fl_Gl_Window
     static GLuint texnames[ 2];
     static int textures_initialized;
 };
-
-// Initialize number of plot windows
-int plot_window::count = 0;
-
-// Initial fraction of the window to be used for data
-float const plot_window::initial_pscale = 0.8; 
-
-// RGB and alpha source and destination blending factors
-int plot_window::sfactor = GL_CONSTANT_COLOR;
-int plot_window::dfactor = GL_DST_ALPHA;
-
-// Initialize color for deselected points
-double plot_window::r_deselected=1.0;
-double plot_window::g_deselected=0.01;
-double plot_window::b_deselected=0.01;
-
-// Initialize static variables.  NOTE: These must be initialized
-// here, even if they are later set in the body of the class, to 
-// avoid undefined reference errors in the linker.
-GLfloat plot_window::texture_images[ 2][ 4*(maxplots)] = { 0};
-GLfloat plot_window::pointscolor[ 4] = { 1, 1, 1, 1};
-GLfloat plot_window::texenvcolor[ 4] = { 1, 1, 1, 1};
-GLuint plot_window::texnames[ 2] = { };
-int plot_window::textures_initialized = 0;
 
 #endif   // PLOT_WINDOW_H
 

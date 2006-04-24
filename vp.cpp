@@ -63,7 +63,7 @@
 // -Moved global variables to local files and within classes to
 //  limit their scope
 //
-// Author: Creon Levit   unknown
+// Author: Creon Levit   2005-2006
 // Modified: P. R. Gazis  14-APR-2006
 //*****************************************************************
 
@@ -76,6 +76,8 @@
 // Include associated headers and source code
 #include "plot_window.h"
 #include "control_panel_window.h"
+// MCL XXX the following is bogus.  We need separate compilation units.
+// and that means we need to deal with globals elegantly.
 #include "plot_window.cpp"
 #include "control_panel_window.cpp"
 
@@ -850,27 +852,29 @@ void create_main_control_panel(
 // Create a special panel (really a group under a tab) with label "+"
 // this group's widgets effect all the others
 // (unless a plot's tab is "locked" - TBI).
+// MCL XXX should this be a method of control_panel_window?
+//  should it be a singleton?
 void create_broadcast_group ()
 {
   Fl_Group::current(cpt);	
-  cps[nplots] = new control_panel_window( cp_widget_x, cp_widget_y, main_w - 6, cp_widget_h);
-  cps[nplots]->label("+");
-  cps[nplots]->labelsize( 10);
-  cps[nplots]->resizable( cps[nplots]);
-  cps[nplots]->make_widgets( cps[nplots]);
-  cps[nplots]->end();
-#if 0 // I didn't like it at the beginning
-  // move this new special group to be the first entry in the tabs
-  // even thought it was defined after the rest of them.
-  cpt->insert(*(Fl_Widget *)cps[nplots],0);
-#endif //
-  // this group's index is, nevertheless, highest (it has no associated plot window)
-  cps[nplots]->index = nplots;
+  control_panel_window *cp = cps[nplots];
+  cp = new control_panel_window( cp_widget_x, cp_widget_y, main_w - 6, cp_widget_h);
+  cp->label("+");
+  cp->labelsize( 10);
+  cp->resizable( cp);
+  cp->make_widgets( cp);
+  cp->end();
+  // this group's index is highest (and it has no associated plot window)
+  cp->index = nplots;
+  // initially, this group has no axes (XXX or anything else, for that matter)
+  cp->varindex1->value(nvars);  // initially == "-nothing-"
+  cp->varindex2->value(nvars);  // initially == "-nothing-"
+  cp->varindex3->value(nvars);  // initially == "-nothing-"
   // this group's callbacks all broadcast any "event" to the other (unlocked) tabs groups.
-  for (int i=0; i<cps[nplots]->children(); i++)
+  for (int i=0; i<cp->children(); i++)
   {
-	  Fl_Widget *wp = cps[nplots]->child(i);
-	  wp->callback((Fl_Callback *)(control_panel_window::broadcast_change), cps[nplots]);
+	  Fl_Widget *wp = cp->child(i);
+	  wp->callback((Fl_Callback *)(control_panel_window::broadcast_change), cp);
   }
 }
 
@@ -1135,13 +1139,9 @@ void choose_color_deselected( Fl_Widget *o)
 // change_all_axes( *o) -- Invoke the change_axes method of each
 // plot_window to change all unlocked axes.
 void change_all_axes( Fl_Widget *o) {
-  int nchange = 0;
-  for( int i=0; i<nplots; i++) {
-    if( !cps[i]->lock_axes_button->value()) nchange++;
-  }
   for( int i=0; i<nplots; i++) {
     if( !cps[i]->lock_axes_button->value())
-      pws[i]->change_axes( nchange);
+      pws[i]->change_axes();
   }
 }
 
