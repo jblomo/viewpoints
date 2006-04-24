@@ -61,11 +61,11 @@ GLfloat plot_window::texenvcolor[ 4] = { 1, 1, 1, 1};
 GLuint plot_window::texnames[ 2] = { };
 int plot_window::textures_initialized = 0;
 
-
 //*****************************************************************
 // plot_window::plot_window( w, h) -- Constructor.  Increment
 // count of plot wndows, resize arrays, and set mode.
-plot_window::plot_window( int w, int h) : Fl_Gl_Window( w, h) 
+plot_window::plot_window( int w, int h) : Fl_Gl_Window( w, h),
+  do_reset_view_with_show( 0)
 {
   // Update count and invoke initialzation method
   count++;
@@ -77,6 +77,7 @@ plot_window::plot_window( int w, int h) : Fl_Gl_Window( w, h)
 // flags, set colors, resize arrays, and set mode.
 void plot_window::initialize()
 {
+  do_reset_view_with_show = 0;
   show_center_glyph = 0;
   r_selected=0.01, g_selected=0.01, b_selected=1.0;
 
@@ -118,13 +119,15 @@ void plot_window::choose_color_selected()
 // plot_window::change_axes() -- Change axes for a plot to new axes
 // which are far enough away so they are (probably) not duplicates
 // and (probably) don't skip any combinations.
-void plot_window::change_axes()
+// void plot_window::change_axes()
+void plot_window::change_axes( int nchange)
 {
-  int nchange = 0;
+  // int nchange = 0;
   for( int i=0; i<nplots; i++) {
     if( !cps[i]->lock_axes_button->value()) nchange++;
   }
   cout << "for window " << index << " nchange=" << nchange << endl;
+
   // this seems a little verbose.....
   int i=cp->varindex1->value();
   int j=cp->varindex2->value();
@@ -449,14 +452,14 @@ void plot_window::redraw_one_plot ()
 // plot_window::reset_view() -- Reset pan, zoom, and angle.
 void plot_window::reset_view()
 {
+  // Get third axis, if any
   int axis2 = (int)(cp->varindex3->mvalue()->user_data());
 
+  // Regenerate axis scales
   xscale = 2.0 / (wmax[0]-wmin[0]);
   yscale = 2.0 / (wmax[1]-wmin[1]);
-  if (axis2 != nvars)
-    zscale = 2.0 / (wmax[2]-wmin[2]);
-  else
-    zscale = 1.0;
+  if (axis2 != nvars) zscale = 2.0 / (wmax[2]-wmin[2]);
+  else zscale = 1.0;
 	
   // Initiallly, datapoints only span 0.8 of the window dimensions, 
   // which allows room around the edges for labels, tickmarks, 
@@ -465,26 +468,36 @@ void plot_window::reset_view()
   yscale *= initial_pscale; 
   zscale *= initial_pscale; 
 
+  // Get axis centers
   xcenter = (wmin[0]+wmax[0]) / 2.0;
   ycenter = (wmin[1]+wmax[1]) / 2.0;
-  if( axis2 != nvars)
-    zcenter = (wmin[2]+wmax[2]) / 2.0;
-  else
-    zcenter = 0.0;
+  if( axis2 != nvars) zcenter = (wmin[2]+wmax[2]) / 2.0;
+  else zcenter = 0.0;
 
+  // Get histogram scales
   xhscale = 1.0;
   yhscale = 1.0;
 
+  // Reset angle and stop any spin.
   angle = 0.0;
   cp->spin->value(0);
   cp->rot_slider->value(0.0);
   cp->dont_clear->value(0);
 
+  // Reset selection box and flag window as needing redraw
   reset_selection_box ();
   if( count ==1) {
     // color_array_from_selection (); // HUH????
   }
   needs_redraw = 1;
+
+  // Make sure the window is visible and resizable.  NOTE: For 
+  // some reason, it is necessary to turn this off when a new plot
+  // window array is created or the windows will not be resizable!
+  if( do_reset_view_with_show & !visible()) {
+    this->show();
+    this->resizable( this);
+  }
 }
 
 //*****************************************************************

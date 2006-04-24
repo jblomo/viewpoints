@@ -77,44 +77,47 @@ control_panel_window::control_panel_window(
   int x, int y, int w, int h) : Fl_Group( x, y, w, h)
 {}
 
+//*****************************************************************
+// control_panel_window::broadcast_change (*master_widget) -- 
 // broadcast an interaction from the master panel to all (unlocked) panels.
 void control_panel_window::broadcast_change (Fl_Widget *master_widget)
 {
-		const Fl_Group *master_panel = master_widget->parent();
-		assert(master_panel);
-		const int widget_index = master_panel->find(master_widget);
-		assert(widget_index >= 0 && widget_index < master_panel->children());
-		for (int i=0; i<nplots; i++)
-		{
-			Fl_Widget *slave_widget = cps[i]->child(widget_index);
-			assert(slave_widget);
-			// cout << "master_widget: label = " << master_widget->label() << " type = " << typeid(*master_widget).name() << endl;
-			// cout << "slave_widget:  label = " << slave_widget->label() <<  " type = " << typeid(*slave_widget).name() << endl;
-			// MCL XXX downcasting to dispatch on type is considered very bad form.  If value() were a virtual function of Fl_Widget
-			// (like callback() and do_callback() are) it would be cleaner.  Or we could bite the bullet and use one of the fltk
-			// publish/subscribe extensions.  that could clean up all sort of things.....
-			assert (typeid(master_widget) == typeid(slave_widget));
-			{
-				Fl_Button *gp, *lp;
-				if ((gp = dynamic_cast <Fl_Button*> (master_widget)) && (lp = dynamic_cast <Fl_Button*> (slave_widget)))
-					lp->value(gp->value());
-			}
-			{
-				Fl_Valuator *gp, *lp;
-				if ((gp = dynamic_cast <Fl_Valuator*> (master_widget)) && (lp = dynamic_cast <Fl_Valuator*> (slave_widget)))
-					lp->value(gp->value());
-			}
-			{
-				Fl_Choice *gp, *lp;
-				if ((gp = dynamic_cast <Fl_Choice*> (master_widget)) && (lp = dynamic_cast <Fl_Choice*> (slave_widget)))
-					lp->value(gp->value());
-			}
-			if (slave_widget->callback())
-			{
-				cout << ".. doing callback for widget " << widget_index << " in panel " << i << endl;
-				slave_widget->do_callback(slave_widget, cps[i]);
-			}
-		}
+  const Fl_Group *master_panel = master_widget->parent();
+  assert(master_panel);
+  const int widget_index = master_panel->find(master_widget);
+  assert(widget_index >= 0 && widget_index < master_panel->children());
+  for (int i=0; i<nplots; i++)
+  {
+    Fl_Widget *slave_widget = cps[i]->child(widget_index);
+    assert(slave_widget);
+    
+    // cout << "master_widget: label = " << master_widget->label() << " type = " << typeid(*master_widget).name() << endl;
+    // cout << "slave_widget:  label = " << slave_widget->label() <<  " type = " << typeid(*slave_widget).name() << endl;
+    // MCL XXX downcasting to dispatch on type is considered very bad form.  If value() were a virtual function of Fl_Widget
+    // (like callback() and do_callback() are) it would be cleaner.  Or we could bite the bullet and use one of the fltk
+    // publish/subscribe extensions.  that could clean up all sort of things.....
+    assert (typeid(master_widget) == typeid(slave_widget));
+    {
+      Fl_Button *gp, *lp;
+      if ((gp = dynamic_cast <Fl_Button*> (master_widget)) && (lp = dynamic_cast <Fl_Button*> (slave_widget)))
+        lp->value(gp->value());
+    }
+    {
+      Fl_Valuator *gp, *lp;
+      if ((gp = dynamic_cast <Fl_Valuator*> (master_widget)) && (lp = dynamic_cast <Fl_Valuator*> (slave_widget)))
+        lp->value(gp->value());
+    }
+    {
+      Fl_Choice *gp, *lp;
+      if ((gp = dynamic_cast <Fl_Choice*> (master_widget)) && (lp = dynamic_cast <Fl_Choice*> (slave_widget)))
+        lp->value(gp->value());
+    }
+    if (slave_widget->callback())
+    {
+      cout << ".. doing callback for widget " << widget_index << " in panel " << i << endl;
+      slave_widget->do_callback(slave_widget, cps[i]);
+    }
+  }
 }
 
 //*****************************************************************
@@ -291,7 +294,6 @@ void control_panel_window::make_widgets( control_panel_window *cpw)
   // Initialize positions for buttons
   int xpos2 = xpos;
   int ypos2 = ypos;
-  
   
   reset_view_button = b = 
     new Fl_Button(xpos2, ypos+=25, 20, 20, "reset view ");

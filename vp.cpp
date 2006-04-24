@@ -33,16 +33,11 @@
 //
 // Functions:
 //   usage() -- Print help information
-//   make_about_window( *o) -- DRaw the 'About' window
-//   load_data_file( *inFileSpec) -- Load and initialize data
-//   read_ascii_file_with_headers( *inFileSpec) -- Read ASCII
-//   read_binary_file_with_headers( *inFileSpec) -- Read binary
-//   write_binary_file_with_headers() -- Write binary file
-//   remove_trivial_columns() -- Remove identical data
-//   resize_global_arrays() -- Resize global arrays
+//   make_help_about_window( *o) -- DRaw the 'About' window
 //   create_main_control_panel( main_x, main_y, main_w, main_h,
 //     cWindowLabel) -- Create the main control panel window.
-//   create_plot_window_array( argc, argv, main_w) -- Plot windows
+//   create_broadcast_group() -- Create special panel under tabs
+//   manage_plot_window_array( *o) -- Manage plot window array
 //   make_main_menu_bar() -- Create main menu bar (unused)
 //   make_global_widgets() -- Controls for main control panel
 //   choose_color_deselected( *o) -- Color of nonselected points
@@ -74,10 +69,13 @@
 #include "global_definitions_vp.h"
 
 // Include associated headers and source code
+#include "data_file_manager.h"
 #include "plot_window.h"
 #include "control_panel_window.h"
+
 // MCL XXX the following is bogus.  We need separate compilation units.
 // and that means we need to deal with globals elegantly.
+#include "data_file_manager.cpp"
 #include "plot_window.cpp"
 #include "control_panel_window.cpp"
 
@@ -102,18 +100,12 @@ int number_of_screens = 0;
 const int MAX_HEADER_LENGTH = nvars_max*100;  // Length of header line
 const int MAX_HEADER_LINES = 2000;  // Number of header lines
 
-// Define and set default values for file reads
-int format=ASCII;   // default input file format
-int ordering=COLUMN_MAJOR;   // default input data ordering
-int nSkipHeaderLines = 1;  // Number of header lines to skip
-const int skip = 0;  // Number of columns to skip
+// These are needed to pass to manage_plot_window_array
+int global_argc;
+char **global_argv;
 
 // Define and set default border style for the plot windows
 int borderless=0;  // By default, use window manager borders
-
-// Initialize and set the default number of points specified
-// by the command line argument.
-int npoints_cmd_line = 0;   // NOTE: 0 means read to EOF.
 
 // Define variables to hold main control panel window, tabs 
 // widget, and virtual control panel positions.  Consolidated
@@ -126,6 +118,9 @@ const int cp_widget_x = 3, cp_widget_y = 50;
 const int cp_widget_h = 480;
 const int global_widgets_x = 10, global_widgets_y = 520;
 
+// Define class to hold data file manager
+data_file_manager dfm;
+
 // Define pointers to hold main control panel, main menu bar, and
 // any pop-up windows
 Fl_Window *main_control_panel;
@@ -134,18 +129,13 @@ Fl_Window *about_window;
 
 // Function definitions for the main method
 void usage();
-int load_data_file( char* inFileSpec);
-int read_ascii_file_with_headers( char* inFileSpec);
-int read_binary_file_with_headers( char* inFileSpec);
-void write_binary_file_with_headers();
-void remove_trivial_columns();
-void resize_global_arrays();
 void create_main_control_panel( 
   int main_x, int main_y, int main_w, int main_h,
   char* cWindowLabel);
-void create_plot_window_array( int argc, char **argv, int main_w);
+void create_broadcast_group();
+void manage_plot_window_array( Fl_Widget *o);
 void make_main_menu_bar();
-void make_about_window( Fl_Widget *o);
+void make_help_about_window( Fl_Widget *o);
 void make_global_widgets();
 void choose_color_deselected( Fl_Widget *o);
 void change_all_axes( Fl_Widget *o);
@@ -175,8 +165,8 @@ void usage()
 }
 
 //*****************************************************************
-// make_about_window( *o) -- Create the 'Help|About' window.
-void make_about_window( Fl_Widget *o)
+// make_help_about_window( *o) -- Create the 'Help|About' window.
+void make_help_about_window( Fl_Widget *o)
 {
   if( about_window != NULL) about_window->hide();
    
@@ -209,612 +199,6 @@ void make_about_window( Fl_Widget *o)
 }
 
 //*****************************************************************
-// load_data_file( inFileSpec) -- Read an ASCII or binary data 
-// file, resize arrays to allocate meomory, and set identity
-// array.  Returns 0 if successful.
-// MCL XXX - refactor this with read_data()
-int load_data_file( char* inFileSpec) 
-{
-  // Read data file and report results
-  cout << "Reading input data from <" << inFileSpec << ">" << endl;
-  int iReadStatus = 0;
-  if( format == BINARY) 
-    iReadStatus = read_binary_file_with_headers( inFileSpec);
-  else if( format == ASCII)
-    iReadStatus = read_ascii_file_with_headers( inFileSpec);
-
-  if( iReadStatus != 0) {
-    cout << "Problems reading file <" << inFileSpec << ">" << endl;
-    return -1;
-  }
-  else
-    cout << "Finished reading file <" << inFileSpec << ">" << endl;
-
-  // Remove trivial columns
-  remove_trivial_columns ();
-
-  // If only one or fewer records are available then quit before 
-  // something terrible happens!
-  if( npoints <= 1) {
-    cout << "Insufficient data, " << npoints
-         << " samples." << endl;
-    return -1;
-  }
-  else {
-    cout << "Loaded " << npoints
-         << " samples with " << nvars << " fields" << endl;
-  }
-  
-  // If we read a different number of points then we anticipated, 
-  // we resize and preserve.  Note this can take lot of time and 
-  // memory, temporarily.
-  if( npoints != npoints_cmd_line)
-    points.resizeAndPreserve( nvars, npoints);
-
-  // Resize global arrays
-  resize_global_arrays ();
-
-  // Load the identity array
-  cout << "Making identity array, a(i)=i" << endl;
-  for( int i=0; i<npoints; i++) identity( i)=i;
-  return 0;
-}
-
-//*****************************************************************
-// read_ascii_file_with_headers( inFileSpec) -- Open an ASCII file 
-// for input, read and discard the headers, read the data block, 
-// and close the file.  Returns 0 if successful.  Could become
-// part of the proposed class data_file.
-int read_ascii_file_with_headers( char* inFileSpec) 
-{
-  // Attempt to open input file and make sure it exists
-  ifstream inFile;
-  inFile.open( inFileSpec, ios::in);
-  if( inFile.bad() || !inFile.is_open()) {
-    cout << "read_ascii_file_with_headers:" << endl
-         << " -ERROR, couldn't open <" << inFileSpec
-         << ">" << endl;
-    return 1;
-  }
-  else {
-    cout << "read_ascii_file_with_headers:" << endl
-         << " -Opening <" << inFileSpec << ">" << endl;
-  }
-
-  // Loop: Read successive lines to find the last line of the 
-  // header block and the beginning of the data block. NOTE: Since 
-  // tellg() and seekg() don't seem to work properly with getline 
-  // with all compilers, this must be accomplished by keeping 
-  // track of lines explicitly.
-  std::string line = "";
-  std::string lastHeaderLine = "";
-  int nRead = 0, nHeaderLines = 0;
-  for( int i = 0; i < MAX_HEADER_LINES; i++) {
-    if( inFile.eof() != 0) break;
-
-    (void) getline( inFile, line, '\n');
-    nRead++;
-
-    // Skip empty lines without updating the LASTHEADERLINE buffer
-    if( line.length() == 0) {
-      nHeaderLines++;
-      continue;
-    }
-    
-    // If this line is supposed to be skipped or if it begins with 
-    // a comment character, skip it and update the LASTHEADERLINE 
-    // buffer
-    if( i < nSkipHeaderLines || 
-        line.length() == 0 || line.find_first_of( "!#%") == 0) {
-      lastHeaderLine = line;
-      nHeaderLines++;
-      continue;
-    }
-    break;
-  }
-  cout << " -Header block contains " << nHeaderLines 
-       << " header lines." << endl;
-
-  // Initialize the column labels
-  nvars = 0;
-  column_labels.erase( column_labels.begin(), column_labels.end());
-
-  // If no header lines were found or the LASTHEADERLINE buffer is
-  // empty, examine the first line of the data block to determine 
-  // the number of columns and generate a set of column labels.
-  if( nHeaderLines == 0 || lastHeaderLine.length() == 0) {
-    std::stringstream ss( line);
-    std::string buf;
-    while( ss >> buf) {
-      nvars++;
-      char cbuf[ 80];
-	  (void) sprintf(cbuf, "%d", nvars);
-      buf = "Column_";
-      buf.append( cbuf);
-      column_labels.push_back( buf);
-    }
-    nvars = column_labels.size();
-    cout << " -Generated " << nvars 
-         << " default column labels." << endl;
-  }
-
-  // ...otherwise, examine the LASTHEADERLINE buffer to extract 
-  // column labels 
-  else {
-
-    // Discard leading comment character, if any.  The rest of the
-    // line is assumed to contain column labels separated by 
-    // whitespace
-    if( lastHeaderLine.find_first_of( "!#%") == 0) 
-      lastHeaderLine.erase( 0, 1);
-      
-    // Loop: Insert the input string into a stream, define a 
-    // buffer, read successive labels into the buffer and load 
-    // them into the array of column labels
-    std::stringstream ss( lastHeaderLine);
-    std::string buf;
-    while( ss >> buf) column_labels.push_back(buf);
-    nvars = column_labels.size();
-    cout << " -Extracted " << nvars 
-         << " column labels." << endl;
-  }
-
-  // Examine the column labels for errors and report results
-  if( nvars > nvars_max) {
-    cerr << " -ERROR, too many columns, "
-         << "increase nvars_max and recompile"
-         << endl;
-    inFile.close();
-    return 1;
-  }
-  
-  // Add a final column label that says 'nothing'.
-  column_labels.push_back( string( "-nothing-"));
-  cout << " -column_labels:";
-  int nLineLength = 17;
-  for( unsigned int i=0; i < column_labels.size(); i++ ) {
-    nLineLength += 1+column_labels[ i].length();
-    if( nLineLength > 80) {
-      cout << endl << "   ";
-      nLineLength = 4 + column_labels[ i].length();
-    }
-    cout << " " << column_labels[ i];
-  }
-  cout << endl;
-  cout << " -Examined header of <" << inFileSpec << ">," << endl
-       << "  There should be " << nvars 
-       << " fields (columns) per record (row)" << endl;
-
-  // Now we know the number of variables (nvars), so if we know the 
-  // number of points (e.g. from the command line, we can size the 
-  // main points array once and for all, and not waste memory.
-  if( npoints_cmd_line > 0) npoints = npoints_cmd_line;
-  else npoints = MAXPOINTS;
-  points.resize( nvars, npoints);
-
-  // Loop: Read file
-  int nSkip = 0, i = 0;
-  unsigned uFirst = 1;
-  while( !inFile.eof() && i<npoints) {
-  
-    // Get next line and ignore empty lines and coment lines
-    if( !uFirst) {
-      (void) getline( inFile, line, '\n');
-      if( inFile.eof()) break;  // To make accounting work right
-      nRead++;
-    }
-    DEBUG (cout << "line is: " << line << endl);
-
-    // Skip blank lines and comment lines
-    if( line.length() == 0 || line.find_first_of( "!#%") == 0) {
-      nSkip++;
-      uFirst = 0;
-      continue;
-    }
-    uFirst = 0;
-
-    // Loop: Insert the string into a stream and read it
-    std::stringstream ss(line); 
-    unsigned isBadData = 0;
-	for( int j=0; j<nvars; j++) {
-      double x;
-      ss >> x;
-      points( j, i) = (float) x;
-
-      // FIX THIS MISSING DATA STUFF!! IT IS BROKEN.
-      if( ss.eof() && j<nvars-1) {
-        cerr << " -ERROR, not enough data on line " << i+2
-             << ", aborting!" << endl;
-        inFile.close();
-        return 1;
-      }
-      
-      // Check for unreadable data and flag line to be skipped
-      if( !ss.good() && j<nvars-1) {
-        cerr << " -WARNING, unreadable data "
-             << "(probably non-numeric) at line " << i+1 
-             << " column " << j+1 << "," << endl
-             << "  skipping entire line." << endl;
-        cerr << "  <" << line.c_str() << ">" << endl;
-        isBadData = 1;
-        break;
-      }
-      DEBUG (cout << "points(" << j << "," << i << ") = " << points(j,i) << endl);
-    }
-
-    // Loop: Check for bad data flags and flag line to be skipped
-    for( int j=0; j<nvars; j++) {
-      if( points(j,i) == -9999) {
-        cerr << " -WARNING, bad data (-9999) at line " << i 
-             << ", column " << j << " - skipping entire line\n";
-        isBadData = 1;
-        break;
-      }
-    }
-
-    // If data were good, increment number of lines
-    if( !isBadData) {
-      i++;
-      if( (i+1)%10000 == 0)
-        cerr << "  Read " << i+1 << " lines." << endl;
-    }
-  }
-  
-  // Update NPOINTS and report results
-  npoints = i;
-  cout << " -Finished reading data block with " << npoints
-       << " records." << endl;
-  cout << "  " << nHeaderLines 
-       << " header + " << i 
-       << " data + " << nSkip 
-       << " skipped lines = " << nRead << " total." << endl;
-
-  // Close input file, report results of file read operation
-  // to the console, and return success
-  inFile.close();
-  return 0;
-}
-
-//*****************************************************************
-// read_binary_file_with_headers( inFileSpec) -- Open and read a 
-// binary file.  The file is asssumed to consist6s of an ASCII
-// header with column information, terminated by a newline,
-// followed by a block of binary data.  The only viable way to 
-// read this seems to be with conventional C-style methods, fopen, 
-// fgets, fread, feof, and fclose, from <stdio>.  Returns 0 if 
-// successful.  Could become part of the proposed class data_file.
-int read_binary_file_with_headers( char* inFileSpec) 
-{
-  // Attempt to open input file and make sure it exists
-  FILE * pInFile;
-  pInFile = fopen( inFileSpec, "rb");
-  if( pInFile == NULL) {
-    cout << "read_binary_file_with_headers: ERROR" << endl
-         << " -Couldn't open binary file <" << inFileSpec 
-         << ">" << endl;
-    return 1;
-  }
-  else {
-    cout << "read_binary_file_with_headers:" << endl
-         << " -Opening binary file <" << inFileSpec 
-         << ">" << endl;
-  }
-
-  // Use fgets to read a newline-terminated string of characters, 
-  // test to make sure it wasn't too long, then load it into a
-  // string of header information.
-  char cBuf[ MAX_HEADER_LENGTH];
-  fgets( cBuf, MAX_HEADER_LENGTH, pInFile);
-  if( strlen( cBuf) >= (int)MAX_HEADER_LENGTH) {
-    cout << " -ERROR: Header string is too long, "
-         << "increase MAX_HEADER_LENGTH and recompile"
-         << endl;
-    fclose( pInFile);
-    return 1;
-  }
-  std::string line;
-  line.assign( cBuf);
-
-  // Initialize the column labels
-  nvars = 0;
-  column_labels.erase( column_labels.begin(), column_labels.end());
-
-  // Loop: unpack the string of header information to obtain
-  // column labels.
-  std::stringstream ss( line);
-  std::string buf;
-  while( ss >> buf) column_labels.push_back(buf);
-
-  // Examine and report content of header
-  nvars = column_labels.size();
-  if( nvars > nvars_max) {
-    cerr << " -ERROR: Too many columns, "
-         << "increase nvars_max and recompile"
-         << endl;
-    // inFile.close();
-    fclose( pInFile);
-    return 1;
-  }
-  column_labels.push_back(string("-nothing-"));
-  cout << "column_labels = ";
-  for( unsigned int i=0; i < column_labels.size(); i++ ) {
-    cout << column_labels[i] << " ";
-  }  
-  cout << endl;
-  cout << " -About to read a binary file with " << nvars
-       << " fields (columns) per record (row)" << endl;
-
-  // Now we know the number of variables (nvars), so if we know the 
-  // number of points (e.g. from the command line) we can size the 
-  // main points array once and for all, and not waste memory.
-  if( npoints_cmd_line > 0) npoints = npoints_cmd_line;
-  else npoints = MAXPOINTS;
-  points.resize( nvars, npoints);
-  
-  // Warn if the input buffer is non-contiguous.
-  if( !points.isStorageContiguous()) {
-    cerr << "read_binary_file_with_headers: WARNING" << endl
-         << " -Input buffer appears to be non-contigous."
-         << endl;
-    // return 1;
-  }
-
-  // Assert possible types or ordering	
-  assert( ordering == COLUMN_MAJOR || ordering == ROW_MAJOR);
-
-  // Read file in Column Major order
-  if( ordering == COLUMN_MAJOR) {
-    cout << " -Attempting to read binary file in"
-         << " column-major order" << endl;
-    blitz::Array<float,1> vars( nvars);
-    blitz::Range NVARS( 0, nvars-1);
-    if( !vars.isStorageContiguous()) {
-      cerr << " -ERROR: Tried to read into a noncontiguous buffer."
-           << endl;
-      // inFile.close();
-      fclose( pInFile);
-      return -1;
-    }
-
-    // Loop: Read successive rows from file
-    int i;
-    for( i=0; i<npoints; i++) {
-    
-      // Read the next NVAR values using conventional C-style fread.
-      unsigned int ret = 
-        fread( (void *)(vars.data()), sizeof(float), nvars, pInFile);
-      
-      // Check for normal termination
-      if( ret == 0 || feof( pInFile)) {
-        cerr << " -Finished reading file at row[ " << i
-             << "] with ret, inFile.eof() = ( " << ret
-             << ", " << feof( pInFile) << ")" << endl;
-        break;
-      }
-      
-      // If wrong number of values was returned, report error.
-      if( ret != (unsigned int)nvars) {
-        cerr << " -ERROR reading row[ " << i+1 << "], "
-             << "returned values " << ret 
-             << " NE number of variables " << nvars << endl;
-        fclose( pInFile);
-        return 1;
-      }
-
-      // Load data array and report progress
-      points( NVARS,i) = vars;
-      if( i>0 && (i%10000 == 0)) 
-        cout << "  Reading row " << i << endl;
-    }
-
-    // Report success
-    cout << " -Finished reading " << i << " rows." << endl;
-    npoints = i;
-  }
-
-  // Read file in Row Major order
-  if( ordering == ROW_MAJOR) {
-    cout << " -Attempting to read binary file in"
-         << "row-major order with nvars=" << nvars
-         << ", npoints=" << npoints << endl;
-    if( npoints_cmd_line == 0) {
-      cerr << " -ERROR, --npoints must be specified for"
-           << " --inputformat=rowmajor"
-           << endl;
-      fclose( pInFile);
-      return 1;
-    }
-    else {
-      npoints = npoints_cmd_line;
-    }
-
-    blitz::Array<float,1> vars( npoints);
-    blitz::Range NPTS( 0, npoints-1);
-    if( !vars.isStorageContiguous()) {
-      cerr << " -ERROR, Tried to read into noncontiguous buffer."
-           << endl;
-      fclose( pInFile);
-      return -1;
-    }
-
-    // Loop: Read successive columns from file
-    int i;
-    for( i=0; i<nvars; i++) {
-
-      // Read the next NVAR values using conventional C-style fread.
-      unsigned int ret = 
-        fread( (void *)(vars.data()), sizeof(float), nvars, pInFile);
-
-      // Check for normal termination
-      if( ret == 0 || feof( pInFile)) {
-        cerr << " -Finished reading file at row[ " << i
-             << "] with ret, inFile.eof() = ( " << ret
-             << ", " << feof( pInFile) << ")" << endl;
-        break;
-      }
-      
-      // If wrong number of values was returned, report error.
-      if( ret != (unsigned int)nvars) {
-        cerr << " -ERROR reading column[ " << i+1 << "], "
-             << "returned values " << ret 
-             << " NE number of variables " << nvars << endl;
-        fclose( pInFile);
-        return 1;
-      }
-
-      // Load data array and report progress
-      points( i, NPTS) = vars( NPTS);
-      cout << "  Reading column " << i+1 << endl;
-    }
-    
-    // Report success
-    cout << " -Finished reading " << i+i
-         << " columns" << endl;
-  }
-  
-  // Close input file and terminate
-  fclose( pInFile);
-  return 0;
-}
-
-//*****************************************************************
-// write_binary_file_with_headers() -- Open and write a binary 
-// data file.  File will consist of an ASCII header with column 
-// names terminated by a newline, followed by a long block of 
-// binary data.  Could become part of the proposed class
-// data_file.
-void write_binary_file_with_headers()
-{
-  // Obtain file name from FLTK member function
-  char *output_file_name = 
-    fl_file_chooser( 
-      "write binary output to file", NULL, NULL, 0);
-
-  // If a file name was specified, create and write file
-  if( output_file_name) {
-    blitz::Array<float,1> vars( nvars);
-    blitz::Range NVARS( 0, nvars-1);
-    
-    // Open output stream and report any problems
-    ofstream os;
-    os.open( 
-      output_file_name, 
-      ios::out|ios::trunc|ios::binary);
-      // fstream::out | fstream::trunc | fstream::binary);
-    if( os.fail()) {
-      cerr << "Error opening" << output_file_name 
-           << "for writing" << endl;
-      return;
-    }
-    
-    // Loop: Write column labels
-    for( int i=0; i < nvars; i++ ) {
-      os << column_labels[ i] << " ";
-    }  
-    os << endl;
-    
-    // Loop: Write data and report problems
-    int nBlockSize = nvars*sizeof(float);
-    for( int i=0; i<npoints; i++) {
-      vars = points( NVARS, i);
-      os.write( 
-        (const char*) vars.data(), nBlockSize);
-      if( os.fail()) {
-        cerr << "Error writing to" << output_file_name << endl;
-        return;
-      }
-    }
-    
-    // Report results
-    cout << "Finished writing " << npoints
-         << " rows with block_size " << nBlockSize << endl;
-  }
-}
-
-//*****************************************************************
-// remove_trivial_columns -- Examine an array of data and remove
-// columns for which all values are identical.  Part of the read
-// process.  Could become part of the proposed class data_file.
-void remove_trivial_columns()
-{
-  blitz::Range NPTS( 0, npoints-1);
-  int nvars_save = nvars;
-  int current=0;
-
-  // Define buffers to record removed columns
-  int iRemoved = 0;
-  vector <int> removed_columns;
-
-  // Loop: Examine the data array column by colums and remove any
-  // columns for which all values are identical.
-  while( current < nvars-1) {
-    if( blitz::all( points(current,NPTS) == points(current,0))) {
-      cout << "skipping trivial column " 
-           << column_labels[ current] << endl;
-      for( int j=current; j<nvars-1; j++) {
-        points( j, NPTS) = points( j+1, NPTS);
-        column_labels[ j] = column_labels[ j+1];
-      }
-      removed_columns.push_back( iRemoved);
-      nvars--;
-      assert( nvars>0);
-    }
-    else {
-      current++;
-    }
-    iRemoved++;
-  }
-
-  // Finish resizing array and column labels and report results
-  if( nvars != nvars_save) {
-      
-    // Report what columns were removed
-    cout << "Removed " << nvars_save - nvars << "columns:";
-    for( unsigned int i=0; i<removed_columns.size(); i++) {
-      int nLineLength = 8;
-      nLineLength += 1+column_labels[ i].length();
-      if( nLineLength > 80) {
-        cout << endl << "   ";
-        nLineLength = 2 + column_labels[ i].length();
-      }
-      cout << " " << column_labels[ i];
-    }
-    cout << endl;
-    
-    // Resize array and report results
-    // XXX need to trim column_labels to size nvars+1 
-    points.resizeAndPreserve( nvars, npoints);
-    column_labels[ nvars] = string( "-nothing-");
-    cout << "new data array has " << nvars
-         << " columns." << endl;
-  }
-}
-
-//*****************************************************************
-// resize_global_arrays -- Resize various all the global arrays 
-// used store raw, sorted, and selected data.  Could become part 
-// of the proposed class data_file.
-void resize_global_arrays()
-{
-  // points.resizeAndPreserve(nvars,npoints);	
-
-  ranked_points.resize( nvars, npoints);
-
-  ranked.resize( nvars);
-  ranked = 0;  // initially, no ranking has been done.
-
-  tmp_points.resize(npoints); // for sort
-
-  texture_coords.resize( npoints);
-  identity.resize( npoints);
-  newly_selected.resize( npoints);
-  selected.resize( npoints);
-  previously_selected.resize( npoints);
-
-  selected = 0;
-}
-
-//*****************************************************************
 // create_main_control_panel( main_x, main_y, main_w, main_h,
 // cWindowLabel) -- Create the main control panel window.
 void create_main_control_panel( 
@@ -843,15 +227,14 @@ void create_main_control_panel(
   cpt->labelsize( 10);
 
   // Done creating main control panel (except for the tabbed 
-  // sub-panels created by create_plot_window_array)
+  // sub-panels created by manage_plot_window_array)
   main_control_panel->end();
-
-
 }
 
-// Create a special panel (really a group under a tab) with label "+"
-// this group's widgets effect all the others
-// (unless a plot's tab is "locked" - TBI).
+//*****************************************************************
+// create_broadcast_group () -- Create a special panel (really a 
+// group under a tab) with label "+" this group's widgets effect 
+// all the others (unless a plot's tab is "locked" - TBI).
 // MCL XXX should this be a method of control_panel_window?
 //  should it be a singleton?
 void create_broadcast_group ()
@@ -879,38 +262,67 @@ void create_broadcast_group ()
 }
 
 //*****************************************************************
-// create_plot_window_array( argc, argv, main_w) -- Create array 
-// of plot windows with their associated tabs.  As of 10-APR-2006,
-// this includes a preliminary version of a test to suppress 
-// plots if no data are available.
-void create_plot_window_array( int argc, char **argv, int main_w)
+// manage_plot_window_array( o) -- General-purpose method to
+// create, manage, and reload the plot window array.  
+// NOTE: No attempt has been 
+// made to optimize this method for speed!  It saves existing
+// axis information, deletes old tabs, creates new tabs, restores
+// existing axis information, and loads new data into new plot 
+// windows. 
+void manage_plot_window_array( Fl_Widget *o)
 {
+  // Get widget pathname (not used, but left here in case it is
+  // needed)
+  // char itemPathName[ 80];
+  // int iResult = ((Fl_Menu_*) o)->item_pathname( itemPathName, 80);
+
+  // Get the widget title.  If none was specified, assume this is
+  // the first call to this method and initialize nplots to 0.
+  char title[ 80];
+  strcpy( title, "");
+  if( o != NULL) strcpy( title, ((Fl_Menu_*) o)->text());
+  else nplots = 0;
+
+  // Revise size of plot array
+  if( strncmp( title, "Add Row ", 8) == 0) nrows++;
+  else if( strncmp( title, "Add Colu", 8) == 0) ncols++;
+  else if( strncmp( title, "Remove R", 8) == 0 && nrows>1) nrows--;
+  else if( strncmp( title, "Remove C", 8) == 0 && ncols>1) ncols--;
+  int nplots_new=nrows*ncols;
+  
+  // If nothing changed then quit? 
+  if( nplots_new == nplots) return;
+
+  // Record old and new values of nplots
+  int nplots_old=nplots;
+  nplots = nplots_new;
+
+  // Save old variable indices and normalization styles.  
+  // QUESTION: is this always safe when nplots_old is zero?
+  int ivar_old[ nplots_old];
+  int jvar_old[ nplots_old];
+  int kvar_old[ nplots_old];
+  int x_normalization_style_old[ nplots_old];
+  int y_normalization_style_old[ nplots_old];
+  int z_normalization_style_old[ nplots_old];
+  for( int i=0; i<nplots_old; i++) {
+    ivar_old[ i] = cps[i]->varindex1->value();
+    jvar_old[ i] = cps[i]->varindex2->value();
+    kvar_old[ i] = cps[i]->varindex3->value();
+    x_normalization_style_old[ i] =
+      cps[i]->x_normalization_style->value();
+    y_normalization_style_old[ i] =
+      cps[i]->y_normalization_style->value();
+    z_normalization_style_old[ i] =
+      cps[i]->z_normalization_style->value();
+  }
+  
+  // Clear children of tab widget to delete old tabs
+  cpt->clear();
+
   // Create and add the virtual sub-panels, each group under a 
   // tab, one per plot.
   for( int i=0; i<nplots; i++) {
-
-    // Create a label for this tab
-    ostringstream oss;
-    oss << "" << i+1;
-    string labstr = oss.str();
-
-    // Set pointer to the current group to the tab widget defined 
-    // by create_control_panel and add a new virtual control panel
-    // under this tab widget
-    Fl_Group::current(cpt);	
-    cps[i] = new control_panel_window( cp_widget_x, cp_widget_y, main_w - 6, cp_widget_h);
-    cps[i]->copy_label( labstr.c_str());
-    cps[i]->labelsize( 10);
-    cps[i]->resizable( cps[i]);
-    cps[i]->make_widgets( cps[i]);
-
-    // End the group here so that we can create new plot windows 
-    // at the top level, then set the pointer to the current group
-    // to the top level.
-    cps[i]->end();
-    Fl_Group::current(0); 
-
-    // Create plotting window i
     int row = i/ncols;
     int col = i%ncols;
 
@@ -934,7 +346,31 @@ void create_plot_window_array( int argc, char **argv, int main_w)
       top_safe + top_frame + 
       row * (pw_h + top_frame + bottom_frame);
 
-    pws[i] = new plot_window( pw_w, pw_h);
+    // Create a label for this tab
+    ostringstream oss;
+    oss << "" << i+1;
+    string labstr = oss.str();
+
+    // Set pointer to the current group to the tab widget defined 
+    // by create_control_panel and add a new virtual control panel
+    // under this tab widget
+    Fl_Group::current(cpt);	
+    cps[i] = new control_panel_window( 
+      cp_widget_x, cp_widget_y, main_w - 6, cp_widget_h);
+    cps[i]->copy_label( labstr.c_str());
+    cps[i]->labelsize( 10);
+    cps[i]->resizable( cps[i]);
+    cps[i]->make_widgets( cps[i]);
+
+    // End the group here so that we can create new plot windows 
+    // at the top level, then set the pointer to the current group
+    // to the top level.
+    cps[i]->end();
+    Fl_Group::current(0); 
+
+    // Create plotting window i
+    if( i>=nplots_old) pws[i] = new plot_window( pw_w, pw_h);
+    else pws[ i]->size( pw_w, pw_h);
     pws[i]->copy_label( labstr.c_str());
     pws[i]->position(pw_x, pw_y);
     pws[i]->row = row; 
@@ -946,20 +382,38 @@ void create_plot_window_array( int argc, char **argv, int main_w)
     cps[i]->pw = pws[i];
     pws[i]->cp = cps[i];
 
-    // Determine which variables to plot, initially
+    // Determine which variables to plot in new panels.
     int ivar, jvar;
     if( i==0) {
-      ivar = 0; jvar = 1;
-
-      // Initially the first plot's tab is shown, and its axes 
-      // are locked.
-      cps[i]->lock_axes_button->value(1);
-      cps[i]->show();	// ???
-    } else {
-      plot_window::upper_triangle_incr( ivar, jvar, nvars);
+      ivar = 0;
+      jvar = 1;
+      
+      // When the plot window array is being created, the first 
+      // plot's tab is shown and its axes are locked.
+      if( o == NULL) {
+        cps[i]->lock_axes_button->value(1);
+        cps[i]->hide();	
+      }
     }
-    cps[i]->varindex1->value(ivar);  
-    cps[i]->varindex2->value(jvar);  
+    else plot_window::upper_triangle_incr( ivar, jvar, nvars);
+
+    // Restore prior variable indices and normalization styles 
+    // for old panels or set variable indices for new panels
+    if( i<nplots_old) {
+      cps[i]->varindex1->value( ivar_old[i]);  
+      cps[i]->varindex2->value( jvar_old[i]);
+      cps[i]->varindex3->value( kvar_old[i]);
+      cps[i]->x_normalization_style->value( 
+        x_normalization_style_old[i]);  
+      cps[i]->y_normalization_style->value( 
+        y_normalization_style_old[i]);  
+      cps[i]->z_normalization_style->value( 
+        z_normalization_style_old[i]);  
+    }
+    else {
+      cps[i]->varindex1->value(ivar);  
+      cps[i]->varindex2->value(jvar);  
+    } 
 
     // Could put first of two tests for npoints <=1 here
     if( npoints > 1) {
@@ -971,41 +425,80 @@ void create_plot_window_array( int argc, char **argv, int main_w)
 
     if( borderless) pws[i]->border(0);
 
-    // Could put second of two tests for npoints <=1 here
-    if( npoints > 1) pws[i]->show( argc, argv);
+    // Make sure the window has been shown and is resizable
+    // NOTE: pws[i]->show() is not sufficient when windows
+    // are created.
+    pws[i]->show( global_argc, global_argv);
     pws[i]->resizable( pws[i]);
 
+    // Turn on show capability of plot_window::reset_view();
+    pws[i]->do_reset_view_with_show = 1;
   }
-
-  create_broadcast_group ();
+  
+  // Get rid of any superfluous plot windows
+  if( nplots < nplots_old)
+    for( int i=nplots; i<nplots_old; i++) pws[i]->hide();
 }
 
 //*****************************************************************
-// make_main_menu_bar() -- Make main menu bar
+// make_main_menu_bar() -- Make main menu bar.  NOTE: because the
+// FLTK documentation recommends against manipulating the
+// Fl_Menu_Item array directly, this is done via the add() method 
+// of Fl_Menu_.
 void make_main_menu_bar()
 {
-  // Instantiate Fl_Menu_Bar object
+  // Instantiate the Fl_Menu_Bar object
   main_menu_bar =
     new Fl_Menu_Bar( 0, 0, main_w, 25);
 
-  // Add menu items
+  // Add File menu items
   main_menu_bar->add( 
-    "File/Open ASCII file", 0, 
+    "File/Read ASCII file   ", 0, 
     (Fl_Callback *) read_data, (void*) ASCII);
   main_menu_bar->add( 
-    "File/Open binary file", 0, 
+    "File/Read binary file   ", 0, 
     (Fl_Callback *) read_data, (void*) BINARY);
   main_menu_bar->add( 
-    "File/Write binary file", 0, 
+    "File/Write binary file   ", 0, 
     (Fl_Callback *) write_data, 0, FL_MENU_DIVIDER);
   main_menu_bar->add( 
-    "File/Quit", 0, (Fl_Callback *) exit);
+    "File/Quit   ", 0, (Fl_Callback *) exit);
+
+  // Add View menu items
   main_menu_bar->add( 
-    "View/Reload Plots", 0, 
+    "View/Add Row   ", 0, 
+    (Fl_Callback *) manage_plot_window_array);
+  main_menu_bar->add( 
+    "View/Add Column   ", 0, 
+    (Fl_Callback *) manage_plot_window_array);
+  main_menu_bar->add( 
+    "View/Remove Row   ", 0, 
+    (Fl_Callback *) manage_plot_window_array);
+  main_menu_bar->add( 
+    "View/Remove Column   ", 0, 
+    (Fl_Callback *) manage_plot_window_array, 0, FL_MENU_DIVIDER);
+  main_menu_bar->add( 
+    "View/Reload Plots   ", 0, 
     (Fl_Callback *) reload_plot_window_array);
-  // main_menu_bar->add( "Help", 0, 0, 0, FL_MENU_INACTIVE);
+
+  // Add Help menu items
   main_menu_bar->add( 
-    "Help/About", 0, (Fl_Callback *) make_about_window);
+    "Help/About   ", 0, (Fl_Callback *) make_help_about_window);
+  
+  // Set colors, fonts, etc
+  main_menu_bar->color( FL_BACKGROUND_COLOR);
+  main_menu_bar->textfont( FL_HELVETICA);
+  main_menu_bar->textsize( 14);
+  main_menu_bar->down_box( FL_FLAT_BOX);
+  main_menu_bar->selection_color( FL_SELECTION_COLOR);
+  
+  // This example is included to illustrate how awkward it can  
+  // be to access elements of the Fl_Menu_Item array directly.
+  // for( int i=0; i<main_menu_bar->size(); i++) {
+  //   Fl_Menu_Item *pMenuItem = 
+  //     (Fl_Menu_Item*) &(main_menu_bar->menu()[i]);
+  //   pMenuItem->labelsize(32);
+  // }
 }
 
 //*****************************************************************
@@ -1068,11 +561,11 @@ void make_global_widgets()
   b->callback( plot_window::delete_selection);
 
   // Button(6,1): Write binary data file
-  write_data_button = b = 
-    new Fl_Button( xpos, ypos+=25, 20, 20, "write data");
-  b->align( FL_ALIGN_RIGHT); 
-  b->selection_color( FL_BLUE); 
-  b->callback( write_data);
+  // write_data_button = b = 
+  //   new Fl_Button( xpos, ypos+=25, 20, 20, "write data");
+  // b->align( FL_ALIGN_RIGHT); 
+  // b->selection_color( FL_BLUE); 
+  // b->callback( write_data);
 
   // Advance to column 2
   xpos = xpos1 + 150; ypos = ypos1;
@@ -1106,19 +599,19 @@ void make_global_widgets()
   b->type( FL_TOGGLE_BUTTON); 
   b->value( 0);
 
-  // Button(5,1): Reload plot window array
-  read_data_button = b = 
+  // Button(5,2): Reload plot window array
+  reload_plot_window_array_button = b = 
     new Fl_Button( xpos, ypos+=25, 20, 20, "reload plots");
   b->align( FL_ALIGN_RIGHT); 
   b->selection_color( FL_BLUE); 
   b->callback( reload_plot_window_array);
 
-  // Button(6,1): Read ASCII data file
-  read_data_button = b = 
-    new Fl_Button( xpos, ypos+=25, 20, 20, "read data");
-  b->align( FL_ALIGN_RIGHT); 
-  b->selection_color( FL_BLUE); 
-  b->callback( read_data);
+  // Button(6,2): Read ASCII data file
+  // read_data_button = b = 
+  //   new Fl_Button( xpos, ypos+=25, 20, 20, "read data");
+  // b->align( FL_ALIGN_RIGHT); 
+  // b->selection_color( FL_BLUE); 
+  // b->callback( read_data);
 }
 
 //*****************************************************************
@@ -1141,7 +634,7 @@ void choose_color_deselected( Fl_Widget *o)
 void change_all_axes( Fl_Widget *o) {
   for( int i=0; i<nplots; i++) {
     if( !cps[i]->lock_axes_button->value())
-      pws[i]->change_axes();
+      pws[i]->change_axes( 0);
   }
 }
 
@@ -1171,7 +664,7 @@ void npoints_changed( Fl_Widget *o)
 // panel.  Invokes write method to write a binary data file.
 void write_data( Fl_Widget *o)
 {
-  write_binary_file_with_headers();
+  dfm.write_binary_file_with_headers();
 }
 
 //*****************************************************************
@@ -1188,7 +681,7 @@ void reset_all_plots()
 // reload_plot_window_array( o) -- Check to make sure data are
 // available, then delete old tabs, create new tabs, and load data
 // into the associated plot windows.
-// MCL - XXX refactor this with create_plot_window_array()
+// MCL - XXX refactor this with manage_plot_window_array()
 void reload_plot_window_array( Fl_Widget *o)
 {
   // Check to make sure data are available
@@ -1309,49 +802,58 @@ void reload_plot_window_array( Fl_Widget *o)
 void read_data( Fl_Widget* o, void* user_data)
 {
   // Evaluate user_data to get file format
-  if( (int) user_data == BINARY) format = BINARY;
-  else format = ASCII;
+  if( (int) user_data == BINARY) dfm.format = BINARY;
+  else dfm.format = ASCII;
 
   // Invoke the FLTK member function, fl_file_chooser, to get the
-  // file name, then invoke read_ascii_file_with_headers or
-  // read_binary_file_with_headers to read an ASCII or BINARY file
+  // file name.
   int iReadStatus = 0;
   char *inFileSpec = "";
-  if( format == ASCII) {
+  if( dfm.format == ASCII) {
     inFileSpec = 
       fl_file_chooser( 
         "read ASCII input from file", NULL, NULL, 0);
-
-    cout << "Reading ASCII data from <" << inFileSpec 
-         << ">" << endl;
-    iReadStatus = read_ascii_file_with_headers( inFileSpec);
+    if( inFileSpec != NULL)
+      cout << "Reading ASCII data from <" << inFileSpec 
+           << ">" << endl;
   }
   else {
     inFileSpec = 
       fl_file_chooser( 
         "read binary input from file", NULL, NULL, 0);
-
-    cout << "Reading binary data from <" << inFileSpec 
-         << ">" << endl;
-    iReadStatus = read_binary_file_with_headers( inFileSpec);
+    if( inFileSpec != NULL)
+      cout << "Reading binary data from <" << inFileSpec 
+           << ">" << endl;
   }
 
-  // Report results of the read operation
-  if( iReadStatus != 0) {
-      cout << "Problems reading file <" << inFileSpec << ">" << endl;
-      return;
+  // If no file was specified then quit
+  if( inFileSpec == NULL) {
+    cout << "No input file was specified" << endl;
+    return;
   }
-  else
-    cout << "Finished reading file <" << inFileSpec << ">" << endl;
 
-  // Remove trivial columns
-  remove_trivial_columns ();
+  // Since this is presumably a new file, reinitialize the data 
+  // file manager!
+  dfm.initialize();
+
+  // KLUDGE: Re-evaluate user_data to get file format again
+  // if( (int) user_data == BINARY) dfm.format = BINARY;
+  // else dfm.format = ASCII;
+
+  // Invoke the load_data_file( inFileSpec) method of the data 
+  // file manager to read an ASCII or BINARY file.  NOTE: Error
+  // reporting is handled by the method itself.
+  iReadStatus = dfm.load_data_file( inFileSpec);
+  // if( iReadStatus != 0) return;
 
   // If only one or fewer records are available then quit before 
   // something terrible happens!
   if( npoints <= 1) {
     cout << "Insufficient data, " << npoints
-         << " samples." << endl;
+         << " samples.  Loading default data." << endl;
+    dfm.create_default_data( 10);
+    npoints_slider->bounds(1,npoints);
+    npoints_slider->value(npoints);
     return;
   }
   else {
@@ -1359,22 +861,12 @@ void read_data( Fl_Widget* o, void* user_data)
          << " samples with " << nvars << " fields" << endl;
   }
   
-  // If we read a different number of points then we anticipated, 
-  // we resize and preserve.  Note this can take lot of time and 
-  // memory, temporarily.
-  if( npoints != npoints_cmd_line)
-    points.resizeAndPreserve( nvars, npoints);
-
-  // Resize global arrays
-  resize_global_arrays ();
-
-  // Load the identity array
-  cout << "Making identity array, a(i)=i" << endl;
-  for( int i=0; i<npoints; i++) identity( i)=i;
-
   // Resize slider
   npoints_slider->bounds(1,npoints);
   npoints_slider->value(npoints);
+
+  // Fewer points -> bigger starting pointsize
+  pointsize = max( 1.0, 6.0 - (int) log10f( (float) npoints));
 
   // Clear children of tab widget and reload plot window array
   // cpt->clear();  // Now done by reload_plot_window_array( o)
@@ -1445,12 +937,6 @@ int main( int argc, char **argv)
   //   cout << "argv[ " << i << "]: <" << argv[ i] << ">" << endl;
   // }
 
-  // DIAGNOSTIC
-  // if( argc <= 1) {
-  //   argc = 4;
-  //   strcpy( *argv, "vp -f b d3d_10000.bin");
-  // }
-
   // Define structure of command-line options
   static struct option long_options[] = {
     { "format", required_argument, 0, 'f'},
@@ -1465,6 +951,9 @@ int main( int argc, char **argv)
     { "help", no_argument, 0, 'h'},
     { 0, 0, 0, 0}
   };
+
+  // Initialize the data file manager, just in case
+  dfm.initialize();
 
   // Loop: Invoke GETOPT_LONG to parse successive command-line 
   // arguments (Windows version of GETOPT_LONG is implemented in 
@@ -1485,10 +974,8 @@ int main( int argc, char **argv)
 
       // format: Extract format of input file
       case 'f':
-        if( !strncmp( optarg, "binary", 1))
-          format = BINARY;
-        else if( !strncmp( optarg, "ascii", 1))
-          format = ASCII;
+        if( !strncmp( optarg, "binary", 1)) dfm.format = BINARY;
+        else if( !strncmp( optarg, "ascii", 1)) dfm.format = ASCII;
         else {
           usage();
           exit( -1);
@@ -1498,24 +985,30 @@ int main( int argc, char **argv)
       // npoints: Extract maximum number of points (samples, rows 
       // of data) to read from the data file
       case 'n':
-        npoints_cmd_line = atoi( optarg);
-        if( npoints_cmd_line < 1) usage();
+        dfm.npoints_cmd_line = atoi( optarg);
+        if( dfm.npoints_cmd_line < 1)  {
+          usage();
+          exit( -1);
+        }
         break;
       
       // npoints: Extract maximum number of points (samples, rows 
       // of data) to read from the data file
       case 's':
-        nSkipHeaderLines = atoi( optarg);
-        if( nSkipHeaderLines < 0) usage();
+        dfm.nSkipHeaderLines = atoi( optarg);
+        if( dfm.nSkipHeaderLines < 0)  {
+          usage();
+          exit( -1);
+        }
         break;
       
       // ordering: Extract the ordering of ("columnmajor or 
       // rowmajor") of a binary input file
       case 'o':
         if( !strncmp( optarg, "columnmajor", 1))
-          ordering=COLUMN_MAJOR;
+          dfm.ordering=COLUMN_MAJOR;
         else if ( !strncmp( optarg, "rowmajor", 1))
-          ordering=ROW_MAJOR;
+          dfm.ordering=ROW_MAJOR;
         else {
           usage();
           exit( -1);
@@ -1525,19 +1018,28 @@ int main( int argc, char **argv)
       // rows: Extract the number of rows of plot windows
       case 'r':
         nrows = atoi( optarg);
-        if( nrows < 1) usage();
+        if( nrows < 1)  {
+          usage();
+          exit( -1);
+        }
         break;
 
       // cols: Extract the number of columns of plot windows
       case 'c':
         ncols = atoi( optarg);
-        if( ncols < 1) usage();
+        if( ncols < 1)  {
+          usage();
+          exit( -1);
+        }
         break;
 
       // monitors: Extract the number of monitors
       case 'm':
         number_of_screens = atoi( optarg);
-        if( number_of_screens < 1) usage();
+        if( number_of_screens < 1)  {
+          usage();
+          exit( -1);
+        }
         break;
 
       // inputfile: Extract data filespec
@@ -1566,8 +1068,11 @@ int main( int argc, char **argv)
     }
   }
 
-  // If no arguments were specified, then quit
-  if( argc <= 1) {
+  // If command line was used but no arguments were specified, 
+  // then quit.  NOTE: If command line was not used, the GUI
+  // should be invoked.  This test will work for WIN32, but
+  // what about Linux and MacOS?
+  if( argc == 1 && strlen( argv[ 0]) <= 2) {
     usage();
     exit( 0);
   }
@@ -1584,14 +1089,21 @@ int main( int argc, char **argv)
   // Set random seed
   srand( (unsigned int) time(0));
 
-  // Restrict format and restruct and set number of plots
-  assert( format==BINARY || format==ASCII);
+  // Restrict format and restruct and set number of plots.  NOTE:
+  // nplots will be reset by manage_plot_window_array( NULL)
+  assert( dfm.format==BINARY || dfm.format==ASCII);
   assert( nrows*ncols <= maxplots);
   nplots = nrows*ncols;
 
-  // STEP 2: Read the data file and quit if problems arose
-  if( load_data_file( inFileSpec) < 0) return -1;
-
+  // STEP 2: Read the data file and quit if problems arose.  NOTE:
+  // it may not be desirable to quit if read attempt fails
+  // if( dfm.load_data_file( inFileSpec) != 0) return 0;
+  if( strlen( inFileSpec) <= 0) dfm.create_default_data( 10);
+  else {
+    if( dfm.load_data_file( inFileSpec) != 0) 
+      dfm.create_default_data( 10);
+  }
+  
   // Fewer points -> bigger starting pointsize
   pointsize = max( 1.0, 6.0 - (int) log10f( (float) npoints));
 
@@ -1621,7 +1133,9 @@ int main( int argc, char **argv)
 
   // Step 4: Create an array of plot windows with associated tabs
   // in the main control panel window
-  create_plot_window_array( argc, argv, main_w);
+  global_argc = argc;
+  global_argv = argv;
+  manage_plot_window_array( NULL);
 
   // now we can show the main control panel and all its subpanels
   main_control_panel->show();

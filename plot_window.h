@@ -125,6 +125,7 @@ class plot_window : public Fl_Gl_Window
       float xs, float ys, float &x, float &y);
 	void print_selection_stats();
 
+    // Event parameters
     int xprev, yprev, xcur, ycur;
     float xdragged, ydragged;
     float xcenter, ycenter, zcenter;
@@ -132,7 +133,6 @@ class plot_window : public Fl_Gl_Window
     float xzoomcenter, yzoomcenter, zzoomcenter;
     float xdown, ydown, xtracked, ytracked;
 	int extend_selection;
-    static int count;
 
     // Arrays and routines for histograms
     int nbins;
@@ -141,6 +141,9 @@ class plot_window : public Fl_Gl_Window
     void compute_histogram( int);
     void draw_histograms();
 	int show_center_glyph;
+
+    // Number of plot windows
+    static int count;
 
   public:
     plot_window( int w, int h);   // Constructor
@@ -175,8 +178,7 @@ class plot_window : public Fl_Gl_Window
     control_panel_window *cp;
     int index;
 
-    // Initial ordering of windows on screen.  Upper left window is 
-    // (1,1)
+    // Initial ordering of windows on screen.  Upper left is (1,1)
 	int row, column;
 
     // More plot routines
@@ -195,9 +197,10 @@ class plot_window : public Fl_Gl_Window
     // Routines to redraw plots
     void reset_view();
     void redraw_one_plot();
-    void change_axes();
+    void change_axes( int nchange);
     float angle;
     int needs_redraw;
+    unsigned do_reset_view_with_show;
     
     // Static methods moved here from vp.cpp
     static void upper_triangle_incr( 
@@ -227,4 +230,3 @@ class plot_window : public Fl_Gl_Window
 };
 
 #endif   // PLOT_WINDOW_H
-

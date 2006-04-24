@@ -1,3 +1,134 @@
+Notes for the Revision of 24-APR-2006
+Paul R Gazis
+
+Overview
+  The primary goals of this revision were to modify the executable 
+so that it could be invoked from an icon as by the command line, 
+create a data file manager class, revise the main menu bar, and 
+add the capability to add or remove rows and columns from the plot 
+window array.
+
+Changes
+
+vp.cpp -- Data file namagement methods have been moved to a
+  separate data_file_manager class.  Main menu bar was modified 
+  and the plot window array is now managed by a general-purpose
+  manage_plot_window method.  NOTE: This could also subsume the 
+  old reload_plot_window method.  The main() method was modifed 
+  so that viewpoints can be invoked as a  GUI under WIN32.  NOTE: 
+  This modification has NOT been tested under Linux or MacOS.  
+  Removed the read and write buttons from the main control panel
+  because these seem to make more sense in the main menu bar.
+  The following method has been removed:
+
+  create_plot_window_array()
+
+  The following method has been added:
+
+  revise_plot_window_array() -- Revise the plot window array.
+
+data_file_manager.h and data_file_manager.cpp -- The load data,
+  read data file, remove trivial columns, and resize global array
+  methods were moved from the main routine to a data file manager
+  class.  This class reads and writes data files and stores their
+  contents in the relevant global variables.  NOTE: The binary
+  read method may have to be modified to incorporate Creon's 
+  revisions of 18-APR-2006.  This class includes a method to
+  create a dummy data set.  This can be used to initialize or fill
+  the plot window array when actual data have not been specified 
+  or are not available.  This class contains the following 
+  methods:
+
+  data_file_manager() -- Constructor
+  initialize() -- Initializer
+  remove_trivial_columns() -- Remove identical data
+  resize_global_arrays() -- Resize global arrays
+  load_data_file( *inFileSpec) -- Load and initialize data
+  read_ascii_file_with_headers( *inFileSpec) -- Read ASCII
+  read_binary_file_with_headers( *inFileSpec) -- Read binary
+  create_default_data( nvars_in) -- Create default data
+  write_binary_file_with_headers() -- Write binary file
+
+global_definitions_vp.h -- Added global_arc and global_argv for
+  use by show( argc, argv) in the the manage_plot_window_array
+  method.  WARNING: There must be a better way to do this!
+
+include_libraries_vp.h -- Changes to include more menu-related 
+  classes.
+
+plot_window.cpp -- Added a call to show() to the reset window
+  widget so that missing windows will be restored.  Other minor 
+  changes.  WARNING: It is necessary to turn this off before a
+  window is created so that it will be resizable!  I do not
+  understand why this is the case.
+
+Known bugs
+  1) See notes for global_definitions.h and plot_window.cpp above.
+  2) WARNING: There should be more tests for missing data to avoid
+     segmentation errors!
+  3) Question: Does the lock_axes capability work properly?
+  4) The reload_plot_window_array wiodget does not recognize locked
+     axes.  This may not be desirable.
+  5) When the main() method is invoked, it examines the first
+     element, argv[0], of the input parameter array, in an attempt
+     to determine if viewpoints was called from the command line.
+     This may not be the correct way to do this, and may not work
+     under Linux or MacOS!
+  6) If every plot window is closed, it appear that all of the 
+     GLContext information is destroyed.
+
+
+Notes for the Revision of 17-APR-2006
+Paul R Gazis
+
+Overview
+  The main goals of this revision were to add file i/o capability,
+add the ability to refresh/restore plot windows, and add a main
+menu bar.  These three issues are all related.  To this end, many
+of the operations in the main() method were consolidated into
+separate functions, most of the constructor for class plot_window
+was moved into a separate initializer, and several menu functions
+and widgets were added.
+
+Changes
+
+vp.cpp -- window size and position parameters are now defined at
+  the beginning of the file rather than spread throughout
+  different function calls.  Methods have been added to create
+  of handle a main menu bar, functions and widgets have been
+  added to read ninary and ascii files via main menu commands  
+  or via buttons on the global-widgets part of the control
+  panel.  In the process, the following functions have been 
+  added.
+
+  make_about_window -- Draw the 'Help|About' window
+  create_main_control_panel -- Create main control panel
+  create_plot_window_array -- Create the plot window array
+  make_main_menu_bar -- Create main menu bar
+  read_data -- Widget to read input data
+  reload_plot_window_array -- Refresh and reload plot windows
+
+global_definitions_vp.h -- Minor changes
+
+include_libraries_vp.h -- Changes to include menu-related 
+  classes
+
+plot_window.h -- Added an 'intialize' method
+
+plot_window.cpp -- Moved initilization operations from the
+  constructor to the initialize() method, which is now called
+  by the contrstructor.  This method can now be invoked from
+  the main routine to refresh plot windows, etc.
+
+Known bugs
+  The reload_plot_window_array function will restore plot
+windows that have been deleted unless EVERY plot window has
+been deleted, in which case the windows will be restored
+with the colors set to some default and point selection
+disabled.  Could this be because ther GLContext information
+is destroyed if all plot windows are closed?
+
+
 Notes for the revision of 27-MAR-2006
 Paul R Gazis
 

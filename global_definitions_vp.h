@@ -35,10 +35,6 @@ int debugging = 0;
 #define ROW_MAJOR 0
 #define COLUMN_MAJOR 1
 
-// Set the maximum number of columns and rows
-const int nvars_max = 256;  // Maximum number of columns
-const int MAXPOINTS = 2000000;  // Maximum number of rows
-
 // Set parameters to define the default layout of the plot 
 // windows.  NOTE: Creon notes that maxplots must be a power 
 // of 2 for textures and that this will 'cause trouble'.
@@ -46,14 +42,15 @@ int nrows=2, ncols=2;   // Default number of rows and columns
 int nplots = nrows*ncols;  // Default number of plot windows
 const int maxplots=64;  // Maxmimum number of plots
 
+// Set the maximum number of columns and rows
+const int nvars_max = 256;  // Maximum number of columns
+const int MAXPOINTS = 2000000;  // Maximum number of rows
+
 // Initialize the actual number of rows (points or values) in 
 // the data file and the actual number of columns (fields) in 
 // each record.
 int npoints = MAXPOINTS;   // number of rows in data file
 int nvars = nvars_max;		// number of columns in data file
-
-// Global toggle between scale histogram & scale view :-(
-int scale_histogram = 0;
 
 // Define blitz::Arrays to hold raw and ranked (sorted) data 
 // arrays.  Used extensively in many classes, so for reasons of 
@@ -84,6 +81,9 @@ blitz::Array<float,1> tmp_points;
 // extensively by main routine and class control_panel_window
 std::vector<std::string> column_labels; 
 
+// Global toggle between scale histogram & scale view :-(
+int scale_histogram = 0;
+
 // Define variable to hold pointsize.  Used in main routine and
 // classes control_panel_window and plot_window.  (Move to class
 // plot_window?)
@@ -113,6 +113,7 @@ Fl_Button *choose_color_selected_button,
 Fl_Button *dont_paint_button,
           *change_all_axes_button;
 Fl_Button *link_all_axes_button;
+Fl_Button *reload_plot_window_array_button;
 Fl_Button *read_data_button;
 
 // Declare classes control_panel_window and plot_window here so 
@@ -125,6 +126,7 @@ class plot_window;
 // definitions.  NOTE: In the long run, it might be safer to store 
 // these in instances of the <vector> container class.
 plot_window *pws[ maxplots];
+
 // There is one extra control_panel_window, with index=maxplots
 // It has no associated plot window - it affects all (unlocked) plots.
 control_panel_window *cps[ maxplots+1]; 
