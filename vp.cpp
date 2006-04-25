@@ -59,7 +59,7 @@
 //  limit their scope
 //
 // Author: Creon Levit   2005-2006
-// Modified: P. R. Gazis  14-APR-2006
+// Modified: P. R. Gazis  25-APR-2006
 //*****************************************************************
 
 // Include the necessary include libraries
@@ -97,15 +97,15 @@ int number_of_screens = 0;
 #endif // __APPLE__
 
 // Define and set maximums for header block
-const int MAX_HEADER_LENGTH = nvars_max*100;  // Length of header line
-const int MAX_HEADER_LINES = 2000;  // Number of header lines
+// const int MAX_HEADER_LENGTH = nvars_max*100;  // Length of header line
+// const int MAX_HEADER_LINES = 2000;  // Number of header lines
 
 // These are needed to pass to manage_plot_window_array
-int global_argc;
-char **global_argv;
+static int global_argc;
+static char **global_argv;
 
 // Define and set default border style for the plot windows
-int borderless=0;  // By default, use window manager borders
+static int borderless=0;  // By default, use window manager borders
 
 // Define variables to hold main control panel window, tabs 
 // widget, and virtual control panel positions.  Consolidated
@@ -126,16 +126,18 @@ data_file_manager dfm;
 Fl_Window *main_control_panel;
 Fl_Menu_Bar *main_menu_bar;
 Fl_Window *about_window;
+Fl_Window *help_view_window;
 
 // Function definitions for the main method
 void usage();
+void make_help_about_window( Fl_Widget *o);
 void create_main_control_panel( 
   int main_x, int main_y, int main_w, int main_h,
   char* cWindowLabel);
 void create_broadcast_group();
 void manage_plot_window_array( Fl_Widget *o);
 void make_main_menu_bar();
-void make_help_about_window( Fl_Widget *o);
+void make_help_view_window( Fl_Widget *o);
 void make_global_widgets();
 void choose_color_deselected( Fl_Widget *o);
 void change_all_axes( Fl_Widget *o);
@@ -262,13 +264,14 @@ void create_broadcast_group ()
 }
 
 //*****************************************************************
-// manage_plot_window_array( o) -- General-purpose method to
-// create, manage, and reload the plot window array.  
-// NOTE: No attempt has been 
-// made to optimize this method for speed!  It saves existing
-// axis information, deletes old tabs, creates new tabs, restores
-// existing axis information, and loads new data into new plot 
-// windows. 
+// manage_plot_window_array( o) -- General-purpose method to 
+// create, manage, and reload the plot window array.  It saves any
+// existing axis information, deletes old tabs, creates new tabs, 
+// restores existing axis information, and loads new data into new 
+// plot windows.  NOTE: Littlwe attempt has been made to optimize
+// this method for speed.  WARNING: It is assumed this will be
+// invoked from either NULL or a Fl_Menu_ widget.  Otherwise the 
+// call to o->text() will fail!
 void manage_plot_window_array( Fl_Widget *o)
 {
   // Get widget pathname (not used, but left here in case it is
@@ -438,6 +441,9 @@ void manage_plot_window_array( Fl_Widget *o)
   // Get rid of any superfluous plot windows
   if( nplots < nplots_old)
     for( int i=nplots; i<nplots_old; i++) pws[i]->hide();
+
+  // Create master control panel for tabs
+  create_broadcast_group ();
 }
 
 //*****************************************************************
@@ -483,6 +489,8 @@ void make_main_menu_bar()
 
   // Add Help menu items
   main_menu_bar->add( 
+    "Help/Help   ", 0, (Fl_Callback *) make_help_view_window);
+  main_menu_bar->add( 
     "Help/About   ", 0, (Fl_Callback *) make_help_about_window);
   
   // Set colors, fonts, etc
@@ -499,6 +507,33 @@ void make_main_menu_bar()
   //     (Fl_Menu_Item*) &(main_menu_bar->menu()[i]);
   //   pMenuItem->labelsize(32);
   // }
+}
+
+//*****************************************************************
+// make_help_view_window( *o) -- Create the 'Help|About' window.
+void make_help_view_window( Fl_Widget *o)
+{
+  if( help_view_window != NULL) help_view_window->hide();
+   
+  // Create Help|About window
+  Fl::scheme( "plastic");  // optional
+  help_view_window = new Fl_Window( 300, 200, "Help");
+  help_view_window->begin();
+  help_view_window->selection_color( FL_BLUE);
+  help_view_window->labelsize( 10);
+
+  // Define Fl_Help_View widget
+  Fl_Help_View *help_view_widget =
+    new Fl_Help_View( 5, 5, 290, 190, "Help");
+  int is_loaded = help_view_widget->load( "help_file_vp.htm");
+  
+  // XXX: A close button might be nice someday
+  // Fl_Button* close = new Fl_Button(100, 150, 70, 30, "&Close");
+
+  // Done creating the 'Help|About' window
+  help_view_window->resizable( help_view_window);
+  help_view_window->end();
+  help_view_window->show();
 }
 
 //*****************************************************************
@@ -682,9 +717,13 @@ void reset_all_plots()
 // available, then delete old tabs, create new tabs, and load data
 // into the associated plot windows.
 // MCL - XXX refactor this with manage_plot_window_array()
+// PRG - XXX when attempts are made to refactor this with 
+// manage_plot_window_array(), calls to add rows or columns,
+// followed by data input, followed by another call to add rows
+// or columns produce what appears to be a segementation fault.
 void reload_plot_window_array( Fl_Widget *o)
 {
-  // Check to make sure data are available
+  // Check to make sure data are available (not needed?)
   if( npoints <= 1) {
     cout << "ERROR: "
          << "insufficient data to reload plot window array"
@@ -700,28 +739,6 @@ void reload_plot_window_array( Fl_Widget *o)
   for( int i=0; i<nplots; i++) {
     if( borderless)
       top_frame = bottom_frame = left_frame = right_frame = 1;
-
-#if 0
-// MCL XXX these are unused here.  Why?
-    int row = i/ncols;
-    int col = i%ncols;
-
-    // Determine plot window size and position
-    int pw_w =
-      ( ( number_of_screens*Fl::w() - 
-          (main_w+left_frame+right_frame+right_safe+left_safe+20)) / ncols) -
-      (left_frame + right_frame);
-    int pw_h = 
-      ( (Fl::h() - (top_safe+bottom_safe))/ nrows) - 
-      (top_frame + bottom_frame);
-
-    int pw_x = 
-      left_safe + left_frame + 
-      col * (pw_w + left_frame + right_frame);
-    int pw_y = 
-      top_safe + top_frame + 
-      row * (pw_h + top_frame + bottom_frame);
-#endif // 0 
 
     // Create a label for this tab
     ostringstream oss;
@@ -768,18 +785,11 @@ void reload_plot_window_array( Fl_Widget *o)
     cps[i]->varindex2->value(jvar);  
     cps[i]->varindex3->value(nvars);  
 
-    // Resize histogram arrays to avoid segmentation errors (!!!),
-    // then extract and plot data points.  NOTE: Old code has been 
-    // commented out and this is now done via initialze()
-    // pws[i]->vertices.resize(npoints,3);
-    // pws[i]->x_rank.resize(npoints,1);
-    // pws[i]->y_rank.resize(npoints,1);
-    // pws[i]->z_rank.resize(npoints,1);
+    // Invoke the initializer to resize histogram arrays to 
+    // avoid segmentation errors (!!!).  Then extract and plot 
+    // data points.  
     pws[i]->initialize();
     pws[i]->extract_data_points();
-
-    // A possible alternative to pws[i]->extract_data_points();
-    // cps[i]->extract_and_redraw();
 
     // May be unecessary: should have been handled during 
     // initial setup?
@@ -790,10 +800,8 @@ void reload_plot_window_array( Fl_Widget *o)
     pws[i]->resizable( pws[i]);
   }
 
-  // A possible alternative to refreshing windows on an individual
-  // basis that doesn't work because the redraw_all_plots() method 
-  // merely sets a flag rather than actually redrawing the panels
-  // plot_window::redraw_all_plots(0);
+  // Create master control panel for tabs
+  create_broadcast_group ();
 }
 
 //*****************************************************************
@@ -1095,9 +1103,8 @@ int main( int argc, char **argv)
   assert( nrows*ncols <= maxplots);
   nplots = nrows*ncols;
 
-  // STEP 2: Read the data file and quit if problems arose.  NOTE:
-  // it may not be desirable to quit if read attempt fails
-  // if( dfm.load_data_file( inFileSpec) != 0) return 0;
+  // STEP 2: Read the data file create a 10-d default data set if 
+  // the read attempt fails
   if( strlen( inFileSpec) <= 0) dfm.create_default_data( 10);
   else {
     if( dfm.load_data_file( inFileSpec) != 0) 
@@ -1131,17 +1138,18 @@ int main( int argc, char **argv)
     main_x, main_y, main_w, main_h,
     "viewpoints -> creon@nas.nasa.gov");
 
-  // Step 4: Create an array of plot windows with associated tabs
-  // in the main control panel window
+  // Step 4: Create an array of plot windows with associated tabs in
+  // the main control panel window.  KLUDGE ALERT: argc and argv are
+  // 'globalized' to make them available to manage_plot_window_array.
   global_argc = argc;
   global_argv = argv;
   manage_plot_window_array( NULL);
 
-  // now we can show the main control panel and all its subpanels
+  // Now we can show the main control panel and all its subpanels
   main_control_panel->show();
 
-  // Step 5: Set pointer to the function to call when the window 
-  // is idle and enter the main event loop
+  // Step 5: Set pointer to the function to call when the window is
+  // idle and enter the main event loop
   Fl::add_idle( redraw_if_changing);
   // Fl::add_check(redraw_if_changing);
 

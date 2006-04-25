@@ -22,7 +22,7 @@
 // Purpose: Source code for <plot_window.h>
 //
 // Author: Creon Levitt   unknown
-// Modified: P. R. Gazis  14-APR-2006
+// Modified: P. R. Gazis  25-APR-2006
 //*****************************************************************
 
 // Include the necessary include libraries

@@ -22,7 +22,7 @@
 // Purpose: Source code for <control_panel_window.h>
 //
 // Author: Creon Levit   2005-2006
-// Modified: P. R. Gazis  27-MAR-2006
+// Modified: P. R. Gazis  25-APR-2006
 //*****************************************************************
 
 // Include the necessary include libraries
@@ -79,7 +79,8 @@ control_panel_window::control_panel_window(
 
 //*****************************************************************
 // control_panel_window::broadcast_change (*master_widget) -- 
-// broadcast an interaction from the master panel to all (unlocked) panels.
+// broadcast an interaction from the master panel to all (unlocked) 
+// panels.
 void control_panel_window::broadcast_change (Fl_Widget *master_widget)
 {
   const Fl_Group *master_panel = master_widget->parent();
@@ -93,9 +94,12 @@ void control_panel_window::broadcast_change (Fl_Widget *master_widget)
     
     // cout << "master_widget: label = " << master_widget->label() << " type = " << typeid(*master_widget).name() << endl;
     // cout << "slave_widget:  label = " << slave_widget->label() <<  " type = " << typeid(*slave_widget).name() << endl;
-    // MCL XXX downcasting to dispatch on type is considered very bad form.  If value() were a virtual function of Fl_Widget
-    // (like callback() and do_callback() are) it would be cleaner.  Or we could bite the bullet and use one of the fltk
-    // publish/subscribe extensions.  that could clean up all sort of things.....
+
+    // MCL XXX downcasting to dispatch on type is considered very bad form.  
+    // If value() were a virtual function of Fl_Widget (like callback() and 
+    // do_callback() are) it would be cleaner.  Or we could bite the bullet and 
+    // use one of the fltk publish/subscribe extensions.  That could clean up 
+    // all sort of things.....
     assert (typeid(master_widget) == typeid(slave_widget));
     {
       Fl_Button *gp, *lp;
@@ -114,7 +118,8 @@ void control_panel_window::broadcast_change (Fl_Widget *master_widget)
     }
     if (slave_widget->callback())
     {
-      cout << ".. doing callback for widget " << widget_index << " in panel " << i << endl;
+      // cout << ".. doing callback for widget " << widget_index 
+      //      << " in panel " << i << endl;
       slave_widget->do_callback(slave_widget, cps[i]);
     }
   }

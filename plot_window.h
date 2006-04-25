@@ -27,7 +27,7 @@
 //   1) Review and add comments!
 //
 // Author: Creon Levitt   unknown
-// Modified: P. R. Gazis  10-APR-2006
+// Modified: P. R. Gazis  25-APR-2006
 //*****************************************************************
 
 // Protection to make sure this header is not included twice

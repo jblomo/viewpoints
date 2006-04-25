@@ -19,7 +19,7 @@
 // Purpose: Source code for <data_file_manager.h>
 //
 // Author: Creon Levitt   unknown
-// Modified: P. R. Gazis  24-APR-2006
+// Modified: P. R. Gazis  25-APR-2006
 //*****************************************************************
 
 // Include the necessary include libraries
@@ -30,6 +30,14 @@
 
 // Include associated headers and source code
 #include "data_file_manager.h"
+
+// Set static data members for class data_file_manager::
+//
+
+// Define and set maximums length of header lines and number of
+// lines in the header block
+const int data_file_manager::MAX_HEADER_LENGTH = nvars_max*100;
+const int data_file_manager::MAX_HEADER_LINES = 2000;
 
 //*****************************************************************
 // data_file_manager::data_file_manager() -- Default constructor,

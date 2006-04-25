@@ -59,7 +59,7 @@
 //   write_binary_file_with_headers() -- Write binary file
 //
 // Author: Creon Levitt   unknown
-// Modified: P. R. Gazis  21-APR-2006
+// Modified: P. R. Gazis  25-APR-2006
 //*****************************************************************
 class data_file_manager
 {
@@ -70,7 +70,8 @@ class data_file_manager
   public:
     data_file_manager();
     void initialize();
-    
+
+    // I/O methods    
     int load_data_file( char* inFileSpec);
     int read_ascii_file_with_headers( char* inFileSpec);
     int read_binary_file_with_headers( char* inFileSpec);
@@ -93,7 +94,7 @@ class data_file_manager
 
 // Define and set the maximum number of lines and line length for 
 // the header block
-const int data_file_manager::MAX_HEADER_LENGTH = 2000;
-const int data_file_manager::MAX_HEADER_LINES = 2000;
+// const int data_file_manager::MAX_HEADER_LENGTH = 2000;
+// const int data_file_manager::MAX_HEADER_LINES = 2000;
 
 #endif   // DATA_FILE_MANAGER_H
