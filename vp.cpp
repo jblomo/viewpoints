@@ -180,7 +180,7 @@ void make_help_about_window( Fl_Widget *o)
   about_window->labelsize( 10);
   
   // Compose text
-  string sAbout = "viewpoints 1.0.1\n";
+  string sAbout = "viewpoints 1.0.2\n";
   sAbout += "(c) 2006 C. Levit and P. R. Gazis\n\n";
   sAbout += "contact information:\n";
   sAbout += "Creon Levit creon@nas.nasa.gov\n";
@@ -514,18 +514,19 @@ void make_main_menu_bar()
 void make_help_view_window( Fl_Widget *o)
 {
   if( help_view_window != NULL) help_view_window->hide();
-   
-  // Create Help|About window
+  
+  // Create Help|View window
   Fl::scheme( "plastic");  // optional
-  help_view_window = new Fl_Window( 300, 200, "Help");
+  help_view_window = new Fl_Window( 600, 400, "Viewpoints Help");
   help_view_window->begin();
   help_view_window->selection_color( FL_BLUE);
   help_view_window->labelsize( 10);
 
   // Define Fl_Help_View widget
   Fl_Help_View *help_view_widget =
-    new Fl_Help_View( 5, 5, 290, 190, "Help");
-  int is_loaded = help_view_widget->load( "help_file_vp.htm");
+    new Fl_Help_View( 5, 5, 590, 390, "");
+  int is_loaded = help_view_widget->load( "vp_help_manual.htm");
+  help_view_widget->labelsize( 14);
   
   // XXX: A close button might be nice someday
   // Fl_Button* close = new Fl_Button(100, 150, 70, 30, "&Close");

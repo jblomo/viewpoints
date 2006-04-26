@@ -1,0 +1,187 @@
+<html>
+<head>
+<title>viewpoints Help Manual</title>
+</head>
+
+<body text="black" bgcolor="#FFFFFE">
+
+<a name="TOP"></a>
+
+<center>
+<h1><em>viewpoints</em> Help</h1>
+</center>
+
+<hr>
+
+<h3>Keys & Buttons in plot windows:</h3>
+
+<p>
+The following mouse key and button combinations can be used 
+while the cursor is postioned above a plot window
+</p>
+
+<table align="LEFT">
+<tr>
+ <th align="LEFT">Action</th><th align="LEFT">Key</th>
+</tr>
+<tr>
+ <td>new selection</td><td>left-mouse</td>
+</tr>
+<tr>
+ <td>move selection</td><td>left-mouse + shift</td>
+</tr>
+<tr>
+ <td>invert selection</td><td>i</td>
+</tr>
+<tr>
+ <td>display deselected</td><td>d</td>
+</tr>
+<tr>
+ <td>clear selection</td><td>c</td>
+</tr>
+<tr>
+ <td>kill selected points</td><td>x</td>
+</tr>
+<tr>
+ <td>reset view</td><td>r</td>
+</tr>
+<tr>
+ <td>quit</td><td>q</td>
+</tr>
+</table>
+
+<h3>Mouse Gestures in plot windows:</h3>
+
+<p>
+Mouse key and gesture combinations wil ave the following effects
+when the cursor is positioned over a plot window.
+
+<table align="LEFT">
+<tr>
+ <th align="LEFT">Action</th><th align="LEFT">Gesture</th>
+</tr>
+<tr>
+ <td>select points</td><td>left-mouse</td>
+</tr>
+<tr>
+ <td>drag selection</td><td>shift + left-mouse</td>
+</tr>
+<tr>
+ <td>translate</td><td>right-mouse  (opt-mouse on OSX)</td>
+</tr>
+<tr>
+ <td>scale</td><td>middle-mouse (ctl-mouse on OSX)</td>
+</tr>
+<tr>
+ <td>scale histogram</td><td>middle-mouse + h (ctl-mouse + h on OSX)</td>
+</tr>
+</table>
+
+<h3>Controls in control panels:</h3>
+
+<p>
+Controls in the tabbed and main control panels will have the
+following effects.
+</p>
+
+<table align="LEFT">
+<tr>
+ <th align="LEFT">Control</th><th align="LEFT">Action</th>
+</tr>
+</tr>
+<tr>
+ <td>npoints</td><td>number of points displayed</td>
+</tr>
+<tr>
+ <td>alpha</td><td>point opacity</td>
+</tr>
+<tr>
+ <td>lum</td><td>point brightness</td>
+</tr>
+<tr>
+ <td>bkg</td><td>background color (try bkg=0.5, lum=0.2)</td>
+</tr>
+<tr>
+ <td>size</td><td>point size, in pixels</td>
+</tr>
+<tr>
+ <td>nbins</td><td>number of histogram bins</td>
+</tr>
+<tr>
+ <td>rot</td>
+ <td>rotation angle in 3D<br>(please select something for the 3rd axis to display)</td>
+</tr>
+<tr>
+ <td>spin</td><td>continuous rotation</td>
+</tr>
+<tr>
+ <td>sum vs. diff</td><td>plot (x+y) vs. (x-y)</td>
+</tr>
+<tr>
+ <td>polar</td><td>x<-r, y<-theta</td>
+</tr>
+</table>
+
+<h3>Normalization Schemes</h3>
+
+<p>Several different normalzation or scaling schemes are available.
+These are chosen on a per-axis basis.
+
+<table align="LEFT">
+<tr>
+ <th align="LEFT">Scheme</th><th align="LEFT">Effect</th>
+</tr>
+</tr>
+<tr>
+ <td>none</td><td>show all data, center of window at median</td>
+</tr>
+<tr>
+ <td>zeromax</td><td>show all positive data</td>
+</tr>
+<tr>
+ <td>maxabs</td><td>show all data, center of window at zero</td>
+</tr>
+<tr>
+ <td>threesigma</td><td>center of window at sample mean, window spans +/- three sigma.</td>
+</tr>
+<tr>
+ <td>rank</td>
+ <td>plot rank of x (instead of x)<br>(i.e. nonuniform rescaling to force uniform marginal)</td>
+</tr>
+<tr>
+ <td>gaussianize</td>
+ <td>plot inverse of Gaussian cummulative distribution function of x<br>(i.e. nonuniform rescaling to force Gaussian marginal)</td>
+</tr>
+</table>
+
+<p>
+Please note that <b><em>Viewpoints</em> (vp)</b> is a development 
+routine.  While each version is tested before release to make certain 
+that it will function properly (or fail gracefully in the event  
+something goes wrong), we are continuing to updated and modify the 
+package and add features in response to experience, suggestions, and 
+the requirements of the user community.  If you have any comments or
+suggestions, please feel free to contact the project team:
+<a href="mailto:creon.levit@nasa.gov">Creon Levit</a> or
+<a href="mailto:pgazis@mail.arc.nasa.gov">Paul R. Gazis</a>.
+</p>
+
+<p>
+This project was funded by a grant from NASA's
+Applied Information Systems Research Program.
+If you find this package useful in your research, we would appreciate 
+it if you could acknowledge this project in the relevant publications.
+Thank you.
+</p>
+
+<p>
+<b>Compatibility:</b> The Linux version has been tested on Fedora
+Core 4 while the MacOS versions have been tested on MacOS G4 and
+G5, respectively.  The Windows version should run on any recent
+system with the necessary functionality from OpenGL 1.2 through 1.6.  
+It will not run on older systems that are restricted to OpenGL 1.1.
+</p>
+
+</body>
+</html>
+
