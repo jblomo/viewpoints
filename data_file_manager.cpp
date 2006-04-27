@@ -669,7 +669,6 @@ void data_file_manager::resize_global_arrays()
   selected.resize( npoints);
   previously_selected.resize( npoints);
 
-  selected = 0;
 }
 
 //*****************************************************************

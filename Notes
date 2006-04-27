@@ -437,8 +437,20 @@ missing values
 
 10:58:51 01 Apr 06
 
+Mon Apr 17 11:57:13 2006
+=======
 Mike's suggestions
-
+screenshots for web, manual, and PASP/astro-ph
+write a FAQ
+what commands to run if vp doesn't work.
+wiki
+opengl extensions registry
+linux library checking
+send boost config file library to paul
+dependencies
+sample data
+list of known platforms
+=======
 1. command line args to specify which variables to plot, initially
 2. command line args for initial selection bounds
 3. current position of mouse should be dynamically printed (like the selection statistics)
@@ -460,5 +472,10 @@ ideas from ggobi/rggobi http://www.ggobi.org/
   "persistant" vs. "transient" brushing (i.e. "paint/add to selection")
 
 
+Wed Apr 26 16:11:57 2006
+New idea for spectra, lineplots, etc:
+
+in the axis choice menu, allow for multiple selections.  Select a contiguos group
+to plot a spectrum or timeseries (instead of a point).
 
 

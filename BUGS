@@ -1,0 +1,13 @@
+
+
+1. selected set is random garbage after startup.  
+   *fixed*
+
+2. color selection from master tab pops up nplots separate color dialogs!
+
+3. selectin -nothing- as x or y axis causes core dump.
+
+4. selecting "sum vs. diff" from master tab causes core dump.
+
+5. plots are not redrawn after "read data"
+

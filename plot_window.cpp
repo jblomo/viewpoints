@@ -484,13 +484,6 @@ void plot_window::reset_view()
   cp->rot_slider->value(0.0);
   cp->dont_clear->value(0);
 
-  // Reset selection box and flag window as needing redraw
-  reset_selection_box ();
-  if( count ==1) {
-    // color_array_from_selection (); // HUH????
-  }
-  needs_redraw = 1;
-
   // Make sure the window is visible and resizable.  NOTE: For 
   // some reason, it is necessary to turn this off when a new plot
   // window array is created or the windows will not be resizable!

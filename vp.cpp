@@ -525,7 +525,7 @@ void make_help_view_window( Fl_Widget *o)
   // Define Fl_Help_View widget
   Fl_Help_View *help_view_widget =
     new Fl_Help_View( 5, 5, 590, 390, "");
-  int is_loaded = help_view_widget->load( "vp_help_manual.htm");
+  (void) help_view_widget->load( "vp_help_manual.htm");
   help_view_widget->labelsize( 14);
   
   // XXX: A close button might be nice someday
@@ -1001,8 +1001,6 @@ int main( int argc, char **argv)
         }
         break;
       
-      // npoints: Extract maximum number of points (samples, rows 
-      // of data) to read from the data file
       case 's':
         dfm.nSkipHeaderLines = atoi( optarg);
         if( dfm.nSkipHeaderLines < 0)  {
@@ -1115,6 +1113,11 @@ int main( int argc, char **argv)
   // Fewer points -> bigger starting pointsize
   pointsize = max( 1.0, 6.0 - (int) log10f( (float) npoints));
 
+  // no points are in the selected set, initially.
+  // XXX to support initial selections, they need to be set up before
+  // we get here.
+  selection_changed = 1;
+
   // STEP 3: Create main control panel
   // Determine the number of screens.  NOTE screen_count requires 
   // OpenGL 1.7, which was not available under most Windows OS as 
@@ -1152,7 +1155,6 @@ int main( int argc, char **argv)
   // Step 5: Set pointer to the function to call when the window is
   // idle and enter the main event loop
   Fl::add_idle( redraw_if_changing);
-  // Fl::add_check(redraw_if_changing);
 
   // Enter the main event loop
   int result = Fl::run();
