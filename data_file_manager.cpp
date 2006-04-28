@@ -665,9 +665,10 @@ void data_file_manager::resize_global_arrays()
 
   texture_coords.resize( npoints);
   identity.resize( npoints);
-  newly_selected.resize( npoints);
-  selected.resize( npoints);
-  previously_selected.resize( npoints);
+  newly_selected.resize( npoints);  newly_selected=0;
+  selected.resize( npoints); selected=0;
+  previously_selected.resize( npoints); previously_selected=0;
+  selection_changed = 1;
 
 }
 
@@ -713,16 +714,15 @@ void data_file_manager::create_default_data( int nvars_in)
   // segmentation errors!  Important!
   npoints = 2;
   points.resize( nvars, npoints);
+  resize_global_arrays ();
+
 
   // Loop: load each variable with 0 and 1.  These two loops are
   // kept separate for clarity and to facilitate changes
   for( int i=0; i<nvars; i++) {
-    points( 0, i) = 0.0;
-    points( 1, i) = 1.0;
+    points( i, 0) = 0.0;
+    points( i, 1) = 1.0;
   }
-
-  // Resize global arrays
-  resize_global_arrays ();
 
   // Load the identity array
   cout << "Making identity array, a(i)=i" << endl;

@@ -1116,7 +1116,8 @@ int main( int argc, char **argv)
   // no points are in the selected set, initially.
   // XXX to support initial selections, they need to be set up before
   // we get here.
-  selection_changed = 1;
+  
+  // selection_changed = 1;
 
   // STEP 3: Create main control panel
   // Determine the number of screens.  NOTE screen_count requires 
