@@ -72,6 +72,8 @@ TARGET = vp$(EXEEXT)
 
 default: $(TARGET)
 
+all: depend tags $(TARGET) 
+
 %.o : %.c	
 	echo Compiling $<...
 	$(CC) -I.. $(CFLAGS) -c $<
@@ -98,7 +100,7 @@ depend:	$(SRCS)
 # there has to be a better way....
 tags:	TAGS
 TAGS:	depend $(SRCS)
-	etags --defines --members -o TAGS $(SRCS) `cat makedepend | sed -e"s/.*://g; s/\\\\\//"`
+	etags --members -o TAGS $(SRCS) `cat makedepend | sed -e"s/.*://g; s/\\\\\//"`
 
 stable.h.gch:	stable.h
 	echo pre-compiling $<...
