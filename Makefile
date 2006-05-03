@@ -23,14 +23,14 @@ ifeq ($(platform),Darwin)
 # Uncomment for no optimization. For debugging on OSX
 	OPTIM = $(DEBUG)
 # Uncomment to optimize for G5 
-#	OPTIM = -O6 -ftree-vectorize -ftree-vectorizer-verbose=0 -Wall -Wno-unused -Wno-long-double -Wno-deprecated -fno-exceptions -ffast-math -pipe -fsigned-char -maltivec -mabi=altivec -faltivec -mcpu=G5 -mtune=G5 -mpowerpc-gfxopt -g
+	OPTIM = -O6 -ftree-vectorize -ftree-vectorizer-verbose=0 -Wall -Wno-unused -Wno-long-double -Wno-deprecated -fno-exceptions -ffast-math -pipe -fsigned-char -maltivec -mabi=altivec -faltivec -mcpu=G5 -mtune=G5 -mpowerpc-gfxopt -g
 # Uncomment to optimize for G4
 #	OPTIM = -O6 -ftree-vectorize -ftree-vectorizer-verbose=0 -Wall -Wno-unused -Wno-long-double -Wno-deprecated -fno-exceptions -ffast-math -pipe -fsigned-char -maltivec -mabi=altivec -faltivec -mcpu=G4 -mtune=G4 -mpowerpc-gfxopt -g
 
 else
 
-#	OPTIM = -O0 $(DEBUG) -pipe
-	OPTIM = -O6 -Wall -Wunused -ffast-math -fno-exceptions -g  -Wno-deprecated
+	OPTIM = -O0 $(DEBUG)
+#	OPTIM = -O6 -Wall -Wunused -ffast-math -fno-exceptions -g  -Wno-deprecated
 
 endif
 
@@ -72,8 +72,6 @@ TARGET = vp$(EXEEXT)
 
 default: $(TARGET)
 
-all: depend tags $(TARGET) 
-
 %.o : %.c	
 	echo Compiling $<...
 	$(CC) -I.. $(CFLAGS) -c $<
@@ -100,7 +98,7 @@ depend:	$(SRCS)
 # there has to be a better way....
 tags:	TAGS
 TAGS:	depend $(SRCS)
-	etags --members -o TAGS $(SRCS) `cat makedepend | sed -e"s/.*://g; s/\\\\\//"`
+	etags --defines --members -o TAGS $(SRCS) `cat makedepend | sed -e"s/.*://g; s/\\\\\//"`
 
 stable.h.gch:	stable.h
 	echo pre-compiling $<...

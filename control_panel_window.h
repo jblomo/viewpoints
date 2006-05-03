@@ -125,6 +125,7 @@ class control_panel_window : public Fl_Group
               *show_axes, *show_grid, *show_labels, 
               *show_histogram;
     Fl_Button *show_scale, *lock_axes_button;
+    Fl_Button *choose_selection_color_button;
     // Fl_Button *x_equals_delta_x, *y_equals_delta_x;
     Fl_Group *transform_style;
     Fl_Button *sum_vs_difference, *polar, *no_transform;
@@ -162,3 +163,4 @@ class control_panel_window : public Fl_Group
 };
 
 #endif   // CONTROL_PANEL_WINDOW_H
+

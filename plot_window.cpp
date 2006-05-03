@@ -484,6 +484,13 @@ void plot_window::reset_view()
   cp->rot_slider->value(0.0);
   cp->dont_clear->value(0);
 
+  // Reset selection box and flag window as needing redraw
+  reset_selection_box ();
+  if( count ==1) {
+    // color_array_from_selection (); // HUH????
+  }
+  needs_redraw = 1;
+
   // Make sure the window is visible and resizable.  NOTE: For 
   // some reason, it is necessary to turn this off when a new plot
   // window array is created or the windows will not be resizable!
@@ -1449,30 +1456,33 @@ int plot_window::extract_data_points ()
 // upper triangular matrix by moving "down and to the right" with
 // wrapping.  A static method used by plot_window::change_axes and
 // in the body of the main routine to select axis labels.
-void plot_window::upper_triangle_incr(int &i, int &j, const int n)
+void plot_window::upper_triangle_incr( 
+  int &i, int &j, const int n)
 {
-  // out << "  upper_triangle_incr before: i, j = " << " " << i << " " << j << endl;
+  cout << "  upper_triangle_incr before: i, j = " << " " << i << " " << j << endl;
   // diagonals get incremented together, with wrapping
-  if (i==j) {
-    i=(i+1)%n;
-    j = i;
+  if (i==j)
+  {
+	  i=(i+1)%n;
+	  j = i;
   }
   // upper triangle gets incremented "down and to the right" with diagonal wrapping
   else if (i<j) {
-    if (i<n-2 && j<n-1) {
-      i++;
-      j++;
-    } else {
-      j = (n-i);
-      if (j>n-1) j=1;
-      i = 0;
-    }
+	  if (i<n-2 && j<n-1)
+	  {
+		  i++;
+		  j++;
+	  } else {
+		  j = (n-i);
+		  if (j>n-1) j=1;
+		  i = 0;
+	  }
   }
   // lower triangle gets treated as upprt triangle, with the two axes swapped.
   else if (i>j) {
-    upper_triangle_incr( j, i, n);
+	  upper_triangle_incr( j, i, n);
   }
-  // cout << "  upper_triangle_incr after:  i, j = " << " " << i << " " << j << endl;
+  cout << "  upper_triangle_incr after:  i, j = " << " " << i << " " << j << endl;
   assert( i >= 0);
   assert( j >= 0);
   assert( i < n);

@@ -236,7 +236,8 @@ void control_panel_window::make_widgets( control_panel_window *cpw)
     new Fl_Choice (xpos, ypos+=45, 100, 25, "axis 1");
   varindex1->align(FL_ALIGN_TOP);
   varindex1->textsize(12);
-  varindex1->menu( varindex_menu_items);
+  varindex1->copy( varindex_menu_items);
+  varindex1->mode( nvars, FL_MENU_INACTIVE);  // disable "--nothing--" as a choice for axis1
   varindex1->callback(
     (Fl_Callback*)static_extract_and_redraw, this);
 
@@ -244,7 +245,8 @@ void control_panel_window::make_widgets( control_panel_window *cpw)
     new Fl_Choice (xpos+100, ypos, 100, 25, "axis 2");
   varindex2->align(FL_ALIGN_TOP);
   varindex2->textsize(12);
-  varindex2->menu( varindex_menu_items);
+  varindex2->copy( varindex_menu_items);
+  varindex2->mode( nvars, FL_MENU_INACTIVE);  // disable "--nothing--" as a choice for axis2
   varindex2->callback(
     (Fl_Callback*)static_extract_and_redraw, this);
 
@@ -252,7 +254,7 @@ void control_panel_window::make_widgets( control_panel_window *cpw)
     new Fl_Choice (xpos+200, ypos, 100, 25, "axis 3");
   varindex3->align(FL_ALIGN_TOP);
   varindex3->textsize(12);
-  varindex3->menu( varindex_menu_items);
+  varindex3->copy( varindex_menu_items);
   varindex3->value(nvars);  // initially, axis3 == "-nothing-"
   varindex3->callback(
     (Fl_Callback*)static_extract_and_redraw, this);
@@ -406,7 +408,7 @@ void control_panel_window::make_widgets( control_panel_window *cpw)
   ypos=ypos2;
   xpos=xpos2+200;
 
-  b = new Fl_Button(xpos, ypos+=25, 20, 20, "selection color");
+  choose_selection_color_button = b = new Fl_Button(xpos, ypos+=25, 20, 20, "selection color");
   b->align(FL_ALIGN_RIGHT); 
   b->selection_color(FL_BLUE); 
   b->callback((Fl_Callback*)choose_color_selected, this);

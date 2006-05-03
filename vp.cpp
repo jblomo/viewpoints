@@ -20,7 +20,7 @@
 //
 // Compiler directives:
 //   May require -D__WIN32__ to compile on windows
-//   See Makefile for linux and OSX compile & link info.
+//	 See Makefile for linux and OSX compile & link info.
 //
 // Purpose: viewpoints - interactive linked scatterplots and more.
 //
@@ -241,7 +241,7 @@ void create_main_control_panel(
 //  should it be a singleton?
 void create_broadcast_group ()
 {
-  Fl_Group::current(cpt);   
+  Fl_Group::current(cpt);	
   control_panel_window *cp = cps[nplots];
   cp = new control_panel_window( cp_widget_x, cp_widget_y, main_w - 6, cp_widget_h);
   cp->label("+");
@@ -251,16 +251,26 @@ void create_broadcast_group ()
   cp->end();
   // this group's index is highest (and it has no associated plot window)
   cp->index = nplots;
+  // this group's callbacks all broadcast any "event" to the other (unlocked) tabs groups.
+  // with a few exceptions... (for now)
+  for (int i=0; i<cp->children(); i++)
+  {
+	  Fl_Widget *wp = cp->child(i);
+	  wp->callback((Fl_Callback *)(control_panel_window::broadcast_change), cp);
+  }
+
+  // MCL XXX these widgets cause crashes or misbehaviors in the global panel, so skip them for now.
+  cp->choose_selection_color_button->deactivate();
+  cp->sum_vs_difference->deactivate();
+  cp->polar->deactivate();
+  cp->no_transform->deactivate();
+
   // initially, this group has no axes (XXX or anything else, for that matter)
   cp->varindex1->value(nvars);  // initially == "-nothing-"
   cp->varindex2->value(nvars);  // initially == "-nothing-"
   cp->varindex3->value(nvars);  // initially == "-nothing-"
-  // this group's callbacks all broadcast any "event" to the other (unlocked) tabs groups.
-  for (int i=0; i<cp->children(); i++)
-  {
-      Fl_Widget *wp = cp->child(i);
-      wp->callback((Fl_Callback *)(control_panel_window::broadcast_change), cp);
-  }
+
+
 }
 
 //*****************************************************************
@@ -268,7 +278,7 @@ void create_broadcast_group ()
 // create, manage, and reload the plot window array.  It saves any
 // existing axis information, deletes old tabs, creates new tabs, 
 // restores existing axis information, and loads new data into new 
-// plot windows.  NOTE: Little attempt has been made to optimize
+// plot windows.  NOTE: Littlwe attempt has been made to optimize
 // this method for speed.  WARNING: It is assumed this will be
 // invoked from either NULL or a Fl_Menu_ widget.  Otherwise the 
 // call to o->text() will fail!
@@ -309,21 +319,20 @@ void manage_plot_window_array( Fl_Widget *o)
   int y_normalization_style_old[ nplots_old];
   int z_normalization_style_old[ nplots_old];
   for( int i=0; i<nplots_old; i++) {
-	ivar_old[ i] = cps[i]->varindex1->value();
-	jvar_old[ i] = cps[i]->varindex2->value();
-	kvar_old[ i] = cps[i]->varindex3->value();
-	x_normalization_style_old[ i] =
-	  cps[i]->x_normalization_style->value();
-	y_normalization_style_old[ i] =
-	  cps[i]->y_normalization_style->value();
-	z_normalization_style_old[ i] =
-	  cps[i]->z_normalization_style->value();
+    ivar_old[ i] = cps[i]->varindex1->value();
+    jvar_old[ i] = cps[i]->varindex2->value();
+    kvar_old[ i] = cps[i]->varindex3->value();
+    x_normalization_style_old[ i] =
+      cps[i]->x_normalization_style->value();
+    y_normalization_style_old[ i] =
+      cps[i]->y_normalization_style->value();
+    z_normalization_style_old[ i] =
+      cps[i]->z_normalization_style->value();
   }
   
   // Clear children of tab widget to delete old tabs
   cpt->clear();
 
-  // MCL XXX - objectional duplicate code alert! Fix!
   // Create and add the virtual sub-panels, each group under a 
   // tab, one per plot.
   for( int i=0; i<nplots; i++) {
@@ -358,7 +367,7 @@ void manage_plot_window_array( Fl_Widget *o)
     // Set pointer to the current group to the tab widget defined 
     // by create_control_panel and add a new virtual control panel
     // under this tab widget
-    Fl_Group::current(cpt); 
+    Fl_Group::current(cpt);	
     cps[i] = new control_panel_window( 
       cp_widget_x, cp_widget_y, main_w - 6, cp_widget_h);
     cps[i]->copy_label( labstr.c_str());
@@ -373,10 +382,8 @@ void manage_plot_window_array( Fl_Widget *o)
     Fl_Group::current(0); 
 
     // Create plotting window i
-    if( i>=nplots_old)
-	  pws[i] = new plot_window( pw_w, pw_h);
-    else
-	  pws[i]->size( pw_w, pw_h);
+    if( i>=nplots_old) pws[i] = new plot_window( pw_w, pw_h);
+    else pws[ i]->size( pw_w, pw_h);
     pws[i]->copy_label( labstr.c_str());
     pws[i]->position(pw_x, pw_y);
     pws[i]->row = row; 
@@ -398,7 +405,7 @@ void manage_plot_window_array( Fl_Widget *o)
       // plot's tab is shown and its axes are locked.
       if( o == NULL) {
         cps[i]->lock_axes_button->value(1);
-        cps[i]->show(); 
+        cps[i]->hide();	
       }
     }
     else plot_window::upper_triangle_incr( ivar, jvar, nvars);
@@ -443,7 +450,7 @@ void manage_plot_window_array( Fl_Widget *o)
   
   // Get rid of any superfluous plot windows
   if( nplots < nplots_old)
-    for( int i=nplots; i<nplots_old; i++) pws[i]->hide(); // MCL XXX shouldn't we delete them?
+    for( int i=nplots; i<nplots_old; i++) pws[i]->hide();
 
   // Create master control panel for tabs
   create_broadcast_group ();
@@ -528,7 +535,7 @@ void make_help_view_window( Fl_Widget *o)
   // Define Fl_Help_View widget
   Fl_Help_View *help_view_widget =
     new Fl_Help_View( 5, 5, 590, 390, "");
-  (void) help_view_widget->load( "vp_help_manual.htm");
+  int is_loaded = help_view_widget->load( "vp_help_manual.htm");
   help_view_widget->labelsize( 14);
   
   // XXX: A close button might be nice someday
@@ -576,7 +583,7 @@ void make_global_widgets()
   b->align( FL_ALIGN_RIGHT); 
   b->selection_color( FL_BLUE); 
   b->type( FL_TOGGLE_BUTTON);
-  b->value( 0); 
+  b->value( 0);	
 
   // Button(3,1): Invert colors of selected and nonselected data
   invert_selection_button = b = 
@@ -752,7 +759,7 @@ void reload_plot_window_array( Fl_Widget *o)
     // Set pointer to the current group to the tab widget defined 
     // by create_control_panel and add a new virtual control panel
     // under this tab widget
-    Fl_Group::current(cpt); 
+    Fl_Group::current(cpt);	
     // cps[i] = new control_panel_window( 3, 30, main_w - 6, 480);
     cps[i] = new control_panel_window( 
       cp_widget_x, cp_widget_y, main_w - 6, cp_widget_h);
@@ -780,7 +787,7 @@ void reload_plot_window_array( Fl_Widget *o)
       // Initially the first plot's tab is shown, and its axes 
       // are locked.
       cps[i]->lock_axes_button->value(1);
-      cps[i]->show();   
+      cps[i]->hide();	
     } 
     else {
       plot_window::upper_triangle_incr( ivar, jvar, nvars);
@@ -1004,6 +1011,8 @@ int main( int argc, char **argv)
         }
         break;
       
+      // npoints: Extract maximum number of points (samples, rows 
+      // of data) to read from the data file
       case 's':
         dfm.nSkipHeaderLines = atoi( optarg);
         if( dfm.nSkipHeaderLines < 0)  {
@@ -1116,12 +1125,6 @@ int main( int argc, char **argv)
   // Fewer points -> bigger starting pointsize
   pointsize = max( 1.0, 6.0 - (int) log10f( (float) npoints));
 
-  // no points are in the selected set, initially.
-  // XXX to support initial selections, they need to be set up before
-  // we get here.
-  
-  // selection_changed = 1;
-
   // STEP 3: Create main control panel
   // Determine the number of screens.  NOTE screen_count requires 
   // OpenGL 1.7, which was not available under most Windows OS as 
@@ -1159,6 +1162,7 @@ int main( int argc, char **argv)
   // Step 5: Set pointer to the function to call when the window is
   // idle and enter the main event loop
   Fl::add_idle( redraw_if_changing);
+  // Fl::add_check(redraw_if_changing);
 
   // Enter the main event loop
   int result = Fl::run();
