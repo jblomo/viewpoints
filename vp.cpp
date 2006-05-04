@@ -50,16 +50,8 @@
 //   read_data( *o, *user_data) -- Read data widget
 //   redraw_if_changing( *dummy) -- Redraw changing plots
 //
-// Modification history
-// 25-MAR-2006:
-// -Reorganized headers for clarity and ease of maintentance
-// -Restructured code to make class plot_window and class
-//  control_panel_window self-contained.
-// -Moved global variables to local files and within classes to
-//  limit their scope
-//
 // Author: Creon Levit   2005-2006
-// Modified: P. R. Gazis  25-APR-2006
+// Modified: P. R. Gazis  04-MAY-2006
 //*****************************************************************
 
 // Include the necessary include libraries
@@ -80,7 +72,7 @@
 #include "control_panel_window.cpp"
 
 // Define and initialize number of screens
-int number_of_screens = 0;
+static int number_of_screens = 0;
 
 // Approximate values of window manager borders & desktop borders 
 // (stay out of these).  These are used by the main method when 
@@ -89,11 +81,11 @@ int number_of_screens = 0;
 // "hints" according most window managers (and we all know how
 // well managers take hints).
 #ifdef __APPLE__
- int top_frame=35, bottom_frame=0, left_frame=0, right_frame=5;
- int top_safe = 1, bottom_safe=5, left_safe=5, right_safe=1;
+ static int top_frame=35, bottom_frame=0, left_frame=0, right_frame=5;
+ static int top_safe = 1, bottom_safe=5, left_safe=5, right_safe=1;
 #else // __APPLE__
- int top_frame=25, bottom_frame=5, left_frame=4, right_frame=5;
- int top_safe = 1, bottom_safe=10, left_safe=10, right_safe=1;
+ static int top_frame=25, bottom_frame=5, left_frame=4, right_frame=5;
+ static int top_safe = 1, bottom_safe=10, left_safe=10, right_safe=1;
 #endif // __APPLE__
 
 // Define and set maximums for header block
@@ -107,16 +99,19 @@ static char **global_argv;
 // Define and set default border style for the plot windows
 static int borderless=0;  // By default, use window manager borders
 
+// Needed to track position in help window
+static int help_topline;
+
 // Define variables to hold main control panel window, tabs 
 // widget, and virtual control panel positions.  Consolidated
 // here for reasons of clarity.
 // const int main_w = 350, main_h = 700;
-const int main_w = 350, main_h = 725;
-const int tabs_widget_x = 3, tabs_widget_y = 30;
-const int tabs_widget_h = 500;
-const int cp_widget_x = 3, cp_widget_y = 50;
-const int cp_widget_h = 480;
-const int global_widgets_x = 10, global_widgets_y = 520;
+static const int main_w = 350, main_h = 725;
+static const int tabs_widget_x = 3, tabs_widget_y = 30;
+static const int tabs_widget_h = 500;
+static const int cp_widget_x = 3, cp_widget_y = 50;
+static const int cp_widget_h = 480;
+static const int global_widgets_x = 10, global_widgets_y = 520;
 
 // Define class to hold data file manager
 data_file_manager dfm;
@@ -127,6 +122,7 @@ Fl_Window *main_control_panel;
 Fl_Menu_Bar *main_menu_bar;
 Fl_Window *about_window;
 Fl_Window *help_view_window;
+Fl_Help_View *help_view_widget;
 
 // Function definitions for the main method
 void usage();
@@ -138,6 +134,8 @@ void create_broadcast_group();
 void manage_plot_window_array( Fl_Widget *o);
 void make_main_menu_bar();
 void make_help_view_window( Fl_Widget *o);
+void close_help_window( Fl_Widget *o, void* user_data);
+void step_help_view_widget( Fl_Widget *o, void* user_data);
 void make_global_widgets();
 void choose_color_deselected( Fl_Widget *o);
 void change_all_axes( Fl_Widget *o);
@@ -179,20 +177,30 @@ void make_help_about_window( Fl_Widget *o)
   about_window->selection_color( FL_BLUE);
   about_window->labelsize( 10);
   
-  // Compose text
+  // Compose text. NOTE use of @@ in conjunction with label()
   string sAbout = "viewpoints 1.0.2\n";
   sAbout += "(c) 2006 C. Levit and P. R. Gazis\n\n";
   sAbout += "contact information:\n";
-  sAbout += "Creon Levit creon@nas.nasa.gov\n";
-  sAbout += "Paul R Gazis pgazis@mail.arc.nasa.gov\n\n";
+  sAbout += "Creon Levit creon@@nas.nasa.gov\n";
+  sAbout += "Paul R Gazis pgazis@@mail.arc.nasa.gov\n\n";
 
-  // Write text
-  Fl_Multiline_Output* output_widget = 
-    new Fl_Multiline_Output( 5, 5, 290, 190); 
-  output_widget->value( sAbout.c_str());
+  // Write text (old version with Fl_Multiline_Output)
+  // Fl_Multiline_Output* output_widget = 
+  //   new Fl_Multiline_Output( 5, 5, 290, 190); 
+  // output_widget->value( sAbout.c_str());
 
-  // XXX: A close button might be nice someday
-  // Fl_Button* close = new Fl_Button(100, 150, 70, 30, "&Close");
+  // Write text to box label and align it inside box
+  Fl_Box* output_box = new Fl_Box( 5, 5, 290, 160, sAbout.c_str());
+  output_box->box(FL_SHADOW_BOX);
+  output_box->color(7);
+  output_box->selection_color(52);
+  output_box->labelfont(FL_HELVETICA);
+  output_box->labelsize(15);
+  output_box->align(FL_ALIGN_TOP|FL_ALIGN_CENTER|FL_ALIGN_INSIDE);
+
+  // Invoke universal callback function to close window
+  Fl_Button* close = new Fl_Button( 200, 170, 60, 25, "&Close");
+  close->callback( (Fl_Callback*) close_help_window, about_window);
 
   // Done creating the 'Help|About' window
   about_window->resizable( about_window);
@@ -499,7 +507,7 @@ void make_main_menu_bar()
 
   // Add Help menu items
   main_menu_bar->add( 
-    "Help/Help   ", 0, (Fl_Callback *) make_help_view_window);
+    "Help/Viewpoints Help   ", 0, (Fl_Callback *) make_help_view_window);
   main_menu_bar->add( 
     "Help/About   ", 0, (Fl_Callback *) make_help_about_window);
   
@@ -520,12 +528,12 @@ void make_main_menu_bar()
 }
 
 //*****************************************************************
-// make_help_view_window( *o) -- Create the 'Help|About' window.
+// make_help_view_window( *o) -- Create the 'Help|Help' window.
 void make_help_view_window( Fl_Widget *o)
 {
   if( help_view_window != NULL) help_view_window->hide();
   
-  // Create Help|View window
+  // Create Help|Help window
   Fl::scheme( "plastic");  // optional
   help_view_window = new Fl_Window( 600, 400, "Viewpoints Help");
   help_view_window->begin();
@@ -533,18 +541,45 @@ void make_help_view_window( Fl_Widget *o)
   help_view_window->labelsize( 10);
 
   // Define Fl_Help_View widget
-  Fl_Help_View *help_view_widget =
-    new Fl_Help_View( 5, 5, 590, 390, "");
-  int is_loaded = help_view_widget->load( "vp_help_manual.htm");
+  // Fl_Help_View *help_view_widget =
+  //   new Fl_Help_View( 5, 5, 590, 350, "");
+  help_view_widget = new Fl_Help_View( 5, 5, 590, 350, "");
+  (void) help_view_widget->load( "vp_help_manual.htm");
   help_view_widget->labelsize( 14);
+  help_topline = help_view_widget->topline();
   
-  // XXX: A close button might be nice someday
-  // Fl_Button* close = new Fl_Button(100, 150, 70, 30, "&Close");
+  // Invoke callback function to move through help_view widget
+  Fl_Button* back = new Fl_Button( 325, 365, 70, 30, "&Back");
+  back->callback( (Fl_Callback*) step_help_view_widget, (void*) -60);
+  Fl_Button* fwd = new Fl_Button( 400, 365, 70, 30, "&Fwd");
+  fwd->callback( (Fl_Callback*) step_help_view_widget, (void*) 60);
 
-  // Done creating the 'Help|About' window
+  // Invoke callback function to close window
+  Fl_Button* close = new Fl_Button( 500, 365, 70, 30, "&Close");
+  close->callback( (Fl_Callback*) close_help_window, help_view_window);
+
+  // Done creating the 'Help|Help' window
   help_view_window->resizable( help_view_window);
   help_view_window->end();
   help_view_window->show();
+}
+
+//*****************************************************************
+// close_help_window( *o, *user_data) -- Close a Help window
+void close_help_window( Fl_Widget *o, void* user_data)
+{
+  // WARNING: No error checking is done on user_data!
+  ((Fl_Window*) user_data)->hide();
+}
+
+//*****************************************************************
+// step_help_view_window( *o, *user_data) -- Step through the 
+// 'Help|Help' window.
+void step_help_view_widget( Fl_Widget *o, void* user_data)
+{
+  help_topline += (int) user_data;
+  if( help_topline < 0) help_topline=0;
+  help_view_widget->topline( help_topline);
 }
 
 //*****************************************************************
