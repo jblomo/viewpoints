@@ -1,3 +1,30 @@
+Notes for the Revision of 04-MAY-2006
+Paul R Gazis
+
+Overview
+  Incorporated reload_plot_window_array into manage_plot_window_array!
+Also made minor changes to r58 to make variables in vp.cpp static and 
+to add buttons and functionality to the help windows.
+
+Changes
+
+vp.cpp -- Changes are listed below:
+  1) Incorporated reload_plot_window_array into manage_plot_window_array!
+     This required significant changes to the way manage_plot_window_array
+     was called, how it determines how it was called, and how it stores
+     the calling state.  Calls are processed by applying dynamic_cast to
+     the invoking widget; NULL value implies that this is an initialization
+     operation.  The calling state is stored via a flag, uInitialization,
+     and two variables, nplots and nplots_old.
+  2) Made all variables in the header static.  Added a new variable,
+     static int topline, needed by the help window browser.
+  3) Slight modifications to make_main_menu_bar
+  4) Modified make_help_about_window to change appearance and add a
+     'close' button.
+  5) Modified make_help_view_window to change appearance and add
+     'fwd', 'back', and 'close' button.
+
+
 Notes for the Revision of 24-APR-2006
 Paul R Gazis
 
@@ -10,7 +37,7 @@ window array.
 
 Changes
 
-vp.cpp -- Data file namagement methods have been moved to a
+vp.cpp -- Data file management methods have been moved to a
   separate data_file_manager class.  Main menu bar was modified 
   and the plot window array is now managed by a general-purpose
   manage_plot_window method.  NOTE: This could also subsume the 

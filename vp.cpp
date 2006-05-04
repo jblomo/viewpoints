@@ -117,7 +117,8 @@ static const int global_widgets_x = 10, global_widgets_y = 520;
 data_file_manager dfm;
 
 // Define pointers to hold main control panel, main menu bar, and
-// any pop-up windows
+// any pop-up windows.  NOTE: help_view_widget must be defined here
+// so it will be available to callback functions
 Fl_Window *main_control_panel;
 Fl_Menu_Bar *main_menu_bar;
 Fl_Window *about_window;
@@ -143,7 +144,6 @@ void clearAlphaPlanes();
 void npoints_changed( Fl_Widget *o);
 void write_data( Fl_Widget *o);
 void reset_all_plots( void);
-void reload_plot_window_array( Fl_Widget *o);
 void read_data( Fl_Widget* o, void* user_data);
 void redraw_if_changing( void *dummy);
 
@@ -286,40 +286,58 @@ void create_broadcast_group ()
 // create, manage, and reload the plot window array.  It saves any
 // existing axis information, deletes old tabs, creates new tabs, 
 // restores existing axis information, and loads new data into new 
-// plot windows.  NOTE: Littlwe attempt has been made to optimize
-// this method for speed.  WARNING: It is assumed this will be
-// invoked from either NULL or a Fl_Menu_ widget.  Otherwise the 
-// call to o->text() will fail!
+// plot windows.  There are four possible behaviors, which must be
+// recognized, identified, and treated differently:
+// 1) Initialization -- NULL argument.  Set nplots_old = 0.  
+//    Identified by a flag, uInitialize.
+// 2) New data -- Called from button or menu.  Set nplots_old = 0.
+//    Identified by uIintialize == 0 and nplots_old == 0.
+// 3) Resize operation -- Called from menu.  Set nplots_old = 
+//    nplots, then calculate a new value of nplots.  Identified by 
+//    uInitialize == 0 and nplots_old != nplots.
+// 4) Reload operation -- Called from button or menu.  Keep 
+//    nplots = nplots_old.  Identified by uInitialize == 0 and 
+//    nplots_old == nplots.
+// NOTE: Little attempt has been made to optimize this method for 
+// speed.  WARNINGS: 1) Tbis method is delicate, and slight changes
+// in the FLTK calls could lead to elusive segmentation faults!
+// Test any changes carefully!  2) There is little protected against 
+// missing data!
 void manage_plot_window_array( Fl_Widget *o)
 {
-  // Get widget pathname (not used, but left here in case it is
-  // needed)
-  // char itemPathName[ 80];
-  // int iResult = ((Fl_Menu_*) o)->item_pathname( itemPathName, 80);
-
-  // Get the widget title.  If none was specified, assume this is
-  // the first call to this method and initialize nplots to 0.
+  // Determine how the method was invoked and set the uInitialize
+  // flag and plot numbers accordingly.  
+  unsigned uInitialize = 0;
+  int nplots_old = nplots;
   char title[ 80];
   strcpy( title, "");
-  if( o != NULL) strcpy( title, ((Fl_Menu_*) o)->text());
-  else nplots = 0;
+  Fl_Menu_* pMenu_;
+  Fl_Button* pButton;
+  if( o == NULL) {
+    uInitialize = 1;
+    nplots_old = 0;
+  }
+  else if( pMenu_ = dynamic_cast <Fl_Menu_*> (o)) {
+    strcpy( title, ((Fl_Menu_*) o)->text());
+    if( strncmp( title, "Add Row ", 8) == 0) nrows++;
+    else if( strncmp( title, "Add Colu", 8) == 0) ncols++;
+    else if( strncmp( title, "Remove R", 8) == 0 && nrows>1) nrows--;
+    else if( strncmp( title, "Remove C", 8) == 0 && ncols>1) ncols--;
 
-  // Revise size of plot array
-  if( strncmp( title, "Add Row ", 8) == 0) nrows++;
-  else if( strncmp( title, "Add Colu", 8) == 0) ncols++;
-  else if( strncmp( title, "Remove R", 8) == 0 && nrows>1) nrows--;
-  else if( strncmp( title, "Remove C", 8) == 0 && ncols>1) ncols--;
-  int nplots_new=nrows*ncols;
-  
-  // If nothing changed then quit? 
-  if( nplots_new == nplots) return;
+    if( strncmp( title, "Read", 4) == 0) nplots_old = 0;
+    else nplots_old = nplots;
+  }
+  else if( pButton = dynamic_cast <Fl_Button*> (o)) {
+    strcpy( title, ((Fl_Menu_*) o)->label());
+    if( strncmp( title, "Read", 4) == 0) nplots_old = 0;
+    else nplots_old = nplots;
+  }
+  else nplots_old = nplots;
+  nplots = nrows * ncols;
 
-  // Record old and new values of nplots
-  int nplots_old=nplots;
-  nplots = nplots_new;
-
-  // Save old variable indices and normalization styles.  
-  // QUESTION: is this always safe when nplots_old is zero?
+  // Save old variable indices and normalization styles, if any.  
+  // QUESTION: are these array declarations always safe when 
+  // nplots_old = 0?
   int ivar_old[ nplots_old];
   int jvar_old[ nplots_old];
   int kvar_old[ nplots_old];
@@ -389,14 +407,18 @@ void manage_plot_window_array( Fl_Widget *o)
     cps[i]->end();
     Fl_Group::current(0); 
 
-    // Create plotting window i
-    if( i>=nplots_old) pws[i] = new plot_window( pw_w, pw_h);
-    else pws[ i]->size( pw_w, pw_h);
-    pws[i]->copy_label( labstr.c_str());
-    pws[i]->position(pw_x, pw_y);
-    pws[i]->row = row; 
-    pws[i]->column = col;
-    pws[i]->end();
+    // If this is an initialization or resize operation, create or
+    // restore windows.  NOTE: If this code was executed during a
+    // read or reload operation, it would cause a segemantion fault.
+    if( uInitialize || ( nplots != nplots_old && nplots_old > 0)) {
+      if( i>=nplots_old) pws[i] = new plot_window( pw_w, pw_h);
+      else pws[ i]->size( pw_w, pw_h);
+      pws[i]->copy_label( labstr.c_str());
+      pws[i]->position(pw_x, pw_y);
+      pws[i]->row = row; 
+      pws[i]->column = col;
+      pws[i]->end();
+    }
 
     // Link plot window and its associated virtual control panel
     pws[i]->index = cps[i]->index = i;
@@ -418,31 +440,41 @@ void manage_plot_window_array( Fl_Widget *o)
     }
     else plot_window::upper_triangle_incr( ivar, jvar, nvars);
 
-    // Restore prior variable indices and normalization styles 
-    // for old panels or set variable indices for new panels
-    if( i<nplots_old) {
-      cps[i]->varindex1->value( ivar_old[i]);  
-      cps[i]->varindex2->value( jvar_old[i]);
-      cps[i]->varindex3->value( kvar_old[i]);
-      cps[i]->x_normalization_style->value( 
-        x_normalization_style_old[i]);  
-      cps[i]->y_normalization_style->value( 
-        y_normalization_style_old[i]);  
-      cps[i]->z_normalization_style->value( 
-        z_normalization_style_old[i]);  
-    }
+    // If this is an initialization or this is a resize operation, 
+    // restore variable indices and normalization styles for old 
+    // panels.  Otherwise set variable indices for new panels    
+    if( uInitialize || ( nplots != nplots_old && i<nplots_old)) {
+        cps[i]->varindex1->value( ivar_old[i]);  
+        cps[i]->varindex2->value( jvar_old[i]);
+        cps[i]->varindex3->value( kvar_old[i]);
+        cps[i]->x_normalization_style->value( 
+          x_normalization_style_old[i]);  
+        cps[i]->y_normalization_style->value( 
+          y_normalization_style_old[i]);  
+        cps[i]->z_normalization_style->value( 
+          z_normalization_style_old[i]);  
+    } 
     else {
       cps[i]->varindex1->value(ivar);  
       cps[i]->varindex2->value(jvar);  
-    } 
-
-    // Could put first of two tests for npoints <=1 here
-    if( npoints > 1) {
-      pws[i]->extract_data_points();
-      pws[i]->reset_view();
+      cps[i]->varindex3->value(nvars);  
     }
-    pws[i]->size_range( 10, 10);
-    pws[i]->resizable( pws[i]);
+
+    // If this is an initialization or resize operation, test for
+    // missing data, extract data, and reset panels.  Otherwise 
+    // initialize and draw panels
+    if( uInitialize || ( nplots != nplots_old && nplots_old > 0)) {
+      if( npoints > 1) {
+        pws[i]->extract_data_points();
+        pws[i]->reset_view();
+      }
+      pws[i]->size_range( 10, 10);
+      pws[i]->resizable( pws[i]);
+    }
+    else {
+      pws[i]->initialize();
+      pws[i]->extract_data_points();
+    }
 
     if( borderless) pws[i]->border(0);
 
@@ -503,7 +535,7 @@ void make_main_menu_bar()
     (Fl_Callback *) manage_plot_window_array, 0, FL_MENU_DIVIDER);
   main_menu_bar->add( 
     "View/Reload Plots   ", 0, 
-    (Fl_Callback *) reload_plot_window_array);
+    (Fl_Callback *) manage_plot_window_array);
 
   // Add Help menu items
   main_menu_bar->add( 
@@ -541,8 +573,6 @@ void make_help_view_window( Fl_Widget *o)
   help_view_window->labelsize( 10);
 
   // Define Fl_Help_View widget
-  // Fl_Help_View *help_view_widget =
-  //   new Fl_Help_View( 5, 5, 590, 350, "");
   help_view_widget = new Fl_Help_View( 5, 5, 590, 350, "");
   (void) help_view_widget->load( "vp_help_manual.htm");
   help_view_widget->labelsize( 14);
@@ -685,7 +715,7 @@ void make_global_widgets()
     new Fl_Button( xpos, ypos+=25, 20, 20, "reload plots");
   b->align( FL_ALIGN_RIGHT); 
   b->selection_color( FL_BLUE); 
-  b->callback( reload_plot_window_array);
+  b->callback( manage_plot_window_array);
 
   // Button(6,2): Read ASCII data file
   // read_data_button = b = 
@@ -756,98 +786,6 @@ void reset_all_plots()
   for( int i=0; i<nplots; i++) {
     pws[i]->reset_view();
   }
-}
-
-//*****************************************************************
-// reload_plot_window_array( o) -- Check to make sure data are
-// available, then delete old tabs, create new tabs, and load data
-// into the associated plot windows.
-// MCL - XXX refactor this with manage_plot_window_array()
-// PRG - XXX when attempts are made to refactor this with 
-// manage_plot_window_array(), calls to add rows or columns,
-// followed by data input, followed by another call to add rows
-// or columns produce what appears to be a segementation fault.
-void reload_plot_window_array( Fl_Widget *o)
-{
-  // Check to make sure data are available (not needed?)
-  if( npoints <= 1) {
-    cout << "ERROR: "
-         << "insufficient data to reload plot window array"
-         << endl;
-    return;
-  }
-
-  // Clear children of tab widget to delete old tabs
-  cpt->clear();
-
-  // Loop: Create and add new tabbed sub-panels (each a group 
-  // under a tab) and load data into the associated plot windows.
-  for( int i=0; i<nplots; i++) {
-    if( borderless)
-      top_frame = bottom_frame = left_frame = right_frame = 1;
-
-    // Create a label for this tab
-    ostringstream oss;
-    oss << "" << i+1;
-    string labstr = oss.str();
-
-    // Set pointer to the current group to the tab widget defined 
-    // by create_control_panel and add a new virtual control panel
-    // under this tab widget
-    Fl_Group::current(cpt);	
-    // cps[i] = new control_panel_window( 3, 30, main_w - 6, 480);
-    cps[i] = new control_panel_window( 
-      cp_widget_x, cp_widget_y, main_w - 6, cp_widget_h);
-    cps[i]->copy_label( labstr.c_str());
-    cps[i]->labelsize( 10);
-    cps[i]->resizable( cps[i]);
-    cps[i]->make_widgets( cps[i]);
-
-    // End the group here so that we can create new plot windows 
-    // at the top level, then set the pointer to the current group
-    // to the top level.
-    cps[i]->end();
-    Fl_Group::current(0); 
-
-    // Link plot window and its associated virtual control panel
-    pws[i]->index = cps[i]->index = i;
-    cps[i]->pw = pws[i];
-    pws[i]->cp = cps[i];
-
-    // Determine which variables to plot, initially
-    int ivar, jvar;
-    if( i==0) {
-      ivar = 0; jvar = 1;
-
-      // Initially the first plot's tab is shown, and its axes 
-      // are locked.
-      cps[i]->lock_axes_button->value(1);
-      cps[i]->hide();	
-    } 
-    else {
-      plot_window::upper_triangle_incr( ivar, jvar, nvars);
-    }
-    cps[i]->varindex1->value(ivar);  
-    cps[i]->varindex2->value(jvar);  
-    cps[i]->varindex3->value(nvars);  
-
-    // Invoke the initializer to resize histogram arrays to 
-    // avoid segmentation errors (!!!).  Then extract and plot 
-    // data points.  
-    pws[i]->initialize();
-    pws[i]->extract_data_points();
-
-    // May be unecessary: should have been handled during 
-    // initial setup?
-    if( borderless) pws[i]->border(0);
-
-    // Invoke show() to bring back any windows that were closed.
-    pws[i]->show();
-    pws[i]->resizable( pws[i]);
-  }
-
-  // Create master control panel for tabs
-  create_broadcast_group ();
 }
 
 //*****************************************************************
@@ -923,8 +861,8 @@ void read_data( Fl_Widget* o, void* user_data)
   pointsize = max( 1.0, 6.0 - (int) log10f( (float) npoints));
 
   // Clear children of tab widget and reload plot window array
-  // cpt->clear();  // Now done by reload_plot_window_array( o)
-  reload_plot_window_array( o);
+  // cpt->clear();  // Now done by manage_plot_window_array( o)
+  manage_plot_window_array( o);
 }
 
 //*****************************************************************
@@ -967,17 +905,16 @@ void redraw_if_changing( void *dummy)
 //*****************************************************************
 // Main routine
 //
-// Purpose: Driver to run everything.  STEP 1: Read and parse
-//  command line.  STEP 2: Read data file.  STEP 3: Create main
-//  control panel.  This is an involved process that could be
-//  broken down into several successive functions.  STEP 4: Enter
-//  main process loop until done.
+// Purpose: Driver to run everything.  STEP 1: Read and parse the
+//  command line.  STEP 2: Read data file or create default data 
+//  set.  STEP 3: Create main control panel.  STEP 4: Create plot
+//  window array.  STEP 5: Enter main execution loop.
 //
 // Functions:
 //   main() -- main routine
 //
 // Author:   Creon Levit   unknown
-// Modified: P. R. Gazis   13-MAR-2006
+// Modified: P. R. Gazis   04-MAY-2006
 //*****************************************************************
 //*****************************************************************
 // Main -- Driver routine
@@ -1184,9 +1121,10 @@ int main( int argc, char **argv)
     main_x, main_y, main_w, main_h,
     "viewpoints -> creon@nas.nasa.gov");
 
-  // Step 4: Create an array of plot windows with associated tabs in
-  // the main control panel window.  KLUDGE ALERT: argc and argv are
-  // 'globalized' to make them available to manage_plot_window_array.
+  // Step 4: Call manage_plot_window_array with a NULL argument to
+  // to initialize the plot window array.  KLUDGE ALERT: argc and 
+  // argv are 'globalized' to make them available to 
+  // manage_plot_window_array.
   global_argc = argc;
   global_argv = argv;
   manage_plot_window_array( NULL);
@@ -1197,7 +1135,6 @@ int main( int argc, char **argv)
   // Step 5: Set pointer to the function to call when the window is
   // idle and enter the main event loop
   Fl::add_idle( redraw_if_changing);
-  // Fl::add_check(redraw_if_changing);
 
   // Enter the main event loop
   int result = Fl::run();
