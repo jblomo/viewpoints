@@ -14,7 +14,7 @@ endif
 
 # flags for C++ compiler:
 # PROFILE		= -pg
-DEBUG		= -ggdb -g3 -Wall -Wunused -DBZ_DEBUG
+DEBUG		= -O0 -ggdb -g3 -Wall -Wunused -DBZ_DEBUG
 #DEBUG		= -g -ggdb -g3 -Wall -Wunused -fexceptions
 
 
@@ -23,9 +23,9 @@ ifeq ($(platform),Darwin)
 # Uncomment for no optimization. For debugging on OSX
 	OPTIM = $(DEBUG)
 # Uncomment to optimize for G5 
-	OPTIM = -O6 -ftree-vectorize -ftree-vectorizer-verbose=0 -Wall -Wno-unused -Wno-long-double -Wno-deprecated -fno-exceptions -ffast-math -pipe -fsigned-char -maltivec -mabi=altivec -faltivec -mcpu=G5 -mtune=G5 -mpowerpc-gfxopt -g
+#	OPTIM = -O6 -ftree-vectorize -ftree-vectorizer-verbose=0 -Wall -Wno-long-double -fno-exceptions -ffast-math -pipe -fsigned-char -maltivec -mabi=altivec -faltivec -mcpu=G5 -mtune=G5 -mpowerpc-gfxopt -g
 # Uncomment to optimize for G4
-#	OPTIM = -O6 -ftree-vectorize -ftree-vectorizer-verbose=0 -Wall -Wno-unused -Wno-long-double -Wno-deprecated -fno-exceptions -ffast-math -pipe -fsigned-char -maltivec -mabi=altivec -faltivec -mcpu=G4 -mtune=G4 -mpowerpc-gfxopt -g
+#	OPTIM = -O6 -ftree-vectorize -ftree-vectorizer-verbose=0 -Wall -Wno-long-double -fno-exceptions -ffast-math -pipe -fsigned-char -maltivec -mabi=altivec -faltivec -mcpu=G4 -mtune=G4 -mpowerpc-gfxopt -g
 
 else
 
@@ -82,7 +82,6 @@ default: $(TARGET)
 
 $(TARGET):	$(OBJS)
 	echo Linking $@...
-
 	$(CXX) $(CXXFLAGS) $(OBJS) $(LIBPATH) $(LINKFLEWS) $(LINKFLTK) $(LINKBLITZ) $(LDLIBS) -o $@
 	$(POSTBUILD) $@ ./mac.r
 
@@ -98,7 +97,7 @@ depend:	$(SRCS)
 # there has to be a better way....
 tags:	TAGS
 TAGS:	depend $(SRCS)
-	etags --defines --members -o TAGS $(SRCS) `cat makedepend | sed -e"s/.*://g; s/\\\\\//"`
+	etags -o TAGS $(SRCS) `cat makedepend | sed -e"s/.*://g; s/\\\\\//"`
 
 stable.h.gch:	stable.h
 	echo pre-compiling $<...

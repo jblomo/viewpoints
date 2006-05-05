@@ -412,7 +412,11 @@ void manage_plot_window_array( Fl_Widget *o)
     // read or reload operation, it would cause a segemantion fault.
     if( uInitialize || ( nplots != nplots_old && nplots_old > 0)) {
       if( i>=nplots_old) pws[i] = new plot_window( pw_w, pw_h);
-      else pws[ i]->size( pw_w, pw_h);
+      else {
+		  if (pws[i]->shown())
+			  pws[i]->hide();
+		  pws[ i]->size( pw_w, pw_h);
+	  }
       pws[i]->copy_label( labstr.c_str());
       pws[i]->position(pw_x, pw_y);
       pws[i]->row = row; 
@@ -443,7 +447,7 @@ void manage_plot_window_array( Fl_Widget *o)
     // If this is an initialization or this is a resize operation, 
     // restore variable indices and normalization styles for old 
     // panels.  Otherwise set variable indices for new panels    
-    if( uInitialize || ( nplots != nplots_old && i<nplots_old)) {
+    if( ( nplots != nplots_old && i<nplots_old)) {
         cps[i]->varindex1->value( ivar_old[i]);  
         cps[i]->varindex2->value( jvar_old[i]);
         cps[i]->varindex3->value( kvar_old[i]);
@@ -481,7 +485,8 @@ void manage_plot_window_array( Fl_Widget *o)
     // Make sure the window has been shown and is resizable
     // NOTE: pws[i]->show() is not sufficient when windows
     // are created.
-    pws[i]->show( global_argc, global_argv);
+	if (!pws[i]->shown())
+		pws[i]->show( global_argc, global_argv);
     pws[i]->resizable( pws[i]);
 
     // Turn on show capability of plot_window::reset_view();
