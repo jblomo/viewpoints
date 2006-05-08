@@ -25,7 +25,7 @@ ifeq ($(platform),Darwin)
 # Uncomment to optimize for G5 
 #	OPTIM = -O6 -ftree-vectorize -ftree-vectorizer-verbose=0 -Wall -Wno-long-double -fno-exceptions -ffast-math -pipe -fsigned-char -maltivec -mabi=altivec -faltivec -mcpu=G5 -mtune=G5 -mpowerpc-gfxopt -g
 # Uncomment to optimize for G4
-#	OPTIM = -O6 -ftree-vectorize -ftree-vectorizer-verbose=0 -Wall -Wno-long-double -fno-exceptions -ffast-math -pipe -fsigned-char -maltivec -mabi=altivec -faltivec -mcpu=G4 -mtune=G4 -mpowerpc-gfxopt -g
+	OPTIM = -O6 -ftree-vectorize -ftree-vectorizer-verbose=0 -Wall -Wno-long-double -fno-exceptions -ffast-math -pipe -fsigned-char -maltivec -mabi=altivec -faltivec -mcpu=G4 -mtune=G4 -mpowerpc-gfxopt -g
 
 else
 
