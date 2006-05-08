@@ -19,7 +19,7 @@
 // Purpose: Source code for <data_file_manager.h>
 //
 // Author: Creon Levitt   unknown
-// Modified: P. R. Gazis  25-APR-2006
+// Modified: P. R. Gazis  08-MAY-2006
 //*****************************************************************
 
 // Include the necessary include libraries
@@ -44,6 +44,7 @@ const int data_file_manager::MAX_HEADER_LINES = 2000;
 // calls initializer.
 data_file_manager::data_file_manager()
 {
+  sPathname = ".";  // Default pathname
   initialize();
 }
 
@@ -55,6 +56,8 @@ void data_file_manager::initialize()
   // format=ASCII;   // default input file format
   ordering=COLUMN_MAJOR;   // default input data ordering
   nSkipHeaderLines = 1;  // Number of header lines to skip
+  // sPathname = ".";  // Default pathname
+  inFileSpec = "";  // Default input filespec
 
   // Initialize the number of points specified by the command 
   // line argument.  NOTE: 0 means read to EOF.
@@ -70,25 +73,29 @@ void data_file_manager::initialize()
 // or binary data file, resize arrays to allocate meomory, and set 
 // identity array.  Returns 0 if successful.
 // MCL XXX - refactor this with read_data()
-int data_file_manager::load_data_file( char* inFileSpec) 
+// int data_file_manager::load_data_file( char* inFileSpec) 
+int data_file_manager::load_data_file( string inFileSpecIn) 
 {
   // PRG XXX: Would it be possible to examine the file directly 
   // here to determine or verify its format?
+
+  // load input filespec
+  inFileSpec = inFileSpecIn;
          
   // Read data file and report results
-  cout << "Reading input data from <" << inFileSpec << ">" << endl;
+  cout << "Reading input data from <" << inFileSpec.c_str() << ">" << endl;
   int iReadStatus = 0;
   if( format == BINARY) 
-    iReadStatus = read_binary_file_with_headers( inFileSpec);
+    iReadStatus = read_binary_file_with_headers();
   else if( format == ASCII)
-    iReadStatus = read_ascii_file_with_headers( inFileSpec);
+    iReadStatus = read_ascii_file_with_headers();
 
   if( iReadStatus != 0) {
-    cout << "Problems reading file <" << inFileSpec << ">" << endl;
+    cout << "Problems reading file <" << inFileSpec.c_str() << ">" << endl;
     return -1;
   }
   else
-    cout << "Finished reading file <" << inFileSpec << ">" << endl;
+    cout << "Finished reading file <" << inFileSpec.c_str() << ">" << endl;
 
   // Remove trivial columns
   remove_trivial_columns ();
@@ -121,24 +128,25 @@ int data_file_manager::load_data_file( char* inFileSpec)
 }
 
 //*****************************************************************
-// data_file_manager::read_ascii_file_with_headers( inFileSpec) -- 
+// data_file_manager::read_ascii_file_with_headers() -- 
 // Open an ASCII file for input, read and discard the headers, 
 // read the data block, and close the file.  Returns 0 if 
 // successful.
-int data_file_manager::read_ascii_file_with_headers( char* inFileSpec) 
+// int data_file_manager::read_ascii_file_with_headers( char* inFileSpec) 
+int data_file_manager::read_ascii_file_with_headers() 
 {
   // Attempt to open input file and make sure it exists
   ifstream inFile;
-  inFile.open( inFileSpec, ios::in);
+  inFile.open( inFileSpec.c_str(), ios::in);
   if( inFile.bad() || !inFile.is_open()) {
     cout << "read_ascii_file_with_headers:" << endl
-         << " -ERROR, couldn't open <" << inFileSpec
+         << " -ERROR, couldn't open <" << inFileSpec.c_str()
          << ">" << endl;
     return 1;
   }
   else {
     cout << "read_ascii_file_with_headers:" << endl
-         << " -Opening <" << inFileSpec << ">" << endl;
+         << " -Opening <" << inFileSpec.c_str() << ">" << endl;
   }
 
   // Loop: Read successive lines to find the last line of the 
@@ -241,7 +249,7 @@ int data_file_manager::read_ascii_file_with_headers( char* inFileSpec)
     cout << " " << column_labels[ i];
   }
   cout << endl;
-  cout << " -Examined header of <" << inFileSpec << ">," << endl
+  cout << " -Examined header of <" << inFileSpec.c_str() << ">," << endl
        << "  There should be " << nvars 
        << " fields (columns) per record (row)" << endl;
 
@@ -336,27 +344,28 @@ int data_file_manager::read_ascii_file_with_headers( char* inFileSpec)
 }
 
 //*****************************************************************
-// data_file_manager::read_binary_file_with_headers( inFileSpec) 
+// data_file_manager::read_binary_file_with_headers() 
 // -- Open and read a binary file.  The file is asssumed to 
 // consist of an ASCII header with column information, terminated 
 // by a newline, followed by a block of binary data.  The only 
 // viable way to read this seems to be with conventional C-style 
 // methods: fopen, fgets, fread, feof, and fclose, from <stdio>.  
 // Returns 0 if successful.
-int data_file_manager::read_binary_file_with_headers( char* inFileSpec) 
+// int data_file_manager::read_binary_file_with_headers( char* inFileSpec) 
+int data_file_manager::read_binary_file_with_headers() 
 {
   // Attempt to open input file and make sure it exists
   FILE * pInFile;
-  pInFile = fopen( inFileSpec, "rb");
+  pInFile = fopen( inFileSpec.c_str(), "rb");
   if( pInFile == NULL) {
     cout << "read_binary_file_with_headers: ERROR" << endl
-         << " -Couldn't open binary file <" << inFileSpec 
+         << " -Couldn't open binary file <" << inFileSpec.c_str() 
          << ">" << endl;
     return 1;
   }
   else {
     cout << "read_binary_file_with_headers:" << endl
-         << " -Opening binary file <" << inFileSpec 
+         << " -Opening binary file <" << inFileSpec.c_str() 
          << ">" << endl;
   }
 
@@ -544,10 +553,52 @@ int data_file_manager::read_binary_file_with_headers( char* inFileSpec)
 // block of binary data. 
 void data_file_manager::write_binary_file_with_headers()
 {
-  // Obtain file name from FLTK member function
-  char *output_file_name = 
-    fl_file_chooser( 
-      "write binary output to file", NULL, NULL, 0);
+  // Initialize read status and filespec.  NOTE: inFileSpec is
+  // defined as const char* for use with Fl_File_Chooser, which 
+  // means it could be destroyed by the relevant destructors!
+  // string sPathname = ".";
+  const char *output_file_name = sPathname.c_str();
+  const char* pattern = "*.bin\tAll Files (*)";
+  const char* title = "write binary output to file";
+
+  // Instantiate and show an Fl_File_Chooser widget.  NOTE: The
+  // pathname must be passed as a variable or the window will
+  // begin in some root directory.
+  Fl_File_Chooser* file_chooser = 
+    new Fl_File_Chooser( output_file_name, pattern, Fl_File_Chooser::CREATE, title);
+
+  // Loop: Select fileSpecs until a non-directory is obtained
+  while( 1) {
+    if( output_file_name != NULL) file_chooser->directory( output_file_name);
+
+    // Loop: wait until the file selection is done
+    file_chooser->show();
+    while( file_chooser->shown()) Fl::wait();
+    output_file_name = file_chooser->value();   
+
+    // If no file was specified then quit
+    if( output_file_name == NULL) {
+      cout << "No output file was specified" << endl;
+      break;
+    }
+
+    // For some reason, the fl_filename_isdir method doesn't seem
+    // to work, so try to open this file to see if it is a directory.
+    FILE* pFile = fopen( output_file_name, "w");
+    if( pFile == NULL) {
+      file_chooser->directory( output_file_name);
+      sPathname.erase( sPathname.begin(), sPathname.end());
+      sPathname.append( output_file_name);
+      continue;
+    }
+    fclose( pFile);
+    break;         
+  } 
+
+  // Obtain file name using the FLTK member function
+  // char *output_file_name = 
+  //   fl_file_chooser( 
+  //     "write binary output to file", NULL, NULL, 0);
 
   // If a file name was specified, create and write file
   if( output_file_name) {
@@ -560,26 +611,26 @@ void data_file_manager::write_binary_file_with_headers()
       output_file_name, 
       ios::out|ios::trunc|ios::binary);
       // fstream::out | fstream::trunc | fstream::binary);
+
     if( os.fail()) {
       cerr << "Error opening" << output_file_name 
            << "for writing" << endl;
+      delete file_chooser;
       return;
     }
     
-    // Loop: Write column labels
-    for( int i=0; i < nvars; i++ ) {
-      os << column_labels[ i] << " ";
-    }  
+    // Loop: Write column labels to the header
+    for( int i=0; i < nvars; i++ ) os << column_labels[ i] << " ";
     os << endl;
     
     // Loop: Write data and report problems
     int nBlockSize = nvars*sizeof(float);
     for( int i=0; i<npoints; i++) {
       vars = points( NVARS, i);
-      os.write( 
-        (const char*) vars.data(), nBlockSize);
+      os.write( (const char*) vars.data(), nBlockSize);
       if( os.fail()) {
         cerr << "Error writing to" << output_file_name << endl;
+        delete file_chooser;
         return;
       }
     }
@@ -588,6 +639,9 @@ void data_file_manager::write_binary_file_with_headers()
     cout << "Finished writing " << npoints
          << " rows with block_size " << nBlockSize << endl;
   }
+
+  // Deallocate the Fl_File_Chooser object
+  delete file_chooser;
 }
 
 //*****************************************************************
@@ -732,4 +786,18 @@ void data_file_manager::create_default_data( int nvars_in)
   // Report results
   cout << "Generated default data with " << npoints 
        << " points and " << nvars << " variables" << endl;
+}
+
+//*****************************************************************
+// data_file_manager::directory() --  Get pathname.
+string data_file_manager::directory()
+{
+  return sPathname; 
+}
+     
+//*****************************************************************
+// data_file_manager::directory( sPathname) --  Set pathname.
+void data_file_manager::directory( string sPathnameIn)
+{
+  sPathname = sPathnameIn;
 }

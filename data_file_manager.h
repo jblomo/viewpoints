@@ -19,10 +19,18 @@
 // Purpose: Data file manager for Creon Levit's viewpoints
 //
 // General design philosophy:
-//   1) Data are read into global variables
+//   1) Data are read into global variables.
+//   2) Arguments are passed as strings rather than const char* 
+//      under the 'if only it were JAVA' approach to C++ style and 
+//      to take advantage of STL's powerful string manipulation 
+//      tools.  Unfortunately, this means that c_str() must be used
+//      to pass some of these strings on to other methods.
+//   3) NOTE: There is considerable duplicate code here.  In 
+//      particular, the code to read headers and the calls fo
+//      Fl_File_Chooser here and in vp.cpp could be consolidated.
 //
 // Author: Creon Levitt   unknown
-// Modified: P. R. Gazis  24-APR-2006
+// Modified: P. R. Gazis  08-MAY-2006
 //*****************************************************************
 
 // Protection to make sure this header is not included twice
@@ -58,6 +66,10 @@
 //   create_default_data( nvars_in) -- Create default data
 //   write_binary_file_with_headers() -- Write binary file
 //
+//   directory() -- Get pathname
+//   directory( sPathnameIn) -- Set pathname
+//   inFileSpec() -- Get input filespec
+//
 // Author: Creon Levitt   unknown
 // Modified: P. R. Gazis  25-APR-2006
 //*****************************************************************
@@ -67,17 +79,27 @@ class data_file_manager
     void remove_trivial_columns();
     void resize_global_arrays();
 
+    string inFileSpec;
+    string sPathname;
+
   public:
     data_file_manager();
     void initialize();
 
     // I/O methods    
-    int load_data_file( char* inFileSpec);
-    int read_ascii_file_with_headers( char* inFileSpec);
-    int read_binary_file_with_headers( char* inFileSpec);
+    // int load_data_file( char* inFileSpec);
+    // int read_ascii_file_with_headers( char* inFileSpec);
+    // int read_binary_file_with_headers( char* inFileSpec);
+    int load_data_file( string inFileSpecIn);
+    int read_ascii_file_with_headers();
+    int read_binary_file_with_headers();
     void create_default_data( int nvars_in);
     void write_binary_file_with_headers();
 
+    // Access methods
+    string directory();
+    void directory( string sPathnameIn);
+    
     // Define values for file reads.
     int format;  // ASCII or binary
     int ordering;  // Input data ordering

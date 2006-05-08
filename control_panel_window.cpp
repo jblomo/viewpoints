@@ -22,7 +22,7 @@
 // Purpose: Source code for <control_panel_window.h>
 //
 // Author: Creon Levit   2005-2006
-// Modified: P. R. Gazis  25-APR-2006
+// Modified: P. R. Gazis  08-MAY-2006
 //*****************************************************************
 
 // Include the necessary include libraries
@@ -32,7 +32,6 @@
 
 // Include globals
 #include "global_definitions_vp.h"
-
 
 // Include associated headers and source code
 #include "plot_window.h"

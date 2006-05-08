@@ -1,3 +1,45 @@
+Notes for the Revision of 08-MAY-2006
+Paul R Gazis
+
+Overview
+  In previous versions of vp, the file chooser had only limited
+ability to switch to different directories, and the program would
+crash if a user tried to click on a different directory in the
+usual fashion.
+  Three issues were addressed: 1) incorporation of my fix to the 
+initialization mode of with manage_plot_window_array with Creon's new
+schemne of separate compilation units, 2) replacement of calls to the
+FLTK fl_file_chooser method with use of the Fl_File_Chooser class to
+eliminate the bug described above, and 3) revisions to eliminate the 
+use of const char* in calls to the data_file_manager class to prevent
+crashes that could occur if the input argument was deallocated 
+prematurely.
+
+Changes
+vp.cpp
+  1) Cut and pasted my revision to r60 of the manage_plot_window_array 
+     method, with the correct usage of the 'uInitialize' flag, into 
+     Creon's r63.  
+  2) Replaced calls to the FLTK fl_file_chooser method in read_data 
+     with an instance of the Fl_File_Chooser class.  The relevant
+     access methods, show() and value(), are embedded in a loop that
+     examines the output pathname to see if it can be opened, and if
+     it can't assumes it is a directory, that it uses to reset the
+     source directory for the Fl_File_Chooser object.
+  3) Used the type argument in Fl_File_chooser to specify default 
+     extenbsions for ascii and binary files.
+  4) Wherever possible, store filespecs as strings to avoid the many
+     problems that can arise with const char* arrays.
+
+data_file_manager.h and data_file_manager.cpp
+  1) Pass and store filespecs as strings to avoid the many problems 
+     that can arise when const char* arrays are used as arguments!
+  2) Added sPathname and inFileSpec member variables to save the
+     current directory and filespec.
+  3) Added directory() access methods similar to the equivalent 
+     methods used by FLTK classes.
+
+
 Notes for the Revision of 04-MAY-2006
 Paul R Gazis
 

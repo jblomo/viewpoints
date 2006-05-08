@@ -27,7 +27,7 @@
 //   1) Review and add comments!
 //
 // Author: Creon Levitt   unknown
-// Modified: P. R. Gazis  25-APR-2006
+// Modified: P. R. Gazis  08-MAY-2006
 //*****************************************************************
 
 // Protection to make sure this header is not included twice
@@ -103,7 +103,7 @@
 //   initialize_textures() -- ???
 //
 // Author: Creon Levitt    unknown
-// Modified: P. R. Gazis   25-MAR-2006
+// Modified: P. R. Gazis  08-MAY-2006
 //*****************************************************************
 class plot_window : public Fl_Gl_Window
 {

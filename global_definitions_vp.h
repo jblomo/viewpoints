@@ -12,12 +12,14 @@
 //   function definitions.
 //
 // General design philosophy:
-//   1) Global variables can be evil.  Move as many of these as
+//   1) Initializers and #define EXTERN are used so that this code
+//      can be used with separate compilation units.
+//   2) Global variables can be evil.  Move as many of these as
 //      possible into specific classes or to the main routine
-//   2) Consider putting these variables into a NAMESPACE
+//   3) Consider putting these variables into a NAMESPACE?
 //
 // Author: Creon Levit    unknown
-// Modified: P. R. Gazis  25-APR-2006
+// Modified: P. R. Gazis  08-MAY-2006
 //*****************************************************************
 
 #ifndef VP_GLOBAL_DEFINITIONS_VP_H

@@ -29,7 +29,9 @@
 //      passion for speed and efficiency and Paul Gazis's obsession
 //      with organization and clarity, unified by a shared desire to
 //      produce a powerful and easy to use tool for exploratory data
-//      data analysis.
+//      data analysis.  Creon's code reflects a strong 'C' heritage.  
+//      Paul's code is written in C++ using the 'if only it were JAVA' 
+//      programming style.
 //
 // Functions:
 //   usage() -- Print help information
@@ -51,13 +53,13 @@
 //   redraw_if_changing( *dummy) -- Redraw changing plots
 //
 // Author: Creon Levit   2005-2006
-// Modified: P. R. Gazis  04-MAY-2006
+// Modified: P. R. Gazis  08-MAY-2006
 //*****************************************************************
 
 // Include the necessary include libraries
 #include "include_libraries_vp.h"
 
-// Include globals, and turn on initializers (using #define EXTERN )
+// Include globals, and turn on initializers (using #define EXTERN)
 // initialize globals
 #define EXTERN
 #define INIT(x) = x
@@ -84,10 +86,6 @@ static int number_of_screens = 0;
  static int top_frame=25, bottom_frame=5, left_frame=4, right_frame=5;
  static int top_safe = 1, bottom_safe=10, left_safe=10, right_safe=1;
 #endif // __APPLE__
-
-// Define and set maximums for header block
-// const int MAX_HEADER_LENGTH = MAXVARS*100;  // Length of header line
-// const int MAX_HEADER_LINES = 2000;  // Number of header lines
 
 // These are needed to pass to manage_plot_window_array
 static int global_argc;
@@ -254,10 +252,12 @@ void create_broadcast_group ()
   cp->resizable( cp);
   cp->make_widgets( cp);
   cp->end();
+
   // this group's index is highest (and it has no associated plot window)
   cp->index = nplots;
-  // this group's callbacks all broadcast any "event" to the other (unlocked) tabs groups.
-  // with a few exceptions... (for now)
+
+  // this group's callbacks all broadcast any "event" to the other (unlocked) 
+  // tabs groups.  with a few exceptions... (for now)
   for (int i=0; i<cp->children(); i++)
   {
 	  Fl_Widget *wp = cp->child(i);
@@ -274,16 +274,14 @@ void create_broadcast_group ()
   cp->varindex1->value(nvars);  // initially == "-nothing-"
   cp->varindex2->value(nvars);  // initially == "-nothing-"
   cp->varindex3->value(nvars);  // initially == "-nothing-"
-
-
 }
 
 //*****************************************************************
-// manage_plot_window_array( o) -- General-purpose method to 
-// create, manage, and reload the plot window array.  It saves any
-// existing axis information, deletes old tabs, creates new tabs, 
-// restores existing axis information, and loads new data into new 
-// plot windows.  There are four possible behaviors, which must be
+// manage_plot_window_array( o) -- General-purpose method to create, 
+// manage, and reload the plot window array.  It saves any existing 
+// axis information, deletes old tabs, creates new tabs, restores 
+// existing axis information, and loads new data into new plot 
+// windows.  There are four possible behaviors, which all must be
 // recognized, identified, and treated differently:
 // 1) Initialization -- NULL argument.  Set nplots_old = 0.  
 //    Identified by a flag, uInitialize.
@@ -314,7 +312,7 @@ void manage_plot_window_array( Fl_Widget *o)
     uInitialize = 1;
     nplots_old = 0;
   }
-  else if( (pMenu_ = dynamic_cast <Fl_Menu_*> (o))) {
+  else if( pMenu_ = dynamic_cast <Fl_Menu_*> (o)) {
     strcpy( title, ((Fl_Menu_*) o)->text());
     if( strncmp( title, "Add Row ", 8) == 0) nrows++;
     else if( strncmp( title, "Add Colu", 8) == 0) ncols++;
@@ -324,7 +322,7 @@ void manage_plot_window_array( Fl_Widget *o)
     if( strncmp( title, "Read", 4) == 0) nplots_old = 0;
     else nplots_old = nplots;
   }
-  else if( (pButton = dynamic_cast <Fl_Button*> (o))) {
+  else if( pButton = dynamic_cast <Fl_Button*> (o)) {
     strcpy( title, ((Fl_Menu_*) o)->label());
     if( strncmp( title, "Read", 4) == 0) nplots_old = 0;
     else nplots_old = nplots;
@@ -406,14 +404,10 @@ void manage_plot_window_array( Fl_Widget *o)
 
     // If this is an initialization or resize operation, create or
     // restore windows.  NOTE: If this code was executed during a
-    // read or reload operation, it would cause a segemantion fault.
+    // read or reload operation, it would cause a segementation fault.
     if( uInitialize || ( nplots != nplots_old && nplots_old > 0)) {
       if( i>=nplots_old) pws[i] = new plot_window( pw_w, pw_h);
-      else {
-		  if (pws[i]->shown())
-			  pws[i]->hide();
-		  pws[ i]->size( pw_w, pw_h);
-	  }
+      else pws[ i]->size( pw_w, pw_h);
       pws[i]->copy_label( labstr.c_str());
       pws[i]->position(pw_x, pw_y);
       pws[i]->row = row; 
@@ -444,7 +438,7 @@ void manage_plot_window_array( Fl_Widget *o)
     // If this is an initialization or this is a resize operation, 
     // restore variable indices and normalization styles for old 
     // panels.  Otherwise set variable indices for new panels    
-    if( ( nplots != nplots_old && i<nplots_old)) {
+    if( nplots != nplots_old && i<nplots_old) {
         cps[i]->varindex1->value( ivar_old[i]);  
         cps[i]->varindex2->value( jvar_old[i]);
         cps[i]->varindex3->value( kvar_old[i]);
@@ -463,7 +457,7 @@ void manage_plot_window_array( Fl_Widget *o)
 
     // If this is an initialization or resize operation, test for
     // missing data, extract data, and reset panels.  Otherwise 
-    // initialize and draw panels
+    // invoke plot_window::initialize() and draw panels
     if( uInitialize || ( nplots != nplots_old && nplots_old > 0)) {
       if( npoints > 1) {
         pws[i]->extract_data_points();
@@ -482,8 +476,7 @@ void manage_plot_window_array( Fl_Widget *o)
     // Make sure the window has been shown and is resizable
     // NOTE: pws[i]->show() is not sufficient when windows
     // are created.
-	if (!pws[i]->shown())
-		pws[i]->show( global_argc, global_argv);
+    pws[i]->show( global_argc, global_argv);
     pws[i]->resizable( pws[i]);
 
     // Turn on show capability of plot_window::reset_view();
@@ -622,8 +615,7 @@ void make_global_widgets()
   // int xpos=10, ypos=500;
   int xpos = global_widgets_x, ypos = global_widgets_y;
   npoints_slider = 
-    new Fl_Hor_Value_Slider_Input(
-      xpos+30, ypos+=25, 300-30, 20, "npts");
+    new Fl_Hor_Value_Slider_Input( xpos+30, ypos+=25, 300-30, 20, "npts");
   npoints_slider->align( FL_ALIGN_LEFT);
   npoints_slider->callback( npoints_changed);
   npoints_slider->value( npoints);
@@ -785,60 +777,93 @@ void write_data( Fl_Widget *o)
 // panel.
 void reset_all_plots()
 {
-  for( int i=0; i<nplots; i++) {
-    pws[i]->reset_view();
-  }
+  for( int i=0; i<nplots; i++) pws[i]->reset_view();
 }
 
 //*****************************************************************
 // read_data( o, user_data) -- Widget to open and read data from 
-// an ASCII file.  
+// an ASCII file.  Class FL_File_Chooser is used in preference to
+// the fl_file_chooser method to obtain access to member functions 
+// such as directory() and to allow the possibility of a derived 
+// class with additional controls in the file_chooser window.
 void read_data( Fl_Widget* o, void* user_data)
 {
   // Evaluate user_data to get file format
   if( (int) user_data == BINARY) dfm.format = BINARY;
   else dfm.format = ASCII;
 
-  // Invoke the FLTK member function, fl_file_chooser, to get the
-  // file name.
-  int iReadStatus = 0;
-  char *inFileSpec = "";
+  // Generate text, file extensions, etc, for this file type
+  char* title = NULL;
+  char* pattern = NULL;
   if( dfm.format == ASCII) {
-    inFileSpec = 
-      fl_file_chooser( 
-        "read ASCII input from file", NULL, NULL, 0);
-    if( inFileSpec != NULL)
-      cout << "Reading ASCII data from <" << inFileSpec 
-           << ">" << endl;
+    title = "Read ASCII input from file";
+    pattern = "*.{txt,lis,asc}\tAll Files (*)";
   }
   else {
-    inFileSpec = 
-      fl_file_chooser( 
-        "read binary input from file", NULL, NULL, 0);
-    if( inFileSpec != NULL)
-      cout << "Reading binary data from <" << inFileSpec 
-           << ">" << endl;
+    title =  "Read binary input from file";
+    pattern = "*.bin\tAll Files (*)";
   }
 
-  // If no file was specified then quit
+  // Initialize read status and filespec.  NOTE: inFileSpec is
+  // defined as const char* for use with Fl_File_Chooser, which 
+  // means it could be destroyed by the relevant destructors!
+  const char *inFileSpec = (dfm.directory()).c_str();
+  int iReadStatus = 0;
+
+  // Instantiate and show an Fl_File_Chooser widget.  NOTE: The 
+  // pathname must be passed as a variable or the window will begin 
+  // in some root directory.
+  Fl_File_Chooser* file_chooser = 
+    new Fl_File_Chooser( inFileSpec, pattern, Fl_File_Chooser::SINGLE, title);
+
+  // Loop: Select fileSpecs until a non-directory is obtained
+  while( 1) {
+    if( inFileSpec != NULL) file_chooser->directory( inFileSpec);
+
+    // Loop: wait until the file selection is done
+    file_chooser->show();
+    while( file_chooser->shown()) Fl::wait();
+    inFileSpec = file_chooser->value();   
+
+    // If no file was specified then quit
+    if( inFileSpec == NULL) {
+      cout << "No input file was specified" << endl;
+      break;
+    }
+
+    // For some reason, the fl_filename_isdir method doesn't seem
+    // to work, so try to open this file to see if it is a directory.
+    FILE* pFile = fopen( inFileSpec, "r");
+    if( pFile == NULL) {
+      file_chooser->directory( inFileSpec);
+      dfm.directory( (string) inFileSpec);
+      continue;
+    }
+    fclose( pFile);
+    break;         
+  } 
+
+  // If no file was specified then quit and deallocate the 
+  // Fl_File_Chooser object
   if( inFileSpec == NULL) {
     cout << "No input file was specified" << endl;
+    delete file_chooser;  // WARNING! Destroys inFileSpec!
     return;
   }
+
+  // Report results
+  if( dfm.format == ASCII) cout << "Reading ASCII data from <";
+  else cout << "Reading binary data from <";
+  cout << inFileSpec << ">" << endl;
 
   // Since this is presumably a new file, reinitialize the data 
   // file manager!
   dfm.initialize();
 
-  // KLUDGE: Re-evaluate user_data to get file format again
-  // if( (int) user_data == BINARY) dfm.format = BINARY;
-  // else dfm.format = ASCII;
-
   // Invoke the load_data_file( inFileSpec) method of the data 
   // file manager to read an ASCII or BINARY file.  NOTE: Error
   // reporting is handled by the method itself.
-  iReadStatus = dfm.load_data_file( inFileSpec);
-  // if( iReadStatus != 0) return;
+  iReadStatus = dfm.load_data_file( (string) inFileSpec);
 
   // If only one or fewer records are available then quit before 
   // something terrible happens!
@@ -863,8 +888,10 @@ void read_data( Fl_Widget* o, void* user_data)
   pointsize = max( 1.0, 6.0 - (int) log10f( (float) npoints));
 
   // Clear children of tab widget and reload plot window array
-  // cpt->clear();  // Now done by manage_plot_window_array( o)
   manage_plot_window_array( o);
+
+  // Deallocate file_chooser
+  delete file_chooser;  // WARNING! Destroys inFileSpec!
 }
 
 //*****************************************************************
@@ -954,8 +981,7 @@ int main( int argc, char **argv)
   // the call to GETOPT_LONG, 2) This process does NOT effect arc 
   // and argv in any way.
   int c;
-  char inFileSpec[ 80];
-  strcpy( inFileSpec, "");
+  string inFileSpec = "";
   while( 
     ( c = getopt_long( 
         argc, argv, 
@@ -1037,7 +1063,7 @@ int main( int argc, char **argv)
 
       // inputfile: Extract data filespec
       case 'i':
-        strcpy( inFileSpec, optarg);
+        inFileSpec.append( optarg);
         break;
 
       // borders: Turn off window manager borders on plot windows
@@ -1072,7 +1098,7 @@ int main( int argc, char **argv)
 
   // If no data file was specified, assume the last argument is
   // the filespec.
-  if( strlen( inFileSpec) <= 0) strcpy( inFileSpec, argv[ argc-1]);
+  if( inFileSpec.length() <= 0) inFileSpec.append( argv[ argc-1]);
 
   // Increment pointers to the optional arguments to get the
   // last argument.
@@ -1090,7 +1116,7 @@ int main( int argc, char **argv)
 
   // STEP 2: Read the data file create a 10-d default data set if 
   // the read attempt fails
-  if( strlen( inFileSpec) <= 0) dfm.create_default_data( 10);
+  if( inFileSpec.length() <= 0) dfm.create_default_data( 10);
   else {
     if( dfm.load_data_file( inFileSpec) != 0) 
       dfm.create_default_data( 10);

@@ -27,8 +27,8 @@
 //   1) This might be a good place to consolidate references to
 //      normalization schemes used here and by class plot_windows.
 //
-// Author: Creon Levit   2005-2006
-// Modified: P. R. Gazis  25-APR-2006
+// Author: Creon Levit    2005-2006
+// Modified: P. R. Gazis  08-MAY-2006
 //*****************************************************************
 
 // Protection to make sure this header is not included twice
@@ -44,8 +44,8 @@
 // Declare class plot_window here so it can be referenced
 // class plot_window;
 
-// Include associated headers and source code.  NOTE: not needed 
-// if class has been declared
+// Include associated headers and source code.  NOTE: not needed if
+// this class has already been declared
 #include "plot_window.h"
 
 //*****************************************************************
@@ -78,7 +78,7 @@
 //   This comment also conveys nothing.
 //
 // Author: Creon Levitt   unknown
-// Modified: P. R. Gazis  27-MAR-2006
+// Modified: P. R. Gazis  08-MAR-2006
 //*****************************************************************
 class control_panel_window : public Fl_Group
 {
@@ -163,4 +163,3 @@ class control_panel_window : public Fl_Group
 };
 
 #endif   // CONTROL_PANEL_WINDOW_H
-
