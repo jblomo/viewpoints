@@ -63,8 +63,8 @@ LINKBLITZ	= -lblitz
 # The extension to use for executables...
 EXEEXT		= 
 
-#SRCS =	vp.cpp control_panel_window.cpp plot_window.cpp
-SRCS =	vp.cpp 
+SRCS =	vp.cpp control_panel_window.cpp plot_window.cpp data_file_manager.cpp
+#SRCS =	vp.cpp 
 
 OBJS:=	$(SRCS:.cpp=.o)
 

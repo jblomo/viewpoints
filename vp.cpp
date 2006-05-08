@@ -57,19 +57,16 @@
 // Include the necessary include libraries
 #include "include_libraries_vp.h"
 
-// Include globals
+// Include globals, and turn on initializers (using #define EXTERN )
+// initialize globals
+#define EXTERN
+#define INIT(x) = x
 #include "global_definitions_vp.h"
 
 // Include associated headers and source code
 #include "data_file_manager.h"
 #include "plot_window.h"
 #include "control_panel_window.h"
-
-// MCL XXX the following is bogus.  We need separate compilation units.
-// and that means we need to deal with globals elegantly.
-#include "data_file_manager.cpp"
-#include "plot_window.cpp"
-#include "control_panel_window.cpp"
 
 // Define and initialize number of screens
 static int number_of_screens = 0;
@@ -89,7 +86,7 @@ static int number_of_screens = 0;
 #endif // __APPLE__
 
 // Define and set maximums for header block
-// const int MAX_HEADER_LENGTH = nvars_max*100;  // Length of header line
+// const int MAX_HEADER_LENGTH = MAXVARS*100;  // Length of header line
 // const int MAX_HEADER_LINES = 2000;  // Number of header lines
 
 // These are needed to pass to manage_plot_window_array
@@ -317,7 +314,7 @@ void manage_plot_window_array( Fl_Widget *o)
     uInitialize = 1;
     nplots_old = 0;
   }
-  else if( pMenu_ = dynamic_cast <Fl_Menu_*> (o)) {
+  else if( (pMenu_ = dynamic_cast <Fl_Menu_*> (o))) {
     strcpy( title, ((Fl_Menu_*) o)->text());
     if( strncmp( title, "Add Row ", 8) == 0) nrows++;
     else if( strncmp( title, "Add Colu", 8) == 0) ncols++;
@@ -327,7 +324,7 @@ void manage_plot_window_array( Fl_Widget *o)
     if( strncmp( title, "Read", 4) == 0) nplots_old = 0;
     else nplots_old = nplots;
   }
-  else if( pButton = dynamic_cast <Fl_Button*> (o)) {
+  else if( (pButton = dynamic_cast <Fl_Button*> (o))) {
     strcpy( title, ((Fl_Menu_*) o)->label());
     if( strncmp( title, "Read", 4) == 0) nplots_old = 0;
     else nplots_old = nplots;
@@ -1088,7 +1085,7 @@ int main( int argc, char **argv)
   // Restrict format and restruct and set number of plots.  NOTE:
   // nplots will be reset by manage_plot_window_array( NULL)
   assert( dfm.format==BINARY || dfm.format==ASCII);
-  assert( nrows*ncols <= maxplots);
+  assert( nrows*ncols <= MAXPLOTS);
   nplots = nrows*ncols;
 
   // STEP 2: Read the data file create a 10-d default data set if 

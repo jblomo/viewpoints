@@ -56,7 +56,7 @@ double plot_window::r_deselected=1.0;
 double plot_window::g_deselected=0.01;
 double plot_window::b_deselected=0.01;
 
-GLfloat plot_window::texture_images[ 2][ 4*(maxplots)] = { 0};
+GLfloat plot_window::texture_images[ 2][ 4*(MAXPLOTS)] = { 0};
 GLfloat plot_window::texenvcolor[ 4] = { 1, 1, 1, 1};
 GLuint plot_window::texnames[ 2] = { };
 int plot_window::textures_initialized = 0;
@@ -525,9 +525,9 @@ void plot_window::draw()
     glMatrixMode(GL_TEXTURE);
     glLoadIdentity();	
     glScalef( 
-      1.0/(float)maxplots, 
-      1.0/(float)maxplots, 
-      1.0/(float)maxplots); 
+      1.0/(float)MAXPLOTS, 
+      1.0/(float)MAXPLOTS, 
+      1.0/(float)MAXPLOTS); 
     glMatrixMode(GL_MODELVIEW);
 
     #ifdef FAST_APPLE_VERTEX_EXTENSIONS
@@ -885,7 +885,7 @@ void plot_window::update_textures ()
        i < sizeof(texnames)/sizeof(texnames[0]); i++) {
     glBindTexture( GL_TEXTURE_1D, texnames[ i]);
     glTexImage1D(
-      GL_TEXTURE_1D, 0, GL_RGBA8, maxplots, 0, GL_RGBA, 
+      GL_TEXTURE_1D, 0, GL_RGBA8, MAXPLOTS, 0, GL_RGBA, 
       GL_FLOAT, texture_images[ i]);
   }
 }
@@ -1646,7 +1646,7 @@ void plot_window::initialize_textures()
     glTexParameteri(
       GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexImage1D( 
-      GL_TEXTURE_1D, 0, GL_RGBA8, maxplots, 0, GL_RGBA, 
+      GL_TEXTURE_1D, 0, GL_RGBA8, MAXPLOTS, 0, GL_RGBA, 
       GL_FLOAT, texture_images[i]);
   }
   

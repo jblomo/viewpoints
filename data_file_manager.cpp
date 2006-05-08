@@ -36,7 +36,7 @@
 
 // Define and set maximums length of header lines and number of
 // lines in the header block
-const int data_file_manager::MAX_HEADER_LENGTH = nvars_max*100;
+const int data_file_manager::MAX_HEADER_LENGTH = MAXVARS*100;
 const int data_file_manager::MAX_HEADER_LINES = 2000;
 
 //*****************************************************************
@@ -62,7 +62,7 @@ void data_file_manager::initialize()
   
   // Initialize number of points and variables
   npoints = MAXPOINTS;
-  nvars = nvars_max;
+  nvars = MAXVARS;
 }
 
 //*****************************************************************
@@ -220,9 +220,9 @@ int data_file_manager::read_ascii_file_with_headers( char* inFileSpec)
   }
 
   // Examine the column labels for errors and report results
-  if( nvars > nvars_max) {
+  if( nvars > MAXVARS) {
     cerr << " -ERROR, too many columns, "
-         << "increase nvars_max and recompile"
+         << "increase MAXVARS and recompile"
          << endl;
     inFile.close();
     return 1;
@@ -387,9 +387,9 @@ int data_file_manager::read_binary_file_with_headers( char* inFileSpec)
 
   // Examine and report content of header
   nvars = column_labels.size();
-  if( nvars > nvars_max) {
+  if( nvars > MAXVARS) {
     cerr << " -ERROR: Too many columns, "
-         << "increase nvars_max and recompile"
+         << "increase MAXVARS and recompile"
          << endl;
     // inFile.close();
     fclose( pInFile);
@@ -680,7 +680,7 @@ void data_file_manager::create_default_data( int nvars_in)
   // Protect against screwy values of nvars_in
   if( nvars_in < 2) return;
   nvars = nvars_in;
-  if( nvars > nvars_max) nvars = nvars_max;
+  if( nvars > MAXVARS) nvars = MAXVARS;
 
   // Loop: Initialize and load the column labels, including the 
   // final label that says 'nothing'.

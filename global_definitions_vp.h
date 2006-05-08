@@ -23,8 +23,15 @@
 #ifndef VP_GLOBAL_DEFINITIONS_VP_H
 #define VP_GLOBAL_DEFINITIONS_VP_H 1
 
+#ifndef EXTERN
+  #define EXTERN extern
+#endif
+#ifndef INIT
+  #define INIT(x)
+#endif
+
 // Define debug flag and statement (move to global_definitions.h)
-int debugging = 0;
+EXTERN int debugging INIT(0);
 #define DEBUG(x) do {if (debugging) x;} while (0)
 
 // Define input file formats
@@ -36,29 +43,30 @@ int debugging = 0;
 #define COLUMN_MAJOR 1
 
 // Set parameters to define the default layout of the plot 
-// windows.  NOTE: Creon notes that maxplots must be a power 
+// windows.  NOTE: Creon notes that MAXPLOTS must be a power 
 // of 2 for textures and that this will 'cause trouble'.
-int nrows=2, ncols=2;   // Default number of rows and columns
-int nplots = nrows*ncols;  // Default number of plot windows
-const int maxplots=64;  // Maxmimum number of plots
+EXTERN int nrows INIT(2);  // Default number of rows of plots
+EXTERN int ncols INIT(2);   // Default number of columns of plots
+EXTERN int nplots INIT(nrows*ncols);  // Default number of plot windows
+#define MAXPLOTS 256 // maximum number of plot windows, must be a power of 2.
 
 // Set the maximum number of columns and rows
-const int nvars_max = 256;  // Maximum number of columns
-const int MAXPOINTS = 2000000;  // Maximum number of rows
+#define MAXVARS 256  // Maximum number of columns
+#define MAXPOINTS 2000000;  // Maximum number of rows (unless overidded by "--npoints=<int>"
 
 // Initialize the actual number of rows (points or values) in 
 // the data file and the actual number of columns (fields) in 
 // each record.
-int npoints = MAXPOINTS;   // number of rows in data file
-int nvars = nvars_max;		// number of columns in data file
+EXTERN int npoints INIT(MAXPOINTS);   // number of rows in data file
+EXTERN int nvars INIT(MAXVARS);		// number of columns in data file
 
 // Define blitz::Arrays to hold raw and ranked (sorted) data 
 // arrays.  Used extensively in many classes, so for reasons of 
 // simplicity and clarity, these are left global
-blitz::Array<float,2> points;  // main data array
-blitz::Array<int,2> ranked_points;   // data, ranked, as needed.
-blitz::Array<int,1> ranked;	  // flag: 1->column is ranked, 0->not
-blitz::Array<int,1> identity;   // holds a(i)=i.
+EXTERN blitz::Array<float,2> points;  // main data array
+EXTERN blitz::Array<int,2> ranked_points;   // data, ranked, as needed.
+EXTERN blitz::Array<int,1> ranked;	  // flag: 1->column is ranked, 0->not
+EXTERN blitz::Array<int,1> identity;   // holds a(i)=i.
 
 // Define blitz::Arrays to flag selected points.  As with the raw
 // data, these are left global for simplicity and clarity.
@@ -66,33 +74,33 @@ blitz::Array<int,1> identity;   // holds a(i)=i.
 // selected -- true if point is selected in any window
 // previously_selected -- true iff selected before mouse went down
 // nselected -- number of points currently selected
-blitz::Array<GLshort,1> newly_selected;	
-blitz::Array<GLshort,1> selected;	
-blitz::Array<GLshort,1> previously_selected;	
-int nselected = 0;	
+EXTERN blitz::Array<GLshort,1> newly_selected;	
+EXTERN blitz::Array<GLshort,1> selected;	
+EXTERN blitz::Array<GLshort,1> previously_selected;	
+EXTERN int nselected;	
 
 // Texture co-ordinates?
-blitz::Array<GLshort,1> texture_coords;
+EXTERN blitz::Array<GLshort,1> texture_coords;
 
 // Temporary array (reference) for use with qsort
-blitz::Array<float,1> tmp_points;
+EXTERN blitz::Array<float,1> tmp_points;
 
 // Define vector of strings to hold variable names.  Used 
 // extensively by main routine and class control_panel_window
-std::vector<std::string> column_labels; 
+EXTERN std::vector<std::string> column_labels; 
 
 // Global toggle between scale histogram & scale view :-(
-int scale_histogram = 0;
+EXTERN int scale_histogram INIT(0);
 
 // Define variable to hold pointsize.  Used in main routine and
 // classes control_panel_window and plot_window.  (Move to class
 // plot_window?)
-float pointsize = 1.0;
+EXTERN float pointsize INIT(1.0);
 
 // Flag to indicate that selection has been changed.  Creon notes
 // that this should be 'fixed', but this is harder than it looks.
 // For this reason, this variable is left global.
-int selection_changed = 1;
+EXTERN int selection_changed INIT(1);
 
 // Define main control panel's top level (global) widgets.  Many 
 // of these must also be accessible to class plot_window and
@@ -100,21 +108,21 @@ int selection_changed = 1;
 // Tab widget to hold virtual control panels for individual plots.
 // npoints_slider -- maximum number of points to display in all 
 // plots.  Various buttons -- as suggested by their names.
-Fl_Tabs *cpt;  
-Fl_Hor_Value_Slider_Input *npoints_slider;
-Fl_Button *add_to_selection_button,
+EXTERN Fl_Tabs *cpt;  
+EXTERN Fl_Hor_Value_Slider_Input *npoints_slider;
+EXTERN Fl_Button *add_to_selection_button,
           *clear_selection_button, 
           *delete_selection_button;
-Fl_Button *show_deselected_button, 
+EXTERN Fl_Button *show_deselected_button, 
           *invert_selection_button;
-Fl_Button *write_data_button;
-Fl_Button *choose_color_selected_button, 
+EXTERN Fl_Button *write_data_button;
+EXTERN Fl_Button *choose_color_selected_button, 
           *choose_color_deselected_button; 
-Fl_Button *dont_paint_button,
+EXTERN Fl_Button *dont_paint_button,
           *change_all_axes_button;
-Fl_Button *link_all_axes_button;
-Fl_Button *reload_plot_window_array_button;
-Fl_Button *read_data_button;
+EXTERN Fl_Button *link_all_axes_button;
+EXTERN Fl_Button *reload_plot_window_array_button;
+EXTERN Fl_Button *read_data_button;
 
 // Declare classes control_panel_window and plot_window here so 
 // they can be referenced
@@ -125,11 +133,11 @@ class plot_window;
 // windows.  This can't be done until after the relevant class 
 // definitions.  NOTE: In the long run, it might be safer to store 
 // these in instances of the <vector> container class.
-plot_window *pws[ maxplots];
+EXTERN plot_window *pws[ MAXPLOTS];
 
-// There is one extra control_panel_window, with index=maxplots
+// There is one extra control_panel_window, with index=MAXPLOTS
 // It has no associated plot window - it affects all (unlocked) plots.
-control_panel_window *cps[ maxplots+1]; 
+EXTERN control_panel_window *cps[ MAXPLOTS+1]; 
 
 //*****************************************************************
 // Class: myCompare

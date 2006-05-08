@@ -43,7 +43,7 @@
 
 // array to hold menu items for axis menus.  
 Fl_Menu_Item 
-  control_panel_window::varindex_menu_items[ nvars_max+2] = 
+  control_panel_window::varindex_menu_items[ MAXVARS+2] = 
   { Fl_Menu_Item()};
 
 // array to hold menu items for normalization styles

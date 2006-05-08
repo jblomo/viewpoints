@@ -101,7 +101,6 @@
 #include <sstream>
 #include <vector>
 #include <string>
-#include <sstream>
 #include <algorithm>
  
 // FLTK.  These includes should be handled by the relevant Dev-C++

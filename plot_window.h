@@ -222,7 +222,7 @@ class plot_window : public Fl_Gl_Window
     static int dfactor;
 
     // Static variables used for textures
-    static GLfloat texture_images[ 2][ 4*(maxplots)];
+    static GLfloat texture_images[ 2][ 4*(MAXPLOTS)];
     static GLfloat pointscolor[ 4];
     static GLfloat texenvcolor[ 4];
     static GLuint texnames[ 2];
