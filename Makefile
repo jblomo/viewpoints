@@ -21,7 +21,7 @@ DEBUG		= -O0 -ggdb -g3 -Wall -Wunused -DBZ_DEBUG
 ifeq ($(platform),Darwin)
 
 # Uncomment for no optimization. For debugging on OSX
-	OPTIM = $(DEBUG)
+#	OPTIM = $(DEBUG)
 # Uncomment to optimize for G5 
 #	OPTIM = -O6 -ftree-vectorize -ftree-vectorizer-verbose=0 -Wall -Wno-long-double -fno-exceptions -ffast-math -pipe -fsigned-char -maltivec -mabi=altivec -faltivec -mcpu=G5 -mtune=G5 -mpowerpc-gfxopt -g
 # Uncomment to optimize for G4

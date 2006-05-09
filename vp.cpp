@@ -312,7 +312,7 @@ void manage_plot_window_array( Fl_Widget *o)
     uInitialize = 1;
     nplots_old = 0;
   }
-  else if( pMenu_ = dynamic_cast <Fl_Menu_*> (o)) {
+  else if( (pMenu_ = dynamic_cast <Fl_Menu_*> (o))) {
     strcpy( title, ((Fl_Menu_*) o)->text());
     if( strncmp( title, "Add Row ", 8) == 0) nrows++;
     else if( strncmp( title, "Add Colu", 8) == 0) ncols++;
@@ -322,7 +322,7 @@ void manage_plot_window_array( Fl_Widget *o)
     if( strncmp( title, "Read", 4) == 0) nplots_old = 0;
     else nplots_old = nplots;
   }
-  else if( pButton = dynamic_cast <Fl_Button*> (o)) {
+  else if( (pButton = dynamic_cast <Fl_Button*> (o))) {
     strcpy( title, ((Fl_Menu_*) o)->label());
     if( strncmp( title, "Read", 4) == 0) nplots_old = 0;
     else nplots_old = nplots;
@@ -407,7 +407,11 @@ void manage_plot_window_array( Fl_Widget *o)
     // read or reload operation, it would cause a segementation fault.
     if( uInitialize || ( nplots != nplots_old && nplots_old > 0)) {
       if( i>=nplots_old) pws[i] = new plot_window( pw_w, pw_h);
-      else pws[ i]->size( pw_w, pw_h);
+      else {
+		  if (pws[i]->shown())
+			  pws[i]->hide();
+		  pws[ i]->size( pw_w, pw_h);
+	  }
       pws[i]->copy_label( labstr.c_str());
       pws[i]->position(pw_x, pw_y);
       pws[i]->row = row; 
@@ -476,7 +480,8 @@ void manage_plot_window_array( Fl_Widget *o)
     // Make sure the window has been shown and is resizable
     // NOTE: pws[i]->show() is not sufficient when windows
     // are created.
-    pws[i]->show( global_argc, global_argv);
+ 	if (!pws[i]->shown())
+		pws[i]->show( global_argc, global_argv);
     pws[i]->resizable( pws[i]);
 
     // Turn on show capability of plot_window::reset_view();
