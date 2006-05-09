@@ -231,32 +231,44 @@ void control_panel_window::make_widgets( control_panel_window *cpw)
 
   xpos = 10;
 
-  varindex1 = 
-    new Fl_Choice (xpos, ypos+=45, 100, 25, "axis 1");
+  varindex1 = new Fl_Choice (xpos, ypos+=45, 100, 25, "axis 1");
   varindex1->align(FL_ALIGN_TOP);
   varindex1->textsize(12);
   varindex1->copy( varindex_menu_items);
   varindex1->mode( nvars, FL_MENU_INACTIVE);  // disable "--nothing--" as a choice for axis1
-  varindex1->callback(
-    (Fl_Callback*)static_extract_and_redraw, this);
+  varindex1->callback( (Fl_Callback*)static_extract_and_redraw, this);
 
-  varindex2 = 
-    new Fl_Choice (xpos+100, ypos, 100, 25, "axis 2");
+  lock_axis1_button = b = new Fl_Button(xpos+80, ypos+25, 20, 20, "lock ");
+  b->type(FL_TOGGLE_BUTTON); 
+  b->selection_color(FL_BLUE);
+  b->align(FL_ALIGN_LEFT);
+  b->value(0);
+
+  varindex2 = new Fl_Choice (xpos+100, ypos, 100, 25, "axis 2");
   varindex2->align(FL_ALIGN_TOP);
   varindex2->textsize(12);
   varindex2->copy( varindex_menu_items);
   varindex2->mode( nvars, FL_MENU_INACTIVE);  // disable "--nothing--" as a choice for axis2
-  varindex2->callback(
-    (Fl_Callback*)static_extract_and_redraw, this);
+  varindex2->callback( (Fl_Callback*)static_extract_and_redraw, this);
 
-  varindex3 = 
-    new Fl_Choice (xpos+200, ypos, 100, 25, "axis 3");
+  lock_axis2_button = b = new Fl_Button(xpos+100+80, ypos+25, 20, 20, "lock ");
+  b->type(FL_TOGGLE_BUTTON); 
+  b->selection_color(FL_BLUE);
+  b->align(FL_ALIGN_LEFT);
+  b->value(0);
+
+  varindex3 = new Fl_Choice (xpos+200, ypos, 100, 25, "axis 3");
   varindex3->align(FL_ALIGN_TOP);
   varindex3->textsize(12);
   varindex3->copy( varindex_menu_items);
   varindex3->value(nvars);  // initially, axis3 == "-nothing-"
-  varindex3->callback(
-    (Fl_Callback*)static_extract_and_redraw, this);
+  varindex3->callback( (Fl_Callback*)static_extract_and_redraw, this);
+
+  lock_axis3_button = b = new Fl_Button(xpos+200+80, ypos+25, 20, 20, "lock ");
+  b->type(FL_TOGGLE_BUTTON); 
+  b->selection_color(FL_BLUE);
+  b->align(FL_ALIGN_LEFT);
+  b->value(0);
 
   // NLoop: Genenerate normalization style menu
   for( int i=0; i<n_normalization_styles; i++) {
@@ -268,7 +280,7 @@ void control_panel_window::make_widgets( control_panel_window *cpw)
   normalization_style_menu_items[n_normalization_styles].label(0);
 
   x_normalization_style = 
-    new Fl_Choice (xpos, ypos+=45, 100, 25, "normalize x");
+    new Fl_Choice (xpos, ypos+=70, 100, 25, "normalize x");
   x_normalization_style->align(FL_ALIGN_TOP);
   x_normalization_style->textsize(12);
   x_normalization_style->menu(normalization_style_menu_items);
@@ -412,10 +424,4 @@ void control_panel_window::make_widgets( control_panel_window *cpw)
   b->selection_color(FL_BLUE); 
   b->callback((Fl_Callback*)choose_color_selected, this);
 
-  lock_axes_button = b = 
-    new Fl_Button(xpos, ypos+=25, 20, 20, "lock axes");
-  b->align(FL_ALIGN_RIGHT); 
-  b->type(FL_TOGGLE_BUTTON); 
-  b->selection_color(FL_BLUE);
-  b->value(0);
 }

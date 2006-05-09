@@ -124,19 +124,32 @@ void plot_window::change_axes( int nchange)
 {
   // int nchange = 0;
   for( int i=0; i<nplots; i++) {
-    if( !cps[i]->lock_axes_button->value()) nchange++;
+	  // only increment axis counts for plots with x or y axis unlocked.  This is not ideal.
+	  if( !cps[i]->lock_axis1_button->value() || !cps[i]->lock_axis2_button->value())
+		  nchange++;
   }
-  cout << "for window " << index << " nchange=" << nchange << endl;
+  // cout << "for window " << index << " nchange=" << nchange << endl;
 
   // this seems a little verbose.....
   int i=cp->varindex1->value();
   int j=cp->varindex2->value();
-  cout << "  (i,j) before = (" << i << "," << j << ")" << endl;
-  for( int k=0; k<nchange; k++)
-    upper_triangle_incr( i, j, nvars);
-  cout << "  (i,j) after = (" << i << "," << j << ")" << endl;
-  cp->varindex1->value(i);
-  cp->varindex2->value(j);
+  // cout << "  (i,j) before = (" << i << "," << j << ")" << endl;
+  if (!cp->lock_axis1_button->value() && !cp->lock_axis2_button->value()) {
+	  for( int k=0; k<nchange; k++)
+		  upper_triangle_incr( i, j, nvars);
+	  cp->varindex1->value(i);
+	  cp->varindex2->value(j);
+  } else if (!cp->lock_axis1_button->value()) {
+	  for( int k=0; k<nchange; k++) {
+		  i = (i+1)%nvars;
+		  cp->varindex1->value(i);
+	  }
+  } else if (!cp->lock_axis2_button->value()) {
+	  for( int k=0; k<nchange; k++) {
+		  j = (j+1)%nvars;
+		  cp->varindex2->value(j);
+	  }
+  }
   cp->extract_and_redraw();
 }
 
@@ -162,9 +175,6 @@ void plot_window::update_linked_transforms()
 
     // don't need to update ourself
     if( p == this) continue; 
-
-    // individual plots may override this "feature"
-    if( p->cp->lock_axes_button->value()) continue;
 
     // Finally, figure out what me may want to change and how
 	if( p->cp->varindex1->value() == axis1 && 
@@ -899,9 +909,6 @@ void plot_window::color_array_from_selection()
   update_textures();
 
   blitz::Range NPTS( 0, npoints-1);	
-
-  if( dont_paint_button->value()) {
-  }
 
   texture_coords( NPTS) = selected( NPTS);
 }

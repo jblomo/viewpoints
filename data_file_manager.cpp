@@ -73,6 +73,7 @@ void data_file_manager::initialize()
 // or binary data file, resize arrays to allocate meomory, and set 
 // identity array.  Returns 0 if successful.
 // MCL XXX - refactor this with read_data()
+// int data_file_manager::load_data_file( char* inFileSpec) 
 int data_file_manager::load_data_file( string inFileSpecIn) 
 {
   // PRG XXX: Would it be possible to examine the file directly 
@@ -97,7 +98,7 @@ int data_file_manager::load_data_file( string inFileSpecIn)
     cout << "Finished reading file <" << inFileSpec.c_str() << ">" << endl;
 
   // Remove trivial columns
-  remove_trivial_columns();
+  remove_trivial_columns ();
 
   // If only one or fewer records are available then quit before 
   // something terrible happens!
@@ -131,6 +132,7 @@ int data_file_manager::load_data_file( string inFileSpecIn)
 // Open an ASCII file for input, read and discard the headers, 
 // read the data block, and close the file.  Returns 0 if 
 // successful.
+// int data_file_manager::read_ascii_file_with_headers( char* inFileSpec) 
 int data_file_manager::read_ascii_file_with_headers() 
 {
   // Attempt to open input file and make sure it exists
@@ -349,10 +351,11 @@ int data_file_manager::read_ascii_file_with_headers()
 // viable way to read this seems to be with conventional C-style 
 // methods: fopen, fgets, fread, feof, and fclose, from <stdio>.  
 // Returns 0 if successful.
+// int data_file_manager::read_binary_file_with_headers( char* inFileSpec) 
 int data_file_manager::read_binary_file_with_headers() 
 {
   // Attempt to open input file and make sure it exists
-  FILE* pInFile;
+  FILE * pInFile;
   pInFile = fopen( inFileSpec.c_str(), "rb");
   if( pInFile == NULL) {
     cout << "read_binary_file_with_headers: ERROR" << endl
@@ -397,6 +400,7 @@ int data_file_manager::read_binary_file_with_headers()
     cerr << " -ERROR: Too many columns, "
          << "increase MAXVARS and recompile"
          << endl;
+    // inFile.close();
     fclose( pInFile);
     return 1;
   }
@@ -436,6 +440,7 @@ int data_file_manager::read_binary_file_with_headers()
     if( !vars.isStorageContiguous()) {
       cerr << " -ERROR: Tried to read into a noncontiguous buffer."
            << endl;
+      // inFile.close();
       fclose( pInFile);
       return -1;
     }
@@ -548,10 +553,11 @@ int data_file_manager::read_binary_file_with_headers()
 // block of binary data. 
 void data_file_manager::write_binary_file_with_headers()
 {
-  // Initialize read status and filespec.  NOTE: outFileSpec is
+  // Initialize read status and filespec.  NOTE: inFileSpec is
   // defined as const char* for use with Fl_File_Chooser, which 
   // means it could be destroyed by the relevant destructors!
-  const char *outFileSpec = sPathname.c_str();
+  // string sPathname = ".";
+  const char *output_file_name = sPathname.c_str();
   const char* pattern = "*.bin\tAll Files (*)";
   const char* title = "write binary output to file";
 
@@ -559,31 +565,30 @@ void data_file_manager::write_binary_file_with_headers()
   // pathname must be passed as a variable or the window will
   // begin in some root directory.
   Fl_File_Chooser* file_chooser = 
-    new Fl_File_Chooser( 
-      outFileSpec, pattern, Fl_File_Chooser::CREATE, title);
+    new Fl_File_Chooser( output_file_name, pattern, Fl_File_Chooser::CREATE, title);
 
   // Loop: Select fileSpecs until a non-directory is obtained
   while( 1) {
-    if( outFileSpec != NULL) file_chooser->directory( outFileSpec);
+    if( output_file_name != NULL) file_chooser->directory( output_file_name);
 
     // Loop: wait until the file selection is done
     file_chooser->show();
     while( file_chooser->shown()) Fl::wait();
-    outFileSpec = file_chooser->value();   
+    output_file_name = file_chooser->value();   
 
     // If no file was specified then quit
-    if( outFileSpec == NULL) {
+    if( output_file_name == NULL) {
       cout << "No output file was specified" << endl;
       break;
     }
 
     // For some reason, the fl_filename_isdir method doesn't seem
     // to work, so try to open this file to see if it is a directory.
-    FILE* pFile = fopen( outFileSpec, "w");
+    FILE* pFile = fopen( output_file_name, "w");
     if( pFile == NULL) {
-      file_chooser->directory( outFileSpec);
+      file_chooser->directory( output_file_name);
       sPathname.erase( sPathname.begin(), sPathname.end());
-      sPathname.append( outFileSpec);
+      sPathname.append( output_file_name);
       continue;
     }
     fclose( pFile);
@@ -591,40 +596,40 @@ void data_file_manager::write_binary_file_with_headers()
   } 
 
   // Obtain file name using the FLTK member function
-  // char *outFileSpec = 
+  // char *output_file_name = 
   //   fl_file_chooser( 
   //     "write binary output to file", NULL, NULL, 0);
 
   // If a file name was specified, create and write file
-  if( outFileSpec) {
+  if( output_file_name) {
     blitz::Array<float,1> vars( nvars);
     blitz::Range NVARS( 0, nvars-1);
     
     // Open output stream and report any problems
-    ofstream outStream;
-    outStream.open( 
-      outFileSpec, 
+    ofstream os;
+    os.open( 
+      output_file_name, 
       ios::out|ios::trunc|ios::binary);
       // fstream::out | fstream::trunc | fstream::binary);
 
-    if( outStream.fail()) {
-      cerr << "Error opening" << outFileSpec 
+    if( os.fail()) {
+      cerr << "Error opening" << output_file_name 
            << "for writing" << endl;
       delete file_chooser;
       return;
     }
     
     // Loop: Write column labels to the header
-    for( int i=0; i < nvars; i++ ) outStream << column_labels[ i] << " ";
-    outStream << endl;
+    for( int i=0; i < nvars; i++ ) os << column_labels[ i] << " ";
+    os << endl;
     
     // Loop: Write data and report problems
     int nBlockSize = nvars*sizeof(float);
     for( int i=0; i<npoints; i++) {
       vars = points( NVARS, i);
-      outStream.write( (const char*) vars.data(), nBlockSize);
-      if( outStream.fail()) {
-        cerr << "Error writing to" << outFileSpec << endl;
+      os.write( (const char*) vars.data(), nBlockSize);
+      if( os.fail()) {
+        cerr << "Error writing to" << output_file_name << endl;
         delete file_chooser;
         return;
       }

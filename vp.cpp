@@ -237,7 +237,7 @@ void create_main_control_panel(
 }
 
 //*****************************************************************
-// create_broadcast_group () -- Create a special panel (really a 
+// create_broadcast_group () -- Create a special panel (really a
 // group under a tab) with label "+" this group's widgets effect 
 // all the others (unless a plot's tab is "locked" - TBI).
 // MCL XXX should this be a method of control_panel_window?
@@ -247,7 +247,7 @@ void create_broadcast_group ()
   Fl_Group::current(cpt);	
   control_panel_window *cp = cps[nplots];
   cp = new control_panel_window( cp_widget_x, cp_widget_y, main_w - 6, cp_widget_h);
-  cp->label("+");
+  cp->label("all");
   cp->labelsize( 10);
   cp->resizable( cp);
   cp->make_widgets( cp);
@@ -391,6 +391,7 @@ void manage_plot_window_array( Fl_Widget *o)
     Fl_Group::current(cpt);	
     cps[i] = new control_panel_window( 
       cp_widget_x, cp_widget_y, main_w - 6, cp_widget_h);
+	cps[i]->index = i;
     cps[i]->copy_label( labstr.c_str());
     cps[i]->labelsize( 10);
     cps[i]->resizable( cps[i]);
@@ -406,10 +407,18 @@ void manage_plot_window_array( Fl_Widget *o)
     // restore windows.  NOTE: If this code was executed during a
     // read or reload operation, it would cause a segementation fault.
     if( uInitialize || ( nplots != nplots_old && nplots_old > 0)) {
-      if( i>=nplots_old) pws[i] = new plot_window( pw_w, pw_h);
-      else {
-        // if( pws[i]->shown()) pws[i]->hide();  // This is the problem!
-        pws[ i]->size( pw_w, pw_h);
+		if( i>=nplots_old) {
+			pws[i] = new plot_window( pw_w, pw_h);
+			pws[i]->index = i;
+			cps[i]->pw = pws[i];
+			pws[i]->cp = cps[i];
+		}
+		else {
+			// if( pws[i]->shown()) pws[i]->hide();  // This is the problem!
+			pws[i]->index = i;
+			cps[i]->pw = pws[i];
+			pws[i]->cp = cps[i];
+			pws[i]->size( pw_w, pw_h);
 	  }
       pws[i]->copy_label( labstr.c_str());
       pws[i]->position(pw_x, pw_y);
@@ -432,7 +441,6 @@ void manage_plot_window_array( Fl_Widget *o)
       // When the plot window array is being created, the first 
       // plot's tab is shown and its axes are locked.
       if( o == NULL) {
-        cps[i]->lock_axes_button->value(1);
         cps[i]->hide();	
       }
     }
@@ -686,13 +694,6 @@ void make_global_widgets()
   b->selection_color( FL_BLUE); 
   b->callback( (Fl_Callback*)choose_color_deselected);
 
-  // Button(2,2): Don't paint?  What does this do?
-  dont_paint_button = b = 
-    new Fl_Button( xpos, ypos+=25, 20, 20, "don't paint");
-  b->align( FL_ALIGN_RIGHT); 
-  b->selection_color( FL_BLUE); 
-  b->type( FL_TOGGLE_BUTTON);
-
   // Button(3,2): Randomly change all axes
   change_all_axes_button = b = 
     new Fl_Button( xpos, ypos+=25, 20, 20, "change axes");
@@ -742,8 +743,9 @@ void choose_color_deselected( Fl_Widget *o)
 // plot_window to change all unlocked axes.
 void change_all_axes( Fl_Widget *o) {
   for( int i=0; i<nplots; i++) {
-    if( !cps[i]->lock_axes_button->value())
-      pws[i]->change_axes( 0);
+	  // only change axes for plots whose x or y axis is unlocked
+	  if( !(cps[i]->lock_axis1_button->value() && cps[i]->lock_axis2_button->value()))
+		  pws[i]->change_axes( 0);
   }
 }
 

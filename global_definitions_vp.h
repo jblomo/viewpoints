@@ -120,9 +120,7 @@ EXTERN Fl_Button *show_deselected_button,
 EXTERN Fl_Button *write_data_button;
 EXTERN Fl_Button *choose_color_selected_button, 
           *choose_color_deselected_button; 
-EXTERN Fl_Button *dont_paint_button,
-          *change_all_axes_button;
-EXTERN Fl_Button *link_all_axes_button;
+EXTERN Fl_Button *change_all_axes_button, *link_all_axes_button;
 EXTERN Fl_Button *reload_plot_window_array_button;
 EXTERN Fl_Button *read_data_button;
 

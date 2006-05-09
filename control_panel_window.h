@@ -117,6 +117,7 @@ class control_panel_window : public Fl_Group
     Fl_Hor_Value_Slider_Input *rot_slider;
     Fl_Hor_Value_Slider_Input *nbins_slider;
     Fl_Choice *varindex1, *varindex2, *varindex3;
+	Fl_Button *lock_axis1_button, *lock_axis2_button, *lock_axis3_button;
 	
     // Pointers to buttons
     Fl_Button *reset_view_button;
@@ -124,7 +125,7 @@ class control_panel_window : public Fl_Group
               *show_deselected_points, 
               *show_axes, *show_grid, *show_labels, 
               *show_histogram;
-    Fl_Button *show_scale, *lock_axes_button;
+    Fl_Button *show_scale;
     Fl_Button *choose_selection_color_button;
     // Fl_Button *x_equals_delta_x, *y_equals_delta_x;
     Fl_Group *transform_style;
