@@ -13,14 +13,86 @@
 
 <hr>
 
+<p>
+When <em><b>viewpoints</b></em> is invoked from the 
+<em><b>vp</b></em> icon, it display a control panel along with 
+an 2x2 array of linked scatter plots of default data.  These 
+windows can be moved and resized in the conventional fashion.  
+If you delete some window by accident, you can restore every 
+window using the <em>reload plots</em> command from the command
+window.  (WARNING: In the current version of 
+<em><b>viewpoints</b></em>', if you delete every plot window, 
+bad things may happen.  This will be fixed in future releases.)
+</p>
+
+<p>
+You can select and move between windows by clicking on them in 
+the conventional fashion.  You can also select a particular 
+plot window by clicking on the associated tab in the control 
+panel window.  Within different windows, you can use the mouse 
+to select portions of the data set.  It is in this feature that 
+the power of <em><b>viewpoints</b></em> resides.  Rather than 
+attempt to describe it in detail, we encourage you to experiment.
+</p>
+
+<h3>Main menu bar commands</h3>
+
+<p>
+The following commands are available from the main menu bar.
+<table>
+<tr>
+ <th align="LEFT">Command</th><th align="LEFT">Action</th>
+</tr>
+<tr>
+ <td>File|Open ASCII file</td>
+ <td>Read an ASCII input file</td>
+</tr>
+<tr>
+ <td>File|Open binary file</td>
+ <td>Read a binary input file</td>
+</tr>
+<tr>
+ <td>File|Quit</td>
+ <td>Quit</td>
+</tr>
+<tr>
+ <td>View|Add Row</td>
+ <td>Add a row of plot windows</td>
+</tr>
+<tr>
+ <td>View|Add Column</td>
+ <td>Add a column of plot windows</td>
+</tr>
+<tr>
+ <td>View|Remove Row</td>
+ <td>Remove a row of plot windows</td>
+</tr>
+<tr>
+ <td>View|Remove Column</td>
+ <td>Remove a column of plot windows</td>
+</tr>
+<tr>
+ <td>View|Reload Plots</td>
+ <td>Restore plot windows</td>
+</tr>
+<tr>
+ <td>Help|Help</td>
+ <td>Opens a simple HELP window</td>
+</tr>
+<tr>
+ <td>Help|About</td>
+ <td>Information about this version</td>
+</tr>
+</table>
+</p>
+
+
 <h3>Keys & Buttons in plot windows:</h3>
 
 <p>
 The following mouse key and button combinations can be used 
 while the cursor is postioned above a plot window
-</p>
-
-<table align="LEFT">
+<table>
 <tr>
  <th align="LEFT">Action</th><th align="LEFT">Key</th>
 </tr>
@@ -49,14 +121,15 @@ while the cursor is postioned above a plot window
  <td>quit</td><td>q</td>
 </tr>
 </table>
+</p>
+
 
 <h3>Mouse Gestures in plot windows:</h3>
 
 <p>
 Mouse key and gesture combinations wil ave the following effects
 when the cursor is positioned over a plot window.
-
-<table align="LEFT">
+<table>
 <tr>
  <th align="LEFT">Action</th><th align="LEFT">Gesture</th>
 </tr>
@@ -76,58 +149,146 @@ when the cursor is positioned over a plot window.
  <td>scale histogram</td><td>middle-mouse + h (ctl-mouse + h on OSX)</td>
 </tr>
 </table>
-
-<h3>Controls in control panels:</h3>
-
-<p>
-Controls in the tabbed and main control panels will have the
-following effects.
 </p>
 
-<table align="LEFT">
+
+<h3>Controls in the control panels</h3>
+
+<p>
+The control panel consists of a set of tabbed control panels for
+individual windows and a main control panel for the entire array
+of panels.  For the most part, these controls should be intuitive.
+Some of these controls are described below
+
+<table>
+<tr><td colspan="2"><b>Tabbed control panels</td></tr>
 <tr>
  <th align="LEFT">Control</th><th align="LEFT">Action</th>
-</tr>
-</tr>
-<tr>
- <td>npoints</td><td>number of points displayed</td>
-</tr>
-<tr>
- <td>alpha</td><td>point opacity</td>
-</tr>
-<tr>
- <td>lum</td><td>point brightness</td>
-</tr>
-<tr>
- <td>bkg</td><td>background color (try bkg=0.5, lum=0.2)</td>
 </tr>
 <tr>
  <td>size</td><td>point size, in pixels</td>
 </tr>
 <tr>
+ <td>bkg</td><td>background color (try bkg=0.5, lum=0.2)</td>
+</tr>
+<tr>
+ <td>lum</td><td>point brightness</td>
+</tr>
+<tr>
+ <td>alpha</td><td>point opacity</td>
+</tr>
+<tr>
+ <td valign="TOP">rot</td>
+ <td>rotation angle in 3D about the y-axis.&nbsp;&nbsp;NOTE: to take<br>
+ advantage of this feature one must first select something<br>
+ for the 3rd axis to display.</td>
+</tr>
+<tr>
  <td>nbins</td><td>number of histogram bins</td>
 </tr>
 <tr>
- <td>rot</td>
- <td>rotation angle in 3D<br>(please select something for the 3rd axis to display)</td>
+ <td>axis 1-3</td><td>Attribute to be displayed in that axis</td>
 </tr>
 <tr>
- <td>spin</td><td>continuous rotation</td>
+ <td>normalize x,y,z</td><td>Normalization scheme for that axis</td>
 </tr>
 <tr>
- <td>sum vs. diff</td><td>plot (x+y) vs. (x-y)</td>
+ <td>reset view</td><td>Reset rotation and other display params</td>
 </tr>
 <tr>
- <td>polar</td><td>x<-r, y<-theta</td>
+ <td valign="TOP">spin</td>
+ <td>continuous rotation about the y-axis.&nbsp;&nbsp;NOTE: to start<br>
+ this, you may have to give the <em>rot</em> slider a twitch.</td>
+</tr>
+<tr>
+ <td>don't clear</td><td>Don't clear selected points in this panel</td>
+</tr>
+<tr>
+ <td>identify</td><td>plot y vs x</td>
+</tr>
+<tr>
+ <td>sum vs. diff plot</td><td>plot (x+y) vs. (x-y)</td>
+</tr>
+<tr>
+ <td>polar</td><td>plot x<-r, y<-theta</td>
+</tr>
+<tr>
+ <td>points</td><td>Show data points</td>
+</tr>
+<tr>
+ <td>unselected</td><td>Show unselected data points</td>
+</tr>
+<tr>
+ <td>axes</td><td>Show axes</td>
+</tr>
+<tr>
+ <td>labels</td><td>Show axes labels</td>
+</tr>
+<tr>
+ <td>scales</td><td>Show axes scales</td>
+</tr>
+<tr>
+ <td>grid</td><td></td>
+</tr>
+<tr>
+ <td>histogram</td><td>Show histograms along x and y axes</td>
+</tr>
+<tr>
+ <td>selection color</td><td>Pick color of selections from this panel</td>
+</tr>
+<tr>
+ <td>lock axes</td><td>Lock occurences of these axes</td>
 </tr>
 </table>
+</p>
+
+<p>
+<table>
+<tr><td colspan="2"><b>Main control panel</td></tr>
+<tr>
+ <th align="LEFT">Control</th><th align="LEFT">Action</th>
+</tr>
+<tr>
+ <td>npts</td><td>number of points displayed</td>
+</tr>
+<tr>
+ <td>show nonselected</td><td>Show unselected points</td>
+</tr>
+<tr>
+ <td>invert selection</td><td>Invert selected and nonselected points</td>
+</tr>
+<tr>
+ <td>clear selcetion</td><td>Clear selection</td>
+</tr>
+<tr>
+ <td>kill selection</td><td>Delete all selected points</td>
+</tr>
+<tr>
+ <td>reload plots</td><td>Restore plot windows to default layout</td>
+</tr>
+<tr>
+ <td>write data</td><td>Write (remaining) data to a binary file</td>
+</tr>
+<tr>
+ <td>unselcted color</td><td>Chose color of unselected points</td>
+</tr>
+<tr>
+ <td>don't paint</td><td></td>
+</tr>
+<tr>
+ <td>change axes</td><td>Change all (unlocked) axes
+</tr>
+<tr>
+ <td>lock axes</td><td>Lock axes</td>
+</tr>
+</table>
+</p>
 
 <h3>Normalization Schemes</h3>
 
 <p>Several different normalzation or scaling schemes are available.
 These are chosen on a per-axis basis.
-
-<table align="LEFT">
+<table>
 <tr>
  <th align="LEFT">Scheme</th><th align="LEFT">Effect</th>
 </tr>
@@ -153,6 +314,7 @@ These are chosen on a per-axis basis.
  <td>plot inverse of Gaussian cummulative distribution function of x<br>(i.e. nonuniform rescaling to force Gaussian marginal)</td>
 </tr>
 </table>
+</p>
 
 <p>
 Please note that <b><em>Viewpoints</em> (vp)</b> is a development 
