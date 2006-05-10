@@ -20,7 +20,7 @@
 //
 // Compiler directives:
 //   May require -D__WIN32__ to compile on windows
-//	 See Makefile for linux and OSX compile & link info.
+//   See Makefile for linux and OSX compile & link info.
 //
 // Purpose: viewpoints - interactive linked scatterplots and more.
 //
@@ -53,7 +53,7 @@
 //   redraw_if_changing( *dummy) -- Redraw changing plots
 //
 // Author: Creon Levit   2005-2006
-// Modified: P. R. Gazis  08-MAY-2006
+// Modified: P. R. Gazis  09-MAY-2006
 //*****************************************************************
 
 // Include the necessary include libraries
@@ -173,7 +173,7 @@ void make_help_about_window( Fl_Widget *o)
   about_window->labelsize( 10);
   
   // Compose text. NOTE use of @@ in conjunction with label()
-  string sAbout = "viewpoints 1.0.2\n";
+  string sAbout = "viewpoints 1.0.3\n";
   sAbout += "(c) 2006 C. Levit and P. R. Gazis\n\n";
   sAbout += "contact information:\n";
   sAbout += "Creon Levit creon@@nas.nasa.gov\n";
@@ -244,7 +244,7 @@ void create_main_control_panel(
 //  should it be a singleton?
 void create_broadcast_group ()
 {
-  Fl_Group::current(cpt);	
+  Fl_Group::current(cpt);  
   control_panel_window *cp = cps[nplots];
   cp = new control_panel_window( cp_widget_x, cp_widget_y, main_w - 6, cp_widget_h);
   cp->label("all");
@@ -260,11 +260,12 @@ void create_broadcast_group ()
   // tabs groups.  with a few exceptions... (for now)
   for (int i=0; i<cp->children(); i++)
   {
-	  Fl_Widget *wp = cp->child(i);
-	  wp->callback((Fl_Callback *)(control_panel_window::broadcast_change), cp);
+    Fl_Widget *wp = cp->child(i);
+    wp->callback((Fl_Callback *)(control_panel_window::broadcast_change), cp);
   }
 
-  // MCL XXX these widgets cause crashes or misbehaviors in the global panel, so skip them for now.
+  // MCL XXX these widgets cause crashes or misbehaviors in the global panel, 
+  // so skip them for now.
   cp->choose_selection_color_button->deactivate();
   cp->sum_vs_difference->deactivate();
   cp->polar->deactivate();
@@ -339,16 +340,19 @@ void manage_plot_window_array( Fl_Widget *o)
   int x_normalization_style_old[ nplots_old];
   int y_normalization_style_old[ nplots_old];
   int z_normalization_style_old[ nplots_old];
+  int x_axis_locked[ nplots_old];
+  int y_axis_locked[ nplots_old];
+  int z_axis_locked[ nplots_old];
   for( int i=0; i<nplots_old; i++) {
     ivar_old[ i] = cps[i]->varindex1->value();
     jvar_old[ i] = cps[i]->varindex2->value();
     kvar_old[ i] = cps[i]->varindex3->value();
-    x_normalization_style_old[ i] =
-      cps[i]->x_normalization_style->value();
-    y_normalization_style_old[ i] =
-      cps[i]->y_normalization_style->value();
-    z_normalization_style_old[ i] =
-      cps[i]->z_normalization_style->value();
+    x_normalization_style_old[ i] = cps[i]->x_normalization_style->value();
+    y_normalization_style_old[ i] = cps[i]->y_normalization_style->value();
+    z_normalization_style_old[ i] = cps[i]->z_normalization_style->value();
+    x_axis_locked[ i] = cps[i]->lock_axis1_button->value();
+    y_axis_locked[ i] = cps[i]->lock_axis2_button->value();
+    z_axis_locked[ i] = cps[i]->lock_axis3_button->value();
   }
   
   // Clear children of tab widget to delete old tabs
@@ -388,10 +392,10 @@ void manage_plot_window_array( Fl_Widget *o)
     // Set pointer to the current group to the tab widget defined 
     // by create_control_panel and add a new virtual control panel
     // under this tab widget
-    Fl_Group::current(cpt);	
+    Fl_Group::current(cpt);  
     cps[i] = new control_panel_window( 
       cp_widget_x, cp_widget_y, main_w - 6, cp_widget_h);
-	cps[i]->index = i;
+    cps[i]->index = i;
     cps[i]->copy_label( labstr.c_str());
     cps[i]->labelsize( 10);
     cps[i]->resizable( cps[i]);
@@ -407,19 +411,19 @@ void manage_plot_window_array( Fl_Widget *o)
     // restore windows.  NOTE: If this code was executed during a
     // read or reload operation, it would cause a segementation fault.
     if( uInitialize || ( nplots != nplots_old && nplots_old > 0)) {
-		if( i>=nplots_old) {
-			pws[i] = new plot_window( pw_w, pw_h);
-			pws[i]->index = i;
-			cps[i]->pw = pws[i];
-			pws[i]->cp = cps[i];
-		}
-		else {
-			// if( pws[i]->shown()) pws[i]->hide();  // This is the problem!
-			pws[i]->index = i;
-			cps[i]->pw = pws[i];
-			pws[i]->cp = cps[i];
-			pws[i]->size( pw_w, pw_h);
-	  }
+    if( i>=nplots_old) {
+      pws[i] = new plot_window( pw_w, pw_h);
+      pws[i]->index = i;
+      cps[i]->pw = pws[i];
+      pws[i]->cp = cps[i];
+    }
+    else {
+      // if( pws[i]->shown()) pws[i]->hide();  // This is the problem!
+      pws[i]->index = i;
+      cps[i]->pw = pws[i];
+      pws[i]->cp = cps[i];
+      pws[i]->size( pw_w, pw_h);
+    }
       pws[i]->copy_label( labstr.c_str());
       pws[i]->position(pw_x, pw_y);
       pws[i]->row = row; 
@@ -441,7 +445,7 @@ void manage_plot_window_array( Fl_Widget *o)
       // When the plot window array is being created, the first 
       // plot's tab is shown and its axes are locked.
       if( o == NULL) {
-        cps[i]->hide();	
+        cps[i]->hide();  
       }
     }
     else plot_window::upper_triangle_incr( ivar, jvar, nvars);
@@ -453,12 +457,12 @@ void manage_plot_window_array( Fl_Widget *o)
         cps[i]->varindex1->value( ivar_old[i]);  
         cps[i]->varindex2->value( jvar_old[i]);
         cps[i]->varindex3->value( kvar_old[i]);
-        cps[i]->x_normalization_style->value( 
-          x_normalization_style_old[i]);  
-        cps[i]->y_normalization_style->value( 
-          y_normalization_style_old[i]);  
-        cps[i]->z_normalization_style->value( 
-          z_normalization_style_old[i]);  
+        cps[i]->x_normalization_style->value( x_normalization_style_old[i]);  
+        cps[i]->y_normalization_style->value( y_normalization_style_old[i]);  
+        cps[i]->z_normalization_style->value( z_normalization_style_old[i]);  
+        cps[i]->lock_axis1_button->value( x_axis_locked[i]);  
+        cps[i]->lock_axis2_button->value( y_axis_locked[i]);  
+        cps[i]->lock_axis3_button->value( z_axis_locked[i]);  
     } 
     else {
       cps[i]->varindex1->value(ivar);  
@@ -654,7 +658,7 @@ void make_global_widgets()
   b->align( FL_ALIGN_RIGHT); 
   b->selection_color( FL_BLUE); 
   b->type( FL_TOGGLE_BUTTON);
-  b->value( 0);	
+  b->value( 0);  
 
   // Button(3,1): Invert colors of selected and nonselected data
   invert_selection_button = b = 
@@ -743,9 +747,9 @@ void choose_color_deselected( Fl_Widget *o)
 // plot_window to change all unlocked axes.
 void change_all_axes( Fl_Widget *o) {
   for( int i=0; i<nplots; i++) {
-	  // only change axes for plots whose x or y axis is unlocked
-	  if( !(cps[i]->lock_axis1_button->value() && cps[i]->lock_axis2_button->value()))
-		  pws[i]->change_axes( 0);
+    // only change axes for plots whose x or y axis is unlocked
+    if( !(cps[i]->lock_axis1_button->value() && cps[i]->lock_axis2_button->value()))
+      pws[i]->change_axes( 0);
   }
 }
 

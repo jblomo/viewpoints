@@ -22,7 +22,7 @@
 // Purpose: Source code for <plot_window.h>
 //
 // Author: Creon Levitt   unknown
-// Modified: P. R. Gazis  08-MAY-2006
+// Modified: P. R. Gazis  09-MAY-2006
 //*****************************************************************
 
 // Include the necessary include libraries
@@ -123,10 +123,12 @@ void plot_window::choose_color_selected()
 void plot_window::change_axes( int nchange)
 {
   // int nchange = 0;
+
+  // Loop: Examine control panel tabs and increment axis counts
+  // only for plots with x or y axis unlocked.  This is not ideal.
   for( int i=0; i<nplots; i++) {
-	  // only increment axis counts for plots with x or y axis unlocked.  This is not ideal.
-	  if( !cps[i]->lock_axis1_button->value() || !cps[i]->lock_axis2_button->value())
-		  nchange++;
+    if( !cps[i]->lock_axis1_button->value() || !cps[i]->lock_axis2_button->value())
+      nchange++;
   }
   // cout << "for window " << index << " nchange=" << nchange << endl;
 
@@ -134,21 +136,22 @@ void plot_window::change_axes( int nchange)
   int i=cp->varindex1->value();
   int j=cp->varindex2->value();
   // cout << "  (i,j) before = (" << i << "," << j << ")" << endl;
-  if (!cp->lock_axis1_button->value() && !cp->lock_axis2_button->value()) {
-	  for( int k=0; k<nchange; k++)
-		  upper_triangle_incr( i, j, nvars);
-	  cp->varindex1->value(i);
-	  cp->varindex2->value(j);
+
+  // Change axes in different ways depending on how they are locked
+  if( !cp->lock_axis1_button->value() && !cp->lock_axis2_button->value()) {
+    for( int k=0; k<nchange; k++) upper_triangle_incr( i, j, nvars);
+    cp->varindex1->value(i);
+    cp->varindex2->value(j);
   } else if (!cp->lock_axis1_button->value()) {
-	  for( int k=0; k<nchange; k++) {
-		  i = (i+1)%nvars;
-		  cp->varindex1->value(i);
-	  }
+    for( int k=0; k<nchange; k++) {
+      i = (i+1)%nvars;
+      cp->varindex1->value(i);
+    }
   } else if (!cp->lock_axis2_button->value()) {
-	  for( int k=0; k<nchange; k++) {
-		  j = (j+1)%nvars;
-		  cp->varindex2->value(j);
-	  }
+    for( int k=0; k<nchange; k++) {
+      j = (j+1)%nvars;
+      cp->varindex2->value(j);
+    }
   }
   cp->extract_and_redraw();
 }
@@ -177,7 +180,7 @@ void plot_window::update_linked_transforms()
     if( p == this) continue; 
 
     // Finally, figure out what me may want to change and how
-	if( p->cp->varindex1->value() == axis1 && 
+    if( p->cp->varindex1->value() == axis1 && 
         p->cp->x_normalization_style->value() == style1) {
       p->xscale = xscale; 
       p->xcenter = xcenter;
@@ -214,15 +217,14 @@ void plot_window::update_linked_transforms()
 // plot_window::handle( event) -- Main event handler.
 int plot_window::handle( int event)
 {
-  // Current plot window (getting mouse drags, etc) must get 
-  // redrawn before others so that selections get colored 
-  // correctly.  Ugh.
+  // Current plot window (mouse drags, etc) must get redrawn before 
+  // others so that selections get colored correctly.  Ugh.
   switch(event) {
     case FL_PUSH:
       DEBUG(cout << "FL_PUSH at " << xprev << ", " << yprev << endl);
 
       // Show the control panel associated with this plot window.
-      cpt->value(cps[this->index]);	
+      cpt->value(cps[this->index]);  
       xprev = Fl::event_x();
       yprev = Fl::event_y();
 
@@ -233,7 +235,7 @@ int plot_window::handle( int event)
       #if 0
         xzoomcenter = (float)xprev;
         xzoomcenter = + (2.0*(xzoomcenter/(float)w()) -1.0) ; // window -> [-1,1]
-			
+      
         yzoomcenter = (float)yprev;
         yzoomcenter = - (2.0*(yzoomcenter/(float)h()) -1.0) ; // window -> [-1,1]
       #endif
@@ -247,7 +249,7 @@ int plot_window::handle( int event)
         if( current_window != previous_window)
           previously_selected( blitz::Range(0,npoints-1)) = 
             selected( blitz::Range(0,npoints-1));
-			
+      
         // not moving or extending old selection
         if(! (Fl::event_key(FL_Shift_L) || Fl::event_key(FL_Shift_R))) {
           extend_selection = 0;
@@ -256,7 +258,7 @@ int plot_window::handle( int event)
           xdown = + (2.0*(xdown/(float)w()) -1.0) ; // window -> [-1,1]
           xdown = xdown / xscale;
           xdown = xdown + xcenter;
-			
+      
           ydown = (float)yprev;
           ydown = - (2.0*(ydown/(float)h()) -1.0) ; // window -> [-1,1]
           ydown = ydown/yscale;
@@ -302,7 +304,7 @@ int plot_window::handle( int event)
       // scale = drag with middle-mouse (or c-left-mouse)
       else if( Fl::event_state(FL_BUTTON2) || 
                (Fl::event_state(FL_BUTTON1) && Fl::event_state(FL_CTRL))) {
-		if( scale_histogram) {
+      if( scale_histogram) {
           xhscale *= 1 + xdragged*(2.0/w());
           yhscale *= 1 + ydragged*(2.0/h());
         } 
@@ -337,7 +339,7 @@ int plot_window::handle( int event)
           xtracked = + (2.0*(xcur/(float)w()) -1.0) ; // window -> [-1,1]
           xtracked = xtracked / xscale;
           xtracked = xtracked + xcenter;
-				
+        
           ytracked = - (2.0*(ycur/(float)h()) -1.0) ; // window -> [-1,1]
           ytracked = ytracked/yscale;
           ytracked = ytracked + ycenter;
@@ -413,7 +415,7 @@ int plot_window::handle( int event)
           return 0;
       }
 
-    case FL_KEYUP:
+      case FL_KEYUP:
       DEBUG ( cout << "FL_KEYUP" << endl);
       switch( Fl::event_key()) {
         case 'h':
@@ -470,7 +472,7 @@ void plot_window::reset_view()
   yscale = 2.0 / (wmax[1]-wmin[1]);
   if (axis2 != nvars) zscale = 2.0 / (wmax[2]-wmin[2]);
   else zscale = 1.0;
-	
+  
   // Initiallly, datapoints only span 0.8 of the window dimensions, 
   // which allows room around the edges for labels, tickmarks, 
   // histograms....
@@ -533,7 +535,7 @@ void plot_window::draw()
     // this next idiom is necessary, per window, to map GL_SHORT 
     // texture coordinate values to [0..1] for texturing.
     glMatrixMode(GL_TEXTURE);
-    glLoadIdentity();	
+    glLoadIdentity();  
     glScalef( 
       1.0/(float)MAXPLOTS, 
       1.0/(float)MAXPLOTS, 
@@ -689,7 +691,7 @@ void plot_window::draw_axes ()
     char buf[ 1024];
     float b = 1.5;
 
-    // If requested, draw tic marks to show scale	
+    // If requested, draw tic marks to show scale  
     if( cp->show_scale->value()) {
       glBegin( GL_LINES);
 
@@ -758,7 +760,7 @@ void plot_window::draw_axes ()
       b = 2; 
 
       float wid = gl_width(xlabel.c_str())/(float)(w());
-      gl_draw( (const char *)(xlabel.c_str()), -wid, -(1+b*a));	
+      gl_draw( (const char *)(xlabel.c_str()), -wid, -(1+b*a));  
 
       b = 1.5;
       gl_draw( (const char *)(ylabel.c_str()), -(1+b*a), 1+b*a);
@@ -778,7 +780,7 @@ void plot_window::draw_center_glyph ()
   glDisable( GL_DEPTH_TEST);
   glEnable( GL_COLOR_LOGIC_OP);
   glLogicOp( GL_INVERT);
-	
+  
   glPushMatrix ();
   glLoadIdentity();
   glBlendFunc( GL_ONE, GL_ZERO);
@@ -842,7 +844,7 @@ void plot_window::handle_selection ()
 
     glEnd();
   }
-  blitz::Range NPTS( 0, npoints-1);	
+  blitz::Range NPTS( 0, npoints-1);  
 
   // Identify newly-selected points
   newly_selected(NPTS) = where( 
@@ -862,7 +864,7 @@ void plot_window::handle_selection ()
     selected(NPTS) = where(
       newly_selected(NPTS), newly_selected(NPTS),
       previously_selected(NPTS));
-  }		
+  }    
 
   // Determine and print selection statistics
   nselected = blitz::count(selected(NPTS)>0);
@@ -908,7 +910,7 @@ void plot_window::color_array_from_selection()
   initialize_textures();
   update_textures();
 
-  blitz::Range NPTS( 0, npoints-1);	
+  blitz::Range NPTS( 0, npoints-1);  
 
   texture_coords( NPTS) = selected( NPTS);
 }
@@ -1080,11 +1082,11 @@ void plot_window::draw_histograms()
   glVertex2f(x,0.0);
   for( int bin=0; bin<nbins; bin++) {
     glVertex2f(x,counts(bin,0));   // left edge
-	glVertex2f(x+xwidth,counts(bin,0));	  // Top edge
+  glVertex2f(x+xwidth,counts(bin,0));    // Top edge
     //glVertex2f(x+xwidth,0.0);   // Right edge
     x+=xwidth;
   }
-  glVertex2f(x,0.0);					
+  glVertex2f(x,0.0);          
   glEnd();
 
   // If points were selected, refactor selcted points ofthe
@@ -1093,17 +1095,17 @@ void plot_window::draw_histograms()
     x = amin[0];
     glColor4f (0.25, 1.0, 0.25, 1.0);
     glBegin(GL_LINE_STRIP);
-    glVertex2f(x,0.0);					
+    glVertex2f(x,0.0);          
     for( int bin=0; bin<nbins; bin++) {
       glVertex2f(x,counts_selected(bin,0));   // left edge
       glVertex2f(x+xwidth,counts_selected(bin,0));   // top edge
       // glVertex2f(x+xwidth,0.0);   // right edge 
       x+=xwidth;
     }
-    glVertex2f(x,0.0);					
+    glVertex2f(x,0.0);          
     glEnd();
   }
-	
+  
   // y-axis histograms
   glLoadIdentity();
   glTranslatef( 0.0, yzoomcenter*yscale, 0);
@@ -1117,14 +1119,14 @@ void plot_window::draw_histograms()
   float y = amin[1];
   glColor4f( 0.0, 1.0, 0.0, 0.5);
   glBegin( GL_LINE_STRIP);
-  glVertex2f( 0.0, y);					
+  glVertex2f( 0.0, y);          
   for( int bin=0; bin<nbins; bin++) {
     glVertex2f(counts(bin,1),y);   // bottom
     glVertex2f(counts(bin,1), y+ywidth);   // right edge
     // glVertex2f(0.0, y+ywidth);   // top edge 
     y+=ywidth;
   }
-  glVertex2f(0.0,y);					
+  glVertex2f(0.0,y);          
   glEnd();
 
   // If points were selected, refactor selcted points of the
@@ -1140,7 +1142,7 @@ void plot_window::draw_histograms()
       // glVertex2f(0.0, y+ywidth);   // top edge 
       y+=ywidth;
     }
-    glVertex2f(0.0,y);					
+    glVertex2f(0.0,y);          
     glEnd();
   }
 
@@ -1153,7 +1155,7 @@ void plot_window::draw_histograms()
 int plot_window::transform_2d()
 {
   if( cp->no_transform->value()) return 1;  // no transform
-	
+  
   blitz::Range NPTS(0,npoints-1);
 
   blitz::Array <float,1> tmp1(npoints), tmp2(npoints);
@@ -1231,7 +1233,7 @@ int plot_window::normalize(
           a(a_rank((int)((0.0 + (0.5*trim))*npoints)));
         wmax[axis_index] = 
           a(a_rank((int)((1.0 - (0.5*trim))*npoints)));
-		return 1;
+    return 1;
       }
 
     // median at center of axis, axis extends to include at 
@@ -1330,7 +1332,7 @@ void plot_window::compute_rank(
     std::stable_sort(lo, hi, myCompare());
 
     ranked(var_index) = 1;  // now we are ranked
-	ranked_points(var_index,NPTS) = a_rank(NPTS);  // and our rank is cached!
+  ranked_points(var_index,NPTS) = a_rank(NPTS);  // and our rank is cached!
     // cout << "  cache STORE at index " << var_index << endl;
   }
   else {
@@ -1467,27 +1469,28 @@ void plot_window::upper_triangle_incr(
   int &i, int &j, const int n)
 {
   cout << "  upper_triangle_incr before: i, j = " << " " << i << " " << j << endl;
+
   // diagonals get incremented together, with wrapping
   if (i==j)
   {
-	  i=(i+1)%n;
-	  j = i;
+    i=(i+1)%n;
+    j = i;
   }
   // upper triangle gets incremented "down and to the right" with diagonal wrapping
   else if (i<j) {
-	  if (i<n-2 && j<n-1)
-	  {
-		  i++;
-		  j++;
-	  } else {
-		  j = (n-i);
-		  if (j>n-1) j=1;
-		  i = 0;
-	  }
+    if (i<n-2 && j<n-1)
+    {
+      i++;
+      j++;
+    } else {
+      j = (n-i);
+      if (j>n-1) j=1;
+      i = 0;
+    }
   }
   // lower triangle gets treated as upprt triangle, with the two axes swapped.
   else if (i>j) {
-	  upper_triangle_incr( j, i, n);
+    upper_triangle_incr( j, i, n);
   }
   cout << "  upper_triangle_incr after:  i, j = " << " " << i << " " << j << endl;
   assert( i >= 0);
@@ -1538,14 +1541,14 @@ void plot_window::delete_selection( Fl_Widget *o)
   // If some point(s) got deleted, everyone's ranking needs to 
   // be recomputed
   if( ipoint != npoints)  {
-    ranked = 0;	
+    ranked = 0;  
 
     npoints = ipoint;
     npoints_slider->bounds(1,npoints);
     npoints_slider->value(npoints);
 
     clear_selection( (Fl_Widget *)NULL);
-	
+  
     for( int j=0; j<nplots; j++) {
       cps[j]->extract_and_redraw();
     }

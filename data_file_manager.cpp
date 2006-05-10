@@ -19,7 +19,7 @@
 // Purpose: Source code for <data_file_manager.h>
 //
 // Author: Creon Levitt   unknown
-// Modified: P. R. Gazis  08-MAY-2006
+// Modified: P. R. Gazis  09-MAY-2006
 //*****************************************************************
 
 // Include the necessary include libraries
@@ -73,10 +73,9 @@ void data_file_manager::initialize()
 // or binary data file, resize arrays to allocate meomory, and set 
 // identity array.  Returns 0 if successful.
 // MCL XXX - refactor this with read_data()
-// int data_file_manager::load_data_file( char* inFileSpec) 
 int data_file_manager::load_data_file( string inFileSpecIn) 
 {
-  // PRG XXX: Would it be possible to examine the file directly 
+  // PRG XXX: Would it be possible to examine the file directly
   // here to determine or verify its format?
 
   // load input filespec
@@ -128,11 +127,9 @@ int data_file_manager::load_data_file( string inFileSpecIn)
 }
 
 //*****************************************************************
-// data_file_manager::read_ascii_file_with_headers() -- 
-// Open an ASCII file for input, read and discard the headers, 
-// read the data block, and close the file.  Returns 0 if 
-// successful.
-// int data_file_manager::read_ascii_file_with_headers( char* inFileSpec) 
+// data_file_manager::read_ascii_file_with_headers() -- Open an 
+// ASCII file for input, read and discard the headers, read the 
+// data block, and close the file.  Returns 0 if successful.
 int data_file_manager::read_ascii_file_with_headers() 
 {
   // Attempt to open input file and make sure it exists
@@ -149,11 +146,11 @@ int data_file_manager::read_ascii_file_with_headers()
          << " -Opening <" << inFileSpec.c_str() << ">" << endl;
   }
 
-  // Loop: Read successive lines to find the last line of the 
-  // header block and the beginning of the data block. NOTE: Since 
-  // tellg() and seekg() don't seem to work properly with getline 
-  // with all compilers, this must be accomplished by keeping 
-  // track of lines explicitly.
+  // Loop: Read successive lines to find the last line of the header 
+  // block and the beginning of the data block. NOTE: Since tellg() 
+  // and seekg() don't seem to work properly with getline with all 
+  // compilers, this must be accomplished by keeping track of lines 
+  // explicitly.
   std::string line = "";
   std::string lastHeaderLine = "";
   int nRead = 0, nHeaderLines = 0;
@@ -196,7 +193,7 @@ int data_file_manager::read_ascii_file_with_headers()
     while( ss >> buf) {
       nvars++;
       char cbuf[ 80];
-	  (void) sprintf(cbuf, "%d", nvars);
+    (void) sprintf(cbuf, "%d", nvars);
       buf = "Column_";
       buf.append( cbuf);
       column_labels.push_back( buf);
@@ -210,7 +207,7 @@ int data_file_manager::read_ascii_file_with_headers()
   // column labels 
   else {
 
-    // Discard leading comment character, if any.  The rest of the
+    // Discard leading comment character, if any.  The rest of the 
     // line is assumed to contain column labels separated by 
     // whitespace
     if( lastHeaderLine.find_first_of( "!#%") == 0) 
@@ -284,7 +281,7 @@ int data_file_manager::read_ascii_file_with_headers()
     // Loop: Insert the string into a stream and read it
     std::stringstream ss(line); 
     unsigned isBadData = 0;
-	for( int j=0; j<nvars; j++) {
+    for( int j=0; j<nvars; j++) {
       double x;
       ss >> x;
       points( j, i) = (float) x;
@@ -344,14 +341,13 @@ int data_file_manager::read_ascii_file_with_headers()
 }
 
 //*****************************************************************
-// data_file_manager::read_binary_file_with_headers() 
-// -- Open and read a binary file.  The file is asssumed to 
-// consist of an ASCII header with column information, terminated 
-// by a newline, followed by a block of binary data.  The only 
-// viable way to read this seems to be with conventional C-style 
-// methods: fopen, fgets, fread, feof, and fclose, from <stdio>.  
-// Returns 0 if successful.
-// int data_file_manager::read_binary_file_with_headers( char* inFileSpec) 
+// data_file_manager::read_binary_file_with_headers() -- Open and 
+// read a binary file.  The file is asssumed to consist of an 
+// ASCII header with column information, terminated by a newline, 
+// followed by a block of binary data.  The only viable way to 
+// read this seems to be with conventional C-style methods: fopen, 
+// fgets, fread, feof, and fclose, from <stdio>.  Returns 0 if 
+// successful.
 int data_file_manager::read_binary_file_with_headers() 
 {
   // Attempt to open input file and make sure it exists
@@ -400,7 +396,6 @@ int data_file_manager::read_binary_file_with_headers()
     cerr << " -ERROR: Too many columns, "
          << "increase MAXVARS and recompile"
          << endl;
-    // inFile.close();
     fclose( pInFile);
     return 1;
   }
@@ -428,7 +423,7 @@ int data_file_manager::read_binary_file_with_headers()
     // return 1;
   }
 
-  // Assert possible types or ordering	
+  // Assert possible types or ordering  
   assert( ordering == COLUMN_MAJOR || ordering == ROW_MAJOR);
 
   // Read file in Column Major order
@@ -440,7 +435,6 @@ int data_file_manager::read_binary_file_with_headers()
     if( !vars.isStorageContiguous()) {
       cerr << " -ERROR: Tried to read into a noncontiguous buffer."
            << endl;
-      // inFile.close();
       fclose( pInFile);
       return -1;
     }
@@ -708,7 +702,7 @@ void data_file_manager::remove_trivial_columns()
 // the global arrays used store raw, sorted, and selected data.
 void data_file_manager::resize_global_arrays()
 {
-  // points.resizeAndPreserve(nvars,npoints);	
+  // points.resizeAndPreserve(nvars,npoints);  
 
   ranked_points.resize( nvars, npoints);
 

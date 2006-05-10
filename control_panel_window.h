@@ -28,7 +28,7 @@
 //      normalization schemes used here and by class plot_windows.
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  08-MAY-2006
+// Modified: P. R. Gazis  09-MAY-2006
 //*****************************************************************
 
 // Protection to make sure this header is not included twice
@@ -91,25 +91,19 @@ class control_panel_window : public Fl_Group
     void extract_and_redraw();
 
     // Static functions for access by Fl Widget callbacks
-	static void broadcast_change (Fl_Widget *global_widget);
-    static void choose_color_selected(
-      Fl_Widget *w, control_panel_window *cpw)
-		{ cpw->pw->choose_color_selected() ;}
-    static void static_extract_and_redraw( 
-      Fl_Widget *w, control_panel_window *cpw)
-        { cpw->extract_and_redraw(); }
-    static void static_maybe_redraw(
-      Fl_Widget *w, control_panel_window *cpw)
-        { cpw->maybe_redraw() ;}
-    static void replot(
-      Fl_Widget *w, control_panel_window *cpw)
-        { cpw->pw->needs_redraw=1;}
-    static void reset_view(
-      Fl_Widget *w, control_panel_window *cpw)
-        { cpw->pw->reset_view() ;}
-    static void redraw_one_plot(
-      Fl_Widget *w, control_panel_window *cpw)
-        { cpw->pw->redraw_one_plot();}
+    static void broadcast_change( Fl_Widget *global_widget);
+    static void choose_color_selected( Fl_Widget *w, control_panel_window *cpw)
+    { cpw->pw->choose_color_selected() ;}
+    static void static_extract_and_redraw( Fl_Widget *w, control_panel_window *cpw)
+    { cpw->extract_and_redraw(); }
+    static void static_maybe_redraw( Fl_Widget *w, control_panel_window *cpw)
+    { cpw->maybe_redraw() ;}
+    static void replot( Fl_Widget *w, control_panel_window *cpw)
+    { cpw->pw->needs_redraw=1;}
+    static void reset_view( Fl_Widget *w, control_panel_window *cpw)
+    { cpw->pw->reset_view() ;}
+    static void redraw_one_plot( Fl_Widget *w, control_panel_window *cpw)
+    { cpw->pw->redraw_one_plot();}
 
     // Pointers to sliders & menus
     Fl_Hor_Value_Slider_Input *pointsize_slider;
@@ -117,8 +111,8 @@ class control_panel_window : public Fl_Group
     Fl_Hor_Value_Slider_Input *rot_slider;
     Fl_Hor_Value_Slider_Input *nbins_slider;
     Fl_Choice *varindex1, *varindex2, *varindex3;
-	Fl_Button *lock_axis1_button, *lock_axis2_button, *lock_axis3_button;
-	
+    Fl_Button *lock_axis1_button, *lock_axis2_button, *lock_axis3_button;
+  
     // Pointers to buttons
     Fl_Button *reset_view_button;
     Fl_Button *spin, *dont_clear, *show_points, 
@@ -138,22 +132,22 @@ class control_panel_window : public Fl_Group
     // this control panel tab.  Each plot window has the same 
     // color and index as its associated control panel tab.
     plot_window *pw;
-    int index;	
+    int index;  
     
     // constants that describe normalization styles.  
-	// MCL XXX this stuff is now full of icky magic numbers like 11 and 12.  Fix!
-	static const int control_panel_window::n_normalization_styles = 11;
-	static const int control_panel_window::NORMALIZATION_NONE 	= 0;
-	static const int control_panel_window::NORMALIZATION_MINMAX = 1;
-	static const int control_panel_window::NORMALIZATION_ZEROMAX = 2;
-	static const int control_panel_window::NORMALIZATION_MAXABS = 3;
-	static const int control_panel_window::NORMALIZATION_TRIM_1E2 = 4;
-	static const int control_panel_window::NORMALIZATION_TRIM_1E3 = 5;
-	static const int control_panel_window::NORMALIZATION_THREESIGMA = 6;
-	static const int control_panel_window::NORMALIZATION_LOG10 = 7;
-	static const int control_panel_window::NORMALIZATION_SQUASH = 8;
-	static const int control_panel_window::NORMALIZATION_RANK = 9;
-	static const int control_panel_window::NORMALIZATION_GAUSSIANIZE = 10;
+    // MCL XXX this stuff is now full of icky magic numbers like 11 and 12.  Fix!
+    static const int control_panel_window::n_normalization_styles = 11;
+    static const int control_panel_window::NORMALIZATION_NONE   = 0;
+    static const int control_panel_window::NORMALIZATION_MINMAX = 1;
+    static const int control_panel_window::NORMALIZATION_ZEROMAX = 2;
+    static const int control_panel_window::NORMALIZATION_MAXABS = 3;
+    static const int control_panel_window::NORMALIZATION_TRIM_1E2 = 4;
+    static const int control_panel_window::NORMALIZATION_TRIM_1E3 = 5;
+    static const int control_panel_window::NORMALIZATION_THREESIGMA = 6;
+    static const int control_panel_window::NORMALIZATION_LOG10 = 7;
+    static const int control_panel_window::NORMALIZATION_SQUASH = 8;
+    static const int control_panel_window::NORMALIZATION_RANK = 9;
+    static const int control_panel_window::NORMALIZATION_GAUSSIANIZE = 10;
 
     // Static variables that use and apply different normalization 
     // styles.

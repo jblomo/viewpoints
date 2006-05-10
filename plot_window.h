@@ -27,7 +27,7 @@
 //   1) Review and add comments!
 //
 // Author: Creon Levitt   unknown
-// Modified: P. R. Gazis  08-MAY-2006
+// Modified: P. R. Gazis  09-MAY-2006
 //*****************************************************************
 
 // Protection to make sure this header is not included twice
@@ -108,7 +108,7 @@
 class plot_window : public Fl_Gl_Window
 {
   protected:
-            
+    
     // Draw routines
     void draw();
     void draw_grid();
@@ -121,18 +121,18 @@ class plot_window : public Fl_Gl_Window
     int handle( int event);
     void handle_selection();
 
-	void screen_to_world(
-      float xs, float ys, float &x, float &y);
-	void print_selection_stats();
+    void screen_to_world(
+    float xs, float ys, float &x, float &y);
+    void print_selection_stats();
 
     // Event parameters
     int xprev, yprev, xcur, ycur;
     float xdragged, ydragged;
     float xcenter, ycenter, zcenter;
-	float xscale, yscale, zscale;
+    float xscale, yscale, zscale;
     float xzoomcenter, yzoomcenter, zzoomcenter;
     float xdown, ydown, xtracked, ytracked;
-	int extend_selection;
+    int extend_selection;
 
     // Arrays and routines for histograms
     int nbins;
@@ -140,7 +140,7 @@ class plot_window : public Fl_Gl_Window
     float xhscale, yhscale;
     void compute_histogram( int);
     void draw_histograms();
-	int show_center_glyph;
+    int show_center_glyph;
 
     // Number of plot windows
     static int count;
@@ -179,7 +179,7 @@ class plot_window : public Fl_Gl_Window
     int index;
 
     // Initial ordering of windows on screen.  Upper left is (1,1)
-	int row, column;
+    int row, column;
 
     // More plot routines
     int extract_data_points();
@@ -189,9 +189,9 @@ class plot_window : public Fl_Gl_Window
     void reset_selection_box();
     void color_array_from_new_selection();
     void color_array_from_selection();
-	void update_textures ();
-	void choose_color_selected ();
-	double r_selected, g_selected, b_selected;
+    void update_textures ();
+    void choose_color_selected ();
+    double r_selected, g_selected, b_selected;
     static double r_deselected, g_deselected, b_deselected;
 
     // Routines to redraw plots
@@ -203,8 +203,7 @@ class plot_window : public Fl_Gl_Window
     unsigned do_reset_view_with_show;
     
     // Static methods moved here from vp.cpp
-    static void upper_triangle_incr( 
-      int &i, int &j, const int nvars);
+    static void upper_triangle_incr( int &i, int &j, const int nvars);
     static void redraw_all_plots( int p);
     static void delete_selection( Fl_Widget *o);
     static void invert_selection();

@@ -44,30 +44,30 @@ EXTERN int debugging INIT(0);
 #define ROW_MAJOR 0
 #define COLUMN_MAJOR 1
 
-// Set parameters to define the default layout of the plot 
-// windows.  NOTE: Creon notes that MAXPLOTS must be a power 
-// of 2 for textures and that this will 'cause trouble'.
+// Set parameters to define the default layout of the plot windows.  
+// NOTE: Creon notes that MAXPLOTS must be a power of 2 for the
+// texture-based coloring scheme to work properly.
 EXTERN int nrows INIT(2);  // Default number of rows of plots
 EXTERN int ncols INIT(2);   // Default number of columns of plots
-EXTERN int nplots INIT(nrows*ncols);  // Default number of plot windows
-#define MAXPLOTS 256 // maximum number of plot windows, must be a power of 2.
+EXTERN int nplots INIT(nrows*ncols);   // Default number of plot windows
+#define MAXPLOTS 256   // max number of plot windows, must be a power of 2.
 
 // Set the maximum number of columns and rows
-#define MAXVARS 256  // Maximum number of columns
-#define MAXPOINTS 2000000;  // Maximum number of rows (unless overidded by "--npoints=<int>"
+#define MAXVARS 256  // Max # of columns
+#define MAXPOINTS 2000000;  // Max # of rows (unless overidded by "--npoints=<int>")
 
 // Initialize the actual number of rows (points or values) in 
 // the data file and the actual number of columns (fields) in 
 // each record.
 EXTERN int npoints INIT(MAXPOINTS);   // number of rows in data file
-EXTERN int nvars INIT(MAXVARS);		// number of columns in data file
+EXTERN int nvars INIT(MAXVARS);    // number of columns in data file
 
 // Define blitz::Arrays to hold raw and ranked (sorted) data 
 // arrays.  Used extensively in many classes, so for reasons of 
 // simplicity and clarity, these are left global
 EXTERN blitz::Array<float,2> points;  // main data array
 EXTERN blitz::Array<int,2> ranked_points;   // data, ranked, as needed.
-EXTERN blitz::Array<int,1> ranked;	  // flag: 1->column is ranked, 0->not
+EXTERN blitz::Array<int,1> ranked;    // flag: 1->column is ranked, 0->not
 EXTERN blitz::Array<int,1> identity;   // holds a(i)=i.
 
 // Define blitz::Arrays to flag selected points.  As with the raw
@@ -76,10 +76,10 @@ EXTERN blitz::Array<int,1> identity;   // holds a(i)=i.
 // selected -- true if point is selected in any window
 // previously_selected -- true iff selected before mouse went down
 // nselected -- number of points currently selected
-EXTERN blitz::Array<GLshort,1> newly_selected;	
-EXTERN blitz::Array<GLshort,1> selected;	
-EXTERN blitz::Array<GLshort,1> previously_selected;	
-EXTERN int nselected;	
+EXTERN blitz::Array<GLshort,1> newly_selected;  
+EXTERN blitz::Array<GLshort,1> selected;  
+EXTERN blitz::Array<GLshort,1> previously_selected;  
+EXTERN int nselected;  
 
 // Texture co-ordinates?
 EXTERN blitz::Array<GLshort,1> texture_coords;
@@ -166,3 +166,4 @@ public:
 };
 
 #endif   // VP_GLOBAL_DEFINITIONS_VP_H
+

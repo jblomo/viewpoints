@@ -21,8 +21,8 @@
 //
 // Purpose: Source code for <control_panel_window.h>
 //
-// Author: Creon Levit   2005-2006
-// Modified: P. R. Gazis  08-MAY-2006
+// Author: Creon Levit    2005-2006
+// Modified: P. R. Gazis  09-MAY-2006
 //*****************************************************************
 
 // Include the necessary include libraries
@@ -164,54 +164,54 @@ void control_panel_window::make_widgets( control_panel_window *cpw)
 
   Fl_Button *b;
 
+  // Pointsize slider
   pointsize_slider = 
-    new Fl_Hor_Value_Slider_Input(
-      xpos, ypos, cpw->w()-60, 20, "size");
+    new Fl_Hor_Value_Slider_Input( xpos, ypos, cpw->w()-60, 20, "size");
   pointsize_slider->align(FL_ALIGN_LEFT);
   pointsize_slider->value(pointsize);
   pointsize_slider->step(0.25);
   pointsize_slider->bounds(0.1,20.0);
   pointsize_slider->callback((Fl_Callback*)replot, this);
 
+  // Backgrund color slider
   Bkg = 
-    new Fl_Hor_Value_Slider_Input(
-      xpos, ypos+=25, cpw->w()-60, 20, "Bkg");
+    new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, cpw->w()-60, 20, "Bkg");
   Bkg->align(FL_ALIGN_LEFT);
   Bkg->step(0.0001);
   Bkg->bounds(0.0,1.0);
   Bkg->callback((Fl_Callback*)replot, this);
   Bkg->value(0.0);
 
+  // Luminosity slider
   Lum = 
-    new Fl_Hor_Value_Slider_Input(
-      xpos, ypos+=25, cpw->w()-60, 20, "Lum");
+    new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, cpw->w()-60, 20, "Lum");
   Lum->align(FL_ALIGN_LEFT);
   Lum->callback((Fl_Callback*)replot, this);
   Lum->step(0.0001);
   Lum->bounds(0,1.0);
   Lum->value(1.0);
 
+  // Alpha plane slider
   Alph = 
-    new Fl_Hor_Value_Slider_Input( 
-      xpos, ypos+=25, cpw->w()-60, 20, "Alph");
+    new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, cpw->w()-60, 20, "Alph");
   Alph->align(FL_ALIGN_LEFT);
   Alph->callback((Fl_Callback*)replot, this);
   Alph->step(0.0001);
   Alph->bounds(0.25,0.5);
   Alph->value(0.5);
 
+  // Rotation (and spin) slider
   rot_slider = 
-    new Fl_Hor_Value_Slider_Input( 
-      xpos, ypos+=25, cpw->w()-60, 20, "rot");
+    new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, cpw->w()-60, 20, "rot");
   rot_slider->align(FL_ALIGN_LEFT);
   rot_slider->callback((Fl_Callback*)replot, this);
   rot_slider->value(0.0);
   rot_slider->step(0.001);
   rot_slider->bounds(-180.0, 180.0);
 
+  // Number of histogram bins slider
   nbins_slider = 
-    new Fl_Hor_Value_Slider_Input(
-      xpos, ypos+=25, cpw->w()-60, 20, "nbins");
+    new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, cpw->w()-60, 20, "nbins");
   nbins_slider->align(FL_ALIGN_LEFT);
   nbins_slider->callback((Fl_Callback*)redraw_one_plot, this);
   nbins_slider->value(plot_window::nbins_default);
@@ -231,6 +231,7 @@ void control_panel_window::make_widgets( control_panel_window *cpw)
 
   xpos = 10;
 
+  // X-axis parameter
   varindex1 = new Fl_Choice (xpos, ypos+=45, 100, 25, "axis 1");
   varindex1->align(FL_ALIGN_TOP);
   varindex1->textsize(12);
@@ -238,12 +239,14 @@ void control_panel_window::make_widgets( control_panel_window *cpw)
   varindex1->mode( nvars, FL_MENU_INACTIVE);  // disable "--nothing--" as a choice for axis1
   varindex1->callback( (Fl_Callback*)static_extract_and_redraw, this);
 
+  // Lock x-axis button
   lock_axis1_button = b = new Fl_Button(xpos+80, ypos+25, 20, 20, "lock ");
   b->type(FL_TOGGLE_BUTTON); 
   b->selection_color(FL_BLUE);
   b->align(FL_ALIGN_LEFT);
   b->value(0);
 
+  // Y-axis parameter
   varindex2 = new Fl_Choice (xpos+100, ypos, 100, 25, "axis 2");
   varindex2->align(FL_ALIGN_TOP);
   varindex2->textsize(12);
@@ -251,12 +254,14 @@ void control_panel_window::make_widgets( control_panel_window *cpw)
   varindex2->mode( nvars, FL_MENU_INACTIVE);  // disable "--nothing--" as a choice for axis2
   varindex2->callback( (Fl_Callback*)static_extract_and_redraw, this);
 
+  // Lock y-axis button
   lock_axis2_button = b = new Fl_Button(xpos+100+80, ypos+25, 20, 20, "lock ");
   b->type(FL_TOGGLE_BUTTON); 
   b->selection_color(FL_BLUE);
   b->align(FL_ALIGN_LEFT);
   b->value(0);
 
+  // Z-axis parameter
   varindex3 = new Fl_Choice (xpos+200, ypos, 100, 25, "axis 3");
   varindex3->align(FL_ALIGN_TOP);
   varindex3->textsize(12);
@@ -264,6 +269,7 @@ void control_panel_window::make_widgets( control_panel_window *cpw)
   varindex3->value(nvars);  // initially, axis3 == "-nothing-"
   varindex3->callback( (Fl_Callback*)static_extract_and_redraw, this);
 
+  // Lock z-axis button
   lock_axis3_button = b = new Fl_Button(xpos+200+80, ypos+25, 20, 20, "lock ");
   b->type(FL_TOGGLE_BUTTON); 
   b->selection_color(FL_BLUE);
@@ -279,6 +285,7 @@ void control_panel_window::make_widgets( control_panel_window *cpw)
   }
   normalization_style_menu_items[n_normalization_styles].label(0);
 
+  // X-axis normalization and scaling
   x_normalization_style = 
     new Fl_Choice (xpos, ypos+=70, 100, 25, "normalize x");
   x_normalization_style->align(FL_ALIGN_TOP);
@@ -288,6 +295,7 @@ void control_panel_window::make_widgets( control_panel_window *cpw)
   x_normalization_style->callback(
     (Fl_Callback*)static_extract_and_redraw, this);
  
+  // Y-axis normalization and scaling
   y_normalization_style =
     new Fl_Choice (xpos+100, ypos, 100, 25, "normalize y");
   y_normalization_style->align(FL_ALIGN_TOP);
@@ -297,6 +305,7 @@ void control_panel_window::make_widgets( control_panel_window *cpw)
   y_normalization_style->callback(
     (Fl_Callback*)static_extract_and_redraw, this);
  
+  // Z-axis normalization and scaling
   z_normalization_style = 
     new Fl_Choice (xpos+200, ypos, 100, 25, "normalize z");
   z_normalization_style->align(FL_ALIGN_TOP);
@@ -312,16 +321,19 @@ void control_panel_window::make_widgets( control_panel_window *cpw)
   // Initialize positions for buttons
   int xpos2 = xpos;
   int ypos2 = ypos;
-  
+
+  // Button (1,1) Reset view in this plot
   reset_view_button = b = 
     new Fl_Button(xpos2, ypos+=25, 20, 20, "reset view ");
   b->align(FL_ALIGN_RIGHT); b->selection_color(FL_BLUE);
   b->callback((Fl_Callback*) reset_view, this);
 
+  // Button (2,1): FOX News (spin) button
   spin = b= new Fl_Button(xpos2, ypos+=25, 20, 20, "spin");
   b->align(FL_ALIGN_RIGHT); b->selection_color(FL_BLUE);
   b->type(FL_TOGGLE_BUTTON);
 
+  // Button (3,1): Don't clear button
   dont_clear = 
     new Fl_Button(xpos2, ypos+=25, 20, 20, "don't clear");
   dont_clear->align(FL_ALIGN_RIGHT);
@@ -330,9 +342,11 @@ void control_panel_window::make_widgets( control_panel_window *cpw)
   dont_clear->callback(
     (Fl_Callback*)static_maybe_redraw, this);
 
+  // Define Fl_Group to hold plot transform styles
   transform_style = 
     new Fl_Group (xpos2-1, ypos+25-1, 20+2, 4*25+2);
 
+  // Button (4,1): No transform
   no_transform = b = 
     new Fl_Button(xpos2, ypos+=25, 20, 20, "identity");
   b->callback((Fl_Callback*)static_extract_and_redraw, this);
@@ -340,66 +354,74 @@ void control_panel_window::make_widgets( control_panel_window *cpw)
   b->type(FL_RADIO_BUTTON); 
   b->selection_color(FL_BLUE);
 
+  // Button (5,1): Sum vs difference transform
   sum_vs_difference = b = 
     new Fl_Button(xpos2, ypos+=25, 20, 20, "sum vs. diff.");
   b->callback((Fl_Callback*)static_extract_and_redraw, this);
   b->align(FL_ALIGN_RIGHT); 
   b->type(FL_RADIO_BUTTON); 
   b->selection_color(FL_BLUE);
-	
+  
+  // Button (6,1): Polar co-ords transform
   polar = b = 
     new Fl_Button(xpos2, ypos+=25, 20, 20, "polar");
   b->callback((Fl_Callback*)static_extract_and_redraw, this);
   b->align(FL_ALIGN_RIGHT); 
   b->type(FL_RADIO_BUTTON); 
   b->selection_color(FL_BLUE);
-	
+  
   transform_style->end();
   no_transform->setonly();
 
   ypos=ypos2;
   xpos=xpos2+100;
 
+  // Button (1,2): Show points
   show_points = b = 
     new Fl_Button(xpos, ypos+=25, 20, 20, "points");
   b->callback((Fl_Callback*)static_maybe_redraw, this);
   b->align(FL_ALIGN_RIGHT); 
   b->type(FL_TOGGLE_BUTTON); 
-  b->selection_color(FL_BLUE);	
+  b->selection_color(FL_BLUE);  
   b->value(1);
 
+  // Button (2,2): Show deselected points
   show_deselected_points = b = 
     new Fl_Button(xpos, ypos+=25, 20, 20, " unselected");
   b->callback((Fl_Callback*)static_maybe_redraw, this);
   b->align(FL_ALIGN_RIGHT); 
   b->type(FL_TOGGLE_BUTTON); 
-  b->selection_color(FL_BLUE);	
+  b->selection_color(FL_BLUE);  
   b->value(1);
 
+  // Button (3,2): Show axes
   show_axes = b = 
     new Fl_Button(xpos, ypos+=25, 20, 20, "axes");
   b->callback((Fl_Callback*)static_maybe_redraw, this);
   b->align(FL_ALIGN_RIGHT); 
   b->type(FL_TOGGLE_BUTTON); 
-  b->selection_color(FL_BLUE);	
+  b->selection_color(FL_BLUE);  
   b->value(1);
 
+  // Button (4,2): Show axis labels
   show_labels = b = 
     new Fl_Button(xpos, ypos+=25, 20, 20, "labels");
   b->callback((Fl_Callback*)static_maybe_redraw, this);
   b->align(FL_ALIGN_RIGHT); 
   b->type(FL_TOGGLE_BUTTON); 
-  b->selection_color(FL_BLUE);	
+  b->selection_color(FL_BLUE);  
   b->value(1);
 
+  // Button (4,2): Show axis scale
   show_scale = b = 
     new Fl_Button(xpos, ypos+=25, 20, 20, "scales");
   b->callback((Fl_Callback*)static_maybe_redraw, this);
   b->align(FL_ALIGN_RIGHT); 
   b->type(FL_TOGGLE_BUTTON); 
-  b->selection_color(FL_BLUE);	
+  b->selection_color(FL_BLUE);  
   b->value(1);
 
+  // Button (5,2): Show grid?
   show_grid = b = 
     new Fl_Button(xpos, ypos+=25, 20, 20, "grid");
   b->callback((Fl_Callback*)static_maybe_redraw, this);
@@ -408,20 +430,22 @@ void control_panel_window::make_widgets( control_panel_window *cpw)
   b->selection_color(FL_BLUE);
   b->value(0);
 
+  // Button (6,2): Show histograms for this axis
   show_histogram = b = 
     new Fl_Button(xpos, ypos+=25, 20, 20, "histograms");
   b->callback((Fl_Callback*)redraw_one_plot, this);
   b->align(FL_ALIGN_RIGHT); 
   b->type(FL_TOGGLE_BUTTON); 
-  b->selection_color(FL_BLUE);	
+  b->selection_color(FL_BLUE);  
   b->value(0);
 
   ypos=ypos2;
   xpos=xpos2+200;
 
-  choose_selection_color_button = b = new Fl_Button(xpos, ypos+=25, 20, 20, "selection color");
+  // Button (1,3): Choose selection color
+  choose_selection_color_button = b = 
+    new Fl_Button(xpos, ypos+=25, 20, 20, "selection color");
   b->align(FL_ALIGN_RIGHT); 
   b->selection_color(FL_BLUE); 
   b->callback((Fl_Callback*)choose_color_selected, this);
-
 }
