@@ -20,12 +20,16 @@ DEBUG		= -O0 -ggdb -g3 -Wall -Wunused -DBZ_DEBUG
 
 ifeq ($(platform),Darwin)
 
-# Uncomment for no optimization. For debugging on OSX
+# Uncomment ONE of the following
+
+# debugging version
 #	OPTIM = $(DEBUG)
-# Uncomment to optimize for G5 
-	OPTIM = -O6 -ftree-vectorize -ftree-vectorizer-verbose=0 -Wall -Wno-long-double -fno-exceptions -ffast-math -pipe -fsigned-char -maltivec -mabi=altivec -faltivec -mcpu=G5 -mtune=G5 -mpowerpc-gfxopt -g
-# Uncomment to optimize for G4
+# g5 optimized version
+#	OPTIM = -O6 -FTREE-VECTORIZE -FTREE-VECTORIZER-VERBOSE=0 -WALL -WNO-LONG-DOUBLE -FNO-EXCEPTIONS -FFAST-MATH -PIPE -FSIGNED-CHAR -MALTIVEC -MABI=ALTIVEC -FALTIVEC -MCPU=G5 -MTUNE=G5 -MPOWERPC-GFXOPT -G
+# g4 optimized version
 #	OPTIM = -O6 -ftree-vectorize -ftree-vectorizer-verbose=0 -Wall -Wno-long-double -fno-exceptions -ffast-math -pipe -fsigned-char -maltivec -mabi=altivec -faltivec -mcpu=G4 -mtune=G4 -mpowerpc-gfxopt -g
+# macintel optimized version
+	OPTIM = -O6 -Wall -Wno-long-double -fno-exceptions -ffast-math -fsigned-char -g
 
 else
 
@@ -71,6 +75,8 @@ OBJS:=	$(SRCS:.cpp=.o)
 TARGET = vp$(EXEEXT)
 
 default: $(TARGET)
+
+all: tags $(TARGET)
 
 %.o : %.c	
 	echo Compiling $<...

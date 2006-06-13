@@ -455,7 +455,11 @@ list of known platforms
 2. command line args for initial selection bounds
 3. current position of mouse should be dynamically printed (like the selection statistics)
 4. separate x and y histogram bin count controls
-5. separate point size control for selected points  (hey, this could be like the color: different for each selection.  Just wait till we do it with point sprites.  Then we can have fast open circles, filled circles, squares, X's, +'s, letters, Gaussian humps....)
+5. separate point size control for selected points
+   in 2D, this should be easy with glPointParameterfARB
+   could be different for each selection.
+   better with NV_Point_sprite
+     -  Then we can have fast open circles, filled circles, squares, X's, +'s, letters, Gaussian humps....)
 
 15:58:48 02 Apr 06
 
@@ -479,3 +483,19 @@ in the axis choice menu, allow for multiple selections.  Select a contiguos grou
 to plot a spectrum or timeseries (instead of a point).
 
 
+16:42:58 24 May 06
+
+NOTE log(voronoi_volume) for DR4 final has Gaussian distribution.  Why is voronoi volume distribution lognormal?  at amy and all redshifts?
+
+Z-axis option should be "selected" - so selected points are plotted above nonselected (turn on depth buffers)
+
+need per plot "deselected color" control
+
+need to use "selected" (float) as 3rd coordinate for 2d plots.
+
+add "zoom to selected set" (zoom so selection bbox fills window)
+
+add equi-depth histograms
+add shifted histograms
+
+Look at IRAS data

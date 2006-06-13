@@ -1149,15 +1149,11 @@ int main( int argc, char **argv)
 
   // Set the main control panel size and position.
   // const int main_w = 350, main_h = 700;
-  const int main_x = 
-    number_of_screens*Fl::w() - 
-    (main_w + left_frame + right_frame + right_safe);
+  const int main_x = number_of_screens*Fl::w() - (main_w + left_frame + right_frame + right_safe);
   const int main_y = top_frame+top_safe;
 
   // Create the main control panel window
-  create_main_control_panel( 
-    main_x, main_y, main_w, main_h,
-    "viewpoints -> creon@nas.nasa.gov");
+  create_main_control_panel( main_x, main_y, main_w, main_h, "viewpoints -> creon.levit@nasa.gov");
 
   // Step 4: Call manage_plot_window_array with a NULL argument to
   // to initialize the plot window array.  KLUDGE ALERT: argc and 

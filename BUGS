@@ -4,10 +4,16 @@
    *fixed*
 
 2. color selection from master tab pops up nplots separate color dialogs!
+   *fixed*
 
 3. selectin -nothing- as x or y axis causes core dump.
+   *fixed*
 
 4. selecting "sum vs. diff" from master tab causes core dump.
+   *fixed* (disabled, actually)
 
 5. plots are not redrawn after "read data"
 
+6. when a window is spinning, selecting in any previous (smaller index) window does not work.
+
+7. When clicking on tab, coresponding plot window should be raised (not globally).
