@@ -20,7 +20,7 @@
 
 8. selected set still garbage on startup.
 
-9. help files not in mac & linux releases
+9. help files not in mac & linux releases (?)
 
 10. mac releases way out of date.
 
@@ -34,5 +34,5 @@
 
 14. Windows version seems to install executable deep in a folder (from whence it must be removed).  This may have been my installation error.
 
-
+15. selected portion of histogram gets redrawn incorrectly when "invert selection" is called.
 
