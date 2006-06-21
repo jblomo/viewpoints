@@ -14,6 +14,25 @@
 
 5. plots are not redrawn after "read data"
 
-6. when a window is spinning, selecting in any previous (smaller index) window does not work.
+6. when a window is spinning, selecting points in any previous (smaller index) window does not work.
 
 7. When clicking on tab, coresponding plot window should be raised (not globally).
+
+8. selected set still garbage on startup.
+
+9. help files not in mac & linux releases
+
+10. mac releases way out of date.
+
+11. reset view button sometimes fails
+
+12. file with bad data on every line should abort after reading n<1000 lines
+
+13. web site does not mention scatterplots, linked scatterplots, histograms, openGL, or "creon levit".  It should mention these things before we (re)submit it to google.  
+
+14. web site title/tag should be "viewpoints - interactive linked scatterplots and more".  Not "hyperwall for the masses".
+
+14. Windows version seems to install executable deep in a folder (from whence it must be removed).  This may have been my installation error.
+
+
+
