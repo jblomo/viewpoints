@@ -1008,7 +1008,8 @@ void plot_window::compute_histogram( int axis)
   counts_selected(BINS,axis) = (5.0*nbins/(float)nbins_default)*counts_selected(BINS,axis)/((float)(npoints));
 }
 
-#endif 0
+// #endif 0
+#endif
 
 //*****************************************************************
 // plot_window::compute_histogram( axis) -- If requested, compute 

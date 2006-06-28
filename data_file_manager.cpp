@@ -19,7 +19,7 @@
 // Purpose: Source code for <data_file_manager.h>
 //
 // Author: Creon Levitt   unknown
-// Modified: P. R. Gazis  09-MAY-2006
+// Modified: P. R. Gazis  16-JUN-2006
 //*****************************************************************
 
 // Include the necessary include libraries
@@ -59,9 +59,11 @@ void data_file_manager::initialize()
   // sPathname = ".";  // Default pathname
   inFileSpec = "";  // Default input filespec
 
-  // Initialize the number of points specified by the command 
-  // line argument.  NOTE: 0 means read to EOF.
+  // Initialize the number of points and variables specified by 
+  // the command line arguments.  NOTE: 0 means read to EOF or
+  // end of line.
   npoints_cmd_line = 0;
+  nvars_cmd_line = 0;
   
   // Initialize number of points and variables
   npoints = MAXPOINTS;
@@ -97,7 +99,7 @@ int data_file_manager::load_data_file( string inFileSpecIn)
     cout << "Finished reading file <" << inFileSpec.c_str() << ">" << endl;
 
   // Remove trivial columns
-  remove_trivial_columns ();
+  remove_trivial_columns();
 
   // If only one or fewer records are available then quit before 
   // something terrible happens!
@@ -193,7 +195,7 @@ int data_file_manager::read_ascii_file_with_headers()
     while( ss >> buf) {
       nvars++;
       char cbuf[ 80];
-    (void) sprintf(cbuf, "%d", nvars);
+      (void) sprintf(cbuf, "%d", nvars);
       buf = "Column_";
       buf.append( cbuf);
       column_labels.push_back( buf);
@@ -221,6 +223,15 @@ int data_file_manager::read_ascii_file_with_headers()
     while( ss >> buf) column_labels.push_back(buf);
     nvars = column_labels.size();
     cout << " -Extracted " << nvars 
+         << " column labels." << endl;
+  }
+
+  // If there were more than nvars_cmd_line variables, truncate
+  // the vector of column labels and reset nvars.
+  if( nvars_cmd_line > 0 && nvars > nvars_cmd_line) {
+    column_labels.erase( column_labels.begin()+nvars_cmd_line, column_labels.end());
+    nvars = column_labels.size();
+    cout << " -Truncated list to " << nvars 
          << " column labels." << endl;
   }
 
@@ -389,9 +400,19 @@ int data_file_manager::read_binary_file_with_headers()
   std::stringstream ss( line);
   std::string buf;
   while( ss >> buf) column_labels.push_back(buf);
+  nvars = column_labels.size();
+  int nvars_in = nvars;
+
+  // If there were more than nvars_cmd_line variables, truncate
+  // the vector of column labels and reset nvars.
+  if( nvars_cmd_line > 0 && nvars > nvars_cmd_line) {
+    column_labels.erase( column_labels.begin()+nvars_cmd_line, column_labels.end());
+    nvars = column_labels.size();
+    cout << " -Truncated list to " << nvars 
+         << " column labels." << endl;
+  }
 
   // Examine and report content of header
-  nvars = column_labels.size();
   if( nvars > MAXVARS) {
     cerr << " -ERROR: Too many columns, "
          << "increase MAXVARS and recompile"
@@ -405,7 +426,8 @@ int data_file_manager::read_binary_file_with_headers()
     cout << column_labels[i] << " ";
   }  
   cout << endl;
-  cout << " -About to read a binary file with " << nvars
+  cout << " -About to read " << nvars
+       << " variables from a binary file with " << nvars_in
        << " fields (columns) per record (row)" << endl;
 
   // Now we know the number of variables (nvars), so if we know the 
@@ -430,7 +452,7 @@ int data_file_manager::read_binary_file_with_headers()
   if( ordering == COLUMN_MAJOR) {
     cout << " -Attempting to read binary file in"
          << " column-major order" << endl;
-    blitz::Array<float,1> vars( nvars);
+    blitz::Array<float,1> vars( nvars_in);
     blitz::Range NVARS( 0, nvars-1);
     if( !vars.isStorageContiguous()) {
       cerr << " -ERROR: Tried to read into a noncontiguous buffer."
@@ -445,7 +467,7 @@ int data_file_manager::read_binary_file_with_headers()
     
       // Read the next NVAR values using conventional C-style fread.
       unsigned int ret = 
-        fread( (void *)(vars.data()), sizeof(float), nvars, pInFile);
+        fread( (void *)(vars.data()), sizeof(float), nvars_in, pInFile);
       
       // Check for normal termination
       if( ret == 0 || feof( pInFile)) {
@@ -456,16 +478,16 @@ int data_file_manager::read_binary_file_with_headers()
       }
       
       // If wrong number of values was returned, report error.
-      if( ret != (unsigned int)nvars) {
+      if( ret != (unsigned int)nvars_in) {
         cerr << " -ERROR reading row[ " << i+1 << "], "
              << "returned values " << ret 
-             << " NE number of variables " << nvars << endl;
+             << " NE number of variables " << nvars_in << endl;
         fclose( pInFile);
         return 1;
       }
 
       // Load data array and report progress
-      points( NVARS,i) = vars;
+      points( NVARS,i) = vars( NVARS);
       if( i>0 && (i%10000 == 0)) 
         cout << "  Reading row " << i << endl;
     }
@@ -478,7 +500,7 @@ int data_file_manager::read_binary_file_with_headers()
   // Read file in Row Major order
   if( ordering == ROW_MAJOR) {
     cout << " -Attempting to read binary file in"
-         << "row-major order with nvars=" << nvars
+         << "row-major order with nvars=" << nvars_in
          << ", npoints=" << npoints << endl;
     if( npoints_cmd_line == 0) {
       cerr << " -ERROR, --npoints must be specified for"

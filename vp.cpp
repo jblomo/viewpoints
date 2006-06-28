@@ -53,7 +53,7 @@
 //   redraw_if_changing( *dummy) -- Redraw changing plots
 //
 // Author: Creon Levit   2005-2006
-// Modified: P. R. Gazis  09-MAY-2006
+// Modified: P. R. Gazis  16-JUN-2006
 //*****************************************************************
 
 // Include the necessary include libraries
@@ -149,6 +149,7 @@ void usage()
   cerr << "Usage: vp {optional arguments} datafile" << endl;
   cerr << "  [--format={ascii,binary}] (-f)" << endl;
   cerr << "  [--npoints=<int>] (-n)" << endl;
+  cerr << "  [--nvars=<int>] (-v)" << endl;
   cerr << "  [--skip_header_lines=<int>] (-s)" << endl;
   cerr << "  [--rows=<int>] (-r)" << endl;
   cerr << "  [--cols=<int>] (-c)" << endl;
@@ -971,6 +972,7 @@ int main( int argc, char **argv)
   static struct option long_options[] = {
     { "format", required_argument, 0, 'f'},
     { "npoints", required_argument, 0, 'n'},
+    { "nvars", required_argument, 0, 'v'},
     { "skip_header_lines", required_argument, 0, 's'},
     { "ordering", required_argument, 0, 'o'},
     { "rows", required_argument, 0, 'r'},
@@ -995,7 +997,7 @@ int main( int argc, char **argv)
   while( 
     ( c = getopt_long( 
         argc, argv, 
-        "f:n:s:o:r:c:m:i:b:h", long_options, NULL)) != -1) {
+        "f:n:v:s:o:r:c:m:i:b:h", long_options, NULL)) != -1) {
   
     // Examine command-line options and extract any optional
     // arguments
@@ -1021,8 +1023,18 @@ int main( int argc, char **argv)
         }
         break;
       
-      // npoints: Extract maximum number of points (samples, rows 
-      // of data) to read from the data file
+      // nvars: Extract maximum number of variables (attributes)
+      // to read from each line of data file
+      case 'v':
+        dfm.nvars_cmd_line = atoi( optarg);
+        if( dfm.nvars_cmd_line < 1)  {
+          usage();
+          exit( -1);
+        }
+        break;
+      
+      // nSkipHeaderLines: Extract number of header lines to skip 
+      // at beginning of data file
       case 's':
         dfm.nSkipHeaderLines = atoi( optarg);
         if( dfm.nSkipHeaderLines < 0)  {

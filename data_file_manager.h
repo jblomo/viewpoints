@@ -30,7 +30,7 @@
 //      Fl_File_Chooser here and in vp.cpp could be consolidated.
 //
 // Author: Creon Levitt   unknown
-// Modified: P. R. Gazis  08-MAY-2006
+// Modified: P. R. Gazis  16-JUN-2006
 //*****************************************************************
 
 // Protection to make sure this header is not included twice
@@ -102,9 +102,11 @@ class data_file_manager
     int ordering;  // Input data ordering
     int nSkipHeaderLines;  // Number of header lines to skip
 
-    // Define number of points specified by the command line 
-    // argument.  NOTE: 0 means read to EOF.
+    // Define number of points and  number of variables specified 
+    // by the command line argument.  NOTE: 0 means read to EOF
+    // and/or end of line.
     int npoints_cmd_line;
+    int nvars_cmd_line;
 
     // Define statics to hold header format
     static const int MAX_HEADER_LENGTH;
