@@ -967,7 +967,7 @@ void plot_window::draw_data_points()
     // for dynamic data
     //  glVertexArrayParameteriAPPLE( GL_VERTEX_ARRAY_STORAGE_HINT_APPLE, GL_STORAGE_SHARED_APPLE); 
 
-   glVertexArrayRangeAPPLE(3*npoints*sizeof(GLfloat),(GLvoid *)vertexp);
+    glVertexArrayRangeAPPLE(3*npoints*sizeof(GLfloat),(GLvoid *)vertexp);
   #endif // FAST_APPLE_VERTEX_EXTENSIONS
 
   // tell the GPU to draw the vertices.
@@ -981,7 +981,7 @@ void plot_window::draw_data_points()
 #if 0
 //*****************************************************************
 // plot_window::compute_histogram( axis) -- If requested, compute 
-// equi-width histogram for axis 'axis'.
+// equi-depth histogram for axis 'axis'.
 void plot_window::compute_histogram( int axis)
 {
   if( !(cp->show_histogram->value())) return;
@@ -1013,7 +1013,7 @@ void plot_window::compute_histogram( int axis)
 
 //*****************************************************************
 // plot_window::compute_histogram( axis) -- If requested, compute 
-// equi-depth histogram for axis 'axis'.
+// equi-width histogram for axis 'axis'.
 void plot_window::compute_histogram( int axis)
 {
   if( !(cp->show_histogram->value())) return;
@@ -1195,8 +1195,7 @@ int plot_window::normalize(
   #endif // CHECK_FOR_NANS_IN_NORMALIZATION
 
   float mu,sigma;
-  float pmin;
-
+  
   switch( style) {
     case control_panel_window::NORMALIZATION_NONE:
       wmin[axis_index] = -1;
@@ -1267,9 +1266,8 @@ int plot_window::normalize(
              << endl;
       }
       // find smallest positive element
-      pmin = min( where( a(NPTS)>0, a(NPTS), MAXFLOAT));
       a(NPTS) = where( a(NPTS) > 0, log10(a(NPTS)), 0);
-      wmin[axis_index] = log10(pmin);
+      wmin[axis_index] = min(a(NPTS));
       wmax[axis_index] = a(a_rank(npoints-1));
       return 1;
 
@@ -1398,8 +1396,7 @@ int plot_window::extract_data_points ()
   // Apply the normalize() method to normalize and scale the data 
   // and report results
   cout << " post-normalization: " << endl;
-  for (int i=0; i<3; i++)
-	  (void) normalize( xpoints, x_rank, cp->x_normalization_style->value(), 0);
+  (void) normalize( xpoints, x_rank, cp->x_normalization_style->value(), 0);
   amin[0] = xpoints(x_rank(0));
   amax[0] = xpoints(x_rank(npoints-1));
   cout << "  min: " << xlabel << "(" << x_rank(0) << ") = " << xpoints(x_rank(0));

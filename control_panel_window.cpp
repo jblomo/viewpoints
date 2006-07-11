@@ -286,28 +286,23 @@ void control_panel_window::make_widgets( control_panel_window *cpw)
   normalization_style_menu_items[n_normalization_styles].label(0);
 
   // X-axis normalization and scaling
-  x_normalization_style = 
-    new Fl_Choice (xpos, ypos+=70, 100, 25, "normalize x");
+  x_normalization_style = new Fl_Choice (xpos, ypos+=70, 100, 25, "normalize x");
   x_normalization_style->align(FL_ALIGN_TOP);
   x_normalization_style->textsize(12);
   x_normalization_style->menu(normalization_style_menu_items);
   x_normalization_style->value(NORMALIZATION_TRIM_1E3);
-  x_normalization_style->callback(
-    (Fl_Callback*)static_extract_and_redraw, this);
+  x_normalization_style->callback( (Fl_Callback*)static_extract_and_redraw, this);
  
   // Y-axis normalization and scaling
-  y_normalization_style =
-    new Fl_Choice (xpos+100, ypos, 100, 25, "normalize y");
+  y_normalization_style = new Fl_Choice (xpos+100, ypos, 100, 25, "normalize y");
   y_normalization_style->align(FL_ALIGN_TOP);
   y_normalization_style->textsize(12);
   y_normalization_style->menu(normalization_style_menu_items);
   y_normalization_style->value(NORMALIZATION_TRIM_1E3); 
-  y_normalization_style->callback(
-    (Fl_Callback*)static_extract_and_redraw, this);
+  y_normalization_style->callback( (Fl_Callback*)static_extract_and_redraw, this);
  
   // Z-axis normalization and scaling
-  z_normalization_style = 
-    new Fl_Choice (xpos+200, ypos, 100, 25, "normalize z");
+  z_normalization_style = new Fl_Choice (xpos+200, ypos, 100, 25, "normalize z");
   z_normalization_style->align(FL_ALIGN_TOP);
   z_normalization_style->textsize(12);
   z_normalization_style->menu(normalization_style_menu_items);

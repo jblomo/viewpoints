@@ -499,3 +499,27 @@ add equi-depth histograms
 add shifted histograms
 
 Look at IRAS data
+
+12:19:42 16 Jun 06
+
+notes from meeting w/Paul
+
+  selector (with scrolling) for axes, instead of popup menu
+    mulitple selection in y axis selector selects (implicit) column index for x axes, and plots lines!
+      normalization either globally (across all y values) or per column (parallel coords style)
+  binary search on ordered data to find selected set, instaed of brute force range check
+  stack trace on erroc (see gnu libc backtrace() )
+  z = selected option
+      pointpramameters for size
+  catagorical data (via hash)
+
+
+  look into:
+   can you grow a blitz array (e.g. when reading file)
+   boost (or standard) arrays instead of blitz++
+   fttk scripting
+  
+  email to paul re finance (talk with Adrian smith and Sandra Owen)
+  get GLSL book (especially pipline reference), openGL guide fifth edition, 
+  can use vertex program to pass vertex component arrays separately.
+    and to do n-D projection/rotation

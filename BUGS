@@ -19,7 +19,8 @@
 7. When clicking on tab, coresponding plot window should be raised (not globally).
 
 8. selected set still garbage on startup.
-
+   *fixed* (see note to Paul at end of main() )
+   
 9. help files not in mac & linux releases (?)
 
 10. mac releases way out of date.
@@ -28,11 +29,14 @@
 
 12. file with bad data on every line should abort after reading n<1000 lines
 
-13. web site does not mention scatterplots, linked scatterplots, histograms, openGL, or "creon levit".  It should mention these things before we (re)submit it to google.  
+13. web site does not mention scatterplots, linked scatterplots, histograms, openGL, or "creon levit".  It should mention these things before we (re)submit it to google.  see http://trotsky.arc.nasa.gov/wacowiki/index.php/Viewpoints
 
-14. web site title/tag should be "viewpoints - interactive linked scatterplots and more".  Not "hyperwall for the masses".
+14. web site title/tag should be "viewpoints - interactive linked scatterplots and more".  Not "hyperwall for the masses".  see http://trotsky.arc.nasa.gov/wacowiki/index.php/Viewpoints
 
 14. Windows version seems to install executable deep in a folder (from whence it must be removed).  This may have been my installation error.
 
 15. selected portion of histogram gets redrawn incorrectly when "invert selection" is called.
+
+16. x-axis normalizaitions log10, threesigma, and squash(?) seem to be broken.  y axis is fine.
+    *fixed*
 

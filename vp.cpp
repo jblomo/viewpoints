@@ -412,24 +412,24 @@ void manage_plot_window_array( Fl_Widget *o)
     // restore windows.  NOTE: If this code was executed during a
     // read or reload operation, it would cause a segementation fault.
     if( uInitialize || ( nplots != nplots_old && nplots_old > 0)) {
-    if( i>=nplots_old) {
-      pws[i] = new plot_window( pw_w, pw_h);
-      pws[i]->index = i;
-      cps[i]->pw = pws[i];
-      pws[i]->cp = cps[i];
-    }
-    else {
-      // if( pws[i]->shown()) pws[i]->hide();  // This is the problem!
-      pws[i]->index = i;
-      cps[i]->pw = pws[i];
-      pws[i]->cp = cps[i];
-      pws[i]->size( pw_w, pw_h);
-    }
-      pws[i]->copy_label( labstr.c_str());
-      pws[i]->position(pw_x, pw_y);
-      pws[i]->row = row; 
-      pws[i]->column = col;
-      pws[i]->end();
+        if( i>=nplots_old) {
+            pws[i] = new plot_window( pw_w, pw_h);
+            pws[i]->index = i;
+            cps[i]->pw = pws[i];
+            pws[i]->cp = cps[i];
+        }
+        else {
+            // if( pws[i]->shown()) pws[i]->hide();  // This is the problem!
+            pws[i]->index = i;
+            cps[i]->pw = pws[i];
+            pws[i]->cp = cps[i];
+            pws[i]->size( pw_w, pw_h);
+        }
+        pws[i]->copy_label( labstr.c_str());
+        pws[i]->position(pw_x, pw_y);
+        pws[i]->row = row; 
+        pws[i]->column = col;
+        pws[i]->end();
     }
 
     // Link plot window and its associated virtual control panel
@@ -1173,7 +1173,12 @@ int main( int argc, char **argv)
   // manage_plot_window_array.
   global_argc = argc;
   global_argv = argv;
+
   manage_plot_window_array( NULL);
+
+  // MCL XXX: Paul - can you move this into the right place in manage_plot_window_array()?
+  // Here, it triggers an "unnecessary" redraw of all plot windows on startup.
+  plot_window::clear_selection( (Fl_Widget *)NULL);
 
   // Now we can show the main control panel and all its subpanels
   main_control_panel->show();
