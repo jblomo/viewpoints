@@ -53,7 +53,7 @@
 //   redraw_if_changing( *dummy) -- Redraw changing plots
 //
 // Author: Creon Levit   2005-2006
-// Modified: P. R. Gazis  16-JUN-2006
+// Modified: P. R. Gazis  14-JUL-2006
 //*****************************************************************
 
 // Include the necessary include libraries
@@ -302,14 +302,20 @@ void create_broadcast_group ()
 // missing data!
 void manage_plot_window_array( Fl_Widget *o)
 {
-  // Determine how the method was invoked and set the uInitialize
-  // flag and plot numbers accordingly.  
+  // Define and initialize the uInitialize flag, old number of plots,
+  // title, and pointers to the pMenu_ and pButton objects.
   unsigned uInitialize = 0;
   int nplots_old = nplots;
   char title[ 80];
   strcpy( title, "");
   Fl_Menu_* pMenu_;
   Fl_Button* pButton;
+
+  // Determine how the method was invoked, and set flags and parameters
+  // accordingly.  If method was called with a NULL arguments, set the
+  // uInitialize flag to 1 and the old number of plots to zero, otherwise 
+  // identify the argument type via a dynamic cast, extract the title, 
+  // and set the old and new numbers of plots.
   if( o == NULL) {
     uInitialize = 1;
     nplots_old = 0;
@@ -356,16 +362,16 @@ void manage_plot_window_array( Fl_Widget *o)
     z_axis_locked[ i] = cps[i]->lock_axis3_button->value();
   }
   
-  // Clear children of tab widget to delete old tabs
+  // Clear children of the tab widget to delete old tabs
   cpt->clear();
 
-  // Create and add the virtual sub-panels, each group under a 
-  // tab, one per plot.
+  // Create and add the virtual sub-panels, each group under a tab,
+  // one group per plot.
   for( int i=0; i<nplots; i++) {
     int row = i/ncols;
     int col = i%ncols;
 
-    // Account for borderless option
+    // Account for the 'borderless' option
     if( borderless)
       top_frame = bottom_frame = left_frame = right_frame = 1;
 
@@ -390,9 +396,9 @@ void manage_plot_window_array( Fl_Widget *o)
     oss << "" << i+1;
     string labstr = oss.str();
 
-    // Set pointer to the current group to the tab widget defined 
-    // by create_control_panel and add a new virtual control panel
-    // under this tab widget
+    // Set pointer to the current group to the tab widget defined by
+    // create_control_panel and add a new virtual control panel under
+    // this tab widget
     Fl_Group::current(cpt);  
     cps[i] = new control_panel_window( 
       cp_widget_x, cp_widget_y, main_w - 6, cp_widget_h);
@@ -402,37 +408,38 @@ void manage_plot_window_array( Fl_Widget *o)
     cps[i]->resizable( cps[i]);
     cps[i]->make_widgets( cps[i]);
 
-    // End the group here so that we can create new plot windows 
-    // at the top level, then set the pointer to the current group
-    // to the top level.
+    // End the group here so that we can create new plot windows at the
+    // top level, then set the pointer to the current group to the top 
+    // level.
     cps[i]->end();
     Fl_Group::current(0); 
 
-    // If this is an initialization or resize operation, create or
-    // restore windows.  NOTE: If this code was executed during a
-    // read or reload operation, it would cause a segementation fault.
+    // Examine uInitalize flag and number of old and new plots to
+    // determine if this is an initialization or resize operation, then 
+    // create or restore windows.  NOTE: If this code was executed during
+    // a read or reload operation, it would cause a segmentation fault.
     if( uInitialize || ( nplots != nplots_old && nplots_old > 0)) {
-        if( i>=nplots_old) {
-            pws[i] = new plot_window( pw_w, pw_h);
-            pws[i]->index = i;
-            cps[i]->pw = pws[i];
-            pws[i]->cp = cps[i];
-        }
-        else {
-            // if( pws[i]->shown()) pws[i]->hide();  // This is the problem!
-            pws[i]->index = i;
-            cps[i]->pw = pws[i];
-            pws[i]->cp = cps[i];
-            pws[i]->size( pw_w, pw_h);
-        }
-        pws[i]->copy_label( labstr.c_str());
-        pws[i]->position(pw_x, pw_y);
-        pws[i]->row = row; 
-        pws[i]->column = col;
-        pws[i]->end();
+      if( i >= nplots_old) {
+        pws[i] = new plot_window( pw_w, pw_h);
+        pws[i]->index = i;
+        cps[i]->pw = pws[i];
+        pws[i]->cp = cps[i];
+      }
+      else {
+        // if( pws[i]->shown()) pws[i]->hide();  // This is the problem!
+        pws[i]->index = i;
+        cps[i]->pw = pws[i];
+        pws[i]->cp = cps[i];
+        pws[i]->size( pw_w, pw_h);
+      }
+      pws[i]->copy_label( labstr.c_str());
+      pws[i]->position(pw_x, pw_y);
+      pws[i]->row = row; 
+      pws[i]->column = col;
+      pws[i]->end();
     }
 
-    // Link plot window and its associated virtual control panel
+    // Link the plot window and its associated virtual control panel
     pws[i]->index = cps[i]->index = i;
     cps[i]->pw = pws[i];
     pws[i]->cp = cps[i];
@@ -443,17 +450,18 @@ void manage_plot_window_array( Fl_Widget *o)
       ivar = 0;
       jvar = 1;
       
-      // When the plot window array is being created, the first 
-      // plot's tab is shown and its axes are locked.
+      // If this method was called with a NULL argument, then the plot window
+      // array is being created, and the first plot's tab should be shown with 
+      // its axes locked.
       if( o == NULL) {
         cps[i]->hide();  
       }
     }
     else plot_window::upper_triangle_incr( ivar, jvar, nvars);
 
-    // If this is an initialization or this is a resize operation, 
-    // restore variable indices and normalization styles for old 
-    // panels.  Otherwise set variable indices for new panels    
+    // If this is a resize operation, restore the old variable indices and
+    // normalization styles for the old panels.  Otherwise set new variable 
+    // indices for the new panels    
     if( nplots != nplots_old && i<nplots_old) {
         cps[i]->varindex1->value( ivar_old[i]);  
         cps[i]->varindex2->value( jvar_old[i]);
@@ -471,10 +479,9 @@ void manage_plot_window_array( Fl_Widget *o)
       cps[i]->varindex3->value(nvars);  
     }
 
-    // If this is an initialization or resize operation, test for
-    // missing data, extract data, reset panels, and make them
-    // resizable.  Otherwise invoke plot_window::initialize() and 
-    // draw panels
+    // If this is an initialization or resize operation, test for missing
+    // data, extract data, reset panels, and make them resizable.  Otherwise 
+    // invoke plot_window::initialize() and draw panels
     if( uInitialize || ( nplots != nplots_old && nplots_old > 0)) {
       if( npoints > 1) {
         pws[i]->extract_data_points();
@@ -488,15 +495,16 @@ void manage_plot_window_array( Fl_Widget *o)
       pws[i]->extract_data_points();
     }
 
+    // Account for the 'borderless' option
     if( borderless) pws[i]->border(0);
 
-    // Make sure the window has been shown and check again to make
-    // sure it is resizable.  NOTE: pws[i]->show() with no arguments
-    // is not sufficient when windows are created.
+    // Make sure the window has been shown and check again to make absolutely 
+    // sure it is resizable.  NOTE: pws[i]->show() with no arguments is not 
+    // sufficient when windows are created.
     if( !pws[i]->shown()) pws[i]->show( global_argc, global_argv);
     pws[i]->resizable( pws[i]);
 
-    // Turn on show capability of plot_window::reset_view();
+    // Turn on the 'show' capability of plot_window::reset_view();
     pws[i]->do_reset_view_with_show = 1;
   }
   
@@ -504,7 +512,7 @@ void manage_plot_window_array( Fl_Widget *o)
   if( nplots < nplots_old)
     for( int i=nplots; i<nplots_old; i++) pws[i]->hide();
 
-  // Create master control panel for tabs
+  // Create a master control panel to encompass all the tabs
   create_broadcast_group ();
 }
 
@@ -650,8 +658,7 @@ void make_global_widgets()
   b->selection_color( FL_BLUE); 
   b->type( FL_TOGGLE_BUTTON);
   b->value( 1);
-  b->callback( (Fl_Callback*) 
-    plot_window::toggle_display_deselected);
+  b->callback( (Fl_Callback*) plot_window::toggle_display_deselected);
 
   // Button(2,1): Add to the selection
   add_to_selection_button = b = 
@@ -661,7 +668,7 @@ void make_global_widgets()
   b->type( FL_TOGGLE_BUTTON);
   b->value( 0);  
 
-  // Button(3,1): Invert colors of selected and nonselected data
+  // Button(3,1): Invert selected and nonselected data
   invert_selection_button = b = 
     new Fl_Button( xpos, ypos+=25, 20, 20, "invert selection");
   b->align( FL_ALIGN_RIGHT); 
@@ -1109,18 +1116,22 @@ int main( int argc, char **argv)
     }
   }
 
-  // If command line was used but no arguments were specified, 
-  // then quit.  NOTE: If command line was not used, the GUI
-  // should be invoked.  This test will work for WIN32, but
-  // what about Linux and MacOS?
-  if( argc == 1 && strlen( argv[ 0]) <= 2) {
-    usage();
-    exit( 0);
-  }
+  // If the command line was used with no path information in WIN32, Linux,
+  // or MacOS, and no arguments were specified, provide usage information, 
+  // then quit.  If the icon was clicked, path information should exist and
+  // the GUI should be invoked.  NOTE: This test may not always work, and
+  // has been abandoned.
+  // if( argc == 1 && 
+  //     ( strcmp( argv[ 0], "vp") == 0 || 
+  //       strcmp( argv[ 0], "./vp") == 0 || 
+  //       strcmp( argv[ 0], ".\\vp") == 0)) {
+  //   usage();
+  //   exit( 0);
+  // }
 
-  // If no data file was specified, assume the last argument is
-  // the filespec.
-  if( inFileSpec.length() <= 0) inFileSpec.append( argv[ argc-1]);
+  // If no data file was specified, but there was at least one argument in
+  // the command line, assume the last argument is the filespec.
+  if( inFileSpec.length() <= 0 && argc > 1) inFileSpec.append( argv[ argc-1]);
 
   // Increment pointers to the optional arguments to get the
   // last argument.
@@ -1168,17 +1179,15 @@ int main( int argc, char **argv)
   create_main_control_panel( main_x, main_y, main_w, main_h, "viewpoints -> creon.levit@nasa.gov");
 
   // Step 4: Call manage_plot_window_array with a NULL argument to
-  // to initialize the plot window array.  KLUDGE ALERT: argc and 
-  // argv are 'globalized' to make them available to 
-  // manage_plot_window_array.
+  // initialize the plot window array.  KLUDGE ALERT: argc and argv are
+  // 'globalized' to make them available to manage_plot_window_array.
   global_argc = argc;
   global_argv = argv;
-
   manage_plot_window_array( NULL);
 
-  // MCL XXX: Paul - can you move this into the right place in manage_plot_window_array()?
-  // Here, it triggers an "unnecessary" redraw of all plot windows on startup.
-  plot_window::clear_selection( (Fl_Widget *)NULL);
+  // Invoke plot_window::initialize_selection to clear the random selection 
+  // that can occur when vp is initialized on some Linux systems.  
+  plot_window::initialize_selection();
 
   // Now we can show the main control panel and all its subpanels
   main_control_panel->show();

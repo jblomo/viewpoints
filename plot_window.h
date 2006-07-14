@@ -27,7 +27,7 @@
 //   1) Review and add comments!
 //
 // Author: Creon Levitt   unknown
-// Modified: P. R. Gazis  09-MAY-2006
+// Modified: P. R. Gazis  14-JUL-2006
 //*****************************************************************
 
 // Protection to make sure this header is not included twice
@@ -99,7 +99,8 @@
 //   delete_selection( *o) -- Delete selcted points
 //   invert_selection() -- Invert selected and nonselcted points
 //   toggle_display_delected( *o) -- Toggle colors
-//   clear_selection( *o) -- Clear selection
+//   initialize_selection() -- Clear selection
+//   clear_selection( *o) -- Clear selection and redraw plots
 //   initialize_textures() -- ???
 //
 // Author: Creon Levitt    unknown
@@ -208,6 +209,7 @@ class plot_window : public Fl_Gl_Window
     static void delete_selection( Fl_Widget *o);
     static void invert_selection();
     static void toggle_display_deselected( Fl_Widget *o);
+    static void initialize_selection();
     static void clear_selection( Fl_Widget *o);
     static void initialize_textures();
     

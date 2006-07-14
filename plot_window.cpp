@@ -22,7 +22,7 @@
 // Purpose: Source code for <plot_window.h>
 //
 // Author: Creon Levitt   unknown
-// Modified: P. R. Gazis  08-MAY-2006
+// Modified: P. R. Gazis  14-JUL-2006
 //*****************************************************************
 
 // Include the necessary include libraries
@@ -82,14 +82,14 @@ void plot_window::initialize()
   r_selected=0.01, g_selected=0.01, b_selected=1.0;
 
   // Resize arrays
-  vertices.resize(npoints,3);
-  //vertex_ranks.resize (npoints, 3);
+  vertices.resize( npoints, 3);
+  //vertex_ranks.resize( npoints, 3);
   x_rank.resize( npoints);
   y_rank.resize( npoints);
   z_rank.resize( npoints);
   nbins = nbins_default;
-  counts.resize( nbins_max,3);
-  counts_selected.resize(nbins_max,3);
+  counts.resize( nbins_max, 3);
+  counts_selected.resize( nbins_max, 3);
 
   // Set mode
   #ifdef TRY_DEPTH
@@ -245,8 +245,8 @@ int plot_window::handle( int event)
         previous_window = current_window;
         current_window = index;
         if( current_window != previous_window)
-          previously_selected( blitz::Range(0,npoints-1)) = selected( blitz::Range(0,npoints-1));
-			
+          previously_selected( blitz::Range(0,npoints-1)) = selected( blitz::Range( 0, npoints-1));
+        
         // not moving or extending old selection
         if(! (Fl::event_key(FL_Shift_L) || Fl::event_key(FL_Shift_R))) {
           extend_selection = 0;
@@ -262,7 +262,7 @@ int plot_window::handle( int event)
           ydown = ydown + ycenter;
         }
         else {
-          // previously_selected(blitz::Range(0,npoints-1)) = 0;
+          // previously_selected( blitz::Range( 0, npoints-1)) = 0;
         }
       }
 
@@ -377,7 +377,7 @@ int plot_window::handle( int event)
         // delete selected points from all future processing
         case 'x':
         case FL_Delete:
-          delete_selection( (Fl_Widget *)NULL);
+          delete_selection( (Fl_Widget *) NULL);
           return 1;
 
         // Invert or restore (uninvert) selected and nonselected
@@ -387,12 +387,12 @@ int plot_window::handle( int event)
 
         // Clear selection
         case 'c':
-          clear_selection( (Fl_Widget *)NULL);
+          clear_selection( (Fl_Widget *) NULL);
           return 1;
           
         // Don't display / display deselected dots
         case 'd':
-          toggle_display_deselected( (Fl_Widget *)NULL);
+          toggle_display_deselected( (Fl_Widget *) NULL);
           return 1;
 
         // Extract data for these axes and redraw plot
@@ -832,7 +832,7 @@ void plot_window::handle_selection ()
   blitz::Range NPTS( 0, npoints-1);	
 
   // Identify newly-selected points
-  newly_selected(NPTS) = where( 
+  newly_selected( NPTS) = where( 
     ( vertices( NPTS, 0)>fmaxf( xdown, xtracked) || vertices( NPTS, 0)<fminf( xdown, xtracked) ||
       vertices( NPTS, 1)>fmaxf( ydown, ytracked) || vertices( NPTS, 1)<fminf( ydown, ytracked)),
 	0.0, (GLfloat)index+1.0);
@@ -840,12 +840,13 @@ void plot_window::handle_selection ()
   // Add newly-selected points to existing or previous selection
   if( add_to_selection_button->value()) {
     selected( NPTS) = where( newly_selected( NPTS), newly_selected( NPTS), selected( NPTS));
-  } else {
-    selected(NPTS) = where( newly_selected(NPTS), newly_selected(NPTS), previously_selected(NPTS));
-  }		
+  } 
+  else {
+    selected( NPTS) = where( newly_selected( NPTS), newly_selected( NPTS), previously_selected( NPTS));
+  }
 
   // Determine and print selection statistics
-  nselected = blitz::count(selected(NPTS)>0);
+  nselected = blitz::count( selected( NPTS)>0);
   print_selection_stats();
   color_array_from_new_selection ();
 
@@ -989,7 +990,7 @@ void plot_window::compute_histogram( int axis)
   nbins = (int)(cp->nbins_slider->value());
   blitz::Range BINS(0,nbins-1);
   counts(BINS,axis) = 0.0;
-  counts_selected(BINS,axis) = 0.0;
+  counts_selected( BINS, axis) = 0.0;
   float range = amax[axis]-amin[axis];
 
   // Loop: Sum over all data points
@@ -999,13 +1000,14 @@ void plot_window::compute_histogram( int axis)
     if( bin < 0) bin = 0;
     if( bin >= nbins) bin=nbins-1;
     counts(bin,axis)++;
-    if( selected(i) != 0.0) counts_selected(bin,axis)++;
+    if( selected( i) > 0.5) counts_selected( bin, axis)++;
   }
   
-  // Normalize results.  NOTE: This will die horribly if there
-  // is no data
-  counts( BINS, axis) = (5.0*nbins/(float)nbins_default)*counts(BINS,axis)/((float)(npoints));
-  counts_selected(BINS,axis) = (5.0*nbins/(float)nbins_default)*counts_selected(BINS,axis)/((float)(npoints));
+  // Normalize results.  NOTE: This will die horribly if there is no data
+  counts( BINS, axis) = 
+    (5.0*nbins/(float)nbins_default)*counts(BINS,axis)/((float)(npoints));
+  counts_selected(BINS,axis) = 
+    (5.0*nbins/(float)nbins_default)*counts_selected(BINS,axis)/((float)(npoints));
 }
 
 // #endif 0
@@ -1019,31 +1021,36 @@ void plot_window::compute_histogram( int axis)
   if( !(cp->show_histogram->value())) return;
 
   nbins = (int)(cp->nbins_slider->value());
-  blitz::Range BINS(0,nbins-1);
-  counts(BINS,axis) = 0.0;
-  counts_selected(BINS,axis) = 0.0;
-  float range = amax[axis]-amin[axis];
+  blitz::Range BINS( 0, nbins-1);
+  counts( BINS, axis) = 0.0;
+  counts_selected( BINS, axis) = 0.0;
+  float range = amax[axis] - amin[axis];
 
   // Loop: Sum over all data points
   for( int i=0; i<npoints; i++) {
-    float x = vertices(i,axis);
-    int bin=(int)(nbins*((x-amin[axis])/range));
+    float x = vertices( i, axis);
+    int bin=(int)( nbins * ( ( x - amin[axis]) / range));
     if( bin < 0) bin = 0;
-    if( bin >= nbins) bin=nbins-1;
-    counts(bin,axis)++;
-    if( selected(i) != 0.0) counts_selected(bin,axis)++;
+    if( bin >= nbins) bin = nbins-1;
+    counts( bin, axis)++;
+    if( selected( i) > 0.5) counts_selected( bin, axis)++;
   }
   
-  // Normalize results.  NOTE: This will die horribly if there
-  // is no data
-  counts( BINS, axis) = (5.0*nbins/(float)nbins_default)*counts(BINS,axis)/ ((float)(npoints));
-  counts_selected(BINS,axis) = (5.0*nbins/(float)nbins_default)*counts_selected(BINS,axis)/ ((float)(npoints));
+  // Normalize results.  NOTE: This would die horribly if there was no data
+  if( npoints > 0) {
+    counts( BINS, axis) = 
+      ( 5.0*nbins / (float) nbins_default) * counts( BINS, axis) / 
+      ( (float) (npoints));
+    counts_selected( BINS, axis) = 
+      ( 5.0*nbins / (float) nbins_default) * counts_selected( BINS, axis) / 
+      ( (float)(npoints));
+  }
 }
 
 //*****************************************************************
-// plot_window::compute_histogram() -- Invoke compute_histogram to
+// plot_window::compute_histograms() -- Invoke compute_histogram to
 // compute histograms for axes 0 and 1.
-void plot_window::compute_histograms ()
+void plot_window::compute_histograms()
 {
   compute_histogram(0);
   compute_histogram(1);
@@ -1076,32 +1083,32 @@ void plot_window::draw_histograms()
 
   // Loop: Draw x-axis histogram (all points)
   float x = amin[0];
-  glColor4f (0.0, 1.0, 0.0, 0.5);
-  glBegin(GL_LINE_STRIP);
-  glVertex2f(x,0.0);
+  glColor4f( 0.0, 1.0, 0.0, 0.5);
+  glBegin( GL_LINE_STRIP);
+  glVertex2f( x, 0.0);
   for( int bin=0; bin<nbins; bin++) {
-    glVertex2f(x,counts(bin,0));   // left edge
-	glVertex2f(x+xwidth,counts(bin,0));	  // Top edge
-    //glVertex2f(x+xwidth,0.0);   // Right edge
-    x+=xwidth;
+    glVertex2f( x, counts(bin,0));   // left edge
+	glVertex2f( x+xwidth, counts(bin,0));	  // Top edge
+    //glVertex2f( x+xwidth, 0.0);   // Right edge
+    x += xwidth;
   }
   glVertex2f(x,0.0);					
   glEnd();
 
-  // If points were selected, refactor selcted points ofthe
+  // If points were selected, refactor selected points of the
   // x-axis histogram?
   if( nselected > 0) {
     x = amin[0];
-    glColor4f (0.25, 1.0, 0.25, 1.0);
-    glBegin(GL_LINE_STRIP);
-    glVertex2f(x,0.0);					
+    glColor4f( 0.25, 1.0, 0.25, 1.0);
+    glBegin( GL_LINE_STRIP);
+    glVertex2f( x, 0.0);
     for( int bin=0; bin<nbins; bin++) {
-      glVertex2f(x,counts_selected(bin,0));   // left edge
-      glVertex2f(x+xwidth,counts_selected(bin,0));   // top edge
+      glVertex2f( x, counts_selected( bin, 0));   // left edge
+      glVertex2f( x+xwidth, counts_selected( bin, 0));   // top edge
       // glVertex2f(x+xwidth,0.0);   // right edge 
-      x+=xwidth;
+      x += xwidth;
     }
-    glVertex2f(x,0.0);					
+    glVertex2f(x,0.0);
     glEnd();
   }
 	
@@ -1128,7 +1135,7 @@ void plot_window::draw_histograms()
   glVertex2f(0.0,y);					
   glEnd();
 
-  // If points were selected, refactor selcted points of the
+  // If points were selected, refactor selected points of the
   // y-axis histogram?
   if( nselected > 0) {
     y = amin[1];
@@ -1136,8 +1143,8 @@ void plot_window::draw_histograms()
     glBegin( GL_LINE_STRIP);
     glVertex2f( 0.0, y);
     for( int bin=0; bin<nbins; bin++) {
-      glVertex2f(counts_selected(bin,1),y);   // bottom
-      glVertex2f(counts_selected(bin,1), y+ywidth);   // right edge
+      glVertex2f(counts_selected( bin, 1),y);   // bottom
+      glVertex2f(counts_selected( bin, 1), y+ywidth);   // right edge
       // glVertex2f(0.0, y+ywidth);   // top edge 
       y+=ywidth;
     }
@@ -1479,7 +1486,7 @@ void plot_window::upper_triangle_incr(
 
 //*****************************************************************
 // plot_window::redraw_all_plots( p) -- STATIC method that invokes 
-// methods to redraw all plots cylically, sarting with plot p.  
+// methods to redraw all plots cylically, starting with plot p.  
 // This is a static method used by class plot_window and by the
 // npoints_changed method in the main routine.
 void plot_window::redraw_all_plots( int p)
@@ -1501,13 +1508,17 @@ void plot_window::redraw_all_plots( int p)
   }
 }
 
+//*****************************************************************
+// plot_window::delete_selection( p) -- STATIC method to delete
+// selected points.  This is a static method used only by class 
+// plot_window.
 void plot_window::delete_selection( Fl_Widget *o)
 {
   blitz::Range NVARS(0,nvars-1);
   int ipoint=0;
   for( int n=0; n<npoints; n++) {
-    if( selected(n) == 0.0) {
-      points(NVARS,ipoint) = points(NVARS,n);
+    if( selected( n) < 0.5) {
+      points( NVARS, ipoint) = points( NVARS, n);
       ipoint++;
     }
   }
@@ -1521,7 +1532,7 @@ void plot_window::delete_selection( Fl_Widget *o)
     npoints_slider->bounds(1,npoints);
     npoints_slider->value(npoints);
 
-    clear_selection( (Fl_Widget *)NULL);
+    clear_selection( (Fl_Widget *) NULL);
 	
     for( int j=0; j<nplots; j++) {
       cps[j]->extract_and_redraw();
@@ -1541,34 +1552,47 @@ void plot_window::invert_selection ()
   redraw_all_plots( 0);
 }
 
+//*****************************************************************
+// plot_window::toggle_display_selected( *o) -- STATIC method to 
+// toggle colors of selected and unselected points. This is a 
+// static method used only by class plot_window.
 void plot_window::toggle_display_deselected( Fl_Widget *o)
 {
   // Toggle the value of the button manually, but only if we were 
   // called via a keypress in a plot window
   // Shouldn't there be an easier way?
   if( o == NULL)
-    show_deselected_button->value( 
-      1 - show_deselected_button->value());
+    show_deselected_button->value( 1 - show_deselected_button->value());
 
   // Creon notes that something wrong here....
   redraw_all_plots (0);
 }
 
 //*****************************************************************
-// plot_window::clear_selection( *o) -- STATIC method to clear 
-// selection.  This is a static method used only by class 
-// plot_window.
-void plot_window::clear_selection( Fl_Widget *o)
+// plot_window::initialize_selection() -- STATIC method to clear
+// selection without doing anything else that might lose the 
+// context.  This is a static method used from main() during 
+// intialization and by plot_window::clear_selection.
+void plot_window::initialize_selection()
 {
   // Loop: Loop through all the plots
   for( int i=0; i<nplots; i++) {
-    pws[i]->reset_selection_box ();
+    pws[i]->reset_selection_box();
   }
   newly_selected = 0.0;
   selected = 0.0;
   previously_selected = 0.0;
   nselected = 0;
-  pws[0]->color_array_from_selection (); // So, I'm lazy.
+}
+
+//*****************************************************************
+// plot_window::clear_selection( *o) -- STATIC method to clear 
+// selection, reset color array, and redraw all plots.  This is a 
+// static method used only by class plot_window.
+void plot_window::clear_selection( Fl_Widget *o)
+{
+  initialize_selection();
+  pws[0]->color_array_from_selection(); // So, I'm lazy.
   redraw_all_plots (0);
 }
 
