@@ -19,7 +19,7 @@
 //   3) Consider putting these variables into a NAMESPACE?
 //
 // Author: Creon Levit    unknown
-// Modified: P. R. Gazis  08-MAY-2006
+// Modified: P. R. Gazis  18-JUL-2006
 //*****************************************************************
 
 #ifndef VP_GLOBAL_DEFINITIONS_VP_H
@@ -35,6 +35,10 @@
 // Define debug flag and statement (move to global_definitions.h)
 EXTERN int debugging INIT(0);
 #define DEBUG(x) do {if (debugging) x;} while (0)
+
+// Set parameters to hold error messages and flags.  These MUST be global
+// because they will be set and used throughout the system
+EXTERN string sErrorMessage INIT("");  // Defaul error messag is empty
 
 // Define input file formats
 #define ASCII 0

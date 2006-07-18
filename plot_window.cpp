@@ -22,7 +22,7 @@
 // Purpose: Source code for <plot_window.h>
 //
 // Author: Creon Levitt   unknown
-// Modified: P. R. Gazis  14-JUL-2006
+// Modified: P. R. Gazis  18-JUL-2006
 //*****************************************************************
 
 // Include the necessary include libraries
@@ -1523,6 +1523,16 @@ void plot_window::delete_selection( Fl_Widget *o)
     }
   }
 
+  // KLUDGE: If no points remain, reload the first two points
+  // to avoid overflows
+  if( ipoint < 2) {
+    points( NVARS, 0) = points( NVARS, 0);
+    points( NVARS, 1) = points( NVARS, 1);
+    ipoint = 2;
+    cerr << " -WARNING: tried to delete every data point, first two points retained." << endl;
+    sErrorMessage = "Tried to delete every data point, first two points retained.";
+  }
+  
   // If some point(s) got deleted, everyone's ranking needs to 
   // be recomputed
   if( ipoint != npoints)  {

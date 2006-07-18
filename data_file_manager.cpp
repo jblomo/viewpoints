@@ -19,7 +19,7 @@
 // Purpose: Source code for <data_file_manager.h>
 //
 // Author: Creon Levitt   unknown
-// Modified: P. R. Gazis  16-JUN-2006
+// Modified: P. R. Gazis  18-JUN-2006
 //*****************************************************************
 
 // Include the necessary include libraries
@@ -271,6 +271,7 @@ int data_file_manager::read_ascii_file_with_headers()
   // Loop: Read file
   int nSkip = 0, i = 0;
   unsigned uFirst = 1;
+  int nTestCycle = 0, nUnreadableData = 0;
   while( !inFile.eof() && i<npoints) {
   
     // Get next line and ignore empty lines and coment lines
@@ -288,6 +289,7 @@ int data_file_manager::read_ascii_file_with_headers()
       continue;
     }
     uFirst = 0;
+    nTestCycle++;
 
     // Loop: Insert the string into a stream and read it
     std::stringstream ss(line); 
@@ -297,21 +299,22 @@ int data_file_manager::read_ascii_file_with_headers()
       ss >> x;
       points( j, i) = (float) x;
 
-      // FIX THIS MISSING DATA STUFF!! IT IS BROKEN.
+      // Skip lines that do not appear to contain enough data
       if( ss.eof() && j<nvars-1) {
-        cerr << " -ERROR, not enough data on line " << i+2
-             << ", aborting!" << endl;
-        inFile.close();
-        return 1;
+        cerr << " -WARNING, not enough data on line " << nRead
+             << ", skipping this line!" << endl;
+        isBadData = 1;
+        break;
       }
       
       // Check for unreadable data and flag line to be skipped
       if( !ss.good() && j<nvars-1) {
         cerr << " -WARNING, unreadable data "
-             << "(probably non-numeric) at line " << i+1 
+             << "(binary or ASCII?) at line " << nRead
              << " column " << j+1 << "," << endl
              << "  skipping entire line." << endl;
-        cerr << "  <" << line.c_str() << ">" << endl;
+        // cerr << "  <" << line.c_str() << ">" << endl;
+        nUnreadableData++;
         isBadData = 1;
         break;
       }
@@ -320,19 +323,29 @@ int data_file_manager::read_ascii_file_with_headers()
 
     // Loop: Check for bad data flags and flag line to be skipped
     for( int j=0; j<nvars; j++) {
-      if( points(j,i) == -9999) {
-        cerr << " -WARNING, bad data (-9999) at line " << i 
+      if( points(j,i) < -90e99) {
+        cerr << " -WARNING, bad data flag (<-90e99) at line " << nRead
              << ", column " << j << " - skipping entire line\n";
         isBadData = 1;
         break;
       }
     }
 
+    // Check for too much unreadable data
+    if( nTestCycle >= MAX_NTESTCYCLES) {
+      if( nUnreadableData >= MAX_NUNREADABLELINES) {
+        cerr << " -ERROR: " << nUnreadableData << " out of " << nTestCycle
+             << " lines of unreadable data at line " << i+1 << endl;
+        sErrorMessage = "Too much unreadable data in an ASCII file";
+        return 1;
+      }
+      nTestCycle = 0;
+    }
+
     // If data were good, increment number of lines
     if( !isBadData) {
       i++;
-      if( (i+1)%10000 == 0)
-        cerr << "  Read " << i+1 << " lines." << endl;
+      if( (i+1)%10000 == 0) cerr << "  Read " << i+1 << " lines." << endl;
     }
   }
   
@@ -353,12 +366,12 @@ int data_file_manager::read_ascii_file_with_headers()
 
 //*****************************************************************
 // data_file_manager::read_binary_file_with_headers() -- Open and 
-// read a binary file.  The file is asssumed to consist of an 
-// ASCII header with column information, terminated by a newline, 
-// followed by a block of binary data.  The only viable way to 
-// read this seems to be with conventional C-style methods: fopen, 
-// fgets, fread, feof, and fclose, from <stdio>.  Returns 0 if 
-// successful.
+// read a binary file.  The file is asssumed to consist of a single
+// header line of ASCII with column information, terminated by a 
+// newline, followed by a block of binary data.  The only viable 
+// way to read this seems to be with conventional C-style methods: 
+// fopen, fgets, fread, feof, and fclose, from <stdio>.  Returns 0 
+// if successful.
 int data_file_manager::read_binary_file_with_headers() 
 {
   // Attempt to open input file and make sure it exists

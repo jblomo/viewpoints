@@ -19,18 +19,21 @@
 // Purpose: Data file manager for Creon Levit's viewpoints
 //
 // General design philosophy:
-//   1) Data are read into global variables.
-//   2) Arguments are passed as strings rather than const char* 
+//   1) The binary and ASCII read operations are sufficiently
+//      different that they should be handled by entirely separate
+//      methods.
+//   2) Data are read into global variables.
+//   3) Arguments are passed as strings rather than const char* 
 //      under the 'if only it were JAVA' approach to C++ style and 
 //      to take advantage of STL's powerful string manipulation 
 //      tools.  Unfortunately, this means that c_str() must be used
 //      to pass some of these strings on to other methods.
-//   3) NOTE: There is considerable duplicate code here.  In 
+//   4) NOTE: There is considerable duplicate code here.  In 
 //      particular, the code to read headers and the calls fo
 //      Fl_File_Chooser here and in vp.cpp could be consolidated.
 //
 // Author: Creon Levitt   unknown
-// Modified: P. R. Gazis  16-JUN-2006
+// Modified: P. R. Gazis  18-JUL-2006
 //*****************************************************************
 
 // Protection to make sure this header is not included twice
@@ -111,6 +114,10 @@ class data_file_manager
     // Define statics to hold header format
     static const int MAX_HEADER_LENGTH;
     static const int MAX_HEADER_LINES;
+    
+    // Define statics to hold tests for bad lines of ASCII data
+    static const int MAX_NTESTCYCLES = 1000;
+    static const int MAX_NUNREADABLELINES = 200;
 };
 
 #endif   // DATA_FILE_MANAGER_H
