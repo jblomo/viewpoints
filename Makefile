@@ -22,17 +22,14 @@ ifeq ($(platform),Darwin)
 
 ### Uncomment ONE of the following
 
-# debugging version
+# uncomment for debugging version
 #	OPTIM = $(DEBUG)
 
-# optimize for G5 
-#	OPTIM = -O6 -ftree-vectorize -ftree-vectorizer-verbose=0 -Wall -Wno-long-double -fno-exceptions -ffast-math -pipe -fsigned-char -maltivec -mabi=altivec -faltivec -mcpu=G5 -mtune=G5 -mpowerpc-gfxopt -g
+# uncomment to optimize for PowerPC (G5 and G5) 
+	OPTIM = -O6 -ftree-vectorize -ftree-vectorizer-verbose=0 -Wall -Wno-long-double -fno-exceptions -ffast-math -pipe -fsigned-char -maltivec -mabi=altivec -faltivec -mpowerpc-gfxopt -g
 
-# optimize for G4
-#	OPTIM = -O6 -ftree-vectorize -ftree-vectorizer-verbose=0 -Wall -Wno-long-double -fno-exceptions -ffast-math -pipe -fsigned-char -maltivec -mabi=altivec -faltivec -mcpu=G4 -mtune=G4 -mpowerpc-gfxopt -g
-
-# optimize for intel mac
-	OPTIM = -O6 -Wall -Wno-long-double -fno-exceptions -ffast-math -fsigned-char -g
+# uncomment optimize for intel mac
+#	OPTIM = -O6 -Wall -Wno-long-double -fno-exceptions -ffast-math -fsigned-char -g
 
 else
 
@@ -50,12 +47,19 @@ CXXFLAGS	= $(OPTIM) -DGL_GLEXT_PROTOTYPES
 
 # libraries to link with:
 ifeq ($(platform),Darwin)
-	INCPATH = -I/sw/include -I/usr/local/include
-	LIBPATH	= -L/usr/local/lib -L/sw/lib
-#	LDLIBS = -framework AGL -framework OpenGL -framework Carbon -framework ApplicationServices -framework vecLib -lm -lmx -lgsl
-	LDLIBS = -framework AGL -framework OpenGL -framework Carbon -framework ApplicationServices -framework vecLib -lm -lmx /sw/lib/libgsl.a
+
+# uncomment for OSX machines where I CAN install things as root...
+#	INCPATH = -I/sw/include -I/usr/local/include
+#	LIBPATH	= -L/usr/local/lib -L/sw/lib
+#	LDLIBS = -framework AGL -framework OpenGL -framework Carbon -framework ApplicationServices -framework vecLib -lm -lmx /sw/lib/libgsl.a
+
+# uncomment for OSX machines where I can NOT install things as root...
+	INCPATH = -I/Users/creon/include
+	LIBPATH	= -L/Users/creon/lib 
+	LDLIBS = -framework AGL -framework OpenGL -framework Carbon -framework ApplicationServices -framework vecLib -lm -lmx -lgsl
 
 else
+# for NAS linux machines where I can NOT install things as root
 	INCPATH = -I/u/wk/creon/include
 	LIBPATH	= -L/u/wk/creon/lib 
 	LDLIBS = -lGL -L/usr/X11R6/lib -lXext -lm -lgsl 
