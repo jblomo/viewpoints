@@ -25,16 +25,16 @@ ifeq ($(platform),Darwin)
 # uncomment for debugging version
 #	OPTIM = $(DEBUG)
 
-# uncomment to optimize for PowerPC (G5 and G5) 
-	OPTIM = -O6 -ftree-vectorize -ftree-vectorizer-verbose=0 -Wall -Wno-long-double -fno-exceptions -ffast-math -pipe -fsigned-char -maltivec -mabi=altivec -faltivec -mpowerpc-gfxopt -g
+# uncomment to optimize for PowerPC (G4 and G5) 
+#	OPTIM = -O6 -ftree-vectorize -ftree-vectorizer-verbose=0 -Wall -Wno-long-double -fno-exceptions -ffast-math -fsigned-char -maltivec -mabi=altivec -faltivec -mpowerpc-gfxopt -g
 
 # uncomment optimize for intel mac
-#	OPTIM = -O6 -Wall -Wno-long-double -fno-exceptions -ffast-math -fsigned-char -g
+	OPTIM = -O6 -ftree-vectorize -ftree-vectorizer-verbose=0 -Wall -Wno-long-double -fno-exceptions -ffast-math -fsigned-char -g
 
 else
 
 #	OPTIM = -O0 $(DEBUG)
-	OPTIM = -O6 -Wall -Wunused -ffast-math -fno-exceptions -g  -Wno-deprecated
+	OPTIM = -O6 -Wextra -Wunused -ffast-math -fno-exceptions -g
 
 endif
 
@@ -48,15 +48,15 @@ CXXFLAGS	= $(OPTIM) -DGL_GLEXT_PROTOTYPES
 # libraries to link with:
 ifeq ($(platform),Darwin)
 
-# uncomment for OSX machines where I CAN install things as root...
-#	INCPATH = -I/sw/include -I/usr/local/include
-#	LIBPATH	= -L/usr/local/lib -L/sw/lib
-#	LDLIBS = -framework AGL -framework OpenGL -framework Carbon -framework ApplicationServices -framework vecLib -lm -lmx /sw/lib/libgsl.a
+# uncomment for OSX machines where I CAN install things as root... (don't forget to build all libraries as static only)
+	INCPATH = -I/sw/include -I/usr/local/include
+	LIBPATH	= -L/usr/local/lib -L/sw/lib
+	LDLIBS = -framework AGL -framework OpenGL -framework Carbon -framework ApplicationServices -framework vecLib -lm -lmx /sw/lib/libgsl.a
 
-# uncomment for OSX machines where I can NOT install things as root...
-	INCPATH = -I/Users/creon/include
-	LIBPATH	= -L/Users/creon/lib 
-	LDLIBS = -framework AGL -framework OpenGL -framework Carbon -framework ApplicationServices -framework vecLib -lm -lmx -lgsl
+# uncomment for OSX machines where I can NOT install things as root... (don't forget to build all libraries as static only)
+#	INCPATH = -I/Users/creon/include
+#	LIBPATH	= -L/Users/creon/lib 
+#	LDLIBS = -framework AGL -framework OpenGL -framework Carbon -framework ApplicationServices -framework vecLib -lm -lmx -lgsl
 
 else
 # for NAS linux machines where I can NOT install things as root

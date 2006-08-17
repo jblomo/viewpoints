@@ -227,27 +227,32 @@ int plot_window::handle( int event)
       xprev = Fl::event_x();
       yprev = Fl::event_y();
 
-      if( (Fl::event_state() == FL_BUTTON2) || 
-          (Fl::event_state() == (FL_BUTTON1 | FL_CTRL))) {
-
-      // XXX wish this worked
-      #if 0
-        xzoomcenter = (float)xprev;
-        xzoomcenter = + (2.0*(xzoomcenter/(float)w()) -1.0) ; // window -> [-1,1]
-        yzoomcenter = (float)yprev;
-        yzoomcenter = - (2.0*(yzoomcenter/(float)h()) -1.0) ; // window -> [-1,1]
-      #endif
+      // middle button pushed = start zoom
+      if( (Fl::event_state() == FL_BUTTON2) || (Fl::event_state() == (FL_BUTTON1 | FL_CTRL))) {
+          // XXX wish this worked
+		  #if 0
+          xzoomcenter = (float)xprev;
+          xzoomcenter = + (2.0*(xzoomcenter/(float)w()) -1.0) ; // window -> [-1,1]
+          yzoomcenter = (float)yprev;
+          yzoomcenter = - (2.0*(yzoomcenter/(float)h()) -1.0) ; // window -> [-1,1]
+		  #endif
       }
 
-      // left button down = start new selection
-      if( Fl::event_state() & FL_BUTTON1) {
+      // right button pushed = start translating
+      else if( Fl::event_state(FL_BUTTON3) || (Fl::event_state() == (FL_BUTTON1 | FL_ALT)) ) {
+        show_center_glyph = 1;
+        needs_redraw = 1;
+      }
+
+      // left button pushed = start new selection, or extend or move old selection
+      else if( Fl::event_state() == FL_BUTTON1) {
         static int previous_window, current_window = -1;
         previous_window = current_window;
         current_window = index;
         if( current_window != previous_window)
           previously_selected( blitz::Range(0,npoints-1)) = selected( blitz::Range( 0, npoints-1));
         
-        // not moving or extending old selection
+        // no shift key = new selection
         if(! (Fl::event_key(FL_Shift_L) || Fl::event_key(FL_Shift_R))) {
           extend_selection = 0;
 
@@ -260,17 +265,18 @@ int plot_window::handle( int event)
           ydown = - (2.0*(ydown/(float)h()) -1.0) ; // window -> [-1,1]
           ydown = ydown/yscale;
           ydown = ydown + ycenter;
+
+          xtracked = xdown;
+          ytracked = ydown;
+          selection_changed = 1;
+          redraw_all_plots (index);
+
         }
         else {
           // previously_selected( blitz::Range( 0, npoints-1)) = 0;
         }
       }
 
-      // start translating
-      if( Fl::event_state(FL_BUTTON3) || ( Fl::event_state(FL_BUTTON1) && Fl::event_state(FL_ALT))) {
-        show_center_glyph = 1;
-        needs_redraw = 1;
-      }
       return 1;
 
     case FL_DRAG:
@@ -339,9 +345,8 @@ int plot_window::handle( int event)
           ytracked = ytracked + ycenter;
         }
         
-        int isdrag = !Fl::event_is_click();
         // printf ("FL_DRAG & FL_BUTTON1, event_state: %x  isdrag = %d  xdragged=%f  ydragged=%f\n", Fl::event_state(), isdrag, xdragged, ydragged);
-        if( isdrag==1 && ((abs(xdragged)+abs(ydragged))>=1)) {
+        if((fabs(xdragged)+fabs(ydragged))>0 ){
           selection_changed = 1;
           redraw_all_plots (index);
         }
@@ -356,8 +361,8 @@ int plot_window::handle( int event)
       // selection_changed = 0;
       if( show_center_glyph) {
         show_center_glyph = 0;
-        needs_redraw = 1;
       }
+      redraw_all_plots (index);
       return 1;
 
     // keypress, key is in Fl::event_key(), ascii in 
@@ -788,7 +793,7 @@ void plot_window::draw_center_glyph ()
 
 //*****************************************************************
 // plot_window::print_selection_stats() -- Write statistics for
-// selection (to screen?)
+// selection to current plot window.
 void plot_window::print_selection_stats ()
 {
   glDisable( GL_DEPTH_TEST);
@@ -800,13 +805,30 @@ void plot_window::print_selection_stats ()
   glBlendFunc( GL_ONE, GL_ZERO);
   glColor4f( 0.7,0.7,0.7,0.0);
 
-  // Define character buffer to allocate storage and print
-  // message to screen  
+  // Define character buffer to allocate storage for printing
   char buf[ 1024];
-  snprintf( buf, sizeof(buf), "%8d/%d (%5.2f%%) selected", nselected, npoints, 100.0*nselected/(float)npoints);
-  gl_draw( (const char *)buf, 0.0f, 0.9f);
 
-  glPopMatrix();
+  // print selection statistics to top of plot window
+  snprintf( buf, sizeof(buf), "%8d/%d (%5.2f%%) selected", nselected, npoints, 100.0*nselected/(float)npoints);
+  gl_draw( (const char *)buf, -0.4f, 0.9f);
+
+  glPopMatrix(); // back to world coordinates, to render strings at selection box boundaries
+  
+  // print ranges at appropriate sides of selection box
+  snprintf (buf, sizeof(buf), "%# 7.4g", xdown);
+  gl_draw( (const char *)buf, xdown-2*gl_width(buf)/(w()*xscale), ((ydown+ytracked)/2)-(0.5f*gl_height())/(h()*yscale) );
+  if (xtracked != xdown) {
+      snprintf (buf, sizeof(buf), "%#-7.4g", xtracked);
+      gl_draw( (const char *)buf, xtracked, ((ydown+ytracked)/2)-(0.5f*gl_height())/(h()*yscale) );
+  }
+  
+  snprintf (buf, sizeof(buf), "%# 7.4g", ydown);
+  gl_draw( (const char *)buf, (xdown+xtracked)/2-gl_width(buf)/(w()*xscale), ydown+(0.5f*gl_height())/(h()*yscale) );
+  if (ytracked != ydown) {
+      snprintf (buf, sizeof(buf), "%# 7.4g", ytracked);
+      gl_draw( (const char *)buf, (xdown+xtracked)/2-gl_width(buf)/(w()*xscale), ytracked-(1.5f*gl_height())/(h()*yscale) );
+  }
+
   glDisable( GL_COLOR_LOGIC_OP);
 }
 
@@ -847,6 +869,7 @@ void plot_window::handle_selection ()
 
   // Determine and print selection statistics
   nselected = blitz::count( selected( NPTS)>0);
+  // there should be a gui element controlling this?
   print_selection_stats();
   color_array_from_new_selection ();
 

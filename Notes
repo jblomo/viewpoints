@@ -523,3 +523,17 @@ notes from meeting w/Paul
   get GLSL book (especially pipline reference), openGL guide fifth edition, 
   can use vertex program to pass vertex component arrays separately.
     and to do n-D projection/rotation
+
+ideas:
+
+  use select to move indices between selected and nonselected arrays.
+  then we can render selected and deselected separately, to get selected "on top" in 2d plots.
+  can us opengl array index primitives.  can stll use vbos(s)
+  can use color call, once per index arrat, instead of one texture coord per vertex.
+  using color, we can have colored point sprites using standard point sprites (no need for r coord)
+  can have multiple arrays, for multiple sepections.
+
+  try point smoothing again.
+
+  add outlier detection.
+
