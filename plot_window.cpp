@@ -92,18 +92,20 @@ void plot_window::initialize()
   counts_selected.resize( nbins_max, 3);
 
   // Set mode
-  #ifdef TRY_DEPTH
-    // Creon notes that this doesn't seem to work on PBG4 OSX
-    if( can_do(FL_RGB|FL_DOUBLE|FL_DEPTH)) {
-      mode( FL_RGB|FL_DOUBLE|FL_DEPTH);
-    }
-    else {
-      cout << "Warning: depth buffering not enabled" << endl;
-      mode( FL_RGB|FL_DOUBLE|FL_ALPHA);
-    }
-  #else
-    mode( FL_RGB8|FL_DOUBLE|FL_ALPHA|FL_DEPTH);
-  #endif
+  if( can_do(FL_RGB|FL_DOUBLE|FL_ALPHA|FL_DEPTH)) {
+    mode( FL_RGB|FL_DOUBLE|FL_ALPHA|FL_DEPTH);
+  } else if( can_do(FL_RGB8|FL_DOUBLE|FL_ALPHA|FL_DEPTH)) {
+    mode( FL_RGB8|FL_DOUBLE|FL_DEPTH|FL_ALPHA);
+  } else if( can_do(FL_RGB|FL_DOUBLE|FL_ALPHA)) {
+    cout << "Warning: depth buffering not enabled" << endl;
+    mode( FL_RGB|FL_DOUBLE|FL_DEPTH|FL_ALPHA);
+  } else if( can_do(FL_RGB8|FL_DOUBLE|FL_ALPHA)) {
+    cout << "Warning: depth buffering not enabled" << endl;
+    mode( FL_RGB8|FL_DOUBLE|FL_ALPHA);
+  } else {
+    cerr << "Error: could not allocate double buffered RGBA window" << endl;
+    exit (-1);
+  }
 }
 
 //*****************************************************************
@@ -809,6 +811,7 @@ void plot_window::print_selection_stats ()
   char buf[ 1024];
 
   // print selection statistics to top of plot window
+  gl_font( FL_HELVETICA, 10);
   snprintf( buf, sizeof(buf), "%8d/%d (%5.2f%%) selected", nselected, npoints, 100.0*nselected/(float)npoints);
   gl_draw( (const char *)buf, -0.4f, 0.9f);
 
