@@ -146,21 +146,22 @@ void redraw_if_changing( void *dummy);
 // usage() -- Print help information and exit
 void usage()
 {
-  cerr << "Usage: vp {optional arguments} datafile" << endl;
+  cerr << endl;
+  cerr << "Usage: vp {optional arguments} {optional filename}" << endl;
   cerr << endl;
   cerr << "Optional arguments:" << endl;
-  cerr << "  -b, --borderless				  don't show decorations on plot windows" << endl;
-  cerr << "  -c, --cols=NCOLS				  startup showing this many columns of plot windows, default=2" << endl;
-  cerr << "  -f, --format={ascii,binary}      input file format, default=ascii" << endl;
-  cerr << "  -i, --input_file=FILENAME		  read input data from FILENAME" << endl;
-  cerr << "  -m, --monitors=NSCREENS		  try and force output to display across NSCREENS screens if available" << endl;
-  cerr << "  -n, --npoints=NPOINTS            read at most NPOINTS from input file, default is min(until_EOF, 2000000)" << endl;
+  cerr << "  -b, --borderless                don't show decorations on plot windows" << endl;
+  cerr << "  -c, --cols=NCOLS                startup showing this many columns of plot windows, default=2" << endl;
+  cerr << "  -f, --format={ascii,binary}     input file format, default=ascii" << endl;
+  cerr << "  -i, --input_file=FILENAME       read input data from FILENAME" << endl;
+  cerr << "  -m, --monitors=NSCREENS         try and force output to display across NSCREENS screens if available" << endl;
+  cerr << "  -n, --npoints=NPOINTS           read at most NPOINTS from input file, default is min(until_EOF, 2000000)" << endl;
   cerr << "  -o, --ordering={rowmajor,columnmajor} ordering for binary data, default=columnmajor" << endl;
-  cerr << "  -r, --rows=NROWS				  startup showing this many rows of plot windows, default=2" << endl;
-  cerr << "  -s, --skip_header_lines=NLINES	  skip over NLINES lines at start of input file, default=0" << endl;
-  cerr << "  -v, --nvars=NVARS				  input has NVARS values per point (only for row major binary data)" << endl;
-  cerr << "  -h, --help						  display this message and then exit" << endl;
-  cerr << "      --version					  output version information and then exit" << endl;
+  cerr << "  -r, --rows=NROWS                startup showing this many rows of plot windows, default=2" << endl;
+  cerr << "  -s, --skip_header_lines=NLINES  skip over NLINES lines at start of input file, default=0" << endl;
+  cerr << "  -v, --nvars=NVARS               input has NVARS values per point (only for row major binary data)" << endl;
+  cerr << "  -h, --help                      display this message and then exit" << endl;
+  cerr << "      --version                   output version information and then exit" << endl;
 
   exit( -1);
 }
