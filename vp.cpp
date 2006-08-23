@@ -1110,7 +1110,7 @@ int main( int argc, char **argv)
       case 'V':
           cout << "$Id$" << endl;
           exit (-1);
-          break
+          break;
 
       // help, or unknown option, or missing argument
       case 'h':
