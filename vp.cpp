@@ -147,16 +147,21 @@ void redraw_if_changing( void *dummy);
 void usage()
 {
   cerr << "Usage: vp {optional arguments} datafile" << endl;
-  cerr << "  [--format={ascii,binary}] (-f)" << endl;
-  cerr << "  [--npoints=<int>] (-n)" << endl;
-  cerr << "  [--nvars=<int>] (-v)" << endl;
-  cerr << "  [--skip_header_lines=<int>] (-s)" << endl;
-  cerr << "  [--rows=<int>] (-r)" << endl;
-  cerr << "  [--cols=<int>] (-c)" << endl;
-  cerr << "  [--monitors=<int>] (-m)" << endl;
-  cerr << "  [--input_file={input filespec}] (-i)" << endl;
-  cerr << "  [--borderless] (-b)" << endl;
-  cerr << "  [--help] (-h)" << endl;
+  cerr << endl;
+  cerr << "Optional arguments:" << endl;
+  cerr << "  -b, --borderless				  don't show decorations on plot windows" << endl;
+  cerr << "  -c, --cols=NCOLS				  startup showing this many columns of plot windows, default=2" << endl;
+  cerr << "  -f, --format={ascii,binary}      input file format, default=ascii" << endl;
+  cerr << "  -i, --input_file=FILENAME		  read input data from FILENAME" << endl;
+  cerr << "  -m, --monitors=NSCREENS		  try and force output to display across NSCREENS screens if available" << endl;
+  cerr << "  -n, --npoints=NPOINTS            read at most NPOINTS from input file, default is min(until_EOF, 2000000)" << endl;
+  cerr << "  -o, --ordering={rowmajor,columnmajor} ordering for binary data, default=columnmajor" << endl;
+  cerr << "  -r, --rows=NROWS				  startup showing this many rows of plot windows, default=2" << endl;
+  cerr << "  -s, --skip_header_lines=NLINES	  skip over NLINES lines at start of input file, default=0" << endl;
+  cerr << "  -v, --nvars=NVARS				  input has NVARS values per point (only for row major binary data)" << endl;
+  cerr << "  -h, --help						  display this message and then exit" << endl;
+  cerr << "      --version					  output version information and then exit" << endl;
+
   exit( -1);
 }
 
@@ -988,6 +993,7 @@ int main( int argc, char **argv)
     { "input_file", required_argument, 0, 'i'},
     { "borderless", no_argument, 0, 'b'},
     { "help", no_argument, 0, 'h'},
+    { "version", no_argument, 0, 'V'},
     { 0, 0, 0, 0}
   };
 
@@ -1004,7 +1010,7 @@ int main( int argc, char **argv)
   while( 
     ( c = getopt_long( 
         argc, argv, 
-        "f:n:v:s:o:r:c:m:i:b:h", long_options, NULL)) != -1) {
+        "f:n:v:s:o:r:c:m:i:bhV", long_options, NULL)) != -1) {
   
     // Examine command-line options and extract any optional
     // arguments
@@ -1100,15 +1106,16 @@ int main( int argc, char **argv)
         borderless = 1;
         break;
 
-      // help: Help
+      // show version information (managed by svn), and exit
+      case 'V':
+          cout << "$Id$" << endl;
+          exit (-1);
+          break
+
+      // help, or unknown option, or missing argument
       case 'h':
       case ':':
       case '?':
-        usage();
-        exit( -1);
-        break;
-      
-      // Default
       default:
         usage();
         exit( -1);
