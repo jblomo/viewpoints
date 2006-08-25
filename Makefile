@@ -32,9 +32,10 @@ ifeq ($(platform),Darwin)
 	OPTIM = -O6 -ftree-vectorize -ftree-vectorizer-verbose=0 -Wall -Wno-long-double -fno-exceptions -ffast-math -fsigned-char -g
 
 else
+# platform assumed to be linux
 
 #	OPTIM = -O0 $(DEBUG)
-	OPTIM = -O6 -Wextra -Wunused -ffast-math -fno-exceptions -g
+	OPTIM = -O6 -Wextra -ffast-math -fno-exceptions -g
 
 endif
 
@@ -59,10 +60,10 @@ ifeq ($(platform),Darwin)
 #	LDLIBS = -framework AGL -framework OpenGL -framework Carbon -framework ApplicationServices -framework vecLib -lm -lmx -lgsl
 
 else
-# for NAS linux machines where I can NOT install things as root
+# for NAS linux machines where I can NOT install things as root (don't forget to build all libraries as static only)
 	INCPATH = -I/u/wk/creon/include
-	LIBPATH	= -L/u/wk/creon/lib 
-	LDLIBS = -lGL -L/usr/X11R6/lib -lXext -lm -lgsl 
+	LIBPATH	= -L/u/wk/creon/lib -L/usr/X11R6/lib 
+	LDLIBS = -lGL -lXext -lm -lgsl
 endif
 
 INCFLEWS	= -I../flews-0.3

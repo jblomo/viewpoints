@@ -10,4 +10,3 @@ data 'MENU' (128, "Apple") {
 
 data 'carb' (0) {
 };
-

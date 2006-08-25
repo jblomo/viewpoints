@@ -87,7 +87,7 @@
 //   reset_selection_box() -- Reset selection box
 //   color_array_from_new_selection() -- ???
 //   color_array_from_selection() -- Color selected points?
-//   update_textures() -- ???
+//   update_textures() -- change the rgbaused for selected and/or deselected points
 //   choose_color_selected() -- Choose color of selcted data
 //   reset_view() -- Reset plot
 //   redraw_one_plot() -- Redraw one plot
@@ -101,7 +101,7 @@
 //   toggle_display_delected( *o) -- Toggle colors
 //   initialize_selection() -- Clear selection
 //   clear_selection( *o) -- Clear selection and redraw plots
-//   initialize_textures() -- ???
+//   initialize_textures() -- initial setup of rgba used for selected and deselected points
 //
 // Author: Creon Levitt    unknown
 // Modified: P. R. Gazis  08-MAY-2006
@@ -223,10 +223,12 @@ class plot_window : public Fl_Gl_Window
     static int dfactor;
 
     // Static variables used for textures
-    static GLfloat texture_images[ 2][ 4*(MAXPLOTS)];
+    // static GLfloat texture_images[ 2][ 4*(MAXPLOTS)];
+    static blitz::Array<GLfloat,2> selection_colors0; // when deselected points are visible
+    static blitz::Array<GLfloat,2> selection_colors1; // when deselected points are invisible
     static GLfloat pointscolor[ 4];
-    static GLfloat texenvcolor[ 4];
-    static GLuint texnames[ 2];
+//    static GLfloat texenvcolor[ 4];
+//    static GLuint texnames[ 2];
     static int textures_initialized;
 };
 

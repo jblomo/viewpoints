@@ -80,13 +80,14 @@ EXTERN blitz::Array<int,1> identity;   // holds a(i)=i.
 // selected -- true if point is selected in any window
 // previously_selected -- true iff selected before mouse went down
 // nselected -- number of points currently selected
-EXTERN blitz::Array<GLfloat,1> newly_selected;	
-EXTERN blitz::Array<GLfloat,1> selected;	
-EXTERN blitz::Array<GLfloat,1> previously_selected;	
+EXTERN blitz::Array<int,1> newly_selected;	
+EXTERN blitz::Array<int,1> selected;	
+EXTERN blitz::Array<int,1> previously_selected;	
 EXTERN int nselected;	
 
 // Texture co-ordinates?
-EXTERN blitz::Array<GLfloat,1> texture_coords;
+// EXTERN blitz::Array<GLfloat,1> texture_coords;
+EXTERN blitz::Array<GLfloat,2> colors;
 
 // Temporary array (reference) for use with qsort
 EXTERN blitz::Array<float,1> tmp_points;

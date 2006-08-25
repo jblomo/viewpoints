@@ -18,7 +18,7 @@
 //
 // Purpose: Source code for <data_file_manager.h>
 //
-// Author: Creon Levitt   unknown
+// Author: Creon Levit   unknown
 // Modified: P. R. Gazis  18-JUN-2006
 //*****************************************************************
 
@@ -746,7 +746,8 @@ void data_file_manager::resize_global_arrays()
 
   tmp_points.resize(npoints); // for sort
 
-  texture_coords.resize( npoints);
+  //texture_coords.resize( npoints);
+  colors.resize(npoints, 4);
   identity.resize( npoints);
   newly_selected.resize( npoints);
   selected.resize( npoints);

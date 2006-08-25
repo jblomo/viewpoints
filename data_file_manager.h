@@ -32,7 +32,7 @@
 //      particular, the code to read headers and the calls fo
 //      Fl_File_Chooser here and in vp.cpp could be consolidated.
 //
-// Author: Creon Levitt   unknown
+// Author: Creon Levit   unknown
 // Modified: P. R. Gazis  18-JUL-2006
 //*****************************************************************
 
@@ -73,7 +73,7 @@
 //   directory( sPathnameIn) -- Set pathname
 //   inFileSpec() -- Get input filespec
 //
-// Author: Creon Levitt   unknown
+// Author: Creon Levit   unknown
 // Modified: P. R. Gazis  09-MAY-2006
 //*****************************************************************
 class data_file_manager

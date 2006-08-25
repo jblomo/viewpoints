@@ -1,7 +1,8 @@
 
 
-1. selected set is random garbage after startup.  
+1. selected set is random garbage after startup, or after read cfile.  
    *fixed*
+   BROKEN AGAIN (when reading files from mnu on OSX)!!!!
 
 2. color selection from master tab pops up nplots separate color dialogs!
    *fixed*
@@ -22,21 +23,42 @@
    *fixed* (see note to Paul at end of main() )
    
 9. help files not in mac & linux releases (?)
+   *fix
 
 10. mac releases way out of date.
+   *fixed*
 
 11. reset view button sometimes fails
 
 12. file with bad data on every line should abort after reading n<1000 lines
+   *fixed*
 
 13. web site does not mention scatterplots, linked scatterplots, histograms, openGL, or "creon levit".  It should mention these things before we (re)submit it to google.  see http://trotsky.arc.nasa.gov/wacowiki/index.php/Viewpoints
+   *fixed*
 
 14. web site title/tag should be "viewpoints - interactive linked scatterplots and more".  Not "hyperwall for the masses".  see http://trotsky.arc.nasa.gov/wacowiki/index.php/Viewpoints
+   *fixed*
 
-14. Windows version seems to install executable deep in a folder (from whence it must be removed).  This may have been my installation error.
+14. Windows version seems to install executable deep in a folder (from whence it must be removed).  This may have been my installation error.   *fixed*
 
 15. selected portion of histogram gets redrawn incorrectly when "invert selection" is called.
 
 16. x-axis normalizaitions log10, threesigma, and squash(?) seem to be broken.  y axis is fine.
     *fixed*
+
+17. --borderless option (at least on OSX) causes plot windows to ignore keyboard events (but not mouse events!)
+
+18. plots are not redrawn after global "unselected color" is changed.
+
+19. selection color is not settable globally (this is deliberate, but should be fixed)
+
+20. Code is not formatted consistently.  
+    1) Consider using gnu standard coding style, or fltk standard coding style?
+    2) No tabs allowed - only spaces.
+
+21. "invert selection" tice does not correctly restore slections in multiple colors
+
+22. aborts should produce backtraces?
+
+
 

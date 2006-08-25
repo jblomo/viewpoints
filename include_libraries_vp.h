@@ -25,7 +25,7 @@
 // General design philosophy:
 //   1) Add comments and get this code to run under Windows.
 //
-// Author: Creon Levitt    unknown
+// Author: Creon Levit    unknown
 // Modified: P. R. Gazis   27-MAR-2006
 //*****************************************************************
 

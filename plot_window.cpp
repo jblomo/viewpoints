@@ -21,7 +21,7 @@
 //
 // Purpose: Source code for <plot_window.h>
 //
-// Author: Creon Levitt   unknown
+// Author: Creon Levit   unknown
 // Modified: P. R. Gazis  18-JUL-2006
 //*****************************************************************
 
@@ -56,9 +56,12 @@ double plot_window::r_deselected=1.0;
 double plot_window::g_deselected=0.01;
 double plot_window::b_deselected=0.01;
 
-GLfloat plot_window::texture_images[ 2][ 4*(MAXPLOTS)] = { 0};
-GLfloat plot_window::texenvcolor[ 4] = { 1, 1, 1, 1};
-GLuint plot_window::texnames[ 2] = { };
+//GLfloat plot_window::texture_images[ 2][ 4*(MAXPLOTS)] = { 0};
+blitz::Array<GLfloat,2> plot_window::selection_colors0(MAXPLOTS+1,4); // when deselected points are visible
+blitz::Array<GLfloat,2> plot_window::selection_colors1(MAXPLOTS+1,4); // when deselected points are invisible
+
+//GLfloat plot_window::texenvcolor[ 4] = { 1, 1, 1, 1};
+//GLuint plot_window::texnames[ 2] = { };
 int plot_window::textures_initialized = 0;
 
 //*****************************************************************
@@ -531,14 +534,15 @@ void plot_window::draw()
     glDisable(GL_DEPTH_TEST);
     glEnable(GL_BLEND);
     glEnableClientState(GL_VERTEX_ARRAY);
-    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+    // glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+    glEnableClientState(GL_COLOR_ARRAY);
 
     // this next idiom is necessary, per window, to map 
     // texture coordinate values to [0..1] for texturing.
-    glMatrixMode(GL_TEXTURE);
-    glLoadIdentity();	
-    glScalef( 1.0/(float)MAXPLOTS, 1.0/(float)MAXPLOTS, 1.0/(float)MAXPLOTS); 
-    glMatrixMode(GL_MODELVIEW);
+    // glMatrixMode(GL_TEXTURE);
+    // glLoadIdentity();	
+    // glScalef( 1.0/(float)MAXPLOTS, 1.0/(float)MAXPLOTS, 1.0/(float)MAXPLOTS); 
+    // glMatrixMode(GL_MODELVIEW);
 
     #ifdef FAST_APPLE_VERTEX_EXTENSIONS
       glEnableClientState(GL_VERTEX_ARRAY_RANGE_APPLE);
@@ -860,7 +864,7 @@ void plot_window::handle_selection ()
   newly_selected( NPTS) = where( 
     ( vertices( NPTS, 0)>fmaxf( xdown, xtracked) || vertices( NPTS, 0)<fminf( xdown, xtracked) ||
       vertices( NPTS, 1)>fmaxf( ydown, ytracked) || vertices( NPTS, 1)<fminf( ydown, ytracked)),
-	0.0, (GLfloat)index+1.0);
+	0, index+1);
 
   // Add newly-selected points to existing or previous selection
   if( add_to_selection_button->value()) {
@@ -885,24 +889,31 @@ void plot_window::handle_selection ()
 void plot_window::update_textures ()
 {
   // New color for selected points (selection in this window only)
-  int j = 4*(index+1);
-  texture_images[0][j+0] = texture_images[1][j+0] = r_selected;
-  texture_images[0][j+1] = texture_images[1][j+1] = g_selected;
-  texture_images[0][j+2] = texture_images[1][j+2] = b_selected;
-  texture_images[0][j+3] = texture_images[1][j+3] = 1.0; 
+  selection_colors0(index+1,0) = selection_colors1(index+1,0) = r_selected;
+  selection_colors0(index+1,1) = selection_colors1(index+1,1) = g_selected;
+  selection_colors0(index+1,2) = selection_colors1(index+1,2) = b_selected;
+  selection_colors0(index+1,3) = selection_colors1(index+1,3) = 1.0;
 
   // color for de-selected points when they are displayed
-  texture_images[0][0] = r_deselected;
-  texture_images[0][1] = g_deselected;
-  texture_images[0][2] = b_deselected;
-  texture_images[0][3] = 1.0; 
+  selection_colors0(0,0) = r_deselected;
+  selection_colors0(0,1) = g_deselected;
+  selection_colors0(0,2) = b_deselected;
+  selection_colors0(0,3) = 1.0;
 
+  // color for de-selected points when they are not displayed
+  selection_colors1(0,0) = 0.0;
+  selection_colors1(0,1) = 0.0;
+  selection_colors1(0,2) = 0.0;
+  selection_colors1(0,3) = 0.0;
+
+#if 0
   // Loop: Set textures for selected points?
   for( unsigned int i=0; 
        i < sizeof(texnames)/sizeof(texnames[0]); i++) {
     glBindTexture( GL_TEXTURE_1D, texnames[ i]);
     glTexImage1D( GL_TEXTURE_1D, 0, GL_RGBA8, MAXPLOTS, 0, GL_RGBA, GL_FLOAT, texture_images[ i]);
   }
+#endif //0
 }
 
 //*****************************************************************
@@ -914,8 +925,18 @@ void plot_window::color_array_from_selection()
   update_textures();
 
   blitz::Range NPTS( 0, npoints-1);	
+  blitz::Range RGBA( 0, 3);	
 
-  texture_coords( NPTS) = selected( NPTS);
+  // texture_coords( NPTS) = selected( NPTS);
+  if( show_deselected_button->value() && cp->show_deselected_points->value()) {  // XXX need to decide - global or local?
+      // colors( NPTS,RGBA) = selection_colors0(selected( NPTS),RGBA);
+      for (int i=0; i<npoints; i++)
+          colors(i,RGBA) = selection_colors0(selected(i),RGBA);
+  } else {
+	  // colors( NPTS,RGBA) = selection_colors1(selected( NPTS),RGBA);
+      for (int i=0; i<npoints; i++)
+          colors(i,RGBA) = selection_colors1(selected(i),RGBA);
+  }
 }
 
 //*****************************************************************
@@ -936,13 +957,13 @@ void plot_window::draw_data_points()
   glEnable( GL_DEPTH_TEST);
   glDepthFunc (GL_GEQUAL);
 
-  glEnable(GL_TEXTURE_1D);
-  glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+  //  glEnable(GL_TEXTURE_1D);
+  //  glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
   // for testing
   // glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE); 
-  glColor4fv(pointscolor);
+  // glColor4fv(pointscolor);
   // GL_MODULATE ignores this
-  glTexEnvfv( GL_TEXTURE_ENV, GL_TEXTURE_ENV_COLOR, texenvcolor); 
+  // glTexEnvfv( GL_TEXTURE_ENV, GL_TEXTURE_ENV_COLOR, texenvcolor); 
   
   glPointSize( cp->pointsize_slider->value());
 
@@ -954,27 +975,29 @@ void plot_window::draw_data_points()
 
   glBlendFunc( sfactor, dfactor);
 
-  GLfloat *texturep = (GLfloat *) texture_coords.data();
-  glTexCoordPointer (1, GL_FLOAT, 0, texturep);
+  // GLfloat *texturep = (GLfloat *) texture_coords.data();
+  // glTexCoordPointer (1, GL_FLOAT, 0, texturep);
 
-  // Tell the GPU where to find the correct texture coordinate 
-  // (colors) for each vertex.
-  int tmp_alpha_test = 0;
+  // Tell the GPU where to find the correct colors for each vertex.
+  GLfloat *colorp = (GLfloat *) colors.data();
+  glColorPointer (4, GL_FLOAT, 0, colorp);
+
+  int alpha_test_enabled = 0;
 
   // XXX need to resolve local/global controls issue
   //  - partially done.  can now get rid of show_deselected_button.
   if( show_deselected_button->value() && 
       cp->show_deselected_points->value()) {
-    glBindTexture( GL_TEXTURE_1D, texnames[ 0]);
+	  // glBindTexture( GL_TEXTURE_1D, texnames[ 0]);
   }
   else {
-    glBindTexture( GL_TEXTURE_1D, texnames[ 1]);
+    // glBindTexture( GL_TEXTURE_1D, texnames[ 1]);
     
     // Cull any deselected points (alpha==0.0), whatever the 
     // blendfunc:
     glEnable( GL_ALPHA_TEST);
     glAlphaFunc( GL_GEQUAL, 0.5);  
-    tmp_alpha_test = 1;
+    alpha_test_enabled = 1;
   }
 
   // Tell the GPU where to find the vertices;
@@ -1000,8 +1023,11 @@ void plot_window::draw_data_points()
   // tell the GPU to draw the vertices.
   glDrawArrays( GL_POINTS, 0, npoints);
 
-  if( tmp_alpha_test == 1 ) glDisable(GL_ALPHA_TEST);
-  glDisable( GL_TEXTURE_1D);
+  if( alpha_test_enabled ) {
+	  glDisable(GL_ALPHA_TEST);
+	  alpha_test_enabled = 0;
+  }
+  //  glDisable( GL_TEXTURE_1D);
   glDisable( GL_DEPTH_TEST);
 }
 
@@ -1615,9 +1641,9 @@ void plot_window::initialize_selection()
   for( int i=0; i<nplots; i++) {
     pws[i]->reset_selection_box();
   }
-  newly_selected = 0.0;
-  selected = 0.0;
-  previously_selected = 0.0;
+  newly_selected = 0;
+  selected = 0;
+  previously_selected = 0;
   nselected = 0;
 }
 
@@ -1641,9 +1667,10 @@ void plot_window::initialize_textures()
 {
   if( textures_initialized) return;
 
+#if 0
   // Generate texture names
-  glPixelStorei( GL_UNPACK_ALIGNMENT, 1);
-  glGenTextures( 2, texnames);
+  // glPixelStorei( GL_UNPACK_ALIGNMENT, 1);
+  // glGenTextures( 2, texnames);
 
   // Color for de-selected points when they are displayed
   texture_images[0][0] = r_deselected;
@@ -1683,6 +1710,8 @@ void plot_window::initialize_textures()
     glTexImage1D( GL_TEXTURE_1D, 0, GL_RGBA8, MAXPLOTS, 0, GL_RGBA, GL_FLOAT, texture_images[i]);
   }
   
+#endif 0
+
   // Set flag to indicate that textures have been initialized
   textures_initialized = 1;
 }
