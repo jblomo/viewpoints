@@ -906,36 +906,44 @@ void plot_window::update_textures ()
   selection_colors1(0,2) = 0.0;
   selection_colors1(0,3) = 0.0;
 
-#if 0
-  // Loop: Set textures for selected points?
-  for( unsigned int i=0; 
-       i < sizeof(texnames)/sizeof(texnames[0]); i++) {
-    glBindTexture( GL_TEXTURE_1D, texnames[ i]);
-    glTexImage1D( GL_TEXTURE_1D, 0, GL_RGBA8, MAXPLOTS, 0, GL_RGBA, GL_FLOAT, texture_images[ i]);
-  }
-#endif //0
 }
 
 //*****************************************************************
-// plot_window::color_array_from_selection() -- Color selected
-// points.
+// plot_window::color_array_from_selection() -- create the array of colors that
+// we will pass to openGL to color vertices in *every* plot
+//
+// XXX this was rewritten to free up texture coordinates so they could be used later to
+// render the points using point sprites, so we can have huge smooth points, symbols, etc.
+// note: this would probably be much faster (and much clearer) if we used openGL's color index mode.
+// however, I don't think blending works in color index mode.  Oh well.
+// note: the reason for the ugly casts and memcpy() is that blitz does not have enough powers
+// of indirection to compile the epression I wanted to use to fake my own color indices.  The expression
+// I want would be, basically:
+//  colors(NPTS,RGBA) = selection_colors0(selected(NPTS),RGBA);
+// note: Another way to implement this would be to run through the selected() array, which an integer specifying
+// the number of the plot_window that (most recently) selected each point (+1, since 0 means "not selected
+// in any window") and pack all the *indices* of points with selected==0 into one array, selected==1 into another
+// array, etc.  Then these indices could be used with glDrawElements(), glDrawRangeElements(), and friends to render
+// each selected set (and the non-selected set) separately, with one call to glColor() (& glPointsize(), glBlendfunc(),
+// glPointSprite(), .....) for each set, dispensing with the color array entirely.  This would allow us to, e.g., force
+// selected points to overplot non-selected points, etc.
+// 
 void plot_window::color_array_from_selection()
 {
-  initialize_textures();
-  update_textures();
+  update_textures();  // update "color table" if the user requested a color change
 
-  blitz::Range NPTS( 0, npoints-1);	
-  blitz::Range RGBA( 0, 3);	
-
-  // texture_coords( NPTS) = selected( NPTS);
+  GLfloat *src = 0;
   if( show_deselected_button->value() && cp->show_deselected_points->value()) {  // XXX need to decide - global or local?
-      // colors( NPTS,RGBA) = selection_colors0(selected( NPTS),RGBA);
-      for (int i=0; i<npoints; i++)
-          colors(i,RGBA) = selection_colors0(selected(i),RGBA);
+      src = (GLfloat *)(selection_colors0.data());
   } else {
-	  // colors( NPTS,RGBA) = selection_colors1(selected( NPTS),RGBA);
-      for (int i=0; i<npoints; i++)
-          colors(i,RGBA) = selection_colors1(selected(i),RGBA);
+      src = (GLfloat *)(selection_colors0.data());
+  }
+  GLfloat *dest = (GLfloat *)(colors.data());
+  int *offset = (int *)(selected.data());
+  for (int i=0; i<npoints; i++) {
+          memcpy ((void *)dest, (void *)(src+(*offset*sizeof(int))), 4*sizeof(GLfloat));
+          dest += 4;
+          offset +=1;
   }
 }
 
