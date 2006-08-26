@@ -4,7 +4,7 @@ platform := $(shell uname)
 # compiler names:
 CXX		= g++
 CC		= cc
-MAKEDEPEND	= $(CXX) -M
+MAKEDEPEND	= $(CXX) -E -M
 
 ifeq ($(platform),Darwin)
 	POSTBUILD = /Developer/Tools/Rez -t APPL -o
@@ -103,7 +103,7 @@ clean:
 	rm -f $(ALL) *.o $(TARGET) vp core* TAGS *.gch makedepend 
 
 depend:	$(SRCS)
-	$(MAKEDEPEND) $(INCBLITZ) $(INCPATH) $(INCFLEWS) -o makedepend $(SRCS)
+	$(MAKEDEPEND) $(INCBLITZ) $(INCPATH) $(INCFLEWS) $(SRCS) > makedepend
 
 # Automatically generated dependencies if they are there...
 -include makedepend

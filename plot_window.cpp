@@ -51,14 +51,15 @@ int plot_window::dfactor = GL_DST_ALPHA;
 // color for points (modified per point by texture rgba)
 GLfloat plot_window::pointscolor[4] = { 1, 1, 1, 1};
 
-// Initialize color for deselected points (used in texture rgba)
+// Initialize color for deselected points
 double plot_window::r_deselected=1.0;
 double plot_window::g_deselected=0.01;
 double plot_window::b_deselected=0.01;
 
-//GLfloat plot_window::texture_images[ 2][ 4*(MAXPLOTS)] = { 0};
-blitz::Array<GLfloat,2> plot_window::selection_colors0(MAXPLOTS+1,4); // when deselected points are visible
-blitz::Array<GLfloat,2> plot_window::selection_colors1(MAXPLOTS+1,4); // when deselected points are invisible
+// "color tables" used for coloring points based on which plot (if any) they are selected in.
+// see: plot_window::color_array_from_selection()
+blitz::Array<GLfloat,2> plot_window::colors_show_deselected(MAXPLOTS+1,4); // used when deselected points are shown
+blitz::Array<GLfloat,2> plot_window::colors_hide_deselected(MAXPLOTS+1,4); // used when deselected points are not shown
 
 //GLfloat plot_window::texenvcolor[ 4] = { 1, 1, 1, 1};
 //GLuint plot_window::texnames[ 2] = { };
@@ -844,6 +845,9 @@ void plot_window::print_selection_stats ()
 // operations.
 void plot_window::handle_selection ()
 {
+  if (selection_is_inverted)
+    invert_selection();
+
   int draw_selection_box = 1;
   if( draw_selection_box) {
     glBlendFunc( GL_ONE, GL_ZERO);
@@ -889,37 +893,37 @@ void plot_window::handle_selection ()
 void plot_window::update_textures ()
 {
   // New color for selected points (selection in this window only)
-  selection_colors0(index+1,0) = selection_colors1(index+1,0) = r_selected;
-  selection_colors0(index+1,1) = selection_colors1(index+1,1) = g_selected;
-  selection_colors0(index+1,2) = selection_colors1(index+1,2) = b_selected;
-  selection_colors0(index+1,3) = selection_colors1(index+1,3) = 1.0;
+  colors_show_deselected(index+1,0) = colors_hide_deselected(index+1,0) = r_selected;
+  colors_show_deselected(index+1,1) = colors_hide_deselected(index+1,1) = g_selected;
+  colors_show_deselected(index+1,2) = colors_hide_deselected(index+1,2) = b_selected;
+  colors_show_deselected(index+1,3) = colors_hide_deselected(index+1,3) = 1.0;
 
   // color for de-selected points when they are displayed
-  selection_colors0(0,0) = r_deselected;
-  selection_colors0(0,1) = g_deselected;
-  selection_colors0(0,2) = b_deselected;
-  selection_colors0(0,3) = 1.0;
+  colors_show_deselected(0,0) = r_deselected;
+  colors_show_deselected(0,1) = g_deselected;
+  colors_show_deselected(0,2) = b_deselected;
+  colors_show_deselected(0,3) = 1.0;
 
   // color for de-selected points when they are not displayed
-  selection_colors1(0,0) = 0.0;
-  selection_colors1(0,1) = 0.0;
-  selection_colors1(0,2) = 0.0;
-  selection_colors1(0,3) = 0.0;
+  colors_hide_deselected(0,0) = 0.0;
+  colors_hide_deselected(0,1) = 0.0;
+  colors_hide_deselected(0,2) = 0.0;
+  colors_hide_deselected(0,3) = 0.0;
 
 }
 
 //*****************************************************************
-// plot_window::color_array_from_selection() -- create the array of colors that
-// we will pass to openGL to color vertices in *every* plot
+// plot_window::color_array_from_selection() -- fill the array of colors that
+// we will pass to openGL to color each vertex in *every* plot
 //
-// XXX this was rewritten to free up texture coordinates so they could be used later to
+// XXX this was rewritten to not use textures so textures could be used instead, later, to
 // render the points using point sprites, so we can have huge smooth points, symbols, etc.
 // note: this would probably be much faster (and much clearer) if we used openGL's color index mode.
-// however, I don't think blending works in color index mode.  Oh well.
+// however, however, color index mode disables all sorts of other opengl features that we depend on.
 // note: the reason for the ugly casts and memcpy() is that blitz does not have enough powers
 // of indirection to compile the epression I wanted to use to fake my own color indices.  The expression
 // I want would be, basically:
-//  colors(NPTS,RGBA) = selection_colors0(selected(NPTS),RGBA);
+//  colors(NPTS,RGBA) = colors_show_deselected(selected(NPTS),RGBA);
 // note: Another way to implement this would be to run through the selected() array, which an integer specifying
 // the number of the plot_window that (most recently) selected each point (+1, since 0 means "not selected
 // in any window") and pack all the *indices* of points with selected==0 into one array, selected==1 into another
@@ -930,18 +934,18 @@ void plot_window::update_textures ()
 // 
 void plot_window::color_array_from_selection()
 {
-  update_textures();  // update "color table" if the user requested a color change
+  update_textures();  // update "color tables" if the user requested a color change
 
   GLfloat *src = 0;
   if( show_deselected_button->value() && cp->show_deselected_points->value()) {  // XXX need to decide - global or local?
-      src = (GLfloat *)(selection_colors0.data());
+      src = (GLfloat *)(colors_show_deselected.data());
   } else {
-      src = (GLfloat *)(selection_colors0.data());
+      src = (GLfloat *)(colors_hide_deselected.data());
   }
   GLfloat *dest = (GLfloat *)(colors.data());
   int *offset = (int *)(selected.data());
   for (int i=0; i<npoints; i++) {
-          memcpy ((void *)dest, (void *)(src+(*offset*sizeof(int))), 4*sizeof(GLfloat));
+          memcpy ((void *)dest, (void *)(src+(*offset*4)), 4*sizeof(GLfloat));
           dest += 4;
           offset +=1;
   }
@@ -994,8 +998,7 @@ void plot_window::draw_data_points()
 
   // XXX need to resolve local/global controls issue
   //  - partially done.  can now get rid of show_deselected_button.
-  if( show_deselected_button->value() && 
-      cp->show_deselected_points->value()) {
+  if( show_deselected_button->value() && cp->show_deselected_points->value()) {
 	  // glBindTexture( GL_TEXTURE_1D, texnames[ 0]);
   }
   else {
@@ -1004,7 +1007,7 @@ void plot_window::draw_data_points()
     // Cull any deselected points (alpha==0.0), whatever the 
     // blendfunc:
     glEnable( GL_ALPHA_TEST);
-    glAlphaFunc( GL_GEQUAL, 0.5);  
+    glAlphaFunc( GL_GREATER, 0.0);  
     alpha_test_enabled = 1;
   }
 
@@ -1616,10 +1619,25 @@ void plot_window::delete_selection( Fl_Widget *o)
 // only by class plot_window.
 void plot_window::invert_selection ()
 {
-  selected( blitz::Range(0,npoints-1)) = 1.0 - selected( blitz::Range(0,npoints-1));
+  if (!selection_is_inverted) {
+      // save "true" selection
+      saved_selection = selected;
+      // create something like an inverse in its place
+      selected = where(selected==0, 1, 0);
+      selection_is_inverted = true;
+      cout << "selection inverted" << endl;
+  } else {
+      // restore what we saved last time
+      selected = saved_selection;
+      selection_is_inverted = false;
+      cout << "selection restored" << endl;
+  }
+
   nselected = npoints-nselected;
+
+  // recolor all points using the new selection and redraw
   pws[ 0]->color_array_from_selection();
-  redraw_all_plots( 0);
+  redraw_all_plots( cpw->index);
 }
 
 //*****************************************************************
@@ -1634,8 +1652,9 @@ void plot_window::toggle_display_deselected( Fl_Widget *o)
   if( o == NULL)
     show_deselected_button->value( 1 - show_deselected_button->value());
 
-  // Creon notes that something wrong here....
-  redraw_all_plots (0);
+  // recolor all points using the correct "color table" and redraw
+  pws[0]->color_array_from_selection();
+  redraw_all_plots (cpw->index);
 }
 
 //*****************************************************************
@@ -1652,7 +1671,9 @@ void plot_window::initialize_selection()
   newly_selected = 0;
   selected = 0;
   previously_selected = 0;
+  saved_selection = 0;
   nselected = 0;
+  selection_is_inverted = false;
 }
 
 //*****************************************************************

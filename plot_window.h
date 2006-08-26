@@ -224,8 +224,8 @@ class plot_window : public Fl_Gl_Window
 
     // Static variables used for textures
     // static GLfloat texture_images[ 2][ 4*(MAXPLOTS)];
-    static blitz::Array<GLfloat,2> selection_colors0; // when deselected points are visible
-    static blitz::Array<GLfloat,2> selection_colors1; // when deselected points are invisible
+    static blitz::Array<GLfloat,2> colors_show_deselected; // when deselected points are visible
+    static blitz::Array<GLfloat,2> colors_hide_deselected; // when deselected points are invisible
     static GLfloat pointscolor[ 4];
 //    static GLfloat texenvcolor[ 4];
 //    static GLuint texnames[ 2];

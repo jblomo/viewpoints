@@ -80,10 +80,10 @@ EXTERN blitz::Array<int,1> identity;   // holds a(i)=i.
 // selected -- true if point is selected in any window
 // previously_selected -- true iff selected before mouse went down
 // nselected -- number of points currently selected
-EXTERN blitz::Array<int,1> newly_selected;	
-EXTERN blitz::Array<int,1> selected;	
-EXTERN blitz::Array<int,1> previously_selected;	
+// saved_selection -- saves the old selection when "inverting", so we can go back.
+EXTERN blitz::Array<int,1> newly_selected, selected, previously_selected, saved_selection;
 EXTERN int nselected;	
+EXTERN bool selection_is_inverted;
 
 // Texture co-ordinates?
 // EXTERN blitz::Array<GLfloat,1> texture_coords;
