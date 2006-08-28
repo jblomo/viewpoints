@@ -115,6 +115,7 @@ class control_panel_window : public Fl_Group
   
     // Pointers to buttons
     Fl_Button *reset_view_button;
+    Fl_Button *smooth_points_button;
     Fl_Button *spin, *dont_clear, *show_points, 
               *show_deselected_points, 
               *show_axes, *show_grid, *show_labels, 

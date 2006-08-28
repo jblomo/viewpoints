@@ -165,17 +165,23 @@ void control_panel_window::make_widgets( control_panel_window *cpw)
   Fl_Button *b;
 
   // Pointsize slider
-  pointsize_slider = 
-    new Fl_Hor_Value_Slider_Input( xpos, ypos, cpw->w()-60, 20, "size");
+  pointsize_slider = new Fl_Hor_Value_Slider_Input( xpos, ypos, cpw->w()-125, 20, "size");
   pointsize_slider->align(FL_ALIGN_LEFT);
   pointsize_slider->value(pointsize);
-  pointsize_slider->step(0.25);
-  pointsize_slider->bounds(0.1,20.0);
+  pointsize_slider->step(0.5);
+  pointsize_slider->bounds(0.5,30.0);
   pointsize_slider->callback((Fl_Callback*)replot, this);
 
+  // smooth (antialiased) points button
+  smooth_points_button = b = new Fl_Button(xpos+pointsize_slider->w()+5, ypos, 20, 20, "smooth");
+  b->type(FL_TOGGLE_BUTTON); 
+  b->selection_color(FL_BLUE);
+  b->align(FL_ALIGN_RIGHT);
+  b->value(0);
+  b->callback((Fl_Callback*)replot, this);
+
   // Backgrund color slider
-  Bkg = 
-    new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, cpw->w()-60, 20, "Bkg");
+  Bkg = new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, cpw->w()-60, 20, "Bkg");
   Bkg->align(FL_ALIGN_LEFT);
   Bkg->step(0.0001);
   Bkg->bounds(0.0,1.0);
@@ -183,8 +189,7 @@ void control_panel_window::make_widgets( control_panel_window *cpw)
   Bkg->value(0.0);
 
   // Luminosity slider
-  Lum = 
-    new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, cpw->w()-60, 20, "Lum");
+  Lum = new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, cpw->w()-60, 20, "Lum");
   Lum->align(FL_ALIGN_LEFT);
   Lum->callback((Fl_Callback*)replot, this);
   Lum->step(0.0001);
@@ -192,8 +197,7 @@ void control_panel_window::make_widgets( control_panel_window *cpw)
   Lum->value(1.0);
 
   // Alpha plane slider
-  Alph = 
-    new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, cpw->w()-60, 20, "Alph");
+  Alph = new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, cpw->w()-60, 20, "Alph");
   Alph->align(FL_ALIGN_LEFT);
   Alph->callback((Fl_Callback*)replot, this);
   Alph->step(0.0001);
@@ -201,8 +205,7 @@ void control_panel_window::make_widgets( control_panel_window *cpw)
   Alph->value(0.5);
 
   // Rotation (and spin) slider
-  rot_slider = 
-    new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, cpw->w()-60, 20, "rot");
+  rot_slider = new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, cpw->w()-60, 20, "rot");
   rot_slider->align(FL_ALIGN_LEFT);
   rot_slider->callback((Fl_Callback*)replot, this);
   rot_slider->value(0.0);
@@ -210,8 +213,7 @@ void control_panel_window::make_widgets( control_panel_window *cpw)
   rot_slider->bounds(-180.0, 180.0);
 
   // Number of histogram bins slider
-  nbins_slider = 
-    new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, cpw->w()-60, 20, "nbins");
+  nbins_slider = new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, cpw->w()-60, 20, "nbins");
   nbins_slider->align(FL_ALIGN_LEFT);
   nbins_slider->callback((Fl_Callback*)redraw_one_plot, this);
   nbins_slider->value(plot_window::nbins_default);
@@ -307,8 +309,7 @@ void control_panel_window::make_widgets( control_panel_window *cpw)
   z_normalization_style->textsize(12);
   z_normalization_style->menu(normalization_style_menu_items);
   z_normalization_style->value(NORMALIZATION_TRIM_1E3); 
-  z_normalization_style->callback(
-    (Fl_Callback*)static_extract_and_redraw, this);
+  z_normalization_style->callback( (Fl_Callback*)static_extract_and_redraw, this);
  
   // XXX Add some additional y-offset
   ypos+=5;
@@ -318,8 +319,7 @@ void control_panel_window::make_widgets( control_panel_window *cpw)
   int ypos2 = ypos;
 
   // Button (1,1) Reset view in this plot
-  reset_view_button = b = 
-    new Fl_Button(xpos2, ypos+=25, 20, 20, "reset view ");
+  reset_view_button = b = new Fl_Button(xpos2, ypos+=25, 20, 20, "reset view ");
   b->align(FL_ALIGN_RIGHT); b->selection_color(FL_BLUE);
   b->callback((Fl_Callback*) reset_view, this);
 
@@ -328,9 +328,8 @@ void control_panel_window::make_widgets( control_panel_window *cpw)
   b->align(FL_ALIGN_RIGHT); b->selection_color(FL_BLUE);
   b->type(FL_TOGGLE_BUTTON);
 
-  // Button (3,1): Don't clear button
-  dont_clear = 
-    new Fl_Button(xpos2, ypos+=25, 20, 20, "don't clear");
+  // Button (3,1): Don't clear button - psychedelic fun!
+  dont_clear = new Fl_Button(xpos2, ypos+=25, 20, 20, "don't clear");
   dont_clear->align(FL_ALIGN_RIGHT);
   dont_clear->type(FL_TOGGLE_BUTTON);
   dont_clear->selection_color(FL_BLUE);
@@ -338,28 +337,26 @@ void control_panel_window::make_widgets( control_panel_window *cpw)
     (Fl_Callback*)static_maybe_redraw, this);
 
   // Define Fl_Group to hold plot transform styles
-  transform_style = 
-    new Fl_Group (xpos2-1, ypos+25-1, 20+2, 4*25+2);
+  // XXX - this group should probably be a menu, or at least have a box around it
+  // to show that they are radio buttons.
+  transform_style = new Fl_Group (xpos2-1, ypos+25-1, 20+2, 4*25+2);
 
   // Button (4,1): No transform
-  no_transform = b = 
-    new Fl_Button(xpos2, ypos+=25, 20, 20, "identity");
+  no_transform = b = new Fl_Button(xpos2, ypos+=25, 20, 20, "identity");
   b->callback((Fl_Callback*)static_extract_and_redraw, this);
   b->align(FL_ALIGN_RIGHT); 
   b->type(FL_RADIO_BUTTON); 
   b->selection_color(FL_BLUE);
 
   // Button (5,1): Sum vs difference transform
-  sum_vs_difference = b = 
-    new Fl_Button(xpos2, ypos+=25, 20, 20, "sum vs. diff.");
+  sum_vs_difference = b = new Fl_Button(xpos2, ypos+=25, 20, 20, "sum vs. diff.");
   b->callback((Fl_Callback*)static_extract_and_redraw, this);
   b->align(FL_ALIGN_RIGHT); 
   b->type(FL_RADIO_BUTTON); 
   b->selection_color(FL_BLUE);
   
   // Button (6,1): Polar co-ords transform
-  polar = b = 
-    new Fl_Button(xpos2, ypos+=25, 20, 20, "polar");
+  polar = b = new Fl_Button(xpos2, ypos+=25, 20, 20, "polar");
   b->callback((Fl_Callback*)static_extract_and_redraw, this);
   b->align(FL_ALIGN_RIGHT); 
   b->type(FL_RADIO_BUTTON); 
@@ -372,8 +369,7 @@ void control_panel_window::make_widgets( control_panel_window *cpw)
   xpos=xpos2+100;
 
   // Button (1,2): Show points
-  show_points = b = 
-    new Fl_Button(xpos, ypos+=25, 20, 20, "points");
+  show_points = b = new Fl_Button(xpos, ypos+=25, 20, 20, "points");
   b->callback((Fl_Callback*)static_maybe_redraw, this);
   b->align(FL_ALIGN_RIGHT); 
   b->type(FL_TOGGLE_BUTTON); 
@@ -416,18 +412,16 @@ void control_panel_window::make_widgets( control_panel_window *cpw)
   b->selection_color(FL_BLUE);  
   b->value(1);
 
-  // Button (5,2): Show grid?
-  show_grid = b = 
-    new Fl_Button(xpos, ypos+=25, 20, 20, "grid");
+  // Button (5,2): Show grid (currently broken)
+  show_grid = b = new Fl_Button(xpos, ypos+=25, 20, 20, "grid");
   b->callback((Fl_Callback*)static_maybe_redraw, this);
   b->align(FL_ALIGN_RIGHT); 
   b->type(FL_TOGGLE_BUTTON); 
   b->selection_color(FL_BLUE);
   b->value(0);
 
-  // Button (6,2): Show histograms for this axis
-  show_histogram = b = 
-    new Fl_Button(xpos, ypos+=25, 20, 20, "histograms");
+  // Button (6,2): Show histograms for this plot
+  show_histogram = b = new Fl_Button(xpos, ypos+=25, 20, 20, "histograms");
   b->callback((Fl_Callback*)redraw_one_plot, this);
   b->align(FL_ALIGN_RIGHT); 
   b->type(FL_TOGGLE_BUTTON); 
@@ -438,8 +432,7 @@ void control_panel_window::make_widgets( control_panel_window *cpw)
   xpos=xpos2+200;
 
   // Button (1,3): Choose selection color
-  choose_selection_color_button = b = 
-    new Fl_Button(xpos, ypos+=25, 20, 20, "selection color");
+  choose_selection_color_button = b = new Fl_Button(xpos, ypos+=25, 20, 20, "selection color");
   b->align(FL_ALIGN_RIGHT); 
   b->selection_color(FL_BLUE); 
   b->callback((Fl_Callback*)choose_color_selected, this);

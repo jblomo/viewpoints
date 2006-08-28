@@ -44,10 +44,6 @@ int plot_window::count = 0;
 // Initial fraction of the window to be used for showing (normalized) data
 float const plot_window::initial_pscale = 0.8; 
 
-// RGB and alpha source and destination blending factors
-int plot_window::sfactor = GL_CONSTANT_COLOR;
-int plot_window::dfactor = GL_DST_ALPHA;
-
 // color for points (modified per point by texture rgba)
 GLfloat plot_window::pointscolor[4] = { 1, 1, 1, 1};
 
@@ -969,26 +965,26 @@ void plot_window::draw_data_points()
   glEnable( GL_DEPTH_TEST);
   glDepthFunc (GL_GEQUAL);
 
-  //  glEnable(GL_TEXTURE_1D);
-  //  glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-  // for testing
-  // glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE); 
-  // glColor4fv(pointscolor);
-  // GL_MODULATE ignores this
-  // glTexEnvfv( GL_TEXTURE_ENV, GL_TEXTURE_ENV_COLOR, texenvcolor); 
-  
-  glPointSize( cp->pointsize_slider->value());
-
   float const_color[4];
 
   const_color[0] = const_color[1] = const_color[2] = cp->Lum->value(); 
   const_color[3] = cp->Alph->value();
   glBlendColor( const_color[0], const_color[1], const_color[2], const_color[3]);
 
-  glBlendFunc( sfactor, dfactor);
+  glPointSize( cp->pointsize_slider->value());
 
-  // GLfloat *texturep = (GLfloat *) texture_coords.data();
-  // glTexCoordPointer (1, GL_FLOAT, 0, texturep);
+  if (cp->smooth_points_button->value()) { 
+    glEnable(GL_POINT_SMOOTH);
+    glHint(GL_POINT_SMOOTH_HINT,GL_NICEST);
+    glBlendFunc(GL_SRC_ALPHA, GL_DST_ALPHA); // anti-aliased points blendfunc for log. saturation overplotting
+    // which is the same as
+    // glBlendFuncSeparate(GL_SRC_ALPHA, GL_DST_ALPHA, GL_SRC_ALPHA, GL_DST_ALPHA);
+    //  or play with things like:
+    // glBlendFuncSeparate(GL_CONSTANT_COLOR, GL_DST_ALPHA, GL_SRC_ALPHA, GL_DST_ALPHA);
+    glBlendFuncSeparate(GL_CONSTANT_COLOR, GL_DST_ALPHA, GL_CONSTANT_ALPHA, GL_DST_ALPHA);
+  } else {
+    glBlendFunc(GL_CONSTANT_COLOR, GL_DST_ALPHA); // aliased points blendfunc for log. saturation overplotting
+  }
 
   // Tell the GPU where to find the correct colors for each vertex.
   GLfloat *colorp = (GLfloat *) colors.data();
@@ -998,12 +994,7 @@ void plot_window::draw_data_points()
 
   // XXX need to resolve local/global controls issue
   //  - partially done.  can now get rid of show_deselected_button.
-  if( show_deselected_button->value() && cp->show_deselected_points->value()) {
-	  // glBindTexture( GL_TEXTURE_1D, texnames[ 0]);
-  }
-  else {
-    // glBindTexture( GL_TEXTURE_1D, texnames[ 1]);
-    
+  if( !(show_deselected_button->value() && cp->show_deselected_points->value())) {
     // Cull any deselected points (alpha==0.0), whatever the 
     // blendfunc:
     glEnable( GL_ALPHA_TEST);
@@ -1038,6 +1029,11 @@ void plot_window::draw_data_points()
 	  glDisable(GL_ALPHA_TEST);
 	  alpha_test_enabled = 0;
   }
+  
+  if (cp->smooth_points_button->value()) {
+    glDisable(GL_POINT_SMOOTH);
+  }
+
   //  glDisable( GL_TEXTURE_1D);
   glDisable( GL_DEPTH_TEST);
 }
@@ -1637,7 +1633,7 @@ void plot_window::invert_selection ()
 
   // recolor all points using the new selection and redraw
   pws[ 0]->color_array_from_selection();
-  redraw_all_plots( cpw->index);
+  redraw_all_plots(0);
 }
 
 //*****************************************************************
@@ -1654,7 +1650,7 @@ void plot_window::toggle_display_deselected( Fl_Widget *o)
 
   // recolor all points using the correct "color table" and redraw
   pws[0]->color_array_from_selection();
-  redraw_all_plots (cpw->index);
+  redraw_all_plots (0);
 }
 
 //*****************************************************************
