@@ -122,6 +122,10 @@ int data_file_manager::load_data_file( string inFileSpecIn)
   // Resize global arrays
   resize_global_arrays ();
 
+  // initialize index array XXX this will have to change
+  // everyone starts of as "non-selected"
+  for( int i=0; i<npoints; i++) indices_selected( i)=i;
+
   // Load the identity array
   cout << "Making identity array, a(i)=i" << endl;
   for( int i=0; i<npoints; i++) identity( i)=i;
@@ -753,7 +757,8 @@ void data_file_manager::resize_global_arrays()
   selected.resize( npoints);
   previously_selected.resize( npoints);
   saved_selection.resize(npoints);
-
+  indices_selected.resize(npoints);
+  
   selected = 0;
 }
 

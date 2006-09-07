@@ -122,8 +122,7 @@ class plot_window : public Fl_Gl_Window
     int handle( int event);
     void handle_selection();
 
-    void screen_to_world(
-    float xs, float ys, float &x, float &y);
+    void screen_to_world(float xs, float ys, float &x, float &y);
     void print_selection_stats();
 
     // Event parameters
@@ -161,14 +160,9 @@ class plot_window : public Fl_Gl_Window
     static const int nbins_max = 1024;
 
     // Routines to compute histograms and normalize data
-    void compute_rank( 
-      blitz::Array<float,1> a, 
-      blitz::Array<int,1> a_rank, 
-      int var_index);
+    void compute_rank(blitz::Array<float,1> a, blitz::Array<int,1> a_rank, int var_index);
     void compute_histograms();
-    int normalize( 
-      blitz::Array<float,1> a, blitz::Array<int,1> a_rank, 
-      int style, int axis_index);
+    int normalize(blitz::Array<float,1> a, blitz::Array<int,1> a_rank, int style, int axis_index);
 
     // Define strings to hold axis labels
     std::string xlabel, ylabel, zlabel;
@@ -222,13 +216,9 @@ class plot_window : public Fl_Gl_Window
     static int sfactor;
     static int dfactor;
 
-    // Static variables used for textures
-    // static GLfloat texture_images[ 2][ 4*(MAXPLOTS)];
     static blitz::Array<GLfloat,2> colors_show_deselected; // when deselected points are visible
     static blitz::Array<GLfloat,2> colors_hide_deselected; // when deselected points are invisible
     static GLfloat pointscolor[ 4];
-//    static GLfloat texenvcolor[ 4];
-//    static GLuint texnames[ 2];
     static int textures_initialized;
 };
 

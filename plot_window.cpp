@@ -976,7 +976,7 @@ void plot_window::draw_data_points()
   if (cp->smooth_points_button->value()) { 
     glEnable(GL_POINT_SMOOTH);
     glHint(GL_POINT_SMOOTH_HINT,GL_NICEST);
-    glBlendFunc(GL_SRC_ALPHA, GL_DST_ALPHA); // anti-aliased points blendfunc for log. saturation overplotting
+    // glBlendFunc(GL_SRC_ALPHA, GL_DST_ALPHA); // anti-aliased points blendfunc for log. saturation overplotting
     // which is the same as
     // glBlendFuncSeparate(GL_SRC_ALPHA, GL_DST_ALPHA, GL_SRC_ALPHA, GL_DST_ALPHA);
     //  or play with things like:
@@ -1023,7 +1023,11 @@ void plot_window::draw_data_points()
   #endif // FAST_APPLE_VERTEX_EXTENSIONS
 
   // tell the GPU to draw the vertices.
-  glDrawArrays( GL_POINTS, 0, npoints);
+  // glDrawArrays( GL_POINTS, 0, npoints);
+
+
+  GLvoid *indices = (GLvoid *)(indices_selected.data());
+  glDrawElements( GL_POINTS, npoints, GL_UNSIGNED_INT, indices);
 
   if( alpha_test_enabled ) {
 	  glDisable(GL_ALPHA_TEST);
