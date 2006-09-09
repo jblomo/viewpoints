@@ -14,8 +14,8 @@ endif
 
 # flags for C++ compiler:
 # PROFILE		= -pg
-DEBUG		= -O0 -ggdb -g3 -Wall -Wunused -DBZ_DEBUG
-#DEBUG		= -g -ggdb -g3 -Wall -Wunused -fexceptions
+#DEBUG		= -O0 -ggdb -g3 -Wall -Wunused -DBZ_DEBUG -fexceptions
+DEBUG		= -g -ggdb -g3 -Wall -Wunused -fexceptions
 
 
 ifeq ($(platform),Darwin)

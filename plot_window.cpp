@@ -273,8 +273,7 @@ int plot_window::handle( int event)
           selection_changed = 1;
           redraw_all_plots (index);
 
-        }
-        else {
+        } else {
           // previously_selected( blitz::Range( 0, npoints-1)) = 0;
         }
       }
@@ -532,7 +531,7 @@ void plot_window::draw()
     glEnable(GL_BLEND);
     glEnableClientState(GL_VERTEX_ARRAY);
     // glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-    glEnableClientState(GL_COLOR_ARRAY);
+    // glEnableClientState(GL_COLOR_ARRAY);
 
     // this next idiom is necessary, per window, to map 
     // texture coordinate values to [0..1] for texturing.
@@ -543,6 +542,7 @@ void plot_window::draw()
 
     #ifdef FAST_APPLE_VERTEX_EXTENSIONS
       glEnableClientState(GL_VERTEX_ARRAY_RANGE_APPLE);
+      glEnableClientState(GL_ELEMENT_ARRAY_APPLE);
     #endif // FAST_APPLE_VERTEX_EXTENSIONS
 
   }
@@ -767,7 +767,7 @@ void plot_window::draw_axes ()
 
 //*****************************************************************
 // plot_window::draw_center_glyph() -- Draw a glyph in the center
-// of a selected region?)
+// of the winow, as an aid for positioning in preparation to zooming.
 void plot_window::draw_center_glyph ()
 {
   if( !show_center_glyph) return;
@@ -864,7 +864,7 @@ void plot_window::handle_selection ()
   newly_selected( NPTS) = where( 
     ( vertices( NPTS, 0)>fmaxf( xdown, xtracked) || vertices( NPTS, 0)<fminf( xdown, xtracked) ||
       vertices( NPTS, 1)>fmaxf( ydown, ytracked) || vertices( NPTS, 1)<fminf( ydown, ytracked)),
-	0, index+1);
+    0, index+1);
 
   // Add newly-selected points to existing or previous selection
   if( add_to_selection_button->value()) {
@@ -909,30 +909,18 @@ void plot_window::update_textures ()
 }
 
 //*****************************************************************
-// plot_window::color_array_from_selection() -- fill the array of colors that
-// we will pass to openGL to color each vertex in *every* plot
+// plot_window::color_array_from_selection() 
 //
-// XXX this was rewritten to not use textures so textures could be used instead, later, to
-// render the points using point sprites, so we can have huge smooth points, symbols, etc.
-// note: this would probably be much faster (and much clearer) if we used openGL's color index mode.
-// however, however, color index mode disables all sorts of other opengl features that we depend on.
-// note: the reason for the ugly casts and memcpy() is that blitz does not have enough powers
-// of indirection to compile the epression I wanted to use to fake my own color indices.  The expression
-// I want would be, basically:
-//  colors(NPTS,RGBA) = colors_show_deselected(selected(NPTS),RGBA);
-// note: Another way to implement this would be to run through the selected() array, which an integer specifying
-// the number of the plot_window that (most recently) selected each point (+1, since 0 means "not selected
-// in any window") and pack all the *indices* of points with selected==0 into one array, selected==1 into another
-// array, etc.  Then these indices could be used with glDrawElements(), glDrawRangeElements(), and friends to render
-// each selected set (and the non-selected set) separately, with one call to glColor() (& glPointsize(), glBlendfunc(),
-// glPointSprite(), .....) for each set, dispensing with the color array entirely.  This would allow us to, e.g., force
-// selected points to overplot non-selected points, etc.
+// XXX re-written again, to fill index arrays, and their associated counts.
+// then each array of indices will be rendered later preceded by its own single call to glColor().
 // 
+// XXX note this could be redone so that is all lives in handle_selection, conceptually.  The
+// updating can be done in one pass, I think.
+//
 void plot_window::color_array_from_selection()
 {
-  update_textures();  // update "color tables" if the user requested a color change
-
-  GLfloat *src = 0;
+  update_textures();  // update "color tables" if the user requested a color change XXX should go away
+#if 0
   if( show_deselected_button->value() && cp->show_deselected_points->value()) {  // XXX need to decide - global or local?
       src = (GLfloat *)(colors_show_deselected.data());
   } else {
@@ -945,6 +933,15 @@ void plot_window::color_array_from_selection()
           dest += 4;
           offset +=1;
   }
+#endif 0
+  number_selected = 0;
+  int set, count=0;
+  for (int i=0; i<npoints; i++) {
+    set = selected(i);
+    count = number_selected(set)++;
+    indices_selected(set,count) = i;
+  }
+  // assert(sum(number_selected(blitz::Range(0,nplots))) == npoints);
 }
 
 //*****************************************************************
@@ -961,9 +958,6 @@ void plot_window::draw_data_points()
 {
   // cout << "pw[" << index << "]: draw_data_points() " << endl;
   if ( !cp->show_points->value())return;
-
-  glEnable( GL_DEPTH_TEST);
-  glDepthFunc (GL_GEQUAL);
 
   float const_color[4];
 
@@ -987,8 +981,8 @@ void plot_window::draw_data_points()
   }
 
   // Tell the GPU where to find the correct colors for each vertex.
-  GLfloat *colorp = (GLfloat *) colors.data();
-  glColorPointer (4, GL_FLOAT, 0, colorp);
+  // GLfloat *colorp = (GLfloat *) colors.data();
+  // glColorPointer (4, GL_FLOAT, 0, colorp);
 
   int alpha_test_enabled = 0;
 
@@ -1002,33 +996,55 @@ void plot_window::draw_data_points()
     alpha_test_enabled = 1;
   }
 
-  // Tell the GPU where to find the vertices;
-  GLfloat *vertexp = (GLfloat *)vertices.data();
+  // Are we plotting in two dimensions or three?
+  if( cp->varindex3->value() != nvars) {
+    // 3D plotting XXX depth buffering should be set based on a separate control in the gui
+    glEnable( GL_DEPTH_TEST);
+    glDepthFunc (GL_GEQUAL);
+  }
 
-  // Are we plotting in two dimensions or three?  axis3 == 
-  // "-nothing-" means 2D plotting
-  if( cp->varindex3->value() == nvars) 
-    glVertexPointer (2, GL_FLOAT, 3*sizeof(GL_FLOAT), vertexp); 
-  else
-    glVertexPointer (3, GL_FLOAT, 0, vertexp); 
+  // Tell the GPU where to find the vertices;
+  glVertexPointer (3, GL_FLOAT, 3*sizeof(GL_FLOAT), (GLfloat *)vertices.data()); 
 
   #ifdef FAST_APPLE_VERTEX_EXTENSIONS
-    // for static data
+
+    // hint for static vertex array data
     glVertexArrayParameteriAPPLE( GL_VERTEX_ARRAY_STORAGE_HINT_APPLE, GL_STORAGE_CACHED_APPLE);  
 
-    // for dynamic data
+    // alternate hint for dynamic vertex array data
     //  glVertexArrayParameteriAPPLE( GL_VERTEX_ARRAY_STORAGE_HINT_APPLE, GL_STORAGE_SHARED_APPLE); 
 
-    glVertexArrayRangeAPPLE(3*npoints*sizeof(GLfloat),(GLvoid *)vertexp);
+    // set current vertex index pointer array.  XXX this only needs to be done when npoints or nplots changes.
+    glElementPointerAPPLE( GL_UNSIGNED_INT, (unsigned int *)indices_selected.data());
+
+    // set current vertex coordinate array.  This *does* have to be done each time here.
+    glVertexArrayRangeAPPLE(3*npoints*sizeof(GLfloat),(GLfloat *)vertices.data());
   #endif // FAST_APPLE_VERTEX_EXTENSIONS
 
-  // tell the GPU to draw the vertices.
-  // glDrawArrays( GL_POINTS, 0, npoints);
 
-
-  GLvoid *indices = (GLvoid *)(indices_selected.data());
-  glDrawElements( GL_POINTS, npoints, GL_UNSIGNED_INT, indices);
-
+  // Each plot window brushes using its own selecion color, and there is a single non-selected color.
+  // so there are nplots+1 "sets" of vertices (vertex indices, actually), and each set has a count
+  // of between 0 and npoints.  Each set is rendered using a different color.
+  // The total of all the counts must equal npoints;
+  for (int set=0; set<nplots+1; set++) {
+    unsigned int count = number_selected(set);
+    if (count > 0) {
+      // set the color for this set of points
+      if( !(show_deselected_button->value() && cp->show_deselected_points->value()))
+        glColor4f(colors_hide_deselected(set,0),colors_hide_deselected(set,1),colors_hide_deselected(set,2),colors_hide_deselected(set,3));
+      else
+        glColor4f(colors_show_deselected(set,0),colors_show_deselected(set,1),colors_show_deselected(set,2),colors_show_deselected(set,3));
+      // then render the points
+      #ifdef FAST_APPLE_VERTEX_EXTENSIONS
+      glDrawRangeElementArrayAPPLE( GL_POINTS, 0, npoints, set*npoints, count);
+      #else // FAST_APPLE_VERTEX_EXTENSIONS
+      blitz::Array<unsigned int, 1> tmpArray = indices_selected(set,blitz::Range(0,npoints-1)); // create alias to slice.
+      unsigned int *indices = (unsigned int *)(tmpArray.data());
+      // glDrawRangeElements( GL_POINTS, 0, npoints, count, GL_UNSIGNED_INT, indices);
+      glDrawElements( GL_POINTS, count, GL_UNSIGNED_INT, indices);
+      #endif // FAST_APPLE_VERTEX_EXTENSIONS
+    }
+  }
   if( alpha_test_enabled ) {
 	  glDisable(GL_ALPHA_TEST);
 	  alpha_test_enabled = 0;
@@ -1461,7 +1477,7 @@ int plot_window::extract_data_points ()
     vertices( NPTS, 2) = points( axis2, NPTS);
   else
     vertices( NPTS, 2) = 0;
-  blitz::Array<float,1> zpoints = vertices(NPTS,2);
+  blitz::Array<float,1> zpoints = vertices( NPTS, 2);
 
   // Apply the normalize() method to normalize and scale the data 
   // and report results
@@ -1665,9 +1681,15 @@ void plot_window::toggle_display_deselected( Fl_Widget *o)
 void plot_window::initialize_selection()
 {
   // Loop: Loop through all the plots
+  // XXX should probably only do this if there is a valid gl context for all plots....
   for( int i=0; i<nplots; i++) {
     pws[i]->reset_selection_box();
   }
+  number_selected = 0; 
+  number_selected(0) = npoints; // all points initially in nonselected set
+  indices_selected = 0;
+  for (int i=0; i<npoints; i++)
+    indices_selected(0,i) = i;
   newly_selected = 0;
   selected = 0;
   previously_selected = 0;

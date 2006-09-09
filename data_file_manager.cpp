@@ -124,7 +124,8 @@ int data_file_manager::load_data_file( string inFileSpecIn)
 
   // initialize index array XXX this will have to change
   // everyone starts of as "non-selected"
-  for( int i=0; i<npoints; i++) indices_selected( i)=i;
+  // for( int i=0; i<npoints; i++) indices_selected(0,i)=i;
+  selected = 0;
 
   // Load the identity array
   cout << "Making identity array, a(i)=i" << endl;
@@ -751,15 +752,25 @@ void data_file_manager::resize_global_arrays()
   tmp_points.resize(npoints); // for sort
 
   //texture_coords.resize( npoints);
-  colors.resize(npoints, 4);
+  // colors.resize(npoints, 4);
   identity.resize( npoints);
+
   newly_selected.resize( npoints);
   selected.resize( npoints);
   previously_selected.resize( npoints);
   saved_selection.resize(npoints);
-  indices_selected.resize(npoints);
-  
+  indices_selected.resize(nplots+1,npoints);
+  number_selected.resize(nplots+1);  // XXX adding and deleting plots will cause a crash ?
+
+  number_selected = 0; 
+  number_selected(0) = npoints; // all points initially in nonselected set
+  indices_selected = 0;
+  newly_selected = 0;
   selected = 0;
+  previously_selected = 0;
+  saved_selection = 0;
+  nselected = 0;
+  selection_is_inverted = false;
 }
 
 //*****************************************************************

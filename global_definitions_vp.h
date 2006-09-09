@@ -73,8 +73,6 @@ EXTERN blitz::Array<float,2> points;  // main data array
 EXTERN blitz::Array<int,2> ranked_points;   // data, ranked, as needed.
 EXTERN blitz::Array<int,1> ranked;	  // flag: 1->column is ranked, 0->not
 EXTERN blitz::Array<int,1> identity;   // holds a(i)=i.
-EXTERN blitz::Array<unsigned int,1> indices_selected; // indices of points for rendering, packed acording to selection state;
-EXTERN std::vector<int> counts_selected; // counts of points in each selected set. Counts_selected[0] = count of nonselected points
 
 // Define blitz::Arrays to flag selected points.  As with the raw
 // data, these are left global for simplicity and clarity.
@@ -85,11 +83,18 @@ EXTERN std::vector<int> counts_selected; // counts of points in each selected se
 // saved_selection -- saves the old selection when "inverting", so we can go back.
 EXTERN blitz::Array<int,1> newly_selected, selected, previously_selected, saved_selection;
 EXTERN int nselected;	
+EXTERN blitz::Array<unsigned int,2> indices_selected; // indices of points for rendering, packed acording to selection state;
+// count of points in each plot's selected set, index zero reserved for nonselected.
+// number_selected[1] = count of points selected in 1st plot (i.e, pws[0])....
+// number_selected[n+1] = count of points selected in nth plot (pws[n])
+// number_selected[0] = count of nonselected points
+// sum(number_selected)==npoints;
+EXTERN blitz::Array<unsigned int,1> number_selected; 
 EXTERN bool selection_is_inverted;
 
 // Texture co-ordinates?
 // EXTERN blitz::Array<GLfloat,1> texture_coords;
-EXTERN blitz::Array<GLfloat,2> colors;
+// EXTERN blitz::Array<GLfloat,2> colors;
 
 // Temporary array (reference) for use with qsort
 EXTERN blitz::Array<float,1> tmp_points;

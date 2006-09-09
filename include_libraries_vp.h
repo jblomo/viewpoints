@@ -170,8 +170,7 @@
 using namespace std;
 
 // Define to allow fast Apple vertex extensions.  Used by both 
-// class control_panel_window and plot_window.  Move to
-// include_libraries_vp?
+// class control_panel_window and plot_window.
 #ifdef __APPLE__
 #define FAST_APPLE_VERTEX_EXTENSIONS
 #endif // __APPLE__
