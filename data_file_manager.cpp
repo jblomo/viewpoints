@@ -760,7 +760,7 @@ void data_file_manager::resize_global_arrays()
   previously_selected.resize( npoints);
   saved_selection.resize(npoints);
   indices_selected.resize(nplots+1,npoints);
-  number_selected.resize(nplots+1);  // XXX adding and deleting plots will cause a crash ?
+  number_selected.resize(nplots+1);
 
   number_selected = 0; 
   number_selected(0) = npoints; // all points initially in nonselected set
@@ -772,6 +772,7 @@ void data_file_manager::resize_global_arrays()
   nselected = 0;
   selection_is_inverted = false;
 }
+
 
 //*****************************************************************
 // data_file_manager::create_default_data( nvars_in) -- Load data

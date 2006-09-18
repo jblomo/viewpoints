@@ -114,7 +114,7 @@ void plot_window::initialize()
 void plot_window::choose_color_selected()
 {
   (void) fl_color_chooser( "selected", r_selected, g_selected, b_selected);
-  update_textures();
+  update_selection_color_table();
 }
 
 //*****************************************************************
@@ -885,8 +885,10 @@ void plot_window::handle_selection ()
 }
 
 //*****************************************************************
-// plot_window::update_textures() -- Update textures.
-void plot_window::update_textures ()
+// plot_window::update_selection_color_table() -- Update the "color tables"
+// used for coloring selected and de-selected points.  These are *not* OpenGL
+// color tables. 
+void plot_window::update_selection_color_table ()
 {
   // New color for selected points (selection in this window only)
   colors_show_deselected(index+1,0) = colors_hide_deselected(index+1,0) = r_selected;
@@ -919,7 +921,7 @@ void plot_window::update_textures ()
 //
 void plot_window::color_array_from_selection()
 {
-  update_textures();  // update "color tables" if the user requested a color change XXX should go away
+  update_selection_color_table();  // update "color tables" if the user requested a color change
 #if 0
   if( show_deselected_button->value() && cp->show_deselected_points->value()) {  // XXX need to decide - global or local?
       src = (GLfloat *)(colors_show_deselected.data());

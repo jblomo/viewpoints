@@ -87,7 +87,7 @@
 //   reset_selection_box() -- Reset selection box
 //   color_array_from_new_selection() -- ???
 //   color_array_from_selection() -- Color selected points?
-//   update_textures() -- change the rgbaused for selected and/or deselected points
+//   update_selection_color_table() -- change the rgba tables used for selected and/or deselected points
 //   choose_color_selected() -- Choose color of selcted data
 //   reset_view() -- Reset plot
 //   redraw_one_plot() -- Redraw one plot
@@ -184,7 +184,7 @@ class plot_window : public Fl_Gl_Window
     void reset_selection_box();
     void color_array_from_new_selection();
     void color_array_from_selection();
-    void update_textures ();
+    void update_selection_color_table ();
     void choose_color_selected ();
     double r_selected, g_selected, b_selected;
     static double r_deselected, g_deselected, b_deselected;

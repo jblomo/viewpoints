@@ -136,6 +136,7 @@ void make_global_widgets();
 void choose_color_deselected( Fl_Widget *o);
 void change_all_axes( Fl_Widget *o);
 void clearAlphaPlanes();
+void resize_selection_index_arrays(int nplots_old, int nplots);
 void npoints_changed( Fl_Widget *o);
 void write_data( Fl_Widget *o);
 void reset_all_plots( void);
@@ -344,6 +345,9 @@ void manage_plot_window_array( Fl_Widget *o)
   else nplots_old = nplots;
   nplots = nrows * ncols;
 
+	if ( (nplots > nplots_old) && (nplots_old > 0))
+		resize_selection_index_arrays (nplots_old, nplots);
+
   // Save old variable indices and normalization styles, if any.  
   // QUESTION: are these array declarations safe on all compilers
   // when nplots_old = 0?
@@ -516,7 +520,7 @@ void manage_plot_window_array( Fl_Widget *o)
   
   // Get rid of any superfluous plot windows
   if( nplots < nplots_old)
-    for( int i=nplots; i<nplots_old; i++) pws[i]->hide();
+		for( int i=nplots; i<nplots_old; i++) pws[i]->hide(); // MCL XXX why not destruct? (heh heh)
 
   // Create a master control panel to encompass all the tabs
   create_broadcast_group ();
@@ -748,12 +752,12 @@ void make_global_widgets()
 // plot_window?
 void choose_color_deselected( Fl_Widget *o)
 {
-  (void) fl_color_chooser(
-    "deselected", 
-    plot_window::r_deselected, 
-    plot_window::g_deselected,
-    plot_window::b_deselected);
-  pws[ 0]->update_textures (); // XXX 
+  (void) fl_color_chooser( "deselected", 
+													 plot_window::r_deselected, 
+													 plot_window::g_deselected,
+													 plot_window::b_deselected);
+  pws[ 0]->update_selection_color_table ();
+	plot_window::redraw_all_plots (0);
 }
 
 //*****************************************************************
@@ -786,6 +790,19 @@ void npoints_changed( Fl_Widget *o)
 {
   npoints = int( ( (Fl_Slider *)o)->value());
   plot_window::redraw_all_plots( 0);
+}
+
+// resize the arrays that depend on the value of nplots.
+// should be called whenever nplots is changed
+void resize_selection_index_arrays(int nplots_old, int nplots)
+{
+  blitz::Range NPTS( 0, npoints-1);
+  indices_selected.resizeAndPreserve(nplots+1,npoints);
+  number_selected.resizeAndPreserve(nplots+1);
+	for (int i=nplots_old+1; i<nplots+1; i++) {
+		indices_selected(i,NPTS) = 0;
+		number_selected(i) = 0;
+	}
 }
 
 //*****************************************************************

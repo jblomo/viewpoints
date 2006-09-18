@@ -13,7 +13,8 @@
 4. selecting "sum vs. diff" from master tab causes core dump.
    *fixed* (disabled, actually)
 
-5. plots are not redrawn after "read data"
+5. plots are not redrawn after "read data" (seem to work on linux...)
+   *fixed ???*
 
 6. when a window is spinning, selecting points in any previous (smaller index) window does not work.
 
@@ -42,6 +43,7 @@
 14. Windows version seems to install executable deep in a folder (from whence it must be removed).  This may have been my installation error.   *fixed*
 
 15. selected portion of histogram gets redrawn incorrectly when "invert selection" is called.
+	*fixed* (?)
 
 16. x-axis normalizaitions log10, threesigma, and squash(?) seem to be broken.  y axis is fine.
     *fixed*
@@ -49,6 +51,7 @@
 17. --borderless option (at least on OSX) causes plot windows to ignore keyboard events (but not mouse events!)
 
 18. plots are not redrawn after global "unselected color" is changed.
+	*fixed*
 
 19. selection color is not settable globally (this is deliberate, but should be fixed)
 
@@ -57,8 +60,10 @@
     2) No tabs allowed - only spaces.
 
 21. "invert selection" tice does not correctly restore slections in multiple colors
+	*fixed*
 
-22. aborts should produce backtraces?
+22. aborts on all OSs should produce backtraces? (they do on OSX)
 
+23. adding a row or column screws up selection colors, and they cant be fixed even by clearing the selection. *fixed*
 
-
+24. powerpc mac release still out of date.
