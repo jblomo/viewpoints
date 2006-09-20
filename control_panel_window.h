@@ -106,7 +106,7 @@ class control_panel_window : public Fl_Group
     { cpw->pw->redraw_one_plot();}
 
     // Pointers to sliders & menus
-    Fl_Hor_Value_Slider_Input *pointsize_slider;
+    Fl_Hor_Value_Slider_Input *pointsize_slider, *selected_pointsize_slider;
     Fl_Hor_Value_Slider_Input *Bkg, *Lum, *Alph;
     Fl_Hor_Value_Slider_Input *rot_slider;
     Fl_Hor_Value_Slider_Input *nbins_slider;

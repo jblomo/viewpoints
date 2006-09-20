@@ -967,8 +967,6 @@ void plot_window::draw_data_points()
   const_color[3] = cp->Alph->value();
   glBlendColor( const_color[0], const_color[1], const_color[2], const_color[3]);
 
-  glPointSize( cp->pointsize_slider->value());
-
   if (cp->smooth_points_button->value()) { 
     glEnable(GL_POINT_SMOOTH);
     glHint(GL_POINT_SMOOTH_HINT,GL_NICEST);
@@ -1031,6 +1029,11 @@ void plot_window::draw_data_points()
   for (int set=0; set<nplots+1; set++) {
     unsigned int count = number_selected(set);
     if (count > 0) {
+      // set the size for this set of points
+      if (set==0)
+            glPointSize( cp->pointsize_slider->value());
+      else
+            glPointSize( cp->selected_pointsize_slider->value());
       // set the color for this set of points
       if( !(show_deselected_button->value() && cp->show_deselected_points->value()))
         glColor4f(colors_hide_deselected(set,0),colors_hide_deselected(set,1),colors_hide_deselected(set,2),colors_hide_deselected(set,3));

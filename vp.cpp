@@ -100,13 +100,19 @@ static int help_topline;
 // Define variables to hold main control panel window, tabs 
 // widget, and virtual control panel positions.  Consolidated
 // here for reasons of clarity.
-// const int main_w = 350, main_h = 700;
-static const int main_w = 350, main_h = 725;
+
+// increase this when the main panel needs to get wider:
+static const int main_w = 350; 			
+// increase this when the main panel needs to get taller, including when cp_widget_h increases:
+static const int main_h = 750;			
+// increase this when per-window controls need more height to fit in their subpanel
+static const int cp_widget_h = 505; 
+// the rest of these should not have to change
+static const int tabs_widget_h = cp_widget_h+20;
+static const int global_widgets_y = tabs_widget_h+20;
 static const int tabs_widget_x = 3, tabs_widget_y = 30;
-static const int tabs_widget_h = 500;
-static const int cp_widget_x = 3, cp_widget_y = 50;
-static const int cp_widget_h = 480;
-static const int global_widgets_x = 10, global_widgets_y = 520;
+static const int cp_widget_x = 3, cp_widget_y = tabs_widget_y+20;
+static const int global_widgets_x = 10;
 
 // Define class to hold data file manager
 data_file_manager dfm;

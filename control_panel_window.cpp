@@ -180,6 +180,14 @@ void control_panel_window::make_widgets( control_panel_window *cpw)
   b->value(0);
   b->callback((Fl_Callback*)replot, this);
 
+  // Pointsize slider for selected points
+  selected_pointsize_slider = new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, cpw->w()-125, 20, "size2");
+  selected_pointsize_slider->align(FL_ALIGN_LEFT);
+  selected_pointsize_slider->value(pointsize);
+  selected_pointsize_slider->step(0.5);
+  selected_pointsize_slider->bounds(0.5,30.0);
+  selected_pointsize_slider->callback((Fl_Callback*)replot, this);
+
   // Backgrund color slider
   Bkg = new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, cpw->w()-60, 20, "Bkg");
   Bkg->align(FL_ALIGN_LEFT);
