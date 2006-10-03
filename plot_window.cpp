@@ -985,6 +985,7 @@ void plot_window::draw_data_points()
   // glColorPointer (4, GL_FLOAT, 0, colorp);
 
   int alpha_test_enabled = 0;
+  int z_bufferring_enabled = 0;
 
   // XXX need to resolve local/global controls issue
   //  - partially done.  can now get rid of show_deselected_button.
@@ -998,9 +999,11 @@ void plot_window::draw_data_points()
 
   // Are we plotting in two dimensions or three?
   if( cp->varindex3->value() != nvars) {
-    // 3D plotting XXX depth buffering should be set based on a separate control in the gui
-    glEnable( GL_DEPTH_TEST);
-    glDepthFunc (GL_GEQUAL);
+    if (cp->z_bufferring_button->value()) {
+      glEnable( GL_DEPTH_TEST);
+      glDepthFunc (GL_GEQUAL);
+      z_bufferring_enabled = 1;
+    }
   }
 
   // Tell the GPU where to find the vertices;
@@ -1030,10 +1033,13 @@ void plot_window::draw_data_points()
     unsigned int count = number_selected(set);
     if (count > 0) {
       // set the size for this set of points
-      if (set==0)
-            glPointSize( cp->pointsize_slider->value());
-      else
-            glPointSize( cp->selected_pointsize_slider->value());
+      if (set==0) {
+        glPointSize( cp->pointsize_slider->value());
+      }
+      else {
+        // selected points are from 0.1 to 10.0 times the size of unselected points.  But not bigger than 30 pixels
+        glPointSize( min(cp->pointsize_slider->value()*pow(10.0,cp->selected_pointsize_slider->value()), 30.0));
+      }
       // set the color for this set of points
       if( !(show_deselected_button->value() && cp->show_deselected_points->value()))
         glColor4f(colors_hide_deselected(set,0),colors_hide_deselected(set,1),colors_hide_deselected(set,2),colors_hide_deselected(set,3));
@@ -1059,8 +1065,9 @@ void plot_window::draw_data_points()
     glDisable(GL_POINT_SMOOTH);
   }
 
-  //  glDisable( GL_TEXTURE_1D);
-  glDisable( GL_DEPTH_TEST);
+  if (z_bufferring_enabled) {
+    glDisable( GL_DEPTH_TEST);
+  }
 }
 
 #if 0
@@ -1094,8 +1101,7 @@ void plot_window::compute_histogram( int axis)
     (5.0*nbins/(float)nbins_default)*counts_selected(BINS,axis)/((float)(npoints));
 }
 
-// #endif 0
-#endif
+#endif // 0
 
 //*****************************************************************
 // plot_window::compute_histogram( axis) -- If requested, compute 

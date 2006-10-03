@@ -168,8 +168,8 @@ void control_panel_window::make_widgets( control_panel_window *cpw)
   pointsize_slider = new Fl_Hor_Value_Slider_Input( xpos, ypos, cpw->w()-125, 20, "size");
   pointsize_slider->align(FL_ALIGN_LEFT);
   pointsize_slider->value(pointsize);
-  pointsize_slider->step(0.5);
-  pointsize_slider->bounds(0.5,30.0);
+  pointsize_slider->step(0.25);
+  pointsize_slider->bounds(0.25,20.0);
   pointsize_slider->callback((Fl_Callback*)replot, this);
 
   // smooth (antialiased) points button
@@ -180,12 +180,12 @@ void control_panel_window::make_widgets( control_panel_window *cpw)
   b->value(0);
   b->callback((Fl_Callback*)replot, this);
 
-  // Pointsize slider for selected points
+  // scale factor for selected point size
   selected_pointsize_slider = new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, cpw->w()-125, 20, "size2");
   selected_pointsize_slider->align(FL_ALIGN_LEFT);
-  selected_pointsize_slider->value(pointsize);
-  selected_pointsize_slider->step(0.5);
-  selected_pointsize_slider->bounds(0.5,30.0);
+  selected_pointsize_slider->value(0.0);
+  // selected_pointsize_slider->step(0.1);
+  selected_pointsize_slider->bounds(-1.0,+1.0);
   selected_pointsize_slider->callback((Fl_Callback*)replot, this);
 
   // Backgrund color slider
@@ -444,4 +444,13 @@ void control_panel_window::make_widgets( control_panel_window *cpw)
   b->align(FL_ALIGN_RIGHT); 
   b->selection_color(FL_BLUE); 
   b->callback((Fl_Callback*)choose_color_selected, this);
+
+  // Button (2,3): z-buffering control
+  z_bufferring_button = b = new Fl_Button(xpos, ypos+=25, 20, 20, "z-bufferring");
+  b->callback((Fl_Callback*)redraw_one_plot, this);
+  b->align(FL_ALIGN_RIGHT); 
+  b->type(FL_TOGGLE_BUTTON); 
+  b->selection_color(FL_BLUE); 
+  b->value(1);
+
 }
