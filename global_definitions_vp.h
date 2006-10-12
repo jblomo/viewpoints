@@ -19,7 +19,7 @@
 //   3) Consider putting these variables into a NAMESPACE?
 //
 // Author: Creon Levit    unknown
-// Modified: P. R. Gazis  18-JUL-2006
+// Modified: P. R. Gazis  02-OCT-2006
 //*****************************************************************
 
 #ifndef VP_GLOBAL_DEFINITIONS_VP_H
@@ -77,24 +77,26 @@ EXTERN blitz::Array<int,1> identity;   // holds a(i)=i.
 // Define blitz::Arrays to flag selected points.  As with the raw
 // data, these are left global for simplicity and clarity.
 // newly_selected -- true iff point is in newly selected set
-// selected -- true if point is selected in any window
+// selected -- Index?  True if point is selected in any window
 // previously_selected -- true iff selected before mouse went down
 // nselected -- number of points currently selected
 // saved_selection -- saves the old selection when "inverting", so we can go back.
-EXTERN blitz::Array<int,1> newly_selected, selected, previously_selected, saved_selection;
+EXTERN blitz::Array<int,1> newly_selected;
+EXTERN blitz::Array<int,1> selected;
+EXTERN blitz::Array<int,1> previously_selected;
+EXTERN blitz::Array<int,1> saved_selection;
 EXTERN int nselected;	
-EXTERN blitz::Array<unsigned int,2> indices_selected; // indices of points for rendering, packed acording to selection state;
-// count of points in each plot's selected set, index zero reserved for nonselected.
+
+// Indices of points for rendering, packed acording to selection state;
+EXTERN blitz::Array<unsigned int,2> indices_selected; 
+
+// Count of points in each plot's selected set, index zero reserved for nonselected.
 // number_selected[1] = count of points selected in 1st plot (i.e, pws[0])....
 // number_selected[n+1] = count of points selected in nth plot (pws[n])
 // number_selected[0] = count of nonselected points
 // sum(number_selected)==npoints;
 EXTERN blitz::Array<unsigned int,1> number_selected; 
 EXTERN bool selection_is_inverted;
-
-// Texture co-ordinates?
-// EXTERN blitz::Array<GLfloat,1> texture_coords;
-// EXTERN blitz::Array<GLfloat,2> colors;
 
 // Temporary array (reference) for use with qsort
 EXTERN blitz::Array<float,1> tmp_points;

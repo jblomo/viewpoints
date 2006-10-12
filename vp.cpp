@@ -53,7 +53,7 @@
 //   redraw_if_changing( *dummy) -- Redraw changing plots
 //
 // Author: Creon Levit   2005-2006
-// Modified: P. R. Gazis  14-JUL-2006
+// Modified: P. R. Gazis  04-OCT-2006
 //*****************************************************************
 
 // Include the necessary include libraries
@@ -97,17 +97,22 @@ static int borderless=0;  // By default, use window manager borders
 // Needed to track position in help window
 static int help_topline;
 
-// Define variables to hold main control panel window, tabs 
-// widget, and virtual control panel positions.  Consolidated
-// here for reasons of clarity.
+// Define variables to hold main control panel window, tabs widget, 
+// and virtual control panel positions.  Consolidated here for reasons 
+// of clarity.
 
-// increase this when the main panel needs to get wider:
+// Increase this when the main panel needs to get wider:
 static const int main_w = 350; 			
-// increase this when the main panel needs to get taller, including when cp_widget_h increases:
+
+// Increase this when the main panel needs to get taller, including 
+// situations when cp_widget_h increases:
 static const int main_h = 750;			
-// increase this when per-window controls need more height to fit in their subpanel
+
+// Increase this when the controls for individual windows need more 
+// height to fit in their subpanel
 static const int cp_widget_h = 505; 
-// the rest of these should not have to change
+
+// The rest of these should not have to change
 static const int tabs_widget_h = cp_widget_h+20;
 static const int global_widgets_y = tabs_widget_h+20;
 static const int tabs_widget_x = 3, tabs_widget_y = 30;
@@ -130,8 +135,7 @@ Fl_Help_View *help_view_widget;
 void usage();
 void make_help_about_window( Fl_Widget *o);
 void create_main_control_panel( 
-  int main_x, int main_y, int main_w, int main_h,
-  char* cWindowLabel);
+  int main_x, int main_y, int main_w, int main_h, char* cWindowLabel);
 void create_broadcast_group();
 void manage_plot_window_array( Fl_Widget *o);
 void make_main_menu_bar();
@@ -142,7 +146,7 @@ void make_global_widgets();
 void choose_color_deselected( Fl_Widget *o);
 void change_all_axes( Fl_Widget *o);
 void clearAlphaPlanes();
-void resize_selection_index_arrays(int nplots_old, int nplots);
+void resize_selection_index_arrays( int nplots_old, int nplots);
 void npoints_changed( Fl_Widget *o);
 void write_data( Fl_Widget *o);
 void reset_all_plots( void);
@@ -150,25 +154,26 @@ void read_data( Fl_Widget* o, void* user_data);
 void redraw_if_changing( void *dummy);
 
 //*****************************************************************
-// usage() -- Print help information and exit
+// usage() -- Print help information to the console and exit.  
+// NOTE: Problems may arise when window is too narrow.
 void usage()
 {
   cerr << endl;
   cerr << "Usage: vp {optional arguments} {optional filename}" << endl;
   cerr << endl;
   cerr << "Optional arguments:" << endl;
-  cerr << "  -b, --borderless                don't show decorations on plot windows" << endl;
-  cerr << "  -c, --cols=NCOLS                startup showing this many columns of plot windows, default=2" << endl;
-  cerr << "  -f, --format={ascii,binary}     input file format, default=ascii" << endl;
-  cerr << "  -i, --input_file=FILENAME       read input data from FILENAME" << endl;
-  cerr << "  -m, --monitors=NSCREENS         try and force output to display across NSCREENS screens if available" << endl;
-  cerr << "  -n, --npoints=NPOINTS           read at most NPOINTS from input file, default is min(until_EOF, 2000000)" << endl;
+  cerr << "  -b, --borderless            don't show decorations on plot windows" << endl;
+  cerr << "  -c, --cols=NCOLS            startup showing this many columns of plot windows, default=2" << endl;
+  cerr << "  -f, --format={ascii,binary} input file format, default=ascii" << endl;
+  cerr << "  -i, --input_file=FILENAME   read input data from FILENAME" << endl;
+  cerr << "  -m, --monitors=NSCREENS     try and force output to display across NSCREENS screens if available" << endl;
+  cerr << "  -n, --npoints=NPOINTS       read at most NPOINTS from input file, default is min(until_EOF, 2000000)" << endl;
   cerr << "  -o, --ordering={rowmajor,columnmajor} ordering for binary data, default=columnmajor" << endl;
-  cerr << "  -r, --rows=NROWS                startup showing this many rows of plot windows, default=2" << endl;
-  cerr << "  -s, --skip_header_lines=NLINES  skip over NLINES lines at start of input file, default=0" << endl;
-  cerr << "  -v, --nvars=NVARS               input has NVARS values per point (only for row major binary data)" << endl;
-  cerr << "  -h, --help                      display this message and then exit" << endl;
-  cerr << "      --version                   output version information and then exit" << endl;
+  cerr << "  -r, --rows=NROWS            startup showing this many rows of plot windows, default=2" << endl;
+  cerr << "  -s, --skip_header_lines=NLINES skip over NLINES lines at start of input file, default=0" << endl;
+  cerr << "  -v, --nvars=NVARS           input has NVARS values per point (only for row major binary data)" << endl;
+  cerr << "  -h, --help                  display this message and then exit" << endl;
+  cerr << "      --version               output version information and then exit" << endl;
 
   exit( -1);
 }
@@ -187,7 +192,7 @@ void make_help_about_window( Fl_Widget *o)
   about_window->labelsize( 10);
   
   // Compose text. NOTE use of @@ in conjunction with label()
-  string sAbout = "viewpoints 1.0.3\n";
+  string sAbout = "viewpoints 1.1.0\n";
   sAbout += "(c) 2006 C. Levit and P. R. Gazis\n\n";
   sAbout += "contact information:\n";
   sAbout += "Creon Levit creon@@nas.nasa.gov\n";
@@ -227,8 +232,7 @@ void create_main_control_panel(
   // Create main control panel window
   Fl::scheme( "plastic");  // optional
   main_control_panel = 
-    new Fl_Window(
-      main_x, main_y, main_w, main_h, cWindowLabel);
+    new Fl_Window( main_x, main_y, main_w, main_h, cWindowLabel);
   main_control_panel->resizable( main_control_panel);
 
   // Make main menu bar
@@ -239,9 +243,8 @@ void create_main_control_panel(
 
   // Inside the main control panel, there is a tab widget, cpt, 
   // that contains the sub-panels (groups), one per plot.
-  // cpt = new Fl_Tabs( 3, 10, main_w-6, 500);
-  cpt = new Fl_Tabs( 
-    tabs_widget_x, tabs_widget_y, main_w-6, tabs_widget_h);
+  cpt = 
+    new Fl_Tabs( tabs_widget_x, tabs_widget_y, main_w-6, tabs_widget_h);
   cpt->selection_color( FL_BLUE);
   cpt->labelsize( 10);
 
@@ -254,8 +257,8 @@ void create_main_control_panel(
 // create_broadcast_group () -- Create a special panel (really a
 // group under a tab) with label "+" this group's widgets effect 
 // all the others (unless a plot's tab is "locked" - TBI).
-// MCL XXX should this be a method of control_panel_window?
-//  should it be a singleton?
+// MCL XXX should this be a method of control_panel_window or
+// should it be a singleton?
 void create_broadcast_group ()
 {
   Fl_Group::current(cpt);  
@@ -270,22 +273,22 @@ void create_broadcast_group ()
   // this group's index is highest (and it has no associated plot window)
   cp->index = nplots;
 
-  // this group's callbacks all broadcast any "event" to the other (unlocked) 
-  // tabs groups.  with a few exceptions... (for now)
+  // this group's callbacks all broadcast any "event" to the other 
+  // (unlocked) tabs groups.  with a few exceptions... (for now)
   for (int i=0; i<cp->children(); i++)
   {
     Fl_Widget *wp = cp->child(i);
-    wp->callback((Fl_Callback *)(control_panel_window::broadcast_change), cp);
+    wp->callback( (Fl_Callback *)(control_panel_window::broadcast_change), cp);
   }
 
-  // MCL XXX these widgets cause crashes or misbehaviors in the global panel, 
-  // so skip them for now.
+  // MCL XXX these widgets cause crashes or misbehaviors in the global 
+  // panel, so skip them for now.
   cp->choose_selection_color_button->deactivate();
   cp->sum_vs_difference->deactivate();
   cp->polar->deactivate();
   cp->no_transform->deactivate();
 
-  // initially, this group has no axes (XXX or anything else, for that matter)
+  // Initially, this group has no axes (XXX or anything else, for that matter)
   cp->varindex1->value(nvars);  // initially == "-nothing-"
   cp->varindex2->value(nvars);  // initially == "-nothing-"
   cp->varindex3->value(nvars);  // initially == "-nothing-"
@@ -351,8 +354,10 @@ void manage_plot_window_array( Fl_Widget *o)
   else nplots_old = nplots;
   nplots = nrows * ncols;
 
-	if ( (nplots > nplots_old) && (nplots_old > 0))
-		resize_selection_index_arrays (nplots_old, nplots);
+  // If the number of plots has changed, resize the selection
+  // arrays, 'indices_selected' and 'number_selected'.
+  if( ( nplots > nplots_old) && (nplots_old > 0))
+    resize_selection_index_arrays( nplots_old, nplots);
 
   // Save old variable indices and normalization styles, if any.  
   // QUESTION: are these array declarations safe on all compilers
@@ -508,6 +513,7 @@ void manage_plot_window_array( Fl_Widget *o)
     }
     else {
       pws[i]->initialize();
+      // pws[i]->color_array_from_selection();  // Not needed here
       pws[i]->extract_data_points();
     }
 
@@ -523,11 +529,17 @@ void manage_plot_window_array( Fl_Widget *o)
     // Turn on the 'show' capability of plot_window::reset_view();
     pws[i]->do_reset_view_with_show = 1;
   }
-  
-  // Get rid of any superfluous plot windows
-  if( nplots < nplots_old)
-		for( int i=nplots; i<nplots_old; i++) pws[i]->hide(); // MCL XXX why not destruct? (heh heh)
 
+  // If a new data set has been loaded, the plot windows will have been
+  // initialized, so it will be necessary to set the color arrays.
+  if( !uInitialize && ( nplots == nplots_old || nplots_old == 0))
+    pws[0]->color_array_from_selection();
+  
+  // Get rid of any superfluous plot windows.
+  // MCL XXX why not destruct? (heh heh)
+  if( nplots < nplots_old)
+    for( int i=nplots; i<nplots_old; i++) pws[i]->hide();
+  
   // Create a master control panel to encompass all the tabs
   create_broadcast_group ();
 }
@@ -754,24 +766,26 @@ void make_global_widgets()
 
 //*****************************************************************
 // choose_color_deselected( *o) -- Choose color of deselected 
-// points.  Could this become a static member function of class
-// plot_window?
+// points, update the selection color table and redraw all plots.
+// Could this become a static member function of class plot_window?
 void choose_color_deselected( Fl_Widget *o)
 {
-  (void) fl_color_chooser( "deselected", 
-													 plot_window::r_deselected, 
-													 plot_window::g_deselected,
-													 plot_window::b_deselected);
+  (void) fl_color_chooser( 
+    "deselected", plot_window::r_deselected, plot_window::g_deselected, plot_window::b_deselected);
+
+  // Update selection color table and redraw all plots
   pws[ 0]->update_selection_color_table ();
-	plot_window::redraw_all_plots (0);
+  plot_window::redraw_all_plots (0);
 }
 
 //*****************************************************************
 // change_all_axes( *o) -- Invoke the change_axes method of each
 // plot_window to change all unlocked axes.
 void change_all_axes( Fl_Widget *o) {
+
+  // Loop: Examine successive plots and change axes of those for
+  // which the x or y axis is unlocked.
   for( int i=0; i<nplots; i++) {
-    // only change axes for plots whose x or y axis is unlocked
     if( !(cps[i]->lock_axis1_button->value() && cps[i]->lock_axis2_button->value()))
       pws[i]->change_axes( 0);
   }
@@ -798,17 +812,20 @@ void npoints_changed( Fl_Widget *o)
   plot_window::redraw_all_plots( 0);
 }
 
-// resize the arrays that depend on the value of nplots.
-// should be called whenever nplots is changed
-void resize_selection_index_arrays(int nplots_old, int nplots)
+//*****************************************************************
+// resize_selection_index_arrays( nplots_old, nplots) -- Resize 
+// the arrays that depend on the value of nplots and initialize
+// any new values of the selection arrays.  This should be called 
+// whenever nplots is changed
+void resize_selection_index_arrays( int nplots_old, int nplots)
 {
   blitz::Range NPTS( 0, npoints-1);
   indices_selected.resizeAndPreserve(nplots+1,npoints);
   number_selected.resizeAndPreserve(nplots+1);
-	for (int i=nplots_old+1; i<nplots+1; i++) {
-		indices_selected(i,NPTS) = 0;
-		number_selected(i) = 0;
-	}
+  for( int i=nplots_old+1; i<nplots+1; i++) {
+    indices_selected(i,NPTS) = 0;
+    number_selected(i) = 0;
+  }
 }
 
 //*****************************************************************
@@ -937,8 +954,13 @@ void read_data( Fl_Widget* o, void* user_data)
   // Clear children of tab widget and reload plot window array
   manage_plot_window_array( o);
 
+  // KLUDGE: Make sure points are drawn in plot windows.  This
+  // is now handled near the end of manage_plot_window_array().
+  // pws[ 0]->color_array_from_selection();
+  // plot_window::redraw_all_plots( 0);  // Probably not needed
+
   // Deallocate file_chooser
-  delete file_chooser;  // WARNING! Destroys inFileSpec!
+  delete file_chooser;  // WARNING! This destroys inFileSpec!
 }
 
 //*****************************************************************
@@ -990,7 +1012,7 @@ void redraw_if_changing( void *dummy)
 //   main() -- main routine
 //
 // Author:   Creon Levit   unknown
-// Modified: P. R. Gazis   04-MAY-2006
+// Modified: P. R. Gazis   04-OCT-2006
 //*****************************************************************
 //*****************************************************************
 // Main -- Driver routine
@@ -1132,9 +1154,9 @@ int main( int argc, char **argv)
 
       // show version information (managed by svn), and exit
       case 'V':
-          cout << "$Id$" << endl;
-          exit (-1);
-          break;
+        cout << "$Id$" << endl;
+        exit (-1);
+        break;
 
       // help, or unknown option, or missing argument
       case 'h':
@@ -1160,12 +1182,11 @@ int main( int argc, char **argv)
   //   exit( 0);
   // }
 
-  // If no data file was specified, but there was at least one argument in
-  // the command line, assume the last argument is the filespec.
+  // If no data file was specified, but there was at least one argument 
+  // in the command line, assume the last argument is the filespec.
   if( inFileSpec.length() <= 0 && argc > 1) inFileSpec.append( argv[ argc-1]);
 
-  // Increment pointers to the optional arguments to get the
-  // last argument.
+  // Increment pointers to the optional arguments to get the last argument.
   argc -= optind;
   argv += optind;
 
@@ -1203,11 +1224,13 @@ int main( int argc, char **argv)
 
   // Set the main control panel size and position.
   // const int main_w = 350, main_h = 700;
-  const int main_x = number_of_screens*Fl::w() - (main_w + left_frame + right_frame + right_safe);
+  const int main_x = 
+    number_of_screens*Fl::w() - (main_w + left_frame + right_frame + right_safe);
   const int main_y = top_frame+top_safe;
 
   // Create the main control panel window
-  create_main_control_panel( main_x, main_y, main_w, main_h, "viewpoints -> creon.levit@nasa.gov");
+  create_main_control_panel( 
+    main_x, main_y, main_w, main_h, "viewpoints -> creon.levit@nasa.gov");
 
   // Step 4: Call manage_plot_window_array with a NULL argument to
   // initialize the plot window array.  KLUDGE ALERT: argc and argv are

@@ -19,7 +19,7 @@
 // Purpose: Source code for <data_file_manager.h>
 //
 // Author: Creon Levit   unknown
-// Modified: P. R. Gazis  18-JUN-2006
+// Modified: P. R. Gazis  02-OCT-2006
 //*****************************************************************
 
 // Include the necessary include libraries
@@ -77,10 +77,10 @@ void data_file_manager::initialize()
 // MCL XXX - refactor this with read_data()
 int data_file_manager::load_data_file( string inFileSpecIn) 
 {
-  // PRG XXX: Would it be possible to examine the file directly
-  // here to determine or verify its format?
+  // PRG XXX: Would it be possible or desirable to examine the 
+  // file directly here to determine or verify its format?
 
-  // load input filespec
+  // Load input filespec
   inFileSpec = inFileSpecIn;
          
   // Read data file and report results
@@ -122,8 +122,9 @@ int data_file_manager::load_data_file( string inFileSpecIn)
   // Resize global arrays
   resize_global_arrays ();
 
-  // initialize index array XXX this will have to change
-  // everyone starts of as "non-selected"
+  // Initialize selection array to zero
+  // NOTE: Since everyone starts of as "non-selected", it is no 
+  // longer correct to initialize the selection index array.
   // for( int i=0; i<npoints; i++) indices_selected(0,i)=i;
   selected = 0;
 
@@ -744,17 +745,19 @@ void data_file_manager::resize_global_arrays()
 {
   // points.resizeAndPreserve(nvars,npoints);  
 
+  // Resize and reinitialize list of ranked points to reflect the
+  // fact that no ranking has been done.
   ranked_points.resize( nvars, npoints);
-
   ranked.resize( nvars);
-  ranked = 0;  // initially, no ranking has been done.
+  ranked = 0;
+  
+  // Resize temporary array used for sort
+  tmp_points.resize(npoints);
 
-  tmp_points.resize(npoints); // for sort
-
-  //texture_coords.resize( npoints);
-  // colors.resize(npoints, 4);
+  // Resize array used for color map?
   identity.resize( npoints);
 
+  // Resize selection arrays
   newly_selected.resize( npoints);
   selected.resize( npoints);
   previously_selected.resize( npoints);
@@ -762,8 +765,8 @@ void data_file_manager::resize_global_arrays()
   indices_selected.resize(nplots+1,npoints);
   number_selected.resize(nplots+1);
 
+  // Initialize selection arrays
   number_selected = 0; 
-  number_selected(0) = npoints; // all points initially in nonselected set
   indices_selected = 0;
   newly_selected = 0;
   selected = 0;
@@ -771,6 +774,9 @@ void data_file_manager::resize_global_arrays()
   saved_selection = 0;
   nselected = 0;
   selection_is_inverted = false;
+
+  // Intially, all points are in the nonselected set
+  number_selected( 0) = npoints;
 }
 
 

@@ -22,7 +22,7 @@
 // Purpose: Source code for <control_panel_window.h>
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  09-MAY-2006
+// Modified: P. R. Gazis  02-OCT-2006
 //*****************************************************************
 
 // Include the necessary include libraries
@@ -82,44 +82,68 @@ control_panel_window::control_panel_window(
 // panels.
 void control_panel_window::broadcast_change (Fl_Widget *master_widget)
 {
+  // Define a pointer to the parent of the master widget and verify
+  // that it exists
   const Fl_Group *master_panel = master_widget->parent();
-  assert(master_panel);
+  assert( master_panel);
+
+  // Indentify the index of the maser widget and verify that it has
+  // a plausible value
   const int widget_index = master_panel->find(master_widget);
-  assert(widget_index >= 0 && widget_index < master_panel->children());
+  assert( widget_index >= 0 && widget_index < master_panel->children());
+
+  // Loop: Apply operation defined by the master widget to 
+  // succesive windows
   for (int i=0; i<nplots; i++)
   {
+    // Define a pointer to the relevant widget in this window and
+    // verify thay it exists
     Fl_Widget *slave_widget = cps[i]->child(widget_index);
-    assert(slave_widget);
+    assert( slave_widget);
     
     // cout << "master_widget: label = " << master_widget->label() << " type = " << typeid(*master_widget).name() << endl;
     // cout << "slave_widget:  label = " << slave_widget->label() <<  " type = " << typeid(*slave_widget).name() << endl;
+
+    // Verify that master that and slave widgets are of the same type
+    assert( typeid(master_widget) == typeid(slave_widget));
 
     // MCL XXX downcasting to dispatch on type is considered very bad form.  
     // If value() were a virtual function of Fl_Widget (like callback() and 
     // do_callback() are) it would be cleaner.  Or we could bite the bullet and 
     // use one of the fltk publish/subscribe extensions.  That could clean up 
     // all sort of things.....
-    assert (typeid(master_widget) == typeid(slave_widget));
+    
+    // Apply an Fl_Button widget
     {
       Fl_Button *gp, *lp;
-      if ((gp = dynamic_cast <Fl_Button*> (master_widget)) && (lp = dynamic_cast <Fl_Button*> (slave_widget)))
+      if( (gp = dynamic_cast <Fl_Button*> (master_widget)) && 
+          (lp = dynamic_cast <Fl_Button*> (slave_widget)))
         lp->value(gp->value());
     }
+
+    // Apply an Fl_Valuator widget
     {
       Fl_Valuator *gp, *lp;
-      if ((gp = dynamic_cast <Fl_Valuator*> (master_widget)) && (lp = dynamic_cast <Fl_Valuator*> (slave_widget)))
+      if( (gp = dynamic_cast <Fl_Valuator*> (master_widget)) && 
+          (lp = dynamic_cast <Fl_Valuator*> (slave_widget)))
         lp->value(gp->value());
     }
+
+    // Apply an Fl_Choice widget
     {
       Fl_Choice *gp, *lp;
-      if ((gp = dynamic_cast <Fl_Choice*> (master_widget)) && (lp = dynamic_cast <Fl_Choice*> (slave_widget)))
+      if( (gp = dynamic_cast <Fl_Choice*> (master_widget)) && 
+          (lp = dynamic_cast <Fl_Choice*> (slave_widget)))
         lp->value(gp->value());
     }
-    if (slave_widget->callback())
+
+    // If the slave widget returns a callback value, pass it to
+    // the relevant control panel window
+    if( slave_widget->callback())
     {
       // cout << ".. doing callback for widget " << widget_index 
       //      << " in panel " << i << endl;
-      slave_widget->do_callback(slave_widget, cps[i]);
+      slave_widget->do_callback( slave_widget, cps[i]);
     }
   }
 }
@@ -188,7 +212,7 @@ void control_panel_window::make_widgets( control_panel_window *cpw)
   selected_pointsize_slider->bounds(-1.0,+1.0);
   selected_pointsize_slider->callback((Fl_Callback*)replot, this);
 
-  // Backgrund color slider
+  // Background color slider
   Bkg = new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, cpw->w()-60, 20, "Bkg");
   Bkg->align(FL_ALIGN_LEFT);
   Bkg->step(0.0001);

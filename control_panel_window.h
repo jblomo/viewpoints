@@ -28,7 +28,7 @@
 //      normalization schemes used here and by class plot_windows.
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  09-MAY-2006
+// Modified: P. R. Gazis  02-OCT-2006
 //*****************************************************************
 
 // Protection to make sure this header is not included twice

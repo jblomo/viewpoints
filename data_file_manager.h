@@ -33,7 +33,7 @@
 //      Fl_File_Chooser here and in vp.cpp could be consolidated.
 //
 // Author: Creon Levit   unknown
-// Modified: P. R. Gazis  18-JUL-2006
+// Modified: P. R. Gazis  02-OCT-2006
 //*****************************************************************
 
 // Protection to make sure this header is not included twice

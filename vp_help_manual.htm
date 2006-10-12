@@ -169,13 +169,16 @@ Some of these controls are described below
  <td>size</td><td>point size, in pixels</td>
 </tr>
 <tr>
- <td>bkg</td><td>background color (try bkg=0.5, lum=0.2)</td>
+ <td>smooth</td><td>Use smoothed points</td>
 </tr>
 <tr>
- <td>lum</td><td>point brightness</td>
+ <td>Bkg</td><td>background color (try bkg=0.5, lum=0.2)</td>
 </tr>
 <tr>
- <td>alpha</td><td>point opacity</td>
+ <td>Lum</td><td>point brightness</td>
+</tr>
+<tr>
+ <td>Alph</td><td>point opacity</td>
 </tr>
 <tr>
  <td valign="TOP">rot</td>
@@ -188,6 +191,9 @@ Some of these controls are described below
 </tr>
 <tr>
  <td>axis 1-3</td><td>Attribute to be displayed in that axis</td>
+</tr>
+<tr>
+ <td>lock axes</td><td>Lock occurences of these axes</td>
 </tr>
 <tr>
  <td>normalize x,y,z</td><td>Normalization scheme for that axis</td>
@@ -228,7 +234,7 @@ Some of these controls are described below
  <td>scales</td><td>Show axes scales</td>
 </tr>
 <tr>
- <td>grid</td><td></td>
+ <td>grid</td><td>Show grid</td>
 </tr>
 <tr>
  <td>histogram</td><td>Show histograms along x and y axes</td>
@@ -237,7 +243,7 @@ Some of these controls are described below
  <td>selection color</td><td>Pick color of selections from this panel</td>
 </tr>
 <tr>
- <td>lock axes</td><td>Lock occurences of these axes</td>
+ <td>z-buffering</td><td>Use z-buffering</td>
 </tr>
 </table>
 </p>
@@ -264,29 +270,23 @@ Some of these controls are described below
  <td>kill selection</td><td>Delete all selected points</td>
 </tr>
 <tr>
- <td>reload plots</td><td>Restore plot windows to default layout</td>
-</tr>
-<tr>
- <td>write data</td><td>Write (remaining) data to a binary file</td>
-</tr>
-<tr>
- <td>unselcted color</td><td>Chose color of unselected points</td>
-</tr>
-<tr>
- <td>don't paint</td><td></td>
+ <td>unselected color</td><td>Chose color of unselected points</td>
 </tr>
 <tr>
  <td>change axes</td><td>Change all (unlocked) axes
 </tr>
 <tr>
- <td>lock axes</td><td>Lock axes</td>
+ <td>link axes</td><td>Link similar axes</td>
+</tr>
+<tr>
+ <td>reload plots</td><td>Restore plot windows to default layout</td>
 </tr>
 </table>
 </p>
 
 <h3>Normalization Schemes</h3>
 
-<p>Several different normalzation or scaling schemes are available.
+<p>Several different normalization or scaling schemes are available.
 These are chosen on a per-axis basis.
 <table>
 <tr>
@@ -303,14 +303,30 @@ These are chosen on a per-axis basis.
  <td>maxabs</td><td>show all data, center of window at zero</td>
 </tr>
 <tr>
+ <td>trim 10<sup>-2</sup></td>
+ <td>Window spans 1st to 99th percentile</td>
+</tr>
+<tr>
+ <td>trim 10<sup>-3</sup></td>
+ <td>Window spans 0.1th to 99.9th percentile</td>
+</tr>
+<tr>
  <td>threesigma</td><td>center of window at sample mean, window spans +/- three sigma.</td>
 </tr>
 <tr>
- <td>rank</td>
+ <td>log_10</td>
+ <td>Logarithmic axis</td>
+</tr>
+<tr>
+ <td>squash</td>
+ <td>Simple sigmoid</td>
+</tr>
+<tr>
+ <td>rank<br>&nbsp;</td>
  <td>plot rank of x (instead of x)<br>(i.e. nonuniform rescaling to force uniform marginal)</td>
 </tr>
 <tr>
- <td>gaussianize</td>
+ <td>gaussianize<br>&nbsp;</td>
  <td>plot inverse of Gaussian cummulative distribution function of x<br>(i.e. nonuniform rescaling to force Gaussian marginal)</td>
 </tr>
 </table>

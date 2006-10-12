@@ -1,8 +1,8 @@
 viewpoints -- Fast interactive plotting of extremely large
   multivariate data sets.
 
-Version: 1.0.3  (Build 70)
-Release date: 09-MAY-2006
+Version: 1.1.0  (Build 93)
+Release date: 12-OCT-2006
   
 
 Overview:
@@ -34,7 +34,7 @@ below.
 
 Usage:
 
-In its current form (Version 1.0.3, build 70) 'viewpoints' is run 
+In its current form (Version 1.0.3, build 69) 'viewpoints' is run 
 either by clicking on the 'vp' icon or from the command line in 
 the directory in which it has been installed or to which a path is 
 available.  When viewpoints is run from the icon, it will come up
@@ -162,9 +162,10 @@ Controls in the control panels:
   control                action
   --------------------   ----------
   size                   point size, in pixels
-  bkg                    background color (try bkg=0.5, lum=0.2)
-  lum                    point brightness
-  alpha                  point opacity
+  smooth                 Use smoothed points
+  Bkg                    background color (try bkg=0.5, lum=0.2)
+  Lum                    point brightness
+  Alph                   point opacity
   rot                    rotation angle in 3D about the y-axis --
                          NOTE: to take advantage of this feature 
                          one must first select something for the 
@@ -186,10 +187,11 @@ Controls in the control panels:
   axes                   Show axes
   labels                 Show axes labels
   scales                 Show axes scales
-  grid
+  grid                   Show grid
   histogram              Show histograms along x and y axes
   selection color        Pick color of selections from this panel
-
+  z-buffering            Use z-buffering
+  
  Main control panel
   control                 action
   --------------------   ----------
@@ -198,7 +200,6 @@ Controls in the control panels:
   invert selection       Invert selected and nonselected points
   clear selcetion        Clear selection
   kill selection         Delete all selected points
-  write data             Write (remaining) data to a binary file
   unselected color       Chose color of unselected points
   change axes            Change all (unlocked) axes
   link axes              Link similar axes
@@ -222,10 +223,10 @@ Normalization schemes (per axis)
   threesigma             center window at sample mean so that 
                          window spans +/- three sigma.
   log_10                 Logarithmic axis
+  squash                 Simple sigmoid
   rank                   plot rank (order) of x instead of x -- 
                          i.e. nonuniform rescaling to force a 
                          uniform marginal
-  squash                 Simple sigmoid
   gaussianize            plot inverse of the Gaussian cummulative 
                          distribution function of x -- i.e. 
                          nonuniform rescaling to force a uniform 
@@ -234,8 +235,8 @@ Normalization schemes (per axis)
 
 Notes and warnings:
 
-The current release of the 'viewpoints' package (version 1.0.3, 
-build 70) is still a development version.  While every effort has 
+The current release of the 'viewpoints' package (version 1.1.0, 
+build 93) is still a development version.  While every effort has 
 been make to ensure that it will work -- or fail gracefully if it 
 doesn't -- it still has many rough edges.  Some of these are
 described below.  These issues will all be addressed in future
@@ -247,9 +248,6 @@ copies of the saved header.
 
 2) There is, as yet, no 'print' command.  Needless to say, this 
 capability will be added as soon as possible!
-
-3) If you delete every plot window, the 'reload plots' command 
-will no longer work correctly.  Be warned!
 
 
 Please send any questions, bug reports, feature requests, and/or 

@@ -27,7 +27,7 @@
 //   1) Review and add comments!
 //
 // Author: Creon Levitt   unknown
-// Modified: P. R. Gazis  14-JUL-2006
+// Modified: P. R. Gazis  02-OCT-2006
 //*****************************************************************
 
 // Protection to make sure this header is not included twice
@@ -86,8 +86,9 @@
 //   transform_2d() -- Transofmr to 2D coords
 //   reset_selection_box() -- Reset selection box
 //   color_array_from_new_selection() -- ???
-//   color_array_from_selection() -- Color selected points?
-//   update_selection_color_table() -- change the rgba tables used for selected and/or deselected points
+//   color_array_from_selection() -- Fill index arrays
+//   update_selection_color_table() -- change the rgba tables used for 
+//     selected and/or deselected points
 //   choose_color_selected() -- Choose color of selcted data
 //   reset_view() -- Reset plot
 //   redraw_one_plot() -- Redraw one plot
@@ -101,7 +102,8 @@
 //   toggle_display_delected( *o) -- Toggle colors
 //   initialize_selection() -- Clear selection
 //   clear_selection( *o) -- Clear selection and redraw plots
-//   initialize_textures() -- initial setup of rgba used for selected and deselected points
+//   initialize_textures() -- initial setup of rgba used for selected 
+//     and deselected points
 //
 // Author: Creon Levitt    unknown
 // Modified: P. R. Gazis  08-MAY-2006
