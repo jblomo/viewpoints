@@ -664,16 +664,21 @@ void step_help_view_widget( Fl_Widget *o, void* user_data)
 // make_global_widgets() -- Make controls for main control panel
 void make_global_widgets()
 {
-  // Draw 'npoints' horizontal slider at top of subpanel
-  // int xpos=10, ypos=500;
   int xpos = global_widgets_x, ypos = global_widgets_y;
+#if 0
+  // Draw 'npoints' horizontal slider at top of subpanel
+  // XXX MCL the new point coloring scheme broke the npoints slider :-(
+  // the good news is that I'm not sure anyone uses it.
+  // the better news is that I think it is only broken for FAST_APPLE_VERTEX_EXTENSIONS
+  // but it needs to be fixed anyway, so I've disabled it.
   npoints_slider = 
     new Fl_Hor_Value_Slider_Input( xpos+30, ypos+=25, 300-30, 20, "npts");
   npoints_slider->align( FL_ALIGN_LEFT);
   npoints_slider->callback( npoints_changed);
   npoints_slider->value( npoints);
-  npoints_slider->step( 1);
+  npoints_slider->step( 1.0);
   npoints_slider->bounds( 1, npoints);
+#endif
 
   // Define a pointer and initialize positions for buttons
   Fl_Button *b;
@@ -965,7 +970,7 @@ void read_data( Fl_Widget* o, void* user_data)
 
 //*****************************************************************
 // redraw_if_changing( dummy) -- Callback function for use by FLTK
-// Fl::add_idle.  When an idle callback occurs, redraw any panel
+// Fl::add_idle.  When an idle callback occurs, redraw any plot
 // that is spinning or otherwise needs to be redrawn.
 void redraw_if_changing( void *dummy)
 {

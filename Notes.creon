@@ -546,4 +546,33 @@ Idea:
 
   toggle through multiple selections, like invert selection, but next plot's selected set (only) is shown.  deselected is also shown (?).  Plots with no selected points get skipped.
 
-  point smoothing
+  We can visualize multiple time series (and spectra, etc) in multiple variables as follows:  assume we have series 
+
+     S_1 = {{x1_1, y1_1, z1_1}, {x2_1, y2_1, z2_1}, .... {xn_1, yn_1, zn_1}}
+     S_2 = {{x1_2, y1_2, z1_2}, {x2_2, y2_2, z2_2}, .... {xn_2, yn_2, zn_2}}
+     ...
+     S_N = {{x1_N, y1_N, z1_N}, {x2_N, y2_N, z2_N}, .... {xn_N, yn_N, zn_N}}
+
+  create a file with the following format:
+
+    series timestep  x             y         z
+    1      1         x1_1          y1_1      z1_1
+    1      2         x2_1          y2_1      z2_1
+    ...
+    1      n         xn_1          yn_1      zn_1
+    2      1         x1_2          y1_2      z1_2
+    2      2         x2_2          y2_2      z2_2
+    ...
+    2      n         xn_1          yn_1      zn_1
+    ....
+    N      1         x1_N          y1_N      z1_N
+    N      2         x2_N          y2_N      z2_N
+    ...
+    N      n         xn_N          yn_N      zn_N
+
+  note that the timeseries (spectra) do *not* all have to have the same number of timestpes (wavelengths), nor do they have to be equaly spaced.
+
+  Q1) is there a way to turn a more traditional spectral data fle inot this kind of file by "folding" on input in some clever, autofocus sort of way?
+  Q2) How do we (efficiently) optionally connect draw the individual timeseries as polylines?
+
+Idea - add "data table" viewer for selected points. (Joe Mazzarella at ipac)

@@ -24,7 +24,7 @@
    *fixed* (see note to Paul at end of main() )
    
 9. help files not in mac & linux releases (?)
-   *fix
+   *fixed*
 
 10. mac releases way out of date.
    *fixed*
@@ -40,10 +40,11 @@
 14. web site title/tag should be "viewpoints - interactive linked scatterplots and more".  Not "hyperwall for the masses".  see http://trotsky.arc.nasa.gov/wacowiki/index.php/Viewpoints
    *fixed*
 
-14. Windows version seems to install executable deep in a folder (from whence it must be removed).  This may have been my installation error.   *fixed*
+14. Windows version seems to install executable deep in a folder (from whence it must be removed).  This may have been my installation error.
+   *fixed*
 
 15. selected portion of histogram gets redrawn incorrectly when "invert selection" is called.
-	*fixed* (?)
+    *fixed* (?)
 
 16. x-axis normalizaitions log10, threesigma, and squash(?) seem to be broken.  y axis is fine.
     *fixed*
@@ -67,3 +68,25 @@
 23. adding a row or column screws up selection colors, and they cant be fixed even by clearing the selection. *fixed*
 
 24. powerpc mac release still out of date.
+
+25. iconifying or minimizing the control panel should iconify/minimize all plot windows.
+
+26. a plot's selected set should be cleared when focus returns to a plot widow and a new selection is started (if "add to selection") not enabled.
+
+27. each plot should start off with a separate selection color (at least for the first few plots where we make selections).
+
+28. when ranking, (optionally) jitter equally ranked values.
+
+29. 3D rotation screws up selection boxes.  need 3d screen-to-world
+
+30. UI is haphazard.
+
+31. key equivalents do not work when focus is in control panel.
+
+32. histograms and axis and labels should move with 3d rotations.
+
+33. rocking mode.
+
+24. npoints slider should be integer
+
+25. random index (optional) for npoints?

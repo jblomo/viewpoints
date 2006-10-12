@@ -261,8 +261,7 @@ int plot_window::handle( int event)
         previous_window = current_window;
         current_window = index;
         if( current_window != previous_window)
-          previously_selected( blitz::Range(0,npoints-1)) = 
-            selected( blitz::Range( 0, npoints-1));
+          previously_selected( blitz::Range(0,npoints-1)) = selected( blitz::Range( 0, npoints-1));
         
         // no shift key = new selection
         if(! (Fl::event_key(FL_Shift_L) || Fl::event_key(FL_Shift_R))) {
@@ -730,41 +729,43 @@ void plot_window::draw_axes()
 
       glEnd();
 
-      //  offset for scale values. b<1 -> inwards, 
-      // b>1 -> outwards, b==1 -> on axis.
-      b = 2;  
+      //  offset for drawing tick marks' numeric values are conrolled by "b" as follows:
+      //    b<1  -> draw it inside of the axis, 
+      //    b>1  -> draw it outside of the axis,
+      //    b==1 -> draw it on the axis.
+      b = 2;
 
-      // lower X-axis scale value
+      // draw lower X-axis tic mark's numeric value
       snprintf( buf, sizeof(buf), "%+.3g", wmin[0]); 
       gl_draw( 
         (const char *)buf, 
         -1.0-gl_width((const char *)buf)/(w()), -(1+b*a));
 
-      // upper X-axis scale value
+      // draw upper X-axis tic mark's numeric value
       snprintf(buf, sizeof(buf), "%+.3g", wmax[0]); 
       gl_draw(
         (const char *)buf, 
         +1.0-gl_width((const char *)buf)/(w()), -(1+b*a));
 
-      // This value of b is used for...?
       b = 2.4;
 
-      // lower Y-axis scale value
+      // draw lower Y-axis tic mark's numeric value
       snprintf( buf, sizeof(buf), "%+.3g", wmin[1]);
       gl_draw( (const char *)buf, -(1+b*a), -1.0f+a/4);
 
-      // upper Y-axis scale value
+      // draw upper Y-axis tic mark's numeric value
       snprintf( buf, sizeof(buf), "%+.3g", wmax[1]);
       gl_draw( (const char *)buf, -(1+b*a), +1.0f+a/4);
     }
 
-    // If requested, draw tic mark labels
+    // If requested, draw axes labels
     if( cp->show_labels->value()) {
 
       // offset for axis labels values. b<1 -> inwards, 
       // b>1 -> outwards, b==1 -> on axis.
       b = 2; 
 
+      gl_font( FL_HELVETICA_BOLD, 11);
       float wid = gl_width(xlabel.c_str())/(float)(w());
       gl_draw( (const char *)(xlabel.c_str()), -wid, -(1+b*a));	
 
@@ -806,9 +807,10 @@ void plot_window::draw_center_glyph()
 }
 
 //*****************************************************************
-// plot_window::print_selection_stats() -- Write statistics for
-// this selection to the current plot window.
-void plot_window::print_selection_stats()
+// plot_window::print_selection_stats() -- dynamically write statistics for the
+// totality of the selection(s) as well as the numeric values of bounding box edges
+// to the current plot window while brushing.
+void plot_window::print_selection_stats ()
 {
   glDisable( GL_DEPTH_TEST);
   glEnable( GL_COLOR_LOGIC_OP);
@@ -895,15 +897,12 @@ void plot_window::handle_selection ()
 
   // Add newly-selected points to existing or previous selection
   if( add_to_selection_button->value()) {
-    selected( NPTS) = where( 
-      newly_selected( NPTS), newly_selected( NPTS), selected( NPTS));
+    selected( NPTS) = where( newly_selected( NPTS), newly_selected( NPTS), selected( NPTS));
   } 
   else {
-    selected( NPTS) = where( 
-      newly_selected( NPTS), newly_selected( NPTS), previously_selected( NPTS));
+    selected( NPTS) = where( newly_selected( NPTS), newly_selected( NPTS), previously_selected( NPTS));
   }
 
-  // Determine selection statistics
   nselected = blitz::count( selected( NPTS)>0);
 
   // Print selection statistics.  Should there should be a gui 
@@ -954,22 +953,6 @@ void plot_window::color_array_from_selection()
   // Update "color tables" if the user requested a color change
   update_selection_color_table();
 
-  #if 0
-  // XXX need to decide - global or local?
-  if( show_deselected_button->value() && cp->show_deselected_points->value()) {
-      src = (GLfloat *)(colors_show_deselected.data());
-  } else {
-      src = (GLfloat *)(colors_hide_deselected.data());
-  }
-  GLfloat *dest = (GLfloat *)(colors.data());
-  int *offset = (int *)(selected.data());
-  for (int i=0; i<npoints; i++) {
-          memcpy ((void *)dest, (void *)(src+(*offset*4)), 4*sizeof(GLfloat));
-          dest += 4;
-          offset +=1;
-  }
-  #endif // 0
-
   // Loop: Examine sucesive points to fill the index arrays and their
   // associated counts
   number_selected = 0;
@@ -979,9 +962,7 @@ void plot_window::color_array_from_selection()
     count = number_selected( set)++;
     indices_selected( set, count) = i;
   }
-  
-  // Verify that the numbers of points are consistent
-  // assert( sum(number_selected(blitz::Range(0,nplots))) == npoints);
+  assert(sum(number_selected(blitz::Range(0,nplots))) == (unsigned int)npoints);
 }
 
 //*****************************************************************
@@ -1018,10 +999,6 @@ void plot_window::draw_data_points()
   } else {
     glBlendFunc(GL_CONSTANT_COLOR, GL_DST_ALPHA); // aliased points blendfunc for log. saturation overplotting
   }
-
-  // Tell the GPU where to find the correct colors for each vertex.
-  // GLfloat *colorp = (GLfloat *) colors.data();
-  // glColorPointer (4, GL_FLOAT, 0, colorp);
 
   int alpha_test_enabled = 0;
   int z_bufferring_enabled = 0;
@@ -1080,23 +1057,17 @@ void plot_window::draw_data_points()
         glPointSize( cp->pointsize_slider->value());
       }
       else {
-        // selected points are from 0.1 to 10.0 times the size of unselected points.  
-        // But not bigger than 30 pixels
-        glPointSize( 
-          min( cp->pointsize_slider->value()*pow(10.0,cp->selected_pointsize_slider->value()), 30.0));
+        // selected points are from 0.1 to 10.0 times the size of unselected points.  But not bigger than 30 pixels
+        glPointSize( min(cp->pointsize_slider->value()*pow(10.0,cp->selected_pointsize_slider->value()), 30.0));
       }
-
-      // Set the color for this set of points
-      if( !(show_deselected_button->value() && cp->show_deselected_points->value()))
-        glColor4f( 
-          colors_hide_deselected(set,0), colors_hide_deselected(set,1), 
-          colors_hide_deselected(set,2), colors_hide_deselected(set,3));
-      else
-        glColor4f(
-          colors_show_deselected(set,0), colors_show_deselected(set,1),
-          colors_show_deselected(set,2), colors_show_deselected(set,3));
-
-      // Then render this set of points
+      // set the color for this set of points
+      if( !(show_deselected_button->value() && cp->show_deselected_points->value())) {
+        glColor4f(colors_hide_deselected(set,0),colors_hide_deselected(set,1),colors_hide_deselected(set,2),colors_hide_deselected(set,3));
+      }
+      else {
+        glColor4f(colors_show_deselected(set,0),colors_show_deselected(set,1),colors_show_deselected(set,2),colors_show_deselected(set,3));
+      }
+      // then render the points
       #ifdef FAST_APPLE_VERTEX_EXTENSIONS
         glDrawRangeElementArrayAPPLE( GL_POINTS, 0, npoints, set*npoints, count);
       #else // FAST_APPLE_VERTEX_EXTENSIONS
@@ -1108,23 +1079,52 @@ void plot_window::draw_data_points()
       #endif // FAST_APPLE_VERTEX_EXTENSIONS
     }
   }
-
-  // Disable alpha_test if it is set
-  if( alpha_test_enabled) {
-    glDisable( GL_ALPHA_TEST);
-    alpha_test_enabled = 0;
+  if( alpha_test_enabled ) {
+	  glDisable(GL_ALPHA_TEST);
+	  alpha_test_enabled = 0;
+  }
+  
+  if (cp->smooth_points_button->value()) {
+    glDisable(GL_POINT_SMOOTH);
   }
 
-  // Disable point smoothing if it is set
-  if( cp->smooth_points_button->value()) {
-    glDisable( GL_POINT_SMOOTH);
-  }
-
-  // Disable z-buffering if it is set
-  if( z_bufferring_enabled) {
+  if (z_bufferring_enabled) {
     glDisable( GL_DEPTH_TEST);
   }
 }
+
+#if 0
+//*****************************************************************
+// plot_window::compute_histogram( axis) -- If requested, compute 
+// equi-depth histogram for axis 'axis'.
+void plot_window::compute_histogram( int axis)
+{
+  if( !(cp->show_histogram->value())) return;
+
+  nbins = (int)(cp->nbins_slider->value());
+  blitz::Range BINS(0,nbins-1);
+  counts(BINS,axis) = 0.0;
+  counts_selected( BINS, axis) = 0.0;
+  float range = amax[axis]-amin[axis];
+
+  // Loop: Sum over all data points
+  for( int i=0; i<npoints; i++) {
+    float x = vertices(i,axis);
+    int bin=(int)(nbins*((x-amin[axis])/range));
+    if( bin < 0) bin = 0;
+    if( bin >= nbins) bin=nbins-1;
+    counts(bin,axis)++;
+    if( selected( i) > 0.5) counts_selected( bin, axis)++;
+  }
+  
+  // Normalize results.  NOTE: This will die horribly if there is no data
+  counts( BINS, axis) = 
+    (5.0*nbins/(float)nbins_default)*counts(BINS,axis)/((float)(npoints));
+  counts_selected(BINS,axis) = 
+    (5.0*nbins/(float)nbins_default)*counts_selected(BINS,axis)/((float)(npoints));
+}
+
+#endif //0
 
 //*****************************************************************
 // plot_window::compute_histogram( axis) -- If requested, compute 
@@ -1524,8 +1524,10 @@ int plot_window::extract_data_points ()
   blitz::Array<float,1> ypoints = vertices( NPTS, 1);
 
   // Load vertices and points, if any, for the z-axis.  
-  if( axis2 != nvars) vertices( NPTS, 2) = points( axis2, NPTS);
-  else vertices( NPTS, 2) = 0;
+  if( axis2 != nvars)
+    vertices( NPTS, 2) = points( axis2, NPTS);
+  else
+    vertices( NPTS, 2) = 0;
   blitz::Array<float,1> zpoints = vertices( NPTS, 2);
 
   // Apply the normalize() method to normalize and scale the data 
@@ -1744,9 +1746,9 @@ void plot_window::initialize_selection()
 {
   // Loop: Reset selection box for successive plots.
   // XXX should probably only do this if there is a valid gl context for all plots....
-  for( int i=0; i<nplots; i++) pws[i]->reset_selection_box();
-
-  // Initialize selection number and index arrays
+  for( int i=0; i<nplots; i++) {
+    pws[i]->reset_selection_box();
+  }
   number_selected = 0; 
   number_selected(0) = npoints; // all points initially in nonselected set
   indices_selected = 0;
