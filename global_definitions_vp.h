@@ -125,7 +125,6 @@ EXTERN int selection_changed INIT(1);
 // npoints_slider -- maximum number of points to display in all 
 // plots.  Various buttons -- as suggested by their names.
 EXTERN Fl_Tabs *cpt;  
-EXTERN Fl_Hor_Value_Slider_Input *npoints_slider;
 EXTERN Fl_Button *add_to_selection_button,
           *clear_selection_button, 
           *delete_selection_button;

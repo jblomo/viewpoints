@@ -1680,8 +1680,8 @@ void plot_window::delete_selection( Fl_Widget *o)
     ranked = 0;	
 
     npoints = ipoint;
-    npoints_slider->bounds(1,npoints);
-    npoints_slider->value(npoints);
+    // npoints_slider->bounds(1,npoints);
+    // npoints_slider->value(npoints);
 
     clear_selection( (Fl_Widget *) NULL);
 	

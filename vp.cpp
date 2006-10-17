@@ -940,8 +940,8 @@ void read_data( Fl_Widget* o, void* user_data)
     cout << "Insufficient data, " << npoints
          << " samples.  Loading default data." << endl;
     dfm.create_default_data( 10);
-    npoints_slider->bounds(1,npoints);
-    npoints_slider->value(npoints);
+    // npoints_slider->bounds(1,npoints);
+    // npoints_slider->value(npoints);
     return;
   }
   else {
@@ -950,8 +950,8 @@ void read_data( Fl_Widget* o, void* user_data)
   }
   
   // Resize slider
-  npoints_slider->bounds(1,npoints);
-  npoints_slider->value(npoints);
+  // npoints_slider->bounds(1,npoints);
+  // npoints_slider->value(npoints);
 
   // Fewer points -> bigger starting pointsize
   pointsize = max( 1.0, 6.0 - (int) log10f( (float) npoints));

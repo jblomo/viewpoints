@@ -576,3 +576,29 @@ Idea:
   Q2) How do we (efficiently) optionally connect draw the individual timeseries as polylines?
 
 Idea - add "data table" viewer for selected points. (Joe Mazzarella at ipac)
+
+Better color selection:  
+  Saturation is the second "contouring" control I've been waiting for. 
+  Add saturation & hue (quantized) to main control panel tab. (& global tab)
+  Remove selection color popup. (& deselection color popup)
+  h,s,v,a sliders (with optionally quantized hue) for everything.
+
+Better direct manipulation:
+  clicking on axis label in plot window pops up menu of axes
+  clicking and drag on tick mark drags is (& rescales plot)
+  click
+
+Get Tycho 2 catalog (http://www.astro.ku.dk/~cf/CD/) and use it for demos.  500M download.
+
+For fast selections, use binary search on sorted values on at least
+one axis to esablish bounds for linear search.  This will even work for
+non-rectangular brushes.
+
+Interface to weca (ML application) using plastic protocol.
+
+
+Simple - legend for colors to density map.
+
+Add pallette of hues to color chooser.
+
+"Error bars" by associating additional variables (low priority, probably better ideas).
