@@ -374,7 +374,7 @@ int plot_window::handle( int event)
       if( show_center_glyph) {
         show_center_glyph = 0;
       }
-      redraw_all_plots (index);
+      redraw_one_plot();
       return 1;
 
     // keypress, key is in Fl::event_key(), ascii in 
@@ -1638,13 +1638,12 @@ void plot_window::redraw_all_plots( int p)
   // is important, since the draw() routine for a plot handles 
   // the selection region, and the active plot (the one where we 
   // are making the selection) must update the selected set and 
-  // the color/texture arrays *before* all the other plots get 
-  // redrawn.  Ugh.
+  // set arrays *before* all the other plots get redrawn.  Ugh.
   for( int i=0; i<nplots; i++) {
     int j=(p+i)%nplots;
     pws[j]->compute_histograms();
     pws[j]->redraw();
-    Fl::flush();
+    if (i==0) Fl::flush();  // moving this after the loop breaks it.
     pws[j]->needs_redraw = 0;
   }
 }
