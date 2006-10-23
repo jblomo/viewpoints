@@ -147,6 +147,14 @@ class plot_window : public Fl_Gl_Window
     // Number of plot windows
     static int count;
 
+    #ifdef USE_VBO
+      // have we initialized the openGL vertex buffer object?
+      static int VBOinitialized;
+      void initializeVBO();
+      // and have we filled it with our chunk of vertex data yet?
+      int VBOfilled;
+#endif // USE_VBO
+
   public:
     plot_window( int w, int h);   // Constructor
     void initialize();

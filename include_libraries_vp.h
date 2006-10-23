@@ -133,9 +133,11 @@
 // compile, so they must be excluded by the relevant defines!
 #ifdef __APPLE__
   #include <OpenGL/glext.h>
+  #include <OpenGL/glu.h>
 #endif // __APPLE__
 #ifdef __LINUX__
   #include <GL/glext.h>
+  #include <GL/glu.h>
 #endif // __LINUX__
 #ifdef __WIN32__
   // OglExt.  Obtain from c:\devusr\oglext\include as described
@@ -172,7 +174,10 @@ using namespace std;
 // Define to allow fast Apple vertex extensions.  Used by both 
 // class control_panel_window and plot_window.
 #ifdef __APPLE__
-#define FAST_APPLE_VERTEX_EXTENSIONS
+//#define FAST_APPLE_VERTEX_EXTENSIONS
 #endif // __APPLE__
+
+// try to use openGL vertex buffer objects (VBOs)
+#define USE_VBO
 
 #endif   // INCLUDE_LIBRARIES_VP_H

@@ -172,6 +172,11 @@ void control_panel_window::extract_and_redraw ()
       glFlushVertexArrayRangeAPPLE( 3*npoints*sizeof(GLfloat), vertexp);
     #endif // FAST_APPLE_VERTEX_EXTENSIONS
 
+    #ifdef USE_VBO
+      void *vertexp = (void *)pw->vertices.data();
+      glBufferSubDataARB(GL_ARRAY_BUFFER, (GLintptrARB)(index*npoints*3*sizeof(GLfloat)), (GLsizeiptrARB)(npoints*3*sizeof(GLfloat)), vertexp);
+    #endif // USE_VBO
+
     pw->needs_redraw = 1;
   }
 }

@@ -602,3 +602,32 @@ Simple - legend for colors to density map.
 Add pallette of hues to color chooser.
 
 "Error bars" by associating additional variables (low priority, probably better ideas).
+
+15:58:44 23 Oct 06
+
+VBO strategy:
+
+   first, put vertex coordinates into VBO, leave indices in user memory.
+   put all nplots*npoints vertices into one VBO, thus we only need to worry about one binding.
+   only need to bind one buffer, to target GL_ARRAY_BUFFER,  usage GL_STATIC_DRAW
+   use glBufferSubData() to put an individual plot's vertex coordinates into the VBO.
+
+OK - this initial VBO strategy seems to be working, at higher
+performance, too.  Now, we need to solve the problem that changing
+nplots (i.e. adding and removing rows or columns of plots) causes a
+crash.  This is because we need to release and then recreate the VBO
+to be larger/smaller according to whether nplots increases or
+decreases.  This may also be an issue when npoints increases/decreaes,
+for example by killing points or (soemday) appending points.  Anyway,
+we will need to rexecute the logic in initializeVBO when things like
+this happen. (i.e. a new call to glBufferDataARB() with more/fewer
+reserved bytes).  It disturbs me that allocation/deallocation is being
+spread around in so many different places.  Sounds like an
+anti-patterm :-(
+
+Later VBO strategy, to save memory.
+   free user vertex memory after copying it to VBO.  Keep only one user vertex array around?
+Another VBO strategy to save time and even more memory
+   or use glMapBuffer() to get ptr to gpu meme, and put (newly computed) vertices directly in it, saving time ad memory.
+And another (potential) speedup:
+   later, use a second vbo, with target GL_ELEMENT_ARAY_BUFFER to hold indices, usage GL_DYNAMIC_DRAW, or GL_STREAM_DRAW
