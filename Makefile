@@ -63,9 +63,9 @@ else
 # for NAS linux machines where I can NOT install things as root (don't forget to build all libraries as static only)
 	INCPATH = -I/u/wk/creon/include
 	LIBPATH	= -L/u/wk/creon/lib -L/usr/X11R6/lib 
-	LDLIBS = -lGL -lXext -lm -lgsl
+	LDLIBS = -lGLU -lGL -lXext -lm -lgsl
 # for debugging
-#	LDLIBS = -lGL -lXext -lm -lgsl -lefence -lpthread  
+#	LDLIBS = -lGLU -lGL -lXext -lm -lgsl -lefence -lpthread  
 endif
 
 INCFLEWS	= -I../flews-0.3

@@ -61,7 +61,6 @@ blitz::Array<GLfloat,2> plot_window::colors_hide_deselected(MAXPLOTS+1,4);
 //GLfloat plot_window::texenvcolor[ 4] = { 1, 1, 1, 1};
 //GLuint plot_window::texnames[ 2] = { };
 int plot_window::textures_initialized = 0;
-int plot_window::VBOinitialized = 0;
 
 //*****************************************************************
 // plot_window::plot_window( w, h) -- Constructor.  Increment
@@ -84,6 +83,7 @@ void plot_window::initialize()
   r_selected=0.01, g_selected=0.01, b_selected=1.0;
 
 #ifdef USE_VBO
+  VBOinitialized = 0;
   VBOfilled = 0;
 #endif // USE_VBO
 
@@ -545,15 +545,6 @@ void plot_window::draw()
     glDisable(GL_DEPTH_TEST);
     glEnable(GL_BLEND);
     glEnableClientState(GL_VERTEX_ARRAY);
-    // glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-    // glEnableClientState(GL_COLOR_ARRAY);
-
-    // this next idiom is necessary, per window, to map 
-    // texture coordinate values to [0..1] for texturing.
-    // glMatrixMode(GL_TEXTURE);
-    // glLoadIdentity();	
-    // glScalef( 1.0/(float)MAXPLOTS, 1.0/(float)MAXPLOTS, 1.0/(float)MAXPLOTS); 
-    // glMatrixMode(GL_MODELVIEW);
 
     #ifdef FAST_APPLE_VERTEX_EXTENSIONS
       glEnableClientState(GL_VERTEX_ARRAY_RANGE_APPLE);
@@ -566,6 +557,16 @@ void plot_window::draw()
         VBOinitialized = 1;
       }
     #endif // USE_VBO
+
+    // glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+    // glEnableClientState(GL_COLOR_ARRAY);
+
+    // this next idiom is necessary, per window, to map 
+    // texture coordinate values to [0..1] for texturing.
+    // glMatrixMode(GL_TEXTURE);
+    // glLoadIdentity();	
+    // glScalef( 1.0/(float)MAXPLOTS, 1.0/(float)MAXPLOTS, 1.0/(float)MAXPLOTS); 
+    // glMatrixMode(GL_MODELVIEW);
 
   }
   
@@ -1038,21 +1039,19 @@ void plot_window::draw_data_points()
   #ifdef USE_VBO
     // XXX MCL spagetti monster alert: VBOs are usually filled in control_panel_window::extract_and_redraw()
     // right after after (the only place where) new vertex data gets calculated: in plot_window::extract_data_points().
-    // We'd like to fill the VBO in plot_window::extract_data_points() itself, but we can't, because at startup
-    // there is no opengl context yet, since plot_window::draw() has not yet been called, and hence openGL calls will not work.
-    // But if we wait to call plot_window::draw() for the first time before filling the VBO, we crash when drawing from
-    // an unfilled VBO.
-    // the temporary solution is to fill each plot's vertices into the VBO here for the first time.
-    // However, there is still a fatal flaw: changing nplots (i.e. adding a row) will case an abort.  We would need to 
-    // re-execute the startup logic of initializeVBO in that case, and refill all the VBOs as below.
+    // We'd like to fill the VBO in plot_window::extract_data_points(), but we can't, because at startup
+    // there is no openGL context yet, since plot_window::draw() has not yet been called, and hence openGL calls will not work.
+    // But if we call plot_window::draw() (for the first time) before filling the VBO, we crash when drawing from
+    // an unfilled VBO. The temporary solution is to fill each plot's VBO here for the first time.
+    // XXX this should be refactored into plot_window::fillVBO()  (also called from control_panel_window::extract_and_redraw() )
     if (!VBOfilled) {
-      glBindBufferARB(GL_ARRAY_BUFFER_ARB, 1);
+      glBindBufferARB(GL_ARRAY_BUFFER_ARB, index+1);
       void *vertexp = (void *)vertices.data();
-      glBufferSubDataARB(GL_ARRAY_BUFFER, (GLintptrARB)(index*npoints*3*sizeof(GLfloat)), (GLsizeiptrARB)(npoints*3*sizeof(GLfloat)), vertexp);
+      glBufferSubDataARB(GL_ARRAY_BUFFER, (GLintptrARB)0, (GLsizeiptrARB)(npoints*3*sizeof(GLfloat)), vertexp);
       VBOfilled = 1;
     }
     #define BUFFER_OFFSET(offset) ((char *)NULL + (offset))
-    glVertexPointer (3, GL_FLOAT, 0, BUFFER_OFFSET(index*npoints*3*sizeof(GLfloat)));
+    glVertexPointer (3, GL_FLOAT, 0, BUFFER_OFFSET(0));
   #else // USE_VBO    
     glVertexPointer (3, GL_FLOAT, 0, (GLfloat *)vertices.data()); 
   #endif // USE_VBO
@@ -1106,8 +1105,8 @@ void plot_window::draw_data_points()
         // Create an alias to slice
         blitz::Array<unsigned int, 1> tmpArray = indices_selected( set, blitz::Range(0,npoints-1));
         unsigned int *indices = (unsigned int *) (tmpArray.data());
-        glDrawElements( GL_POINTS, count, GL_UNSIGNED_INT, indices);
-        // glDrawRangeElements( GL_POINTS, 0, npoints, count, GL_UNSIGNED_INT, indices);
+        // glDrawElements( GL_POINTS, count, GL_UNSIGNED_INT, indices);
+        glDrawRangeElements( GL_POINTS, 0, npoints, count, GL_UNSIGNED_INT, indices);
       #endif // FAST_APPLE_VERTEX_EXTENSIONS
     }
   }
@@ -1868,7 +1867,7 @@ void plot_window::initialize_textures()
 void plot_window::initializeVBO()
 {
   // Create a VBO. We only use one VBO, and index 0 is reserved, so buffer=1
-  glBindBufferARB(GL_ARRAY_BUFFER_ARB, 1);  
+  glBindBufferARB(GL_ARRAY_BUFFER_ARB, index+1);  
   {
     GLenum errorCode=glGetError();
     if (errorCode != GL_NO_ERROR) {
@@ -1879,7 +1878,7 @@ void plot_window::initializeVBO()
   }
 
   // reserve enough space in openGL server memory VBO to hold all the vertices, but do not initilize it.
-  glBufferDataARB(GL_ARRAY_BUFFER_ARB, (GLsizeiptrARB)nplots*npoints*3*sizeof(GLfloat), (void *)NULL, GL_STATIC_DRAW_ARB);
+  glBufferDataARB(GL_ARRAY_BUFFER_ARB, (GLsizeiptrARB)npoints*3*sizeof(GLfloat), (void *)NULL, GL_STATIC_DRAW_ARB);
 
   // make sure we succeeded 
   {
@@ -1890,7 +1889,7 @@ void plot_window::initializeVBO()
       abort();
     }
   }
-  cerr << "successfully initialized VBO." << endl;
+  cerr << "successfully initialized VBO " << index << endl;
 
 }   
 #endif // USE_VBO

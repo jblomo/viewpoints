@@ -135,10 +135,10 @@
   #include <OpenGL/glext.h>
   #include <OpenGL/glu.h>
 #endif // __APPLE__
-#ifdef __LINUX__
+#ifdef __linux__
   #include <GL/glext.h>
   #include <GL/glu.h>
-#endif // __LINUX__
+#endif // __linux__
 #ifdef __WIN32__
   // OglExt.  Obtain from c:\devusr\oglext\include as described
   // above and invoke as described in OGLEXT documentation
@@ -167,17 +167,5 @@
   //# include <cblas.h>
   //}
 #endif // __APPLE__
-
-// Use the Standard Template Library
-using namespace std;
-
-// Define to allow fast Apple vertex extensions.  Used by both 
-// class control_panel_window and plot_window.
-#ifdef __APPLE__
-//#define FAST_APPLE_VERTEX_EXTENSIONS
-#endif // __APPLE__
-
-// try to use openGL vertex buffer objects (VBOs)
-#define USE_VBO
 
 #endif   // INCLUDE_LIBRARIES_VP_H

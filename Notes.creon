@@ -631,3 +631,14 @@ Another VBO strategy to save time and even more memory
    or use glMapBuffer() to get ptr to gpu meme, and put (newly computed) vertices directly in it, saving time ad memory.
 And another (potential) speedup:
    later, use a second vbo, with target GL_ELEMENT_ARAY_BUFFER to hold indices, usage GL_DYNAMIC_DRAW, or GL_STREAM_DRAW
+
+
+Use the following to check for openGL errors:
+#define CHECK_OPENGL_ERROR( cmd ) \
+     cmd; \
+     { GLenum  error; \
+       while ( (error = glGetError()) != GL_NO_ERROR) { \
+         printf( "[%s:%d] '%s' failed with error %s\n", \
+	         __FILE__, __LINE__, #cmd, \ 
+                gluErrorString(error) ); \
+     }
