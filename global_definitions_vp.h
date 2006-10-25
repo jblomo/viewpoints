@@ -131,11 +131,6 @@ EXTERN int scale_histogram INIT(0);
 // plot_window?)
 EXTERN float pointsize INIT(1.0);
 
-// Flag to indicate that selection has been changed.  Creon notes
-// that this should be 'fixed', but this is harder than it looks.
-// For this reason, this variable is left global.
-EXTERN int selection_changed INIT(1);
-
 // Define main control panel's top level (global) widgets.  Many 
 // of these must also be accessible to class plot_window and
 // possibly control_panel_window so these are left global.  cpt -- 

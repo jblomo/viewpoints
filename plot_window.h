@@ -116,6 +116,7 @@ class plot_window : public Fl_Gl_Window
     void draw();
     void draw_grid();
     void draw_axes();
+    void draw_selection_information();
     void draw_data_points();
     void draw_center_glyph();
     void update_linked_transforms();
@@ -142,7 +143,9 @@ class plot_window : public Fl_Gl_Window
     float xhscale, yhscale;
     void compute_histogram( int);
     void draw_histograms();
+
     int show_center_glyph;
+    int selection_changed;
 
     // Number of plot windows
     static int count;

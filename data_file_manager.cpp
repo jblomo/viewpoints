@@ -18,7 +18,7 @@
 //
 // Purpose: Source code for <data_file_manager.h>
 //
-// Author: Creon Levit   unknown
+// Author: Creon Levit   unknown (really? I knew him well)
 // Modified: P. R. Gazis  02-OCT-2006
 //*****************************************************************
 

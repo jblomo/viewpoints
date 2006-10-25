@@ -642,3 +642,21 @@ Use the following to check for openGL errors:
 	         __FILE__, __LINE__, #cmd, \ 
                 gluErrorString(error) ); \
      }
+
+
+To try and debig graphics, eliminate flushes, etc.
+  try mode=FL_SINGLE (seems to be double)
+  try mode=FL_FAKE_SINGLE (fake single using double. ???)
+  try setting damage(0) for Gl_windows.  unset it later.
+
+Forget that.  I just removede the flushes and performance is way better, at least for VBOs on the mac.  
+AND it fixed the spinning screws up selection bugs (even without VBOs)
+
+Here are the performance figures with all FL::flush() calls removed:
+test is: ./vp -f b -i ~/data/stars/tycho.bin -r 5 -c 5
+then seeing how long it takes in seconds to completely rerender 10 inverted selections (press 'i' 10 tiems fast at clock=0)
+
+VBO=no, FAST_APPLE_VERTEX_EXTENSIONS=no  12 secs
+VBO=no, FAST_APPLE_VERTEX_EXTENSIONS=yes 7.5 secs
+VBO=no, FAST_APPLE_VERTEX_EXTENSIONS=yes 4.1 secs
+

@@ -80,6 +80,7 @@ void plot_window::initialize()
 {
   do_reset_view_with_show = 0;
   show_center_glyph = 0;
+  selection_changed = 0;
   r_selected=0.01, g_selected=0.01, b_selected=1.0;
 
 #ifdef USE_VBO
@@ -99,16 +100,24 @@ void plot_window::initialize()
 
   // Set mode
   if( can_do(FL_RGB|FL_DOUBLE|FL_ALPHA|FL_DEPTH)) {
-    mode( FL_RGB|FL_DOUBLE|FL_ALPHA|FL_DEPTH);
-  } else if( can_do(FL_RGB8|FL_DOUBLE|FL_ALPHA|FL_DEPTH)) {
+    mode( FL_RGB|FL_SINGLE|FL_ALPHA|FL_DEPTH);
+    cout << " mode: FL_RGB|FL_DOUBLE|FL_ALPHA|FL_DEPTH" << endl;
+  }
+  else if( can_do(FL_RGB8|FL_DOUBLE|FL_ALPHA|FL_DEPTH)) {
     mode( FL_RGB8|FL_DOUBLE|FL_DEPTH|FL_ALPHA);
-  } else if( can_do(FL_RGB|FL_DOUBLE|FL_ALPHA)) {
+    cout << " mode: FL_RGB8|FL_DOUBLE|FL_DEPTH|FL_ALPHA" << endl;
+  }
+  else if( can_do(FL_RGB|FL_DOUBLE|FL_ALPHA)) {
     cout << "Warning: depth buffering not enabled" << endl;
     mode( FL_RGB|FL_DOUBLE|FL_DEPTH|FL_ALPHA);
-  } else if( can_do(FL_RGB8|FL_DOUBLE|FL_ALPHA)) {
+    cout << " mode: FL_RGB|FL_DOUBLE|FL_DEPTH|FL_ALPHA" << endl;
+  }
+  else if( can_do(FL_RGB8|FL_DOUBLE|FL_ALPHA)) {
     cout << "Warning: depth buffering not enabled" << endl;
     mode( FL_RGB8|FL_DOUBLE|FL_ALPHA);
-  } else {
+    cout << " mode: FL_RGB8|FL_DOUBLE|FL_ALPHA" << endl;
+  }
+  else {
     cerr << "Error: could not allocate double buffered RGBA window" << endl;
     exit (-1);
   }
@@ -285,6 +294,7 @@ int plot_window::handle( int event)
           xtracked = xdown;
           ytracked = ydown;
           selection_changed = 1;
+          handle_selection ();
           redraw_all_plots (index);
 
         } else {
@@ -365,6 +375,7 @@ int plot_window::handle( int event)
         // printf ("FL_DRAG & FL_BUTTON1, event_state: %x  isdrag = %d  xdragged=%f  ydragged=%f\n", Fl::event_state(), isdrag, xdragged, ydragged);
         if((fabs(xdragged)+fabs(ydragged))>0 ){
           selection_changed = 1;
+          handle_selection ();
           redraw_all_plots (index);
         }
       }
@@ -471,7 +482,7 @@ void plot_window::redraw_one_plot ()
   DEBUG( cout << "in redraw_one_plot" << endl ) ;
   compute_histograms();
   redraw();
-  Fl::flush();
+  //Fl::flush();
   needs_redraw = 0;
 }
 
@@ -591,7 +602,7 @@ void plot_window::draw()
   }
 
   if( selection_changed) {
-    handle_selection ();
+    draw_selection_information();
   }
   draw_data_points();
   draw_center_glyph();
@@ -879,25 +890,14 @@ void plot_window::print_selection_stats ()
 
 //*****************************************************************
 // plot_window::handle_selection() -- Handler to handle selection
-// operations.
+// operations.  Does not draw anything (since openGL functions cannot
+// be called from within a handle() method).  Selection information 
+// (e.g. bounding box, statistics) are drawn from the draw() method
+// for the window making the selection by calling draw_selection_information().
 void plot_window::handle_selection ()
 {
-  if (selection_is_inverted) invert_selection();
+  if (selection_is_inverted) invert_selection(); // MCL XXX ???
 
-  int draw_selection_box = 1;
-  if( draw_selection_box) {
-    glBlendFunc( GL_ONE, GL_ZERO);
-    glLineWidth( 1.0);
-    glColor4f( 0.25,0.25,0.75,0.0);
-    glBegin( GL_LINE_LOOP);
-
-    glVertex2f( xdown, ydown);
-    glVertex2f( xtracked, ydown);
-    glVertex2f( xtracked, ytracked);
-    glVertex2f( xdown, ytracked);
-
-    glEnd();
-  }
   blitz::Range NPTS( 0, npoints-1);	
 
   // Identify newly-selected points
@@ -916,12 +916,34 @@ void plot_window::handle_selection ()
     selected( NPTS) = where( newly_selected( NPTS), newly_selected( NPTS), previously_selected( NPTS));
   }
 
-  nselected = blitz::count( selected( NPTS)>0);
+  color_array_from_new_selection ();
+}
+
+//*****************************************************************
+// plot_window::draw_selection_information()
+// draw decorations for the selected set in the window where the user
+// is making the selection.
+void plot_window::draw_selection_information()
+{
+
+  int draw_selection_box = 1;
+  if( draw_selection_box) {
+    glBlendFunc( GL_ONE, GL_ZERO);
+    glLineWidth( 1.0);
+    glColor4f( 0.25,0.25,0.75,0.0);
+    glBegin( GL_LINE_LOOP);
+
+    glVertex2f( xdown, ydown);
+    glVertex2f( xtracked, ydown);
+    glVertex2f( xtracked, ytracked);
+    glVertex2f( xdown, ytracked);
+
+    glEnd();
+  }
 
   // Print selection statistics.  Should there should be a gui 
   // element controlling this?
   print_selection_stats();
-  color_array_from_new_selection ();
 
   // done flagging selection for this plot
   selection_changed = 0;
@@ -975,6 +997,7 @@ void plot_window::color_array_from_selection()
     count = number_selected( set)++;
     indices_selected( set, count) = i;
   }
+  nselected = npoints - number_selected(0);
   assert(sum(number_selected(blitz::Range(0,nplots))) == (unsigned int)npoints);
 }
 
@@ -1044,8 +1067,8 @@ void plot_window::draw_data_points()
     // But if we call plot_window::draw() (for the first time) before filling the VBO, we crash when drawing from
     // an unfilled VBO. The temporary solution is to fill each plot's VBO here for the first time.
     // XXX this should be refactored into plot_window::fillVBO()  (also called from control_panel_window::extract_and_redraw() )
+    glBindBufferARB(GL_ARRAY_BUFFER_ARB, index+1);
     if (!VBOfilled) {
-      glBindBufferARB(GL_ARRAY_BUFFER_ARB, index+1);
       void *vertexp = (void *)vertices.data();
       glBufferSubDataARB(GL_ARRAY_BUFFER, (GLintptrARB)0, (GLsizeiptrARB)(npoints*3*sizeof(GLfloat)), vertexp);
       VBOfilled = 1;
@@ -1105,9 +1128,12 @@ void plot_window::draw_data_points()
         // Create an alias to slice
         blitz::Array<unsigned int, 1> tmpArray = indices_selected( set, blitz::Range(0,npoints-1));
         unsigned int *indices = (unsigned int *) (tmpArray.data());
-        // glDrawElements( GL_POINTS, count, GL_UNSIGNED_INT, indices);
-        glDrawRangeElements( GL_POINTS, 0, npoints, count, GL_UNSIGNED_INT, indices);
+        glDrawElements( GL_POINTS, count, GL_UNSIGNED_INT, indices);
+        // glDrawRangeElements( GL_POINTS, 0, npoints, count, GL_UNSIGNED_INT, indices);
       #endif // FAST_APPLE_VERTEX_EXTENSIONS
+      // cout << "sleeping in plot " << index << ", set " << set << endl;
+      // usleep(1000000/5);
+
     }
   }
   if( alpha_test_enabled ) {
@@ -1572,7 +1598,7 @@ int plot_window::extract_data_points ()
        << xpoints(x_rank(0));
   cout << "  max: " << xlabel 
        << "(" << x_rank(npoints-1) << ") = " 
-       << xpoints(x_rank(npoints-1)) << endl;
+       << xpoints(x_rank(npoints-1)) << "  ";
     
   // Normalize and scale the y-axis
   (void) normalize( ypoints, y_rank, cp->y_normalization_style->value(), 1);
@@ -1583,7 +1609,7 @@ int plot_window::extract_data_points ()
        << ypoints(y_rank(0));
   cout << "  max: " << ylabel 
        << "(" << y_rank(npoints-1) << ") = " 
-       << ypoints(y_rank(npoints-1)) << endl;
+       << ypoints(y_rank(npoints-1)) << "  ";
 
   // Normalize and scale the z-axis, if any
   if( axis2 != nvars) {
@@ -1595,12 +1621,13 @@ int plot_window::extract_data_points ()
          << zpoints(z_rank(0));
     cout << "  max: " << zlabel 
          << "(" << z_rank(npoints-1) << ") = " 
-         << zpoints(z_rank(npoints-1)) << endl;
+         << zpoints(z_rank(npoints-1)) << "  ";
   }
   else {
     amin[2] = -1.0;
     amax[2] = +1.0;
   }
+  cout << endl;
 
   // Reset pan, zoom, and view-angle
   reset_view();
@@ -1674,7 +1701,7 @@ void plot_window::redraw_all_plots( int p)
     int j=(p+i)%nplots;
     pws[j]->compute_histograms();
     pws[j]->redraw();
-    if (i==0) Fl::flush();  // moving this after the loop breaks it.
+//    if (i==0) Fl::flush();  // moving this after the loop breaks it.
     pws[j]->needs_redraw = 0;
   }
 }
@@ -1889,7 +1916,7 @@ void plot_window::initializeVBO()
       abort();
     }
   }
-  cerr << "successfully initialized VBO " << index << endl;
+  cerr << " successfully initialized VBO " << index << endl;
 
 }   
 #endif // USE_VBO
