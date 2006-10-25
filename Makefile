@@ -119,3 +119,4 @@ stable.h.gch:	stable.h
 	echo pre-compiling $<...
 	$(CXX) $(INCPATH) $(INCFLEWS) -I.. $(CXXFLAGS) -c $<
 
+# DO NOT DELETE

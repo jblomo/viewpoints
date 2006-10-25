@@ -100,7 +100,7 @@ void plot_window::initialize()
 
   // Set mode
   if( can_do(FL_RGB|FL_DOUBLE|FL_ALPHA|FL_DEPTH)) {
-    mode( FL_RGB|FL_SINGLE|FL_ALPHA|FL_DEPTH);
+    mode( FL_RGB|FL_DOUBLE|FL_ALPHA|FL_DEPTH);
     cout << " mode: FL_RGB|FL_DOUBLE|FL_ALPHA|FL_DEPTH" << endl;
   }
   else if( can_do(FL_RGB8|FL_DOUBLE|FL_ALPHA|FL_DEPTH)) {
@@ -1128,8 +1128,8 @@ void plot_window::draw_data_points()
         // Create an alias to slice
         blitz::Array<unsigned int, 1> tmpArray = indices_selected( set, blitz::Range(0,npoints-1));
         unsigned int *indices = (unsigned int *) (tmpArray.data());
-        glDrawElements( GL_POINTS, count, GL_UNSIGNED_INT, indices);
-        // glDrawRangeElements( GL_POINTS, 0, npoints, count, GL_UNSIGNED_INT, indices);
+        // glDrawElements( GL_POINTS, count, GL_UNSIGNED_INT, indices);
+        glDrawRangeElements( GL_POINTS, 0, npoints, count, GL_UNSIGNED_INT, indices);
       #endif // FAST_APPLE_VERTEX_EXTENSIONS
       // cout << "sleeping in plot " << index << ", set " << set << endl;
       // usleep(1000000/5);
