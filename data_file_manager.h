@@ -32,8 +32,8 @@
 //      particular, the code to read headers and the calls fo
 //      Fl_File_Chooser here and in vp.cpp could be consolidated.
 //
-// Author: Creon Levit   unknown
-// Modified: P. R. Gazis  02-OCT-2006
+// Author: Creon Levit    unknown
+// Modified: P. R. Gazis  26-OCT-2006
 //*****************************************************************
 
 // Protection to make sure this header is not included twice
@@ -67,6 +67,7 @@
 //   read_ascii_file_with_headers( *inFileSpec) -- Read ASCII
 //   read_binary_file_with_headers( *inFileSpec) -- Read binary
 //   create_default_data( nvars_in) -- Create default data
+//   write_ascii_file_with_headers() -- Write ASCII file
 //   write_binary_file_with_headers() -- Write binary file
 //
 //   directory() -- Get pathname
@@ -94,6 +95,7 @@ class data_file_manager
     int read_ascii_file_with_headers();
     int read_binary_file_with_headers();
     void create_default_data( int nvars_in);
+    void write_ascii_file_with_headers();
     void write_binary_file_with_headers();
 
     // Access methods
@@ -104,6 +106,7 @@ class data_file_manager
     int format;  // ASCII or binary
     int ordering;  // Input data ordering
     int nSkipHeaderLines;  // Number of header lines to skip
+    unsigned uWriteAll;  // Write all data?
 
     // Define number of points and  number of variables specified 
     // by the command line argument.  NOTE: 0 means read to EOF

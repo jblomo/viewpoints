@@ -22,7 +22,7 @@
 // Purpose: Source code for <control_panel_window.h>
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  02-OCT-2006
+// Modified: P. R. Gazis  26-OCT-2006
 //*****************************************************************
 
 // Include the necessary include libraries
@@ -176,7 +176,9 @@ void control_panel_window::extract_and_redraw ()
       pw->make_current();
       glBindBufferARB(GL_ARRAY_BUFFER_ARB, index+1);
       void *vertexp = (void *)pw->vertices.data();
-      glBufferSubDataARB(GL_ARRAY_BUFFER, (GLintptrARB)0, (GLsizeiptrARB)(npoints*3*sizeof(GLfloat)), vertexp);
+      glBufferSubDataARB(
+        GL_ARRAY_BUFFER, (GLintptrARB) 0, 
+        (GLsizeiptrARB)(npoints*3*sizeof(GLfloat)), vertexp);
     #endif // USE_VBO
 
     pw->needs_redraw = 1;

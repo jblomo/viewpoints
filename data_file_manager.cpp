@@ -18,8 +18,8 @@
 //
 // Purpose: Source code for <data_file_manager.h>
 //
-// Author: Creon Levit   unknown (really? I knew him well)
-// Modified: P. R. Gazis  02-OCT-2006
+// Author: Creon Levit    unknown (really? I knew him well)
+// Modified: P. R. Gazis  26-OCT-2006
 //*****************************************************************
 
 // Include the necessary include libraries
@@ -58,6 +58,7 @@ void data_file_manager::initialize()
   nSkipHeaderLines = 1;  // Number of header lines to skip
   // sPathname = ".";  // Default pathname
   inFileSpec = "";  // Default input filespec
+  uWriteAll = 1;   // Write all data by default
 
   // Initialize the number of points and variables specified by 
   // the command line arguments.  NOTE: 0 means read to EOF or
@@ -582,6 +583,109 @@ int data_file_manager::read_binary_file_with_headers()
 }
 
 //*****************************************************************
+// data_file_manager::write_ascii_file_with_headers() -- Open and 
+// write an ASCII data file.  File will consist of an ASCII header 
+// with column names terminated by a newline, followed by successive
+// lines of ASCII data.
+void data_file_manager::write_ascii_file_with_headers()
+{
+  // Initialize read status and filespec.  NOTE: inFileSpec is defined as 
+  // const char* for use with Fl_File_Chooser, which means it could be 
+  // destroyed by the relevant destructors!
+  // string sPathname = ".";
+  const char *output_file_name = sPathname.c_str();
+  const char* pattern = "*.{txt,lis,asc}\tAll Files (*)";
+  const char* title = "write ASCII output to file";
+
+  // Instantiate and show an Fl_File_Chooser widget.  NOTE: The pathname 
+  // must be passed as a variable or the window will begin in some root 
+  // directory.
+  Fl_File_Chooser* file_chooser = 
+    new Fl_File_Chooser( 
+      output_file_name, pattern, Fl_File_Chooser::CREATE, title);
+
+  // Loop: Select fileSpecs until a non-directory is obtained
+  while( 1) {
+    if( output_file_name != NULL) file_chooser->directory( output_file_name);
+
+    // Loop: wait until the file selection is done
+    file_chooser->show();
+    while( file_chooser->shown()) Fl::wait();
+    output_file_name = file_chooser->value();   
+
+    // If no file was specified then quit
+    if( output_file_name == NULL) {
+      cout << "No output file was specified" << endl;
+      break;
+    }
+
+    // For some reason, the fl_filename_isdir method doesn't seem to work, so
+    // try to open this file to see if it is a directory.
+    FILE* pFile = fopen( output_file_name, "w");
+    if( pFile == NULL) {
+      file_chooser->directory( output_file_name);
+      sPathname.erase( sPathname.begin(), sPathname.end());
+      sPathname.append( output_file_name);
+      continue;
+    }
+    fclose( pFile);
+    break;         
+  } 
+
+  // Obtain file name using the FLTK member function.  This doesn't work.
+  // char *output_file_name = 
+  //   fl_file_chooser( 
+  //     "write ASCII output to file", NULL, NULL, 0);
+
+  // If a file name was specified, create and write the file
+  if( output_file_name) {
+    blitz::Array<float,1> vars( nvars);
+    blitz::Range NVARS( 0, nvars-1);
+    
+    // Open output stream and report any problems
+    ofstream os;
+    os.open( output_file_name, ios::out|ios::trunc);
+
+    if( os.fail()) {
+      cerr << "Error opening" << output_file_name 
+           << "for writing" << endl;
+      delete file_chooser;
+      return;
+    }
+    
+    // Write output file name (and additional information?) to the header
+    os << "! File Name: " << output_file_name << endl;
+    
+    // Loop: Write column labels to the header
+    for( int i=0; i < nvars; i++ ) {
+      if( i == 0) os << "!" << setw( 12) << column_labels[ i];
+      else os << " " << setw( 13) << column_labels[ i];
+    }
+    os << endl;
+    
+    // Loop: Write successive ASCII records to the data block in 8-digit 
+    // scientific notation.
+    os << setiosflags( ios::scientific) << setw( 8);
+    for( int irow = 0; irow < npoints; irow++) {
+      if( uWriteAll > 0 || selected( irow) > 0) {
+        for( int jcol = 0; jcol < nvars; jcol++) {
+          if( jcol > 0) os << " ";
+          os << points( jcol, irow);
+        }
+        os << endl;
+      }
+    }
+
+    // Report results
+    cout << "Finished writing " << npoints
+         << " rows with " << nvars << " variables" << endl;
+  }
+
+  // Deallocate the Fl_File_Chooser object
+  delete file_chooser;
+}
+
+//*****************************************************************
 // data_file_manager::write_binary_file_with_headers() -- Open and 
 // write a binary data file.  File will consist of an ASCII header 
 // with column names terminated by a newline, followed by a long 
@@ -630,7 +734,7 @@ void data_file_manager::write_binary_file_with_headers()
     break;         
   } 
 
-  // Obtain file name using the FLTK member function
+  // Obtain file name using the FLTK member function.  This doesn't work.
   // char *output_file_name = 
   //   fl_file_chooser( 
   //     "write binary output to file", NULL, NULL, 0);
@@ -658,15 +762,17 @@ void data_file_manager::write_binary_file_with_headers()
     for( int i=0; i < nvars; i++ ) os << column_labels[ i] << " ";
     os << endl;
     
-    // Loop: Write data and report problems
+    // Loop: Write data and report any problems
     int nBlockSize = nvars*sizeof(float);
     for( int i=0; i<npoints; i++) {
-      vars = points( NVARS, i);
-      os.write( (const char*) vars.data(), nBlockSize);
-      if( os.fail()) {
-        cerr << "Error writing to" << output_file_name << endl;
-        delete file_chooser;
-        return;
+      if( uWriteAll > 0 || selected( i) > 0) {
+        vars = points( NVARS, i);
+        os.write( (const char*) vars.data(), nBlockSize);
+        if( os.fail()) {
+          cerr << "Error writing to" << output_file_name << endl;
+          delete file_chooser;
+          return;
+        }
       }
     }
     

@@ -46,14 +46,14 @@
 //   change_all_axes( *o) -- Change all axes
 //   clearAlphaPlanes() -- Clear alpha planes
 //   npoints_changed( *o) -- Update number of points changed
-//   write_data( *o) -- Write data widget
+//   write_data( *o, *user_data) -- Write data widget
 //   reset_all_plots( void) -- Reset all plots
 //   reload_plot_window_array( *o) -- Reload plot windows
 //   read_data( *o, *user_data) -- Read data widget
 //   redraw_if_changing( *dummy) -- Redraw changing plots
 //
-// Author: Creon Levit   2005-2006
-// Modified: P. R. Gazis  04-OCT-2006
+// Author: Creon Levit    2005-2006
+// Modified: P. R. Gazis  26-OCT-2006
 //*****************************************************************
 
 // Include the necessary include libraries
@@ -148,7 +148,7 @@ void change_all_axes( Fl_Widget *o);
 void clearAlphaPlanes();
 void resize_selection_index_arrays( int nplots_old, int nplots);
 void npoints_changed( Fl_Widget *o);
-void write_data( Fl_Widget *o);
+void write_data( Fl_Widget *o, void* user_data);
 void reset_all_plots( void);
 void read_data( Fl_Widget* o, void* user_data);
 void redraw_if_changing( void *dummy);
@@ -162,18 +162,30 @@ void usage()
   cerr << "Usage: vp {optional arguments} {optional filename}" << endl;
   cerr << endl;
   cerr << "Optional arguments:" << endl;
-  cerr << "  -b, --borderless            don't show decorations on plot windows" << endl;
-  cerr << "  -c, --cols=NCOLS            startup showing this many columns of plot windows, default=2" << endl;
-  cerr << "  -f, --format={ascii,binary} input file format, default=ascii" << endl;
-  cerr << "  -i, --input_file=FILENAME   read input data from FILENAME" << endl;
-  cerr << "  -m, --monitors=NSCREENS     try and force output to display across NSCREENS screens if available" << endl;
-  cerr << "  -n, --npoints=NPOINTS       read at most NPOINTS from input file, default is min(until_EOF, 2000000)" << endl;
-  cerr << "  -o, --ordering={rowmajor,columnmajor} ordering for binary data, default=columnmajor" << endl;
-  cerr << "  -r, --rows=NROWS            startup showing this many rows of plot windows, default=2" << endl;
-  cerr << "  -s, --skip_header_lines=NLINES skip over NLINES lines at start of input file, default=0" << endl;
-  cerr << "  -v, --nvars=NVARS           input has NVARS values per point (only for row major binary data)" << endl;
-  cerr << "  -h, --help                  display this message and then exit" << endl;
-  cerr << "  -V, --version               output version information and then exit" << endl;
+  cerr << "  -b, --borderless            "
+       << "don't show decorations on plot windows" << endl;
+  cerr << "  -c, --cols=NCOLS            "
+       << "startup showing this many columns of plot windows, default=2" << endl;
+  cerr << "  -f, --format={ascii,binary} "
+       << "input file format, default=ascii" << endl;
+  cerr << "  -i, --input_file=FILENAME   "
+       << "read input data from FILENAME" << endl;
+  cerr << "  -m, --monitors=NSCREENS     "
+       << "try and force output to display across NSCREENS screens if available" << endl;
+  cerr << "  -n, --npoints=NPOINTS       "
+       << "read at most NPOINTS from input file, default is min(until_EOF, 2000000)" << endl;
+  cerr << "  -o, --ordering={rowmajor,columnmajor} "
+       << "ordering for binary data, default=columnmajor" << endl;
+  cerr << "  -r, --rows=NROWS            "
+       << "startup showing this many rows of plot windows, default=2" << endl;
+  cerr << "  -s, --skip_header_lines=NLINES "
+       << "skip over NLINES lines at start of input file, default=0" << endl;
+  cerr << "  -v, --nvars=NVARS           "
+       << "input has NVARS values per point (only for row major binary data)" << endl;
+  cerr << "  -h, --help                  "
+       << "display this message and then exit" << endl;
+  cerr << "      --version               "
+       << "output version information and then exit" << endl;
 
   exit( -1);
 }
@@ -192,10 +204,8 @@ void make_help_about_window( Fl_Widget *o)
   about_window->labelsize( 10);
   
   // Compose text. NOTE use of @@ in conjunction with label()
+  // PRG XXX: Put svn keyword $Id$ here...
   string sAbout = "viewpoints 1.1.0\n";
-  sAbout += "$Revision$\n";
-  sAbout += "$LastChangedDate$\n";
-  sAbout += "$Id$\n";
   sAbout += "(c) 2006 C. Levit and P. R. Gazis\n\n";
   sAbout += "contact information:\n";
   sAbout += "Creon Levit creon@@nas.nasa.gov\n";
@@ -317,60 +327,84 @@ void create_broadcast_group ()
 // NOTE: Little attempt has been made to optimize this method for 
 // speed.  WARNINGS: 1) Tbis method is delicate, and slight changes
 // in the FLTK calls could lead to elusive segmentation faults!
-// Test any changes carefully!  2) There is little protected against 
+// Test any changes carefully!  2) There is little protection against 
 // missing data!
+// NOTE: This routine must be modified to improve clarity by 
+// replacing the hodgepodge of control flags with a simple and
+// well-defined set of switches!
 void manage_plot_window_array( Fl_Widget *o)
 {
-  // Define and initialize the uInitialize flag, old number of plots,
-  // title, and pointers to the pMenu_ and pButton objects.
-  unsigned uInitialize = 0;
+  // Define an enumeration to hold a list of operation types
+  enum operationType { INITIALIZE = 0, NEW_DATA, RESIZE, RELOAD};
+  
+  // Define and initialize the operationType switch, old number of plots,
+  // widget title, and pointers to the pMenu_ and pButton objects.
+  operationType thisOperation = INITIALIZE;
   int nplots_old = nplots;
-  char title[ 80];
-  strcpy( title, "");
+  char widgetTitle[ 80];
+  strcpy( widgetTitle, "");
   Fl_Menu_* pMenu_;
   Fl_Button* pButton;
 
   // Determine how the method was invoked, and set flags and parameters
-  // accordingly.  If method was called with a NULL arguments, set the
-  // uInitialize flag to 1 and the old number of plots to zero, otherwise 
-  // identify the argument type via a dynamic cast, extract the title, 
-  // and set the old and new numbers of plots.
+  // accordingly.  If method was called with a NULL arguments, assume this 
+  // is an initialization operation and set the old number of plots to zero, 
+  // otherwise identify the argument type via a dynamic cast, extract the 
+  // widget title, and set the old and new numbers of plots accordingly.
+  // CASE 1: If the widget was NULL, this is an initialzation operation
   if( o == NULL) {
-    uInitialize = 1;
+    thisOperation = INITIALIZE;
     nplots_old = 0;
   }
-  else if( (pMenu_ = dynamic_cast <Fl_Menu_*> (o))) {
-    strcpy( title, ((Fl_Menu_*) o)->text());
-    if( strncmp( title, "Add Row ", 8) == 0) nrows++;
-    else if( strncmp( title, "Add Colu", 8) == 0) ncols++;
-    else if( strncmp( title, "Remove R", 8) == 0 && nrows>1) nrows--;
-    else if( strncmp( title, "Remove C", 8) == 0 && ncols>1) ncols--;
 
-    //R100_FIXES: Hide windows to destory context, inc;luding VBOs
-    if( strncmp( title, "Read", 4) == 0) {
-      uInitialize = 1;
-      // for( int i=0; i<nplots; i++) pws[i]->~plot_window();
-      for( int i=0; i<nplots; i++) pws[i]->hide();
+  // CASE 2: If this was an Fl_Menu_ widget, default to a resize operation,
+  // then figure out what operation was requested and revise the switches
+  // and array descriptions accordingly
+  else if( (pMenu_ = dynamic_cast <Fl_Menu_*> (o))) {
+    thisOperation = RESIZE;
+    nplots_old = nplots;
+
+    strcpy( widgetTitle, ((Fl_Menu_*) o)->text());
+    if( strncmp( widgetTitle, "Add Row ", 8) == 0) nrows++;
+    else if( strncmp( widgetTitle, "Add Colu", 8) == 0) ncols++;
+    else if( strncmp( widgetTitle, "Remove R", 8) == 0 && nrows>1) nrows--;
+    else if( strncmp( widgetTitle, "Remove C", 8) == 0 && ncols>1) ncols--;
+
+    // R100_FIXES: When reading new data, invoke Fl_Gl_Window.hide() 
+    // (instead of the destructor!) to destroy all plot windows along with 
+    // their context, including VBOs
+    if( strncmp( widgetTitle, "Read", 4) == 0) {
+      thisOperation = NEW_DATA;
       nplots_old = 0;
+      for( int i=0; i<nplots; i++) pws[i]->hide();
     }
-    else nplots_old = nplots;
   }
+
+  // CASE 3: If this was a button widget, assume it was a reload 
+  // operation, since no other buttons can invoke this method
   else if( (pButton = dynamic_cast <Fl_Button*> (o))) {
-    strcpy( title, ((Fl_Menu_*) o)->label());
-    if( strncmp( title, "Read", 4) == 0) nplots_old = 0;
-    else nplots_old = nplots;
+    thisOperation = RELOAD;
+    nplots_old = nplots;
+    strcpy( widgetTitle, ((Fl_Menu_*) o)->label());
   }
-  else nplots_old = nplots;
+
+  // DEFAULT: Default to a reload operation
+  else {
+    thisOperation = RELOAD;
+    nplots_old = nplots;
+  }
+  
+  // Recalculate number of plots
   nplots = nrows * ncols;
 
-  // If the number of plots has changed, resize the selection
-  // arrays, 'indices_selected' and 'number_selected'.
-  if( ( nplots > nplots_old) && (nplots_old > 0))
+  // If this was a resise operation, resize the selection arrays:
+  // 'indices_selected' and 'number_selected'.
+  if( thisOperation == RESIZE)
     resize_selection_index_arrays( nplots_old, nplots);
 
-  // Save old variable indices and normalization styles, if any.  
-  // QUESTION: are these array declarations safe on all compilers
-  // when nplots_old = 0?
+  // Always save old variable indices and normalization styles, if any.  
+  // QUESTION: are these array declarations safe on all compilers when 
+  // nplots_old = 0?
   int ivar_old[ nplots_old];
   int jvar_old[ nplots_old];
   int kvar_old[ nplots_old];
@@ -395,8 +429,8 @@ void manage_plot_window_array( Fl_Widget *o)
   // Clear children of the tab widget to delete old tabs
   cpt->clear();
 
-  // Create and add the virtual sub-panels, each group under a tab,
-  // one group per plot.
+  // Create and add the virtual sub-panels, each group under a tab, one
+  // group per plot.
   for( int i=0; i<nplots; i++) {
     int row = i/ncols;
     int col = i%ncols;
@@ -426,10 +460,10 @@ void manage_plot_window_array( Fl_Widget *o)
     oss << "" << i+1;
     string labstr = oss.str();
 
-    // Set pointer to the current group to the tab widget defined by
-    // create_control_panel and add a new virtual control panel under
-    // this tab widget
-    Fl_Group::current(cpt);  
+    // Set the pointer to the current group to the tab widget defined by
+    // create_control_panel and add a new virtual control panel under this
+    // tab widget
+    Fl_Group::current( cpt);  
     cps[i] = new control_panel_window( 
       cp_widget_x, cp_widget_y, main_w - 6, cp_widget_h);
     cps[i]->index = i;
@@ -438,17 +472,18 @@ void manage_plot_window_array( Fl_Widget *o)
     cps[i]->resizable( cps[i]);
     cps[i]->make_widgets( cps[i]);
 
-    // End the group here so that we can create new plot windows at the
-    // top level, then set the pointer to the current group to the top 
-    // level.
+    // End the group here so that we can create new plot windows at the top
+    // level, then set the pointer to the current group to the top level.
     cps[i]->end();
-    Fl_Group::current(0); 
+    Fl_Group::current( 0); 
 
-    // Examine uInitalize flag and number of old and new plots to
-    // determine if this is an initialization or resize operation, then 
-    // create or restore windows.  NOTE: If this code was executed during
-    // a read or reload operation, it would cause a segmentation fault.
-    if( uInitialize || ( nplots != nplots_old && nplots_old > 0)) {
+    // If this was an initialize, resize, or new_data operation, then create 
+    // or restore the relevant windows.  NOTE: If this code was executed 
+    // during a reload operation, it would cause a segmentation fault due to
+    // problems with the way shown() and hide() work.
+    if( thisOperation == INITIALIZE || 
+        thisOperation == RESIZE || 
+        thisOperation == NEW_DATA) {
       if( i >= nplots_old) {
         pws[i] = new plot_window( pw_w, pw_h);
         pws[i]->index = i;
@@ -469,27 +504,28 @@ void manage_plot_window_array( Fl_Widget *o)
       pws[i]->end();
     }
 
-    // Link the plot window and its associated virtual control panel
+    // Always link the plot window and its associated virtual control panel
     pws[i]->index = cps[i]->index = i;
     cps[i]->pw = pws[i];
     pws[i]->cp = cps[i];
 
-    // Determine which variables to plot in new panels.
+    // Always invoke plot_window::upper_triangle_incr to determine which 
+    // variables to plot in new panels.
     int ivar, jvar;
     if( i==0) {
       ivar = 0;
       jvar = 1;
       
-      // If this method was called with a NULL argument, then the plot window
-      // array is being created, and the first plot's tab should be shown with 
-      // its axes locked.
-      if( o == NULL) {
+      // If this is an initialize operation, then the plot window array is being 
+      // created, the tabs should come up free of context.  It also might be
+      // desirable that the first plot's tab be shown with its axes locked.
+      if( thisOperation == INITIALIZE) {
         cps[i]->hide();  
       }
     }
     else plot_window::upper_triangle_incr( ivar, jvar, nvars);
 
-    // If this is a resize operation, restore the old variable indices and
+    // If the number of plots has changed, restore the old variable indices and
     // normalization styles for the old panels.  Otherwise set new variable 
     // indices for the new panels    
     if( nplots != nplots_old && i<nplots_old) {
@@ -509,10 +545,13 @@ void manage_plot_window_array( Fl_Widget *o)
       cps[i]->varindex3->value(nvars);  
     }
 
-    // If this is an initialization or resize operation, test for missing
-    // data, extract data, reset panels, and make them resizable.  Otherwise 
-    // invoke plot_window::initialize() and draw panels
-    if( uInitialize || ( nplots != nplots_old && nplots_old > 0)) {
+    // If this is an initialization, resize, or new_data operation, test for 
+    // missing data, extract data, reset panels, and make them resizable.  
+    // Otherwise it must be a reload operation and we must invoke the 
+    // relevant plot_window member functions to initialize and draw panels.
+    if( thisOperation == INITIALIZE || 
+        thisOperation == RESIZE ||
+        thisOperation == NEW_DATA) {
       if( npoints > 1) {
         pws[i]->extract_data_points();
         pws[i]->reset_view();
@@ -539,16 +578,12 @@ void manage_plot_window_array( Fl_Widget *o)
     pws[i]->do_reset_view_with_show = 1;
   }
 
-  // If a new data set has been loaded, the plot windows will have been
-  // initialized, so it will be necessary to set the color arrays.
-  // if( !uInitialize && ( nplots == nplots_old || nplots_old == 0))
-  //   pws[0]->color_array_from_selection();
- 
-  // R100_FIXES: Now we must always set the color arrays.  Why?
+  // Set the color arrays to make sure points get drawn.
   pws[0]->color_array_from_selection();
   
-  // Get rid of any superfluous plot windows.
-  // MCL XXX why not destruct? (heh heh)
+  // Invoke Fl_Gl_Window::hide() (rather than the destructor, which may
+  // produce strange behavior) to rid of any superfluous plot windows
+  // along with their contexts.
   if( nplots < nplots_old)
     for( int i=nplots; i<nplots_old; i++) pws[i]->hide();
   
@@ -575,8 +610,20 @@ void make_main_menu_bar()
     "File/Read binary file   ", 0, 
     (Fl_Callback *) read_data, (void*) BINARY);
   main_menu_bar->add( 
+    "File/Write ASCII file   ", 0, 
+    (Fl_Callback *) write_data, (void*) ASCII);
+  main_menu_bar->add( 
     "File/Write binary file   ", 0, 
-    (Fl_Callback *) write_data, 0, FL_MENU_DIVIDER);
+    (Fl_Callback *) write_data, (void*) BINARY, FL_MENU_DIVIDER);
+
+  // KLUDGE ALERT!  Add an offset to the integer referenced by the
+  // user_data pointer to indicate a different write mode
+  main_menu_bar->add( 
+    "File/Write selected ASCII data   ", 0, 
+    (Fl_Callback *) write_data, (void*) ( ASCII + 10));
+  main_menu_bar->add( 
+    "File/Write selected binary data   ", 0, 
+    (Fl_Callback *) write_data, (void*) ( BINARY + 10), FL_MENU_DIVIDER);
   main_menu_bar->add( 
     "File/Quit   ", 0, (Fl_Callback *) exit);
 
@@ -734,13 +781,6 @@ void make_global_widgets()
   b->selection_color( FL_BLUE); 
   b->callback( plot_window::delete_selection);
 
-  // Button(6,1): Write binary data file
-  // write_data_button = b = 
-  //   new Fl_Button( xpos, ypos+=25, 20, 20, "write data");
-  // b->align( FL_ALIGN_RIGHT); 
-  // b->selection_color( FL_BLUE); 
-  // b->callback( write_data);
-
   // Advance to column 2
   xpos = xpos1 + 150; ypos = ypos1;
 
@@ -772,13 +812,6 @@ void make_global_widgets()
   b->align( FL_ALIGN_RIGHT); 
   b->selection_color( FL_BLUE); 
   b->callback( manage_plot_window_array);
-
-  // Button(6,2): Read ASCII data file
-  // read_data_button = b = 
-  //   new Fl_Button( xpos, ypos+=25, 20, 20, "read data");
-  // b->align( FL_ALIGN_RIGHT); 
-  // b->selection_color( FL_BLUE); 
-  // b->callback( read_data);
 }
 
 //*****************************************************************
@@ -788,7 +821,10 @@ void make_global_widgets()
 void choose_color_deselected( Fl_Widget *o)
 {
   (void) fl_color_chooser( 
-    "deselected", plot_window::r_deselected, plot_window::g_deselected, plot_window::b_deselected);
+    "deselected", 
+    plot_window::r_deselected, 
+    plot_window::g_deselected, 
+    plot_window::b_deselected);
 
   // Update selection color table and redraw all plots
   pws[ 0]->update_selection_color_table ();
@@ -798,12 +834,13 @@ void choose_color_deselected( Fl_Widget *o)
 //*****************************************************************
 // change_all_axes( *o) -- Invoke the change_axes method of each
 // plot_window to change all unlocked axes.
-void change_all_axes( Fl_Widget *o) {
-
-  // Loop: Examine successive plots and change axes of those for
-  // which the x or y axis is unlocked.
+void change_all_axes( Fl_Widget *o)
+{
+  // Loop: Examine successive plots and change the axes of those 
+  // for which the x or y axis is unlocked.
   for( int i=0; i<nplots; i++) {
-    if( !(cps[i]->lock_axis1_button->value() && cps[i]->lock_axis2_button->value()))
+    if( !( cps[i]->lock_axis1_button->value() && 
+           cps[i]->lock_axis2_button->value()))
       pws[i]->change_axes( 0);
   }
 }
@@ -848,9 +885,22 @@ void resize_selection_index_arrays( int nplots_old, int nplots)
 //*****************************************************************
 // write_data( o) -- Write data widget.  Invoked by main control
 // panel.  Invokes write method to write a binary data file.
-void write_data( Fl_Widget *o)
+void write_data( Fl_Widget *o, void* user_data)
 {
-  dfm.write_binary_file_with_headers();
+  // Extract data type from pointer
+  int i_user_data = (int) user_data;
+  
+  // Write only selected data?
+  if( i_user_data >= 10) {
+    i_user_data = i_user_data - 10;
+    dfm.uWriteAll = 0;
+  }
+  else dfm.uWriteAll = 1;
+  
+  // Evaluate user_data to get file format
+  // if( (int) user_data == BINARY) dfm.write_binary_file_with_headers();
+  if( i_user_data == BINARY) dfm.write_binary_file_with_headers();
+  else dfm.write_ascii_file_with_headers();
 }
 
 //*****************************************************************
@@ -968,9 +1018,8 @@ void read_data( Fl_Widget* o, void* user_data)
   // Fewer points -> bigger starting pointsize
   pointsize = max( 1.0, 6.0 - (int) log10f( (float) npoints));
 
-  // Clear children of tab widget and reload plot window array
+  // Clear children of tab widget and reload plot window array.
   manage_plot_window_array( o);
-  // manage_plot_window_array( NULL);
 
   // KLUDGE: Make sure points are drawn in plot windows.  This
   // is now handled near the end of manage_plot_window_array().

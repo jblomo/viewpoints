@@ -106,12 +106,21 @@
 //     and deselected points
 //
 // Author: Creon Levitt    unknown
-// Modified: P. R. Gazis  08-MAY-2006
+// Modified: P. R. Gazis   26-OCT-2006
 //*****************************************************************
 class plot_window : public Fl_Gl_Window
 {
   protected:
     
+    // If they are available, use vertex buffer objects (VBOs)
+    #ifdef USE_VBO
+      // have we initialized the openGL vertex buffer object?
+      int VBOinitialized;
+      void initializeVBO();
+      // and have we filled it with our chunk of vertex data yet?
+      int VBOfilled;
+    #endif // USE_VBO
+
     // Draw routines
     void draw();
     void draw_grid();
@@ -149,15 +158,6 @@ class plot_window : public Fl_Gl_Window
 
     // Number of plot windows
     static int count;
-
-    // If they are available, use vertex buffer objects (VBOs)
-    #ifdef USE_VBO
-      // have we initialized the openGL vertex buffer object?
-      int VBOinitialized;
-      void initializeVBO();
-      // and have we filled it with our chunk of vertex data yet?
-      int VBOfilled;
-    #endif // USE_VBO
 
   public:
     plot_window( int w, int h);   // Constructor

@@ -21,8 +21,8 @@
 //
 // Purpose: Source code for <plot_window.h>
 //
-// Author: Creon Levit   unknown
-// Modified: P. R. Gazis  04-OCT-2006
+// Author: Creon Levit    unknown
+// Modified: P. R. Gazis  26-OCT-2006
 //*****************************************************************
 
 // Include the necessary include libraries
@@ -65,8 +65,9 @@ int plot_window::textures_initialized = 0;
 //*****************************************************************
 // plot_window::plot_window( w, h) -- Constructor.  Increment
 // count of plot wndows, resize arrays, and set mode.
-plot_window::plot_window( int w, int h) : Fl_Gl_Window( w, h),
-                                          do_reset_view_with_show( 0) // MCL XXX: Huh?? Paul?
+plot_window::plot_window( int w, int h) : 
+  Fl_Gl_Window( w, h),
+  do_reset_view_with_show( 0) // MCL XXX: Huh?? Paul?
 {
   // Update count and invoke initialzation method
   count++;
@@ -123,6 +124,45 @@ void plot_window::initialize()
   }
 }
 
+#ifdef USE_VBO
+//*****************************************************************
+// plot_window::initialize_VBO() -- Create vertex buffer objects 
+// (VBOs) and reserve the necessary space in openGL server memory,
+// but do not initialize it.
+void plot_window::initializeVBO()
+{
+  // Create a VBO. We only use one VBO, and index 0 is reserved, so
+  // set buffer=1
+  glBindBufferARB( GL_ARRAY_BUFFER_ARB, index+1);  
+  {
+    GLenum errorCode=glGetError();
+    if (errorCode != GL_NO_ERROR) {
+      std::string errorString((char *) gluErrorString(errorCode));
+      cerr << "glBindBufferARB() failed with error " << errorString << endl;
+      abort();
+    }
+  }
+
+  // Reserve enough space in openGL server memory VBO to hold all the 
+  // vertices, but do not initilize it.
+  glBufferDataARB(
+    GL_ARRAY_BUFFER_ARB, 
+    (GLsizeiptrARB) npoints*3*sizeof(GLfloat), 
+    (void*) NULL, GL_STATIC_DRAW_ARB);
+
+  // Check the error code to make sure we succeeded 
+  {
+    GLenum errorCode=glGetError();
+    if( errorCode != GL_NO_ERROR) {
+      std::string errorString( (char *) gluErrorString( errorCode));
+      cerr << "glBufferDataARB() failed with error " << errorString << endl;
+      abort();
+    }
+  }
+  cerr << " successfully initialized VBO " << index << endl;
+}   
+#endif // USE_VBO
+
 //*****************************************************************
 // choose_color_selected() -- Choose color of selected points.
 // Could this become a static member function of plot_window?
@@ -144,7 +184,8 @@ void plot_window::change_axes( int nchange)
   // Loop: Examine control panel tabs and increment axis counts
   // only for plots with x or y axis unlocked.  This is not ideal.
   for( int i=0; i<nplots; i++) {
-    if( !cps[i]->lock_axis1_button->value() || !cps[i]->lock_axis2_button->value())
+    if( !cps[i]->lock_axis1_button->value() || 
+        !cps[i]->lock_axis2_button->value())
       nchange++;
   }
   // cout << "for window " << index << " nchange=" << nchange << endl;
@@ -890,10 +931,10 @@ void plot_window::print_selection_stats ()
 
 //*****************************************************************
 // plot_window::handle_selection() -- Handler to handle selection
-// operations.  Does not draw anything (since openGL functions cannot
-// be called from within a handle() method).  Selection information 
-// (e.g. bounding box, statistics) are drawn from the draw() method
-// for the window making the selection by calling draw_selection_information().
+// operations.  Does not draw anything (since openGL functions cannot be
+// called from within a handle() method).  Selection information (e.g. 
+// bounding box, statistics) are drawn from the draw() method for the 
+// window making the selection by calling draw_selection_information().
 void plot_window::handle_selection ()
 {
   if (selection_is_inverted) invert_selection(); // MCL XXX ???
@@ -910,22 +951,23 @@ void plot_window::handle_selection ()
 
   // Add newly-selected points to existing or previous selection
   if( add_to_selection_button->value()) {
-    selected( NPTS) = where( newly_selected( NPTS), newly_selected( NPTS), selected( NPTS));
+    selected( NPTS) = 
+      where( newly_selected( NPTS), newly_selected( NPTS), selected( NPTS));
   } 
   else {
-    selected( NPTS) = where( newly_selected( NPTS), newly_selected( NPTS), previously_selected( NPTS));
+    selected( NPTS) = 
+      where( newly_selected( NPTS), newly_selected( NPTS), previously_selected( NPTS));
   }
 
   color_array_from_new_selection ();
 }
 
 //*****************************************************************
-// plot_window::draw_selection_information()
-// draw decorations for the selected set in the window where the user
-// is making the selection.
+// plot_window::draw_selection_information() -- Draw decorations 
+// for the selected set in the window where the user is making the 
+// selection.
 void plot_window::draw_selection_information()
 {
-
   int draw_selection_box = 1;
   if( draw_selection_box) {
     glBlendFunc( GL_ONE, GL_ZERO);
@@ -1023,17 +1065,19 @@ void plot_window::draw_data_points()
   const_color[3] = cp->Alph->value();
   glBlendColor( const_color[0], const_color[1], const_color[2], const_color[3]);
 
-  if (cp->smooth_points_button->value()) { 
+  if( cp->smooth_points_button->value()) { 
     glEnable(GL_POINT_SMOOTH);
     glHint(GL_POINT_SMOOTH_HINT,GL_NICEST);
-    // glBlendFunc(GL_SRC_ALPHA, GL_DST_ALPHA); // anti-aliased points blendfunc for log. saturation overplotting
-    // which is the same as
+    // Anti-aliased points blendfunc for log. saturation overplotting
+    // glBlendFunc(GL_SRC_ALPHA, GL_DST_ALPHA);
+    // ...which is the same as
     // glBlendFuncSeparate(GL_SRC_ALPHA, GL_DST_ALPHA, GL_SRC_ALPHA, GL_DST_ALPHA);
-    //  or play with things like:
+    // ...or play with things like:
     // glBlendFuncSeparate(GL_CONSTANT_COLOR, GL_DST_ALPHA, GL_SRC_ALPHA, GL_DST_ALPHA);
     glBlendFuncSeparate(GL_CONSTANT_COLOR, GL_DST_ALPHA, GL_CONSTANT_ALPHA, GL_DST_ALPHA);
   } else {
-    glBlendFunc(GL_CONSTANT_COLOR, GL_DST_ALPHA); // aliased points blendfunc for log. saturation overplotting
+    // aliased points blendfunc for log. saturation overplotting
+    glBlendFunc(GL_CONSTANT_COLOR, GL_DST_ALPHA);
   }
 
   int alpha_test_enabled = 0;
@@ -1042,8 +1086,7 @@ void plot_window::draw_data_points()
   // XXX need to resolve local/global controls issue
   //  - partially done.  can now get rid of show_deselected_button.
   if( !(show_deselected_button->value() && cp->show_deselected_points->value())) {
-    // Cull any deselected points (alpha==0.0), whatever the 
-    // blendfunc:
+    // Cull any deselected points (alpha==0.0), whatever the blendfunc:
     glEnable( GL_ALPHA_TEST);
     glAlphaFunc( GL_GREATER, 0.0);  
     alpha_test_enabled = 1;
@@ -1060,17 +1103,24 @@ void plot_window::draw_data_points()
 
   // Tell the GPU where to find the vertices;
   #ifdef USE_VBO
-    // XXX MCL spagetti monster alert: VBOs are usually filled in control_panel_window::extract_and_redraw()
-    // right after after (the only place where) new vertex data gets calculated: in plot_window::extract_data_points().
-    // We'd like to fill the VBO in plot_window::extract_data_points(), but we can't, because at startup
-    // there is no openGL context yet, since plot_window::draw() has not yet been called, and hence openGL calls will not work.
-    // But if we call plot_window::draw() (for the first time) before filling the VBO, we crash when drawing from
-    // an unfilled VBO. The temporary solution is to fill each plot's VBO here for the first time.
-    // XXX this should be refactored into plot_window::fillVBO()  (also called from control_panel_window::extract_and_redraw() )
+    // XXX MCL spagetti monster alert: 
+    // VBOs are usually filled in control_panel_window::extract_and_redraw() 
+    // right after (and the only place where) new vertex data gets calculated: 
+    // in plot_window::extract_data_points().  We'd like to fill the VBO in 
+    // plot_window::extract_data_points(), but we can't do this, because at 
+    // startup there is no openGL context yet, since plot_window::draw() has 
+    // not yet been called, and hence openGL calls will not work.  But if we 
+    // call plot_window::draw() (for the first time) before filling the VBO, 
+    // we crash when drawing from an unfilled VBO. The temporary solution is 
+    // to fill each plot's VBO here for the first time.  
+    // XXX this should be refactored into plot_window::fillVBO() (also called 
+    // from control_panel_window::extract_and_redraw() )
     glBindBufferARB(GL_ARRAY_BUFFER_ARB, index+1);
     if (!VBOfilled) {
       void *vertexp = (void *)vertices.data();
-      glBufferSubDataARB(GL_ARRAY_BUFFER, (GLintptrARB)0, (GLsizeiptrARB)(npoints*3*sizeof(GLfloat)), vertexp);
+      glBufferSubDataARB(
+        GL_ARRAY_BUFFER, (GLintptrARB) 0, 
+        (GLsizeiptrARB) (npoints*3*sizeof(GLfloat)), vertexp);
       VBOfilled = 1;
     }
     #define BUFFER_OFFSET(offset) ((char *)NULL + (offset))
@@ -1094,11 +1144,11 @@ void plot_window::draw_data_points()
     glVertexArrayRangeAPPLE(3*npoints*sizeof(GLfloat),(GLfloat *)vertices.data());
   #endif // FAST_APPLE_VERTEX_EXTENSIONS
 
-  // Loop: Draw points in successive sets.  Each plot window brushes using its 
+  // Loop: Draw points in successive sets.  Each plot window brushes using its
   // own selection color, and there is a single non-selected color.  This means 
-  // there are nplots+1 "sets" of vertices (vertex indices, actually), and that
-  // each set has a count of between 0 and npoints.  Each set is rendered using a 
-  // different color.  The total of all the counts must equal npoints;
+  // there are nplots+1 "sets" of vertices (vertex indices, actually), and that 
+  // each set has a count of between 0 and npoints.  Each set is rendered using 
+  // a different color.  The total of all the counts must equal npoints;
   for( int set=0; set<nplots+1; set++) {
     unsigned int count = number_selected( set);
 
@@ -1111,15 +1161,25 @@ void plot_window::draw_data_points()
         glPointSize( cp->pointsize_slider->value());
       }
       else {
-        // selected points are from 0.1 to 10.0 times the size of unselected points.  But not bigger than 30 pixels
-        glPointSize( min(cp->pointsize_slider->value()*pow(10.0,cp->selected_pointsize_slider->value()), 30.0));
+        // selected points are from 0.1 to 10.0 times the size of unselected 
+        // points.  But not bigger than 30 pixels
+        glPointSize( 
+          min( cp->pointsize_slider->value()*pow(10.0,cp->selected_pointsize_slider->value()), 30.0));
       }
       // set the color for this set of points
       if( !(show_deselected_button->value() && cp->show_deselected_points->value())) {
-        glColor4f(colors_hide_deselected(set,0),colors_hide_deselected(set,1),colors_hide_deselected(set,2),colors_hide_deselected(set,3));
+        glColor4f( 
+          colors_hide_deselected(set,0),
+          colors_hide_deselected(set,1),
+          colors_hide_deselected(set,2),
+          colors_hide_deselected(set,3));
       }
       else {
-        glColor4f(colors_show_deselected(set,0),colors_show_deselected(set,1),colors_show_deselected(set,2),colors_show_deselected(set,3));
+        glColor4f( 
+          colors_show_deselected(set,0),
+          colors_show_deselected(set,1),
+          colors_show_deselected(set,2),
+          colors_show_deselected(set,3));
       }
       // then render the points
       #ifdef FAST_APPLE_VERTEX_EXTENSIONS
@@ -1136,9 +1196,10 @@ void plot_window::draw_data_points()
 
     }
   }
+
   if( alpha_test_enabled ) {
-	  glDisable(GL_ALPHA_TEST);
-	  alpha_test_enabled = 0;
+    glDisable(GL_ALPHA_TEST);
+    alpha_test_enabled = 0;
   }
   
   if (cp->smooth_points_button->value()) {
@@ -1149,39 +1210,6 @@ void plot_window::draw_data_points()
     glDisable( GL_DEPTH_TEST);
   }
 }
-
-#if 0
-//*****************************************************************
-// plot_window::compute_histogram( axis) -- If requested, compute 
-// equi-depth histogram for axis 'axis'.
-void plot_window::compute_histogram( int axis)
-{
-  if( !(cp->show_histogram->value())) return;
-
-  nbins = (int)(cp->nbins_slider->value());
-  blitz::Range BINS(0,nbins-1);
-  counts(BINS,axis) = 0.0;
-  counts_selected( BINS, axis) = 0.0;
-  float range = amax[axis]-amin[axis];
-
-  // Loop: Sum over all data points
-  for( int i=0; i<npoints; i++) {
-    float x = vertices(i,axis);
-    int bin=(int)(nbins*((x-amin[axis])/range));
-    if( bin < 0) bin = 0;
-    if( bin >= nbins) bin=nbins-1;
-    counts(bin,axis)++;
-    if( selected( i) > 0.5) counts_selected( bin, axis)++;
-  }
-  
-  // Normalize results.  NOTE: This will die horribly if there is no data
-  counts( BINS, axis) = 
-    (5.0*nbins/(float)nbins_default)*counts(BINS,axis)/((float)(npoints));
-  counts_selected(BINS,axis) = 
-    (5.0*nbins/(float)nbins_default)*counts_selected(BINS,axis)/((float)(npoints));
-}
-
-#endif //0
 
 //*****************************************************************
 // plot_window::compute_histogram( axis) -- If requested, compute 
@@ -1701,6 +1729,7 @@ void plot_window::redraw_all_plots( int p)
     int j=(p+i)%nplots;
     pws[j]->compute_histograms();
     pws[j]->redraw();
+    // if (i==0) Fl::flush();  // moving this after the loop breaks it.
     pws[j]->needs_redraw = 0;
   }
   
@@ -1892,35 +1921,3 @@ void plot_window::initialize_textures()
   // Set flag to indicate that textures have been initialized
   textures_initialized = 1;
 }
-
-    
-#ifdef USE_VBO
-void plot_window::initializeVBO()
-{
-  // Create a VBO. We only use one VBO, and index 0 is reserved, so buffer=1
-  glBindBufferARB(GL_ARRAY_BUFFER_ARB, index+1);  
-  {
-    GLenum errorCode=glGetError();
-    if (errorCode != GL_NO_ERROR) {
-      std::string errorString((char *) gluErrorString(errorCode));
-      cerr << "glBindBufferARB() failed with error " << errorString << endl;
-      abort();
-    }
-  }
-
-  // reserve enough space in openGL server memory VBO to hold all the vertices, but do not initilize it.
-  glBufferDataARB(GL_ARRAY_BUFFER_ARB, (GLsizeiptrARB)npoints*3*sizeof(GLfloat), (void *)NULL, GL_STATIC_DRAW_ARB);
-
-  // make sure we succeeded 
-  {
-    GLenum errorCode=glGetError();
-    if (errorCode != GL_NO_ERROR) {
-      std::string errorString((char *) gluErrorString(errorCode));
-      cerr << "glBufferDataARB() failed with error " << errorString << endl;
-      abort();
-    }
-  }
-  cerr << " successfully initialized VBO " << index << endl;
-
-}   
-#endif // USE_VBO

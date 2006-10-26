@@ -25,8 +25,8 @@
 // General design philosophy:
 //   1) Add comments and get this code to run under Windows.
 //
-// Author: Creon Levit    unknown
-// Modified: P. R. Gazis   27-MAR-2006
+// Author: Creon Levit     unknown
+// Modified: P. R. Gazis   26-OCT-2006
 //*****************************************************************
 
 // Protection to make sure this header is not included twice

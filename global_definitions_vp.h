@@ -19,7 +19,7 @@
 //   3) Consider putting these variables into a NAMESPACE?
 //
 // Author: Creon Levit    unknown
-// Modified: P. R. Gazis  02-OCT-2006
+// Modified: P. R. Gazis  26-OCT-2006
 //*****************************************************************
 
 #ifndef VP_GLOBAL_DEFINITIONS_VP_H
@@ -35,9 +35,8 @@
 // Use the Standard Template Library
 using namespace std;
 
-// Define to allow fast Apple vertex extensions.  Used by both 
-// class control_panel_window and plot_window.
-// this does not work with VBOs
+// Define to allow fast Apple vertex extensions.  Used by both class 
+// control_panel_window and plot_window.  This does not work with VBOs
 #ifdef __APPLE__
 // #define FAST_APPLE_VERTEX_EXTENSIONS   
 #endif // __APPLE__
@@ -56,19 +55,19 @@ EXTERN int debugging INIT(0);
 
 // Set parameters to hold error messages and flags.  These MUST be global
 // because they will be set and used throughout the system
-EXTERN string sErrorMessage INIT("");  // Defaul error messag is empty
+EXTERN string sErrorMessage INIT("");  // Default error message is empty
 
-// Define input file formats
+// Define input file formats.  PRG XXX: Better to do this with enums?
 #define ASCII 0
 #define BINARY 1
 
-// Define input data orderings
+// Define input data orderings.  PRG XXX: Better to do this with enums?
 #define ROW_MAJOR 0
 #define COLUMN_MAJOR 1
 
-// Set parameters to define the default layout of the plot windows.  
-// NOTE: Creon notes that MAXPLOTS must be a power of 2 for the
-// texture-based coloring scheme to work properly.
+// Set parameters to define the default layout of the plot windows.  NOTE: 
+// For early versions of this code, Creon noted that MAXPLOTS must be a power 
+// of 2 for the texture-based coloring scheme to work properly.
 EXTERN int nrows INIT(2);  // Default number of rows of plots
 EXTERN int ncols INIT(2);   // Default number of columns of plots
 EXTERN int nplots INIT(nrows*ncols);  // Default number of plot windows
@@ -76,24 +75,23 @@ EXTERN int nplots INIT(nrows*ncols);  // Default number of plot windows
 
 // Set the maximum number of columns and rows
 #define MAXVARS 256  // Maximum number of columns
-#define MAXPOINTS 2000000;  // Maximum number of rows (unless overidded by "--npoints=<int>"
+#define MAXPOINTS 2000000;  // Maximum number of rows (unless overidded by "--npoints=<int>")
 
-// Initialize the actual number of rows (points or values) in 
-// the data file and the actual number of columns (fields) in 
-// each record.
+// Initialize the actual number of rows (points or values) in the data file 
+// and the actual number of columns (fields) in each record.
 EXTERN int npoints INIT(MAXPOINTS);   // number of rows in data file
 EXTERN int nvars INIT(MAXVARS);		// number of columns in data file
 
-// Define blitz::Arrays to hold raw and ranked (sorted) data 
-// arrays.  Used extensively in many classes, so for reasons of 
-// simplicity and clarity, these are left global
+// Define blitz::Arrays to hold raw and ranked (sorted) data arrays.  Used 
+// extensively in many classes, so for reasons of simplicity and clarity, 
+// these are left global
 EXTERN blitz::Array<float,2> points;  // main data array
 EXTERN blitz::Array<int,2> ranked_points;   // data, ranked, as needed.
 EXTERN blitz::Array<int,1> ranked;	  // flag: 1->column is ranked, 0->not
 EXTERN blitz::Array<int,1> identity;   // holds a(i)=i.
 
-// Define blitz::Arrays to flag selected points.  As with the raw
-// data, these are left global for simplicity and clarity.
+// Define blitz::Arrays to flag selected points.  As with the raw data, these 
+// are left global for simplicity and clarity.
 // newly_selected -- true iff point is in newly selected set
 // selected -- Index?  True if point is selected in any window
 // previously_selected -- true iff selected before mouse went down
@@ -119,22 +117,21 @@ EXTERN bool selection_is_inverted;
 // Temporary array (reference) for use with qsort
 EXTERN blitz::Array<float,1> tmp_points;
 
-// Define vector of strings to hold variable names.  Used 
-// extensively by main routine and class control_panel_window
+// Define vector of strings to hold variable names.  Used extensively by the
+// main routine and class control_panel_window
 EXTERN std::vector<std::string> column_labels; 
 
 // Global toggle between scale histogram & scale view :-(
 EXTERN int scale_histogram INIT(0);
 
-// Define variable to hold pointsize.  Used in main routine and
-// classes control_panel_window and plot_window.  (Move to class
-// plot_window?)
+// Define variable to hold pointsize.  Used in main routine and classes 
+// control_panel_window and plot_window.  (Move to class plot_window?)
 EXTERN float pointsize INIT(1.0);
 
-// Define main control panel's top level (global) widgets.  Many 
-// of these must also be accessible to class plot_window and
-// possibly control_panel_window so these are left global.  cpt -- 
-// Tab widget to hold virtual control panels for individual plots.
+// Define main control panel's top level (global) widgets.  Many of these must 
+// also be accessible to class plot_window and possibly control_panel_window 
+// so these are left global.
+// cpt -- Tab widget to hold virtual control panels for individual plots.
 // npoints_slider -- maximum number of points to display in all 
 // plots.  Various buttons -- as suggested by their names.
 EXTERN Fl_Tabs *cpt;  
@@ -150,19 +147,19 @@ EXTERN Fl_Button *change_all_axes_button, *link_all_axes_button;
 EXTERN Fl_Button *reload_plot_window_array_button;
 EXTERN Fl_Button *read_data_button;
 
-// Declare classes control_panel_window and plot_window here so 
-// they can be referenced
+// Declare classes control_panel_window and plot_window here so they can be 
+// referenced
 class control_panel_window;
 class plot_window;
 
-// Define pointer arrays of plot windows and control panel 
-// windows.  This can't be done until after the relevant class 
-// definitions.  NOTE: In the long run, it might be safer to store 
-// these in instances of the <vector> container class.
+// Define pointer arrays of plot windows and control panel windows.  This 
+// can't be done until after the relevant class definitions.  NOTE: In the 
+// long run, it might be safer to store these in instances of the 
+// <vector> container class.
 EXTERN plot_window *pws[ MAXPLOTS];
 
-// There is one extra control_panel_window, with index=MAXPLOTS
-// It has no associated plot window - it affects all (unlocked) plots.
+// There is one extra control_panel_window, with index=MAXPLOTS.  It has no 
+// associated plot window - it affects all (unlocked) plots.
 EXTERN control_panel_window *cps[ MAXPLOTS+1]; 
 
 //*****************************************************************
