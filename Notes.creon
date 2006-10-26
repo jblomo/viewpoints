@@ -660,3 +660,16 @@ VBO=no, FAST_APPLE_VERTEX_EXTENSIONS=no  12 secs
 VBO=no, FAST_APPLE_VERTEX_EXTENSIONS=yes 7.5 secs
 VBO=no, FAST_APPLE_VERTEX_EXTENSIONS=yes 4.1 secs
 
+Trying to put indices into a VBO, too.  Hard freeze here on
+tycho.bin. all points=0 on synthetic data.  it seems that
+indices_selected_packed or its mapping is messed up.
+Debugging strategy: use indices_selected_packed as index array without
+VBOS (i.e. using old vertex array) 
+
+Another performance idea (for OSX).  Experiment with  GL_APPLE_flush_render
+http://developer.apple.com/graphicsimaging/opengl/extensions.html#GL_APPLE_flush_render
+inside of FLTK?
+
+do not waste too much time on this......  Need to get on to other
+things.
+

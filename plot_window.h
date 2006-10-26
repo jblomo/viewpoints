@@ -150,6 +150,7 @@ class plot_window : public Fl_Gl_Window
     // Number of plot windows
     static int count;
 
+    // If they are available, use vertex buffer objects (VBOs)
     #ifdef USE_VBO
       // have we initialized the openGL vertex buffer object?
       int VBOinitialized;

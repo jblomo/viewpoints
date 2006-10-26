@@ -173,7 +173,7 @@ void usage()
   cerr << "  -s, --skip_header_lines=NLINES skip over NLINES lines at start of input file, default=0" << endl;
   cerr << "  -v, --nvars=NVARS           input has NVARS values per point (only for row major binary data)" << endl;
   cerr << "  -h, --help                  display this message and then exit" << endl;
-  cerr << "      --version               output version information and then exit" << endl;
+  cerr << "  -V, --version               output version information and then exit" << endl;
 
   exit( -1);
 }
@@ -193,6 +193,9 @@ void make_help_about_window( Fl_Widget *o)
   
   // Compose text. NOTE use of @@ in conjunction with label()
   string sAbout = "viewpoints 1.1.0\n";
+  sAbout += "$Revision$\n";
+  sAbout += "$LastChangedDate$\n";
+  sAbout += "$Id$\n";
   sAbout += "(c) 2006 C. Levit and P. R. Gazis\n\n";
   sAbout += "contact information:\n";
   sAbout += "Creon Levit creon@@nas.nasa.gov\n";
@@ -343,7 +346,13 @@ void manage_plot_window_array( Fl_Widget *o)
     else if( strncmp( title, "Remove R", 8) == 0 && nrows>1) nrows--;
     else if( strncmp( title, "Remove C", 8) == 0 && ncols>1) ncols--;
 
-    if( strncmp( title, "Read", 4) == 0) nplots_old = 0;
+    //R100_FIXES: Hide windows to destory context, inc;luding VBOs
+    if( strncmp( title, "Read", 4) == 0) {
+      uInitialize = 1;
+      // for( int i=0; i<nplots; i++) pws[i]->~plot_window();
+      for( int i=0; i<nplots; i++) pws[i]->hide();
+      nplots_old = 0;
+    }
     else nplots_old = nplots;
   }
   else if( (pButton = dynamic_cast <Fl_Button*> (o))) {
@@ -532,8 +541,11 @@ void manage_plot_window_array( Fl_Widget *o)
 
   // If a new data set has been loaded, the plot windows will have been
   // initialized, so it will be necessary to set the color arrays.
-  if( !uInitialize && ( nplots == nplots_old || nplots_old == 0))
-    pws[0]->color_array_from_selection();
+  // if( !uInitialize && ( nplots == nplots_old || nplots_old == 0))
+  //   pws[0]->color_array_from_selection();
+ 
+  // R100_FIXES: Now we must always set the color arrays.  Why?
+  pws[0]->color_array_from_selection();
   
   // Get rid of any superfluous plot windows.
   // MCL XXX why not destruct? (heh heh)
@@ -958,6 +970,7 @@ void read_data( Fl_Widget* o, void* user_data)
 
   // Clear children of tab widget and reload plot window array
   manage_plot_window_array( o);
+  // manage_plot_window_array( NULL);
 
   // KLUDGE: Make sure points are drawn in plot windows.  This
   // is now handled near the end of manage_plot_window_array().

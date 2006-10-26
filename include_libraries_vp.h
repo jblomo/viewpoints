@@ -145,6 +145,7 @@
   #define GL_GLEXT_PROTOTYPES
   #include <glext.h>
   #include <GL/glext.h>
+  #include <GL/glu.h>
 #endif // __WIN32__
 
 // GSL (Must be included before Blitz++!)

@@ -1701,9 +1701,13 @@ void plot_window::redraw_all_plots( int p)
     int j=(p+i)%nplots;
     pws[j]->compute_histograms();
     pws[j]->redraw();
-//    if (i==0) Fl::flush();  // moving this after the loop breaks it.
     pws[j]->needs_redraw = 0;
   }
+  
+  // R100_FIXES: Fix for WIN32 'slow-handler' bug
+  #ifdef __WIN32__
+    Fl::flush();
+  #endif // __WIN32__
 }
 
 //*****************************************************************
