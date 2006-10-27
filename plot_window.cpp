@@ -642,10 +642,10 @@ void plot_window::draw()
     draw_grid();
   }
 
+  draw_data_points();
   if( selection_changed) {
     draw_selection_information();
   }
-  draw_data_points();
   draw_center_glyph();
   draw_histograms ();
   draw_axes();
@@ -879,50 +879,34 @@ void plot_window::print_selection_stats ()
 {
   glDisable( GL_DEPTH_TEST);
   glEnable( GL_COLOR_LOGIC_OP);
-  glLogicOp( GL_INVERT);
-  glPushMatrix();
-  glLoadIdentity ();
+  glLogicOp( GL_XOR);
   glBlendFunc( GL_ONE, GL_ZERO);
-  glColor4f( 0.7,0.7,0.7,0.0);
+  glColor4f( 0.9,0.9,0.9,1.0);
 
   // Define character buffer to allocate storage for printing
   char buf[ 1024];
 
-  // Print selection statistics to top of plot window
+  // Print selection statistics, centered, near the top of the window
+  snprintf( buf, sizeof(buf), "%8d (%5.2f%%) selected", nselected, 100.0*nselected/(float)npoints);
   gl_font( FL_HELVETICA_BOLD, 11);
-  snprintf( buf, sizeof(buf), "%8d (%5.2f%%) selected",
-            nselected, 100.0*nselected/(float)npoints);
-  gl_draw( (const char *) buf, -1.0f*gl_width(buf)/w(), 0.9f);
+  glWindowPos2i( (w()-gl_width(buf))/2, 9*h()/10);
+  gl_draw( (const char *) buf);
 
-  glPopMatrix(); // back to world coordinates, to render strings at selection box boundaries
-  
   // Print x-ranges at left and right sides of selection box
   gl_font( FL_HELVETICA, 10);
   snprintf( buf, sizeof(buf), "%# 7.4g", xdown);
-  gl_draw( 
-    (const char *) buf, 
-    xdown-2*gl_width(buf)/(w()*xscale), 
-    ((ydown+ytracked)/2)-(0.5f*gl_height())/(h()*yscale));
+  gl_draw( (const char *) buf, xdown-2*gl_width(buf)/(w()*xscale), ((ydown+ytracked)/2)-(0.5f*gl_height())/(h()*yscale));
   if (xtracked != xdown) {
     snprintf( buf, sizeof(buf), "%#-7.4g", xtracked);
-    gl_draw( 
-      (const char *) buf, 
-      xtracked, 
-      ((ydown+ytracked)/2)-(0.5f*gl_height())/(h()*yscale) );
+    gl_draw( (const char *) buf, xtracked+4.0f/(w()*xscale), ((ydown+ytracked)/2)-(0.5f*gl_height())/(h()*yscale) );
   }
   
   // Print y-ranges at top and bottom sides of selection box
   snprintf( buf, sizeof(buf), "%# 7.4g", ydown);
-  gl_draw( 
-    (const char *) buf, 
-    (xdown+xtracked)/2-gl_width(buf)/(w()*xscale), 
-    ydown+(0.5f*gl_height())/(h()*yscale) );
+  gl_draw( (const char *) buf, (xdown+xtracked)/2-gl_width(buf)/(w()*xscale), ydown+(0.5f*gl_height())/(h()*yscale) );
   if (ytracked != ydown) {
     snprintf( buf, sizeof(buf), "%# 7.4g", ytracked);
-    gl_draw( 
-      (const char *) buf, 
-      (xdown+xtracked)/2-gl_width(buf)/(w()*xscale), 
-      ytracked-(1.5f*gl_height())/(h()*yscale) );
+    gl_draw( (const char *) buf, (xdown+xtracked)/2-gl_width(buf)/(w()*xscale), ytracked-(1.5f*gl_height())/(h()*yscale) );
   }
 
   glDisable( GL_COLOR_LOGIC_OP);
