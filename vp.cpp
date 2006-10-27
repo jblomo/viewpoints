@@ -208,8 +208,8 @@ void make_help_about_window( Fl_Widget *o)
   string sAbout = "viewpoints 1.1.0\n";
   sAbout += "(c) 2006 C. Levit and P. R. Gazis\n\n";
   sAbout += "contact information:\n";
-  sAbout += "Creon Levit creon@@nas.nasa.gov\n";
-  sAbout += "Paul R Gazis pgazis@@mail.arc.nasa.gov\n\n";
+  sAbout += " Creon Levit creon.levit@@nasa.gov\n";
+  sAbout += " Paul R Gazis pgazis@@mail.arc.nasa.gov\n\n";
 
   // Write text (old version with Fl_Multiline_Output)
   // Fl_Multiline_Output* output_widget = 
@@ -891,16 +891,18 @@ void write_data( Fl_Widget *o, void* user_data)
   int i_user_data = (int) user_data;
   
   // Write only selected data?
+  // MCL XXX.  Hey!! Pooka:  Why "10" and not, say, 42?  Ahem.....
   if( i_user_data >= 10) {
-    i_user_data = i_user_data - 10;
+    i_user_data = i_user_data - 10;  
     dfm.uWriteAll = 0;
   }
   else dfm.uWriteAll = 1;
   
   // Evaluate user_data to get file format
-  // if( (int) user_data == BINARY) dfm.write_binary_file_with_headers();
-  if( i_user_data == BINARY) dfm.write_binary_file_with_headers();
-  else dfm.write_ascii_file_with_headers();
+  if( i_user_data == BINARY)
+    dfm.write_binary_file_with_headers();
+  else
+    dfm.write_ascii_file_with_headers();
 }
 
 //*****************************************************************

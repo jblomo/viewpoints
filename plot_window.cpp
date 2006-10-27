@@ -882,7 +882,6 @@ void plot_window::print_selection_stats ()
   glLogicOp( GL_INVERT);
   glPushMatrix();
   glLoadIdentity ();
-  gl_font( FL_COURIER, 10);
   glBlendFunc( GL_ONE, GL_ZERO);
   glColor4f( 0.7,0.7,0.7,0.0);
 
@@ -890,15 +889,15 @@ void plot_window::print_selection_stats ()
   char buf[ 1024];
 
   // Print selection statistics to top of plot window
-  gl_font( FL_HELVETICA, 10);
-  snprintf( 
-    buf, sizeof(buf), "%8d/%d (%5.2f%%) selected", 
-    nselected, npoints, 100.0*nselected/(float)npoints);
-  gl_draw( (const char *) buf, -0.4f, 0.9f);
+  gl_font( FL_HELVETICA_BOLD, 11);
+  snprintf( buf, sizeof(buf), "%8d (%5.2f%%) selected",
+            nselected, 100.0*nselected/(float)npoints);
+  gl_draw( (const char *) buf, -1.0f*gl_width(buf)/w(), 0.9f);
 
   glPopMatrix(); // back to world coordinates, to render strings at selection box boundaries
   
   // Print x-ranges at left and right sides of selection box
+  gl_font( FL_HELVETICA, 10);
   snprintf( buf, sizeof(buf), "%# 7.4g", xdown);
   gl_draw( 
     (const char *) buf, 

@@ -666,6 +666,7 @@ void data_file_manager::write_ascii_file_with_headers()
     // Loop: Write successive ASCII records to the data block in 8-digit 
     // scientific notation.
     os << setiosflags( ios::scientific) << setw( 8);
+    int rows_written = 0;
     for( int irow = 0; irow < npoints; irow++) {
       if( uWriteAll > 0 || selected( irow) > 0) {
         for( int jcol = 0; jcol < nvars; jcol++) {
@@ -673,12 +674,12 @@ void data_file_manager::write_ascii_file_with_headers()
           os << points( jcol, irow);
         }
         os << endl;
+        rows_written++;
       }
     }
 
     // Report results
-    cout << "Finished writing " << npoints
-         << " rows with " << nvars << " variables" << endl;
+    cout << "wrote " << rows_written << " rows of " << nvars << " variables to ascii file " << output_file_name << endl;
   }
 
   // Deallocate the Fl_File_Chooser object
@@ -764,6 +765,7 @@ void data_file_manager::write_binary_file_with_headers()
     
     // Loop: Write data and report any problems
     int nBlockSize = nvars*sizeof(float);
+    int rows_written = 0;
     for( int i=0; i<npoints; i++) {
       if( uWriteAll > 0 || selected( i) > 0) {
         vars = points( NVARS, i);
@@ -773,12 +775,12 @@ void data_file_manager::write_binary_file_with_headers()
           delete file_chooser;
           return;
         }
+        rows_written++;
       }
     }
     
     // Report results
-    cout << "Finished writing " << npoints
-         << " rows with block_size " << nBlockSize << endl;
+    cout << "wrote " << rows_written << " rows of " << nBlockSize << " bytes to binary file " << output_file_name << endl;
   }
 
   // Deallocate the Fl_File_Chooser object
