@@ -61,16 +61,18 @@ blitz::Array<GLfloat,2> plot_window::colors_hide_deselected(MAXPLOTS+1,4);
 //GLfloat plot_window::texenvcolor[ 4] = { 1, 1, 1, 1};
 //GLuint plot_window::texnames[ 2] = { };
 int plot_window::textures_initialized = 0;
+void *plot_window::global_GLContext = NULL;
 
 //*****************************************************************
 // plot_window::plot_window( w, h) -- Constructor.  Increment
 // count of plot wndows, resize arrays, and set mode.
-plot_window::plot_window( int w, int h) : 
+plot_window::plot_window( int w, int h, int new_index) : 
   Fl_Gl_Window( w, h),
   do_reset_view_with_show( 0) // MCL XXX: Huh?? Paul?
 {
   // Update count and invoke initialzation method
   count++;
+  index = new_index;
   initialize();
 }
 
@@ -99,28 +101,36 @@ void plot_window::initialize()
   counts.resize( nbins_max, 3);
   counts_selected.resize( nbins_max, 3);
 
-  // Set mode
-  if( can_do(FL_RGB|FL_DOUBLE|FL_ALPHA|FL_DEPTH)) {
-    mode( FL_RGB|FL_DOUBLE|FL_ALPHA|FL_DEPTH);
-    cout << " mode: FL_RGB|FL_DOUBLE|FL_ALPHA|FL_DEPTH" << endl;
-  }
-  else if( can_do(FL_RGB8|FL_DOUBLE|FL_ALPHA|FL_DEPTH)) {
-    mode( FL_RGB8|FL_DOUBLE|FL_DEPTH|FL_ALPHA);
-    cout << " mode: FL_RGB8|FL_DOUBLE|FL_DEPTH|FL_ALPHA" << endl;
-  }
-  else if( can_do(FL_RGB|FL_DOUBLE|FL_ALPHA)) {
-    cout << "Warning: depth buffering not enabled" << endl;
-    mode( FL_RGB|FL_DOUBLE|FL_DEPTH|FL_ALPHA);
-    cout << " mode: FL_RGB|FL_DOUBLE|FL_DEPTH|FL_ALPHA" << endl;
-  }
-  else if( can_do(FL_RGB8|FL_DOUBLE|FL_ALPHA)) {
-    cout << "Warning: depth buffering not enabled" << endl;
-    mode( FL_RGB8|FL_DOUBLE|FL_ALPHA);
-    cout << " mode: FL_RGB8|FL_DOUBLE|FL_ALPHA" << endl;
-  }
-  else {
-    cerr << "Error: could not allocate double buffered RGBA window" << endl;
-    exit (-1);
+  if (index == 0) {
+    // this is the first plot_window we create,
+    // so we set up and save its GLContext to share with the others
+    if( can_do(FL_RGB|FL_DOUBLE|FL_ALPHA|FL_DEPTH)) {
+      mode( FL_RGB|FL_DOUBLE|FL_ALPHA|FL_DEPTH);
+      cout << " mode: FL_RGB|FL_DOUBLE|FL_ALPHA|FL_DEPTH" << endl;
+    }
+    else if( can_do(FL_RGB8|FL_DOUBLE|FL_ALPHA|FL_DEPTH)) {
+      mode( FL_RGB8|FL_DOUBLE|FL_DEPTH|FL_ALPHA);
+      cout << " mode: FL_RGB8|FL_DOUBLE|FL_DEPTH|FL_ALPHA" << endl;
+    }
+    else if( can_do(FL_RGB|FL_DOUBLE|FL_ALPHA)) {
+      cout << "Warning: depth buffering not enabled" << endl;
+      mode( FL_RGB|FL_DOUBLE|FL_DEPTH|FL_ALPHA);
+      cout << " mode: FL_RGB|FL_DOUBLE|FL_DEPTH|FL_ALPHA" << endl;
+    }
+    else if( can_do(FL_RGB8|FL_DOUBLE|FL_ALPHA)) {
+      cout << "Warning: depth buffering not enabled" << endl;
+      mode( FL_RGB8|FL_DOUBLE|FL_ALPHA);
+      cout << " mode: FL_RGB8|FL_DOUBLE|FL_ALPHA" << endl;
+    }
+    else {
+      cerr << "Error: could not allocate double buffered RGBA window" << endl;
+      exit (-1);
+    }
+    global_GLContext = context();
+  } else {
+    // all other plot_windows share the same GLContext, so we set their contexts explicitly.
+    // I bet closing plot_window 0 while others are open could screw the context, or worse....
+    context (global_GLContext, false);
   }
 }
 
@@ -475,8 +485,15 @@ int plot_window::handle( int event)
           //redraw();
           return 1;
 
+        // hold down 'h' and middle mouse drag to scale histogram bin height.
+        // there should really be a better way....
         case 'h':
           scale_histogram=1;
+          return 1;
+
+        // run a timing test, for tuning purposes.
+      case '9':
+          run_timing_test();
           return 1;
 
         default:
@@ -889,7 +906,7 @@ void plot_window::print_selection_stats ()
   // Print selection statistics, centered, near the top of the window
   snprintf( buf, sizeof(buf), "%8d (%5.2f%%) selected", nselected, 100.0*nselected/(float)npoints);
   gl_font( FL_HELVETICA_BOLD, 11);
-  glWindowPos2i( (w()-gl_width(buf))/2, 9*h()/10);
+  glWindowPos2i( (w()-gl_width(buf))/2, 95*h()/100); // LR-centered, upper 95th percentile of the window
   gl_draw( (const char *) buf);
 
   // Print x-ranges at left and right sides of selection box
@@ -903,7 +920,7 @@ void plot_window::print_selection_stats ()
   
   // Print y-ranges at top and bottom sides of selection box
   snprintf( buf, sizeof(buf), "%# 7.4g", ydown);
-  gl_draw( (const char *) buf, (xdown+xtracked)/2-gl_width(buf)/(w()*xscale), ydown+(0.5f*gl_height())/(h()*yscale) );
+  gl_draw( (const char *) buf, (xdown+xtracked)/2-gl_width(buf)/(w()*xscale), ydown+(0.75f*gl_height())/(h()*yscale) );
   if (ytracked != ydown) {
     snprintf( buf, sizeof(buf), "%# 7.4g", ytracked);
     gl_draw( (const char *) buf, (xdown+xtracked)/2-gl_width(buf)/(w()*xscale), ytracked-(1.5f*gl_height())/(h()*yscale) );
@@ -1197,6 +1214,19 @@ void plot_window::draw_data_points()
 //*****************************************************************
 // plot_window::compute_histogram( axis) -- If requested, compute 
 // equi-width histogram for axis 'axis'.
+//
+// MCL XXX this should be split into two routines, one for computing 
+// the histogram for all the points, the other for selected points.
+// and _neither_ of them needs to be called as often as they are.
+// The first only needs to be called in extract_and_redraw(), and the
+// second only when the selection changes (but it must be called for all
+// plots in that case), or when nbins changes (in that case, only for one plot).
+// The way it is, a lot of extra time is burned here if any histograms are being shown.
+// Note - we could experiment with openGL histograms......
+//
+// MCL XXX also note that if we want to get rid of the vertices() instance variable
+// to save memory, which should be doable since vertices are copied into VBOs, then
+// we will have to do something else here.
 void plot_window::compute_histogram( int axis)
 {
   if( !(cp->show_histogram->value())) return;
@@ -1215,7 +1245,7 @@ void plot_window::compute_histogram( int axis)
     if( bin < 0) bin = 0;
     if( bin >= nbins) bin = nbins-1;
     counts( bin, axis)++;
-    if( selected( i) > 0.5) counts_selected( bin, axis)++;
+    if( selected( i) > 0) counts_selected( bin, axis)++;
   }
   
   // Normalize results.  NOTE: This must be protected against missing data
@@ -1708,18 +1738,45 @@ void plot_window::redraw_all_plots( int p)
   // the selection region, and the active plot (the one where we 
   // are making the selection) must update the selected set and 
   // set arrays *before* all the other plots get redrawn.  Ugh.
+  // Also, they are queued in reverse order, since is the order in which
+  // fltk will actually draw() them (most recently defined gets draw first).
   for( int i=0; i<nplots; i++) {
-    int j=(p+i)%nplots;
+    int j = p-i;
+    if (j<0) j=nplots+j;  // p, p-1, p-2, ..., 0, nplots-1, nplots-2, ... , p+1.
+    assert (j>=0);
+    assert (j<nplots);
     pws[j]->compute_histograms();
     pws[j]->redraw();
-    // if (i==0) Fl::flush();  // moving this after the loop breaks it.
     pws[j]->needs_redraw = 0;
   }
   
   // R100_FIXES: Fix for WIN32 'slow-handler' bug
+  // if we could get rid of this call to Fl::flush,
+  // the WIN32 version would be faster.
   #ifdef __WIN32__
     Fl::flush();
   #endif // __WIN32__
+}
+
+void plot_window::run_timing_test()
+{
+  const int nframes = 10;
+  struct timeval tp;
+
+  (void) gettimeofday(&tp, (struct timezone *)0);
+  double start_time = (double)tp.tv_sec + 1.0E-6*(double)tp.tv_usec;
+  
+  for (int i=0; i<nframes; i++) {
+    invert_selection();
+    Fl::check();  // this flushes all the pending redraws.
+  }
+  
+  (void) gettimeofday(&tp, (struct timezone *)0);
+  double end_time = (double)tp.tv_sec + 1.0E-6*(double)tp.tv_usec;
+
+  double elapsed_time = end_time - start_time;
+  double fps = (double)nframes/elapsed_time;
+  cout << "Timing test results: " <<  fps << " frames/sec, " << (double)npoints*nplots*fps << " vertices/sec " << endl;
 }
 
 //*****************************************************************
@@ -1777,13 +1834,13 @@ void plot_window::invert_selection ()
     // create something like an inverse in its place
     selected = where(selected==0, 1, 0);
     selection_is_inverted = true;
-    cout << "selection inverted" << endl;
+    // cout << "selection inverted" << endl;
   } 
   else {
     // restore what we saved last time
     selected = saved_selection;
     selection_is_inverted = false;
-    cout << "selection restored" << endl;
+    // cout << "selection restored" << endl;
   }
 
   nselected = npoints-nselected;

@@ -133,7 +133,8 @@ class plot_window : public Fl_Gl_Window
     // Event handlers
     int handle( int event);
     void handle_selection();
-
+    void run_timing_test();
+    
     void screen_to_world(float xs, float ys, float &x, float &y);
     void print_selection_stats();
 
@@ -160,7 +161,7 @@ class plot_window : public Fl_Gl_Window
     static int count;
 
   public:
-    plot_window( int w, int h);   // Constructor
+    plot_window( int w, int h, int new_index);   // Constructor
     void initialize();
 
     // min and max for data's bounding box in x, y, and z;
@@ -234,6 +235,7 @@ class plot_window : public Fl_Gl_Window
     static blitz::Array<GLfloat,2> colors_hide_deselected; // when deselected points are invisible
     static GLfloat pointscolor[ 4];
     static int textures_initialized;
+    static void *global_GLContext; // the GLContextshared by all plot_windows
 };
 
 #endif   // PLOT_WINDOW_H

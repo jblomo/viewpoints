@@ -485,13 +485,11 @@ void manage_plot_window_array( Fl_Widget *o)
         thisOperation == RESIZE || 
         thisOperation == NEW_DATA) {
       if( i >= nplots_old) {
-        pws[i] = new plot_window( pw_w, pw_h);
-        pws[i]->index = i;
+        pws[i] = new plot_window( pw_w, pw_h, i);
         cps[i]->pw = pws[i];
         pws[i]->cp = cps[i];
       }
       else {
-        // if( pws[i]->shown()) pws[i]->hide();  // This is the problem!
         pws[i]->index = i;
         cps[i]->pw = pws[i];
         pws[i]->cp = cps[i];
@@ -505,7 +503,7 @@ void manage_plot_window_array( Fl_Widget *o)
     }
 
     // Always link the plot window and its associated virtual control panel
-    pws[i]->index = cps[i]->index = i;
+    assert ((pws[i]->index == i) && (cps[i]->index == i));
     cps[i]->pw = pws[i];
     pws[i]->cp = cps[i];
 
@@ -1046,17 +1044,18 @@ void redraw_if_changing( void *dummy)
       pws[i]->needs_redraw = 0;
     }
   }
-  float fps = 100.0;
+#if 0
+  float fps_max = 300.0;
   struct timeval tp;
   static long useconds=0;
   static long seconds=0;
 
-  // has at least 1/fps seconds elapsed? (sort of)
+  // has at least 1/fps_max seconds elapsed? (sort of)
   busy:
 
   (void) gettimeofday(&tp, (struct timezone *)0);
   if( (tp.tv_sec > seconds) || 
-      (((float)(tp.tv_usec - useconds)/1000000.0) > 1/fps)) {
+      (((float)(tp.tv_usec - useconds)/1000000.0) > 1.0/fps_max)) {
     seconds = tp.tv_sec;
     useconds = tp.tv_usec;
     return;
@@ -1064,9 +1063,13 @@ void redraw_if_changing( void *dummy)
   else {
        
     // DANGER: Don't monkey with syntax in the call to usleep!
-    usleep (1000000/(5*(int)fps));
+    usleep (1000000/(5*(int)fps_max));
     goto busy;
   }
+#else // 0
+    Fl::repeat_timeout(0.001, redraw_if_changing);
+#endif // 0
+  return;
 }
 
 //*****************************************************************
@@ -1317,7 +1320,8 @@ int main( int argc, char **argv)
 
   // Step 5: Set pointer to the function to call when the window is
   // idle and enter the main event loop
-  Fl::add_idle( redraw_if_changing);
+  // Fl::add_idle( redraw_if_changing);
+  Fl::add_timeout(0.001, redraw_if_changing);
 
   // Enter the main event loop
   int result = Fl::run();
