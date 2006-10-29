@@ -872,6 +872,7 @@ void data_file_manager::resize_global_arrays()
   saved_selection.resize(npoints);
   indices_selected.resize(nplots+1,npoints);
   number_selected.resize(nplots+1);
+  indices_selected_packed.resize(npoints);
 
   // Initialize selection arrays
   number_selected = 0; 

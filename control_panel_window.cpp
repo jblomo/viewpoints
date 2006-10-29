@@ -173,7 +173,6 @@ void control_panel_window::extract_and_redraw ()
     #endif // FAST_APPLE_VERTEX_EXTENSIONS
 
     #ifdef USE_VBO
-      pw->make_current();
       glBindBufferARB(GL_ARRAY_BUFFER_ARB, index+1);
       void *vertexp = (void *)pw->vertices.data();
       glBufferSubDataARB(

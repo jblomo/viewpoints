@@ -673,3 +673,22 @@ inside of FLTK?
 do not waste too much time on this......  Need to get on to other
 things.
 
+23:21:07 28 Oct 06
+
+Wasted all afternoon trying to get shared VBOs for indices (GL_ELEMENT_ARAY_BUFFER).  It just doesn't work.
+
+Maybe I should go back to using glColorPointer(), which should be able to be shared more easily.  And not use glDrawElements().
+
+And how should I stash this partially working code?
+
+Need to pull out GL_ELEMENT_ARAY_BUFFER stuff, but leave in my other fixes.
+
+15:09:13 29 Oct 06
+
+Got GL_ELEMENT_ARAY_BUFFER VBOs working by using a separate VBO for indices from each selected set.
+This reserves more space on te GPU thean it needs to, and probably more time.
+There are probablty still crashing problems if one adds and removes plots, etc.
+I'm going to check this in anyway, and back it out or fix it up later
+
+
+

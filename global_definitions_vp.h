@@ -106,6 +106,9 @@ EXTERN int nselected;
 // Indices of points for rendering, packed acording to selection state;
 EXTERN blitz::Array<unsigned int,2> indices_selected; 
 
+// packed indices for VBO (could eleiminate this with map buffer)
+EXTERN std::vector<GLuint> indices_selected_packed; 
+
 // Count of points in each plot's selected set, index zero reserved for nonselected.
 // number_selected[1] = count of points selected in 1st plot (i.e, pws[0])....
 // number_selected[n+1] = count of points selected in nth plot (pws[n])

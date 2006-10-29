@@ -114,11 +114,23 @@ class plot_window : public Fl_Gl_Window
     
     // If they are available, use vertex buffer objects (VBOs)
     #ifdef USE_VBO
+
       // have we initialized the openGL vertex buffer object?
       int VBOinitialized;
-      void initializeVBO();
+      void initialize_VBO();
       // and have we filled it with our chunk of vertex data yet?
       int VBOfilled;
+      void fill_VBO();
+      
+      // have we initialized the shared openGL index vertex buffer object?
+      static int indexVBOsinitialized;
+      void initialize_indexVBOs();
+      void initialize_indexVBO(int);
+      // and is it filled with the latest index data?
+      static int indexVBOsfilled;
+      void fill_indexVBOs();
+      void fill_indexVBO(int);
+
     #endif // USE_VBO
 
     // Draw routines

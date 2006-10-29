@@ -62,6 +62,10 @@ blitz::Array<GLfloat,2> plot_window::colors_hide_deselected(MAXPLOTS+1,4);
 //GLuint plot_window::texnames[ 2] = { };
 int plot_window::textures_initialized = 0;
 void *plot_window::global_GLContext = NULL;
+#ifdef USE_VBO
+int plot_window::indexVBOsinitialized = 0;
+int plot_window::indexVBOsfilled = 0;
+#endif
 
 //*****************************************************************
 // plot_window::plot_window( w, h) -- Constructor.  Increment
@@ -134,45 +138,6 @@ void plot_window::initialize()
   }
 }
 
-#ifdef USE_VBO
-//*****************************************************************
-// plot_window::initialize_VBO() -- Create vertex buffer objects 
-// (VBOs) and reserve the necessary space in openGL server memory,
-// but do not initialize it.
-void plot_window::initializeVBO()
-{
-  // Create a VBO. We only use one VBO, and index 0 is reserved, so
-  // set buffer=1
-  glBindBufferARB( GL_ARRAY_BUFFER_ARB, index+1);  
-  {
-    GLenum errorCode=glGetError();
-    if (errorCode != GL_NO_ERROR) {
-      std::string errorString((char *) gluErrorString(errorCode));
-      cerr << "glBindBufferARB() failed with error " << errorString << endl;
-      abort();
-    }
-  }
-
-  // Reserve enough space in openGL server memory VBO to hold all the 
-  // vertices, but do not initilize it.
-  glBufferDataARB(
-    GL_ARRAY_BUFFER_ARB, 
-    (GLsizeiptrARB) npoints*3*sizeof(GLfloat), 
-    (void*) NULL, GL_STATIC_DRAW_ARB);
-
-  // Check the error code to make sure we succeeded 
-  {
-    GLenum errorCode=glGetError();
-    if( errorCode != GL_NO_ERROR) {
-      std::string errorString( (char *) gluErrorString( errorCode));
-      cerr << "glBufferDataARB() failed with error " << errorString << endl;
-      abort();
-    }
-  }
-  cerr << " successfully initialized VBO " << index << endl;
-}   
-#endif // USE_VBO
-
 //*****************************************************************
 // choose_color_selected() -- Choose color of selected points.
 // Could this become a static member function of plot_window?
@@ -194,8 +159,7 @@ void plot_window::change_axes( int nchange)
   // Loop: Examine control panel tabs and increment axis counts
   // only for plots with x or y axis unlocked.  This is not ideal.
   for( int i=0; i<nplots; i++) {
-    if( !cps[i]->lock_axis1_button->value() || 
-        !cps[i]->lock_axis2_button->value())
+    if( !cps[i]->lock_axis1_button->value() || !cps[i]->lock_axis2_button->value())
       nchange++;
   }
   // cout << "for window " << index << " nchange=" << nchange << endl;
@@ -583,7 +547,7 @@ void plot_window::reset_view()
   // Reset selection box and flag window as needing redraw
   reset_selection_box ();
   if( count ==1) {
-    // color_array_from_selection (); // HUH????
+    color_array_from_selection ();
   }
   needs_redraw = 1;
 
@@ -620,13 +584,6 @@ void plot_window::draw()
       glEnableClientState(GL_ELEMENT_ARRAY_APPLE);
     #endif // FAST_APPLE_VERTEX_EXTENSIONS
 
-    #ifdef USE_VBO
-      if (! VBOinitialized) {
-        initializeVBO();
-        VBOinitialized = 1;
-      }
-    #endif // USE_VBO
-
     // glEnableClientState(GL_TEXTURE_COORD_ARRAY);
     // glEnableClientState(GL_COLOR_ARRAY);
 
@@ -658,6 +615,13 @@ void plot_window::draw()
     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     draw_grid();
   }
+
+  #ifdef USE_VBO
+    if (!VBOinitialized) initialize_VBO();
+    if (!VBOfilled) fill_VBO();
+    if (!indexVBOsinitialized) initialize_indexVBOs();
+    if (!indexVBOsfilled) fill_indexVBOs();
+  #endif // USE_VBO
 
   draw_data_points();
   if( selection_changed) {
@@ -951,12 +915,10 @@ void plot_window::handle_selection ()
 
   // Add newly-selected points to existing or previous selection
   if( add_to_selection_button->value()) {
-    selected( NPTS) = 
-      where( newly_selected( NPTS), newly_selected( NPTS), selected( NPTS));
+    selected( NPTS) = where( newly_selected( NPTS), newly_selected( NPTS), selected( NPTS));
   } 
   else {
-    selected( NPTS) = 
-      where( newly_selected( NPTS), newly_selected( NPTS), previously_selected( NPTS));
+    selected( NPTS) = where( newly_selected( NPTS), newly_selected( NPTS), previously_selected( NPTS));
   }
 
   color_array_from_new_selection ();
@@ -1041,6 +1003,9 @@ void plot_window::color_array_from_selection()
   }
   nselected = npoints - number_selected(0);
   assert(sum(number_selected(blitz::Range(0,nplots))) == (unsigned int)npoints);
+  #ifdef USE_VBO
+    indexVBOsfilled = 0;
+  #endif USE_VBO
 }
 
 //*****************************************************************
@@ -1103,27 +1068,11 @@ void plot_window::draw_data_points()
 
   // Tell the GPU where to find the vertices;
   #ifdef USE_VBO
-    // XXX MCL spagetti monster alert: 
-    // VBOs are usually filled in control_panel_window::extract_and_redraw() 
-    // right after (and the only place where) new vertex data gets calculated: 
-    // in plot_window::extract_data_points().  We'd like to fill the VBO in 
-    // plot_window::extract_data_points(), but we can't do this, because at 
-    // startup there is no openGL context yet, since plot_window::draw() has 
-    // not yet been called, and hence openGL calls will not work.  But if we 
-    // call plot_window::draw() (for the first time) before filling the VBO, 
-    // we crash when drawing from an unfilled VBO. The temporary solution is 
-    // to fill each plot's VBO here for the first time.  
-    // XXX this should be refactored into plot_window::fillVBO() (also called 
-    // from control_panel_window::extract_and_redraw() )
+
+    #define BUFFER_OFFSET(vbo_offset) ((char *)NULL + (vbo_offset))
+
+    // bind VBO for vertex data
     glBindBufferARB(GL_ARRAY_BUFFER_ARB, index+1);
-    if (!VBOfilled) {
-      void *vertexp = (void *)vertices.data();
-      glBufferSubDataARB(
-        GL_ARRAY_BUFFER, (GLintptrARB) 0, 
-        (GLsizeiptrARB) (npoints*3*sizeof(GLfloat)), vertexp);
-      VBOfilled = 1;
-    }
-    #define BUFFER_OFFSET(offset) ((char *)NULL + (offset))
     glVertexPointer (3, GL_FLOAT, 0, BUFFER_OFFSET(0));
   #else // USE_VBO    
     glVertexPointer (3, GL_FLOAT, 0, (GLfloat *)vertices.data()); 
@@ -1146,9 +1095,10 @@ void plot_window::draw_data_points()
 
   // Loop: Draw points in successive sets.  Each plot window brushes using its
   // own selection color, and there is a single non-selected color.  This means 
-  // there are nplots+1 "sets" of vertices (vertex indices, actually), and that 
-  // each set has a count of between 0 and npoints.  Each set is rendered using 
-  // a different color.  The total of all the counts must equal npoints;
+  // there are nplots+1 "sets" of vertices (vertex indices, actually), and that
+  // each set has a count of between 0 and npoints.  Each set is rendered using a 
+  // different color.  The total of all the counts must equal npoints;
+
   for( int set=0; set<nplots+1; set++) {
     unsigned int count = number_selected( set);
 
@@ -1156,47 +1106,51 @@ void plot_window::draw_data_points()
     // render them
     if( count > 0) {
 
-      // Set the size for this set of points
+      // Set the pointsize for this set of points
       if (set==0) {
         glPointSize( cp->pointsize_slider->value());
       }
       else {
-        // selected points are from 0.1 to 10.0 times the size of unselected 
-        // points.  But not bigger than 30 pixels
-        glPointSize( 
-          min( cp->pointsize_slider->value()*pow(10.0,cp->selected_pointsize_slider->value()), 30.0));
+        // selected points are from 0.1 to 10.0 times the size of unselected points.  But not bigger than 30 pixels
+        glPointSize( min(cp->pointsize_slider->value()*pow(10.0,cp->selected_pointsize_slider->value()), 30.0));
       }
       // set the color for this set of points
       if( !(show_deselected_button->value() && cp->show_deselected_points->value())) {
-        glColor4f( 
-          colors_hide_deselected(set,0),
-          colors_hide_deselected(set,1),
-          colors_hide_deselected(set,2),
-          colors_hide_deselected(set,3));
+        glColor4f(colors_hide_deselected(set,0),colors_hide_deselected(set,1),colors_hide_deselected(set,2),colors_hide_deselected(set,3));
       }
       else {
-        glColor4f( 
-          colors_show_deselected(set,0),
-          colors_show_deselected(set,1),
-          colors_show_deselected(set,2),
-          colors_show_deselected(set,3));
+        glColor4f(colors_show_deselected(set,0),colors_show_deselected(set,1),colors_show_deselected(set,2),colors_show_deselected(set,3));
       }
       // then render the points
-      #ifdef FAST_APPLE_VERTEX_EXTENSIONS
-        glDrawRangeElementArrayAPPLE( GL_POINTS, 0, npoints, set*npoints, count);
-      #else // FAST_APPLE_VERTEX_EXTENSIONS
-        // Create an alias to slice
-        blitz::Array<unsigned int, 1> tmpArray = indices_selected( set, blitz::Range(0,npoints-1));
-        unsigned int *indices = (unsigned int *) (tmpArray.data());
-        // glDrawElements( GL_POINTS, count, GL_UNSIGNED_INT, indices);
-        glDrawRangeElements( GL_POINTS, 0, npoints, count, GL_UNSIGNED_INT, indices);
-      #endif // FAST_APPLE_VERTEX_EXTENSIONS
-      // cout << "sleeping in plot " << index << ", set " << set << endl;
-      // usleep(1000000/5);
+      #ifdef USE_VBO
+           assert (VBOinitialized && VBOfilled && indexVBOsinitialized && indexVBOsfilled) ;
+           glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, MAXPLOTS+set); // can move this outside of loop?
+        // glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, 0); /// XXX DEBUG works
+        // glDrawRangeElements( GL_POINTS, 0, npoints, count, GL_UNSIGNED_INT, BUFFER_OFFSET(0));
+           glDrawElements( GL_POINTS, (GLsizei)count, GL_UNSIGNED_INT, BUFFER_OFFSET(0));
+        // make sure we succeeded 
+          {
+            GLenum errorCode=glGetError();
+            if (errorCode != GL_NO_ERROR) {
+              std::string errorString((char *) gluErrorString(errorCode));
+              cerr << "plot_window::draw_data_points():  glDrawElements() failed with error " << errorString << endl;
+              abort();
+            }
+          }
+		  #else // USE_VBO
+        #ifdef FAST_APPLE_VERTEX_EXTENSIONS
+          glDrawRangeElementArrayAPPLE( GL_POINTS, 0, npoints, set*npoints, count);
+        #else 
+          // Create an alias to slice
+          blitz::Array<unsigned int, 1> tmpArray = indices_selected( set, blitz::Range(0,npoints-1));
+          unsigned int *indices = (unsigned int *) (tmpArray.data());
+          // glDrawElements( GL_POINTS, count, GL_UNSIGNED_INT, indices);
+          glDrawRangeElements( GL_POINTS, 0, npoints, count, GL_UNSIGNED_INT, indices);
+        #endif // FAST_APPLE_VERTEX_EXTENSIONS
+			#endif // USE_VBO
 
     }
   }
-
   if( alpha_test_enabled ) {
     glDisable(GL_ALPHA_TEST);
     alpha_test_enabled = 0;
@@ -1875,14 +1829,18 @@ void plot_window::toggle_display_deselected( Fl_Widget *o)
 void plot_window::initialize_selection()
 {
   // Loop: Reset selection box for successive plots.
-  // XXX should probably only do this if there is a valid gl context for all plots....
   for( int i=0; i<nplots; i++) {
     pws[i]->reset_selection_box();
   }
   number_selected = 0; 
   number_selected(0) = npoints; // all points initially in nonselected set
   indices_selected = 0;
-  for( int i=0; i<npoints; i++) indices_selected(0,i) = i;
+  for( int i=0; i<npoints; i++) {
+    indices_selected(0,i) = i;
+    #ifdef USE_VBO
+      indices_selected_packed[i] = i;
+    #endif USE_VBO
+  }
 
   // Initialize selection arrays
   newly_selected = 0;
@@ -1961,3 +1919,96 @@ void plot_window::initialize_textures()
   // Set flag to indicate that textures have been initialized
   textures_initialized = 1;
 }
+
+    
+#ifdef USE_VBO
+void plot_window::initialize_VBO()
+{
+  if (!VBOinitialized) {
+    // Create a VBO. Index 0 is reserved.
+    glBindBufferARB(GL_ARRAY_BUFFER_ARB, index+1);  
+    {
+      GLenum errorCode=glGetError();
+      if (errorCode != GL_NO_ERROR) {
+        std::string errorString((char *) gluErrorString(errorCode));
+        cerr << "glBindBufferARB() failed with error " << errorString << endl;
+        abort();
+      }
+    }
+
+    // reserve enough space in openGL server memory VBO to hold all the vertices, but do not initilize it.
+    glBufferDataARB(GL_ARRAY_BUFFER_ARB, (GLsizeiptrARB)npoints*3*sizeof(GLfloat), (void *)NULL, GL_STATIC_DRAW_ARB);
+
+    // make sure we succeeded 
+    {
+      GLenum errorCode=glGetError();
+      if (errorCode != GL_NO_ERROR) {
+        std::string errorString((char *) gluErrorString(errorCode));
+        cerr << "glBufferDataARB() failed with error " << errorString << endl;
+        abort();
+      }
+    }
+    cerr << " successfully initialized VBO " << index << endl;
+    VBOinitialized = 1;
+  }
+}
+ 
+void plot_window::fill_VBO()
+{
+  if (!VBOfilled) {
+    glBindBufferARB(GL_ARRAY_BUFFER_ARB, index+1);  
+    void *vertexp = (void *)vertices.data();
+    glBufferSubDataARB(GL_ARRAY_BUFFER, (GLintptrARB)0, (GLsizeiptrARB)(npoints*3*sizeof(GLfloat)), vertexp);
+    VBOfilled = 1;
+  }
+}
+
+void plot_window::initialize_indexVBO(int set)
+{
+  // There is one shared set of index VBOs for all plots.
+  //   indexVBO bound to MAXPLOTS holds indices of nonselected points
+  //   indexVBO bound to MAXPLOTS+1 holds indices of points selected in set 1, etc.
+  glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER, MAXPLOTS+set);  // a safe place....
+  glBufferDataARB(GL_ELEMENT_ARRAY_BUFFER, (GLsizeiptrARB)(npoints*sizeof(GLuint)), (void *)NULL, GL_DYNAMIC_DRAW_ARB);
+}
+
+void plot_window::initialize_indexVBOs() 
+{
+  if (!indexVBOsinitialized) {
+    for (int set=0; set<nplots+1; set++) {
+      initialize_indexVBO(set);
+    }
+    indexVBOsinitialized = 1;
+  }
+}
+
+void plot_window::fill_indexVBO(int set)
+{
+  glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, MAXPLOTS+set);
+  // Create an alias to slice
+  blitz::Array<unsigned int, 1> tmpArray = indices_selected( set, blitz::Range(0,npoints-1));
+  unsigned int *indices = (unsigned int *) (tmpArray.data());
+  glBufferSubDataARB(GL_ELEMENT_ARRAY_BUFFER_ARB, (GLintptrARB)0, (GLsizeiptrARB)(number_selected(set)*sizeof(GLuint)), indices);
+  // make sure we succeeded 
+  {
+    GLenum errorCode=glGetError();
+    if (errorCode != GL_NO_ERROR) {
+      std::string errorString((char *) gluErrorString(errorCode));
+      cerr << "plot_window::draw_data_points():  glBufferDataARB() failed with error " << errorString << endl;
+      abort();
+    }
+  }
+}
+
+void plot_window::fill_indexVBOs() 
+{
+  if (!indexVBOsfilled) {
+    for (int set=0; set<nplots+1; set++) {
+      fill_indexVBO(set);
+    }
+    indexVBOsfilled = 1;
+  }
+}
+
+
+#endif // USE_VBO
