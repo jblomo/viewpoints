@@ -65,7 +65,9 @@ void *plot_window::global_GLContext = NULL;
 #ifdef USE_VBO
 int plot_window::indexVBOsinitialized = 0;
 int plot_window::indexVBOsfilled = 0;
-#endif
+#define BUFFER_OFFSET(vbo_offset) ((char *)NULL + (vbo_offset))
+#endif // USE_VBO
+
 
 //*****************************************************************
 // plot_window::plot_window( w, h) -- Constructor.  Increment
@@ -579,11 +581,6 @@ void plot_window::draw()
     glEnable(GL_BLEND);
     glEnableClientState(GL_VERTEX_ARRAY);
 
-    #ifdef FAST_APPLE_VERTEX_EXTENSIONS
-      glEnableClientState(GL_VERTEX_ARRAY_RANGE_APPLE);
-      glEnableClientState(GL_ELEMENT_ARRAY_APPLE);
-    #endif // FAST_APPLE_VERTEX_EXTENSIONS
-
     // glEnableClientState(GL_TEXTURE_COORD_ARRAY);
     // glEnableClientState(GL_COLOR_ARRAY);
 
@@ -1068,30 +1065,12 @@ void plot_window::draw_data_points()
 
   // Tell the GPU where to find the vertices;
   #ifdef USE_VBO
-
-    #define BUFFER_OFFSET(vbo_offset) ((char *)NULL + (vbo_offset))
-
     // bind VBO for vertex data
     glBindBufferARB(GL_ARRAY_BUFFER_ARB, index+1);
     glVertexPointer (3, GL_FLOAT, 0, BUFFER_OFFSET(0));
   #else // USE_VBO    
     glVertexPointer (3, GL_FLOAT, 0, (GLfloat *)vertices.data()); 
   #endif // USE_VBO
-
-  #ifdef FAST_APPLE_VERTEX_EXTENSIONS
-
-    // hint for static vertex array data
-    glVertexArrayParameteriAPPLE( GL_VERTEX_ARRAY_STORAGE_HINT_APPLE, GL_STORAGE_CACHED_APPLE);
-
-    // alternate hint for dynamic vertex array data
-    //  glVertexArrayParameteriAPPLE( GL_VERTEX_ARRAY_STORAGE_HINT_APPLE, GL_STORAGE_SHARED_APPLE); 
-
-    // set current vertex index pointer array.  XXX this only needs to be done when npoints or nplots changes.
-    glElementPointerAPPLE( GL_UNSIGNED_INT, (unsigned int *)indices_selected.data());
-
-    // set current vertex coordinate array.  This *does* have to be done each time here.
-    glVertexArrayRangeAPPLE(3*npoints*sizeof(GLfloat),(GLfloat *)vertices.data());
-  #endif // FAST_APPLE_VERTEX_EXTENSIONS
 
   // Loop: Draw points in successive sets.  Each plot window brushes using its
   // own selection color, and there is a single non-selected color.  This means 
@@ -1123,32 +1102,26 @@ void plot_window::draw_data_points()
       }
       // then render the points
       #ifdef USE_VBO
-           assert (VBOinitialized && VBOfilled && indexVBOsinitialized && indexVBOsfilled) ;
-           glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, MAXPLOTS+set); // can move this outside of loop?
-        // glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, 0); /// XXX DEBUG works
-        // glDrawRangeElements( GL_POINTS, 0, npoints, count, GL_UNSIGNED_INT, BUFFER_OFFSET(0));
-           glDrawElements( GL_POINTS, (GLsizei)count, GL_UNSIGNED_INT, BUFFER_OFFSET(0));
-        // make sure we succeeded 
-          {
-            GLenum errorCode=glGetError();
-            if (errorCode != GL_NO_ERROR) {
-              std::string errorString((char *) gluErrorString(errorCode));
-              cerr << "plot_window::draw_data_points():  glDrawElements() failed with error " << errorString << endl;
-              abort();
-            }
-          }
+         assert (VBOinitialized && VBOfilled && indexVBOsinitialized && indexVBOsfilled) ;
+         glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, MAXPLOTS+set); // can move this outside of loop?
+         // glDrawElements( GL_POINTS, (GLsizei)count, GL_UNSIGNED_INT, BUFFER_OFFSET(0));
+         glDrawRangeElements( GL_POINTS, 0, npoints, count, GL_UNSIGNED_INT, BUFFER_OFFSET(0));
+         // make sure we succeeded 
+         {
+           GLenum errorCode=glGetError();
+           if (errorCode != GL_NO_ERROR) {
+             std::string errorString((char *) gluErrorString(errorCode));
+             cerr << "plot_window::draw_data_points():  glDrawElements() failed with error " << errorString << endl;
+             abort();
+           }
+         }
 		  #else // USE_VBO
-        #ifdef FAST_APPLE_VERTEX_EXTENSIONS
-          glDrawRangeElementArrayAPPLE( GL_POINTS, 0, npoints, set*npoints, count);
-        #else 
-          // Create an alias to slice
-          blitz::Array<unsigned int, 1> tmpArray = indices_selected( set, blitz::Range(0,npoints-1));
-          unsigned int *indices = (unsigned int *) (tmpArray.data());
-          // glDrawElements( GL_POINTS, count, GL_UNSIGNED_INT, indices);
-          glDrawRangeElements( GL_POINTS, 0, npoints, count, GL_UNSIGNED_INT, indices);
-        #endif // FAST_APPLE_VERTEX_EXTENSIONS
+        // Create an alias to slice
+        blitz::Array<unsigned int, 1> tmpArray = indices_selected( set, blitz::Range(0,npoints-1));
+        unsigned int *indices = (unsigned int *) (tmpArray.data());
+        // glDrawElements( GL_POINTS, count, GL_UNSIGNED_INT, indices);
+        glDrawRangeElements( GL_POINTS, 0, npoints, count, GL_UNSIGNED_INT, indices);
 			#endif // USE_VBO
-
     }
   }
   if( alpha_test_enabled ) {
@@ -1985,6 +1958,7 @@ void plot_window::initialize_indexVBOs()
 void plot_window::fill_indexVBO(int set)
 {
   glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, MAXPLOTS+set);
+
   // Create an alias to slice
   blitz::Array<unsigned int, 1> tmpArray = indices_selected( set, blitz::Range(0,npoints-1));
   unsigned int *indices = (unsigned int *) (tmpArray.data());

@@ -35,18 +35,8 @@
 // Use the Standard Template Library
 using namespace std;
 
-// Define to allow fast Apple vertex extensions.  Used by both class 
-// control_panel_window and plot_window.  This does not work with VBOs
-#ifdef __APPLE__
-// #define FAST_APPLE_VERTEX_EXTENSIONS   
-#endif // __APPLE__
-
 // use openGL vertex buffer objects (VBOs).  
 #define USE_VBO
-
-#if defined(FAST_APPLE_VERTEX_EXTENSIONS) & defined(USE_VBO)
-#error FAST_APPLE_VERTEX_EXTENSIONS and USE_VBO are incompatible.  Choose at most one of them.
-#endif
 
 // Define debug flag and statement (move to global_definitions.h)
 EXTERN int debugging INIT(0);

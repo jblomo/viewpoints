@@ -114,7 +114,6 @@ class plot_window : public Fl_Gl_Window
     
     // If they are available, use vertex buffer objects (VBOs)
     #ifdef USE_VBO
-
       // have we initialized the openGL vertex buffer object?
       int VBOinitialized;
       void initialize_VBO();
@@ -122,15 +121,14 @@ class plot_window : public Fl_Gl_Window
       int VBOfilled;
       void fill_VBO();
       
-      // have we initialized the shared openGL index vertex buffer object?
+      // have we initialized the shared openGL index vertex buffer objects?
       static int indexVBOsinitialized;
       void initialize_indexVBOs();
-      void initialize_indexVBO(int);
-      // and is it filled with the latest index data?
+      // and are they filled with the latest index data?
       static int indexVBOsfilled;
       void fill_indexVBOs();
-      void fill_indexVBO(int);
 
+      // MCL XXX there are also some public VBO initializers below :-(
     #endif // USE_VBO
 
     // Draw routines
@@ -248,6 +246,12 @@ class plot_window : public Fl_Gl_Window
     static GLfloat pointscolor[ 4];
     static int textures_initialized;
     static void *global_GLContext; // the GLContextshared by all plot_windows
+
+#ifdef USE_VBO
+    void initialize_indexVBO(int);
+    void fill_indexVBO(int);
+#endif // USE_VBO
+
 };
 
 #endif   // PLOT_WINDOW_H

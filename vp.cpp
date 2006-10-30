@@ -877,6 +877,10 @@ void resize_selection_index_arrays( int nplots_old, int nplots)
   for( int i=nplots_old+1; i<nplots+1; i++) {
     indices_selected(i,NPTS) = 0;
     number_selected(i) = 0;
+    #ifdef USE_VBO
+      pws[i]->initialize_indexVBO(i);
+      pws[i]->fill_indexVBO(i);
+    #endif // USE_VBO
   }
 }
 
