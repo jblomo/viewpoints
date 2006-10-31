@@ -168,7 +168,7 @@ class plot_window : public Fl_Gl_Window
     int selection_changed;
 
     // Number of plot windows
-    static int count;
+    static int count; // MCL XXX isn't this the same as nplots?  is it consistent?
 
   public:
     plot_window( int w, int h, int new_index);   // Constructor
@@ -240,6 +240,16 @@ class plot_window : public Fl_Gl_Window
     // blending factors are computed.
     static int sfactor;
     static int dfactor;
+
+    // Count of points in each plot's selected set, index zero reserved for nonselected.
+    // number_selected[1] = count of points selected in 1st plot (i.e, pws[0])....
+    // number_selected[n+1] = count of points selected in nth plot (pws[n])
+    // number_selected[0] = count of nonselected points
+    // sum(number_selected)==npoints;
+    static blitz::Array<unsigned int,1> number_selected; 
+
+    // Indices of points for rendering, packed acording to selection state;
+    static blitz::Array<unsigned int,2> indices_selected; 
 
     static blitz::Array<GLfloat,2> colors_show_deselected; // when deselected points are visible
     static blitz::Array<GLfloat,2> colors_hide_deselected; // when deselected points are invisible

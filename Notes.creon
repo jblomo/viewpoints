@@ -690,5 +690,10 @@ This reserves more space on te GPU thean it needs to, and probably more time.
 There are probablty still crashing problems if one adds and removes plots, etc.
 I'm going to check this in anyway, and back it out or fix it up later
 
+Mon Oct 30 16:11:40 2006
 
+1. Paul must fix RELOAD to use correct axes values.  May have to call extract_and_redraw()
+2. If easy, add a confirm dialog before over-writing files.
+3. After paul makes these patches, we will make a new release.
+4. And we will get him going with Makefile (for e.g. fltk-1.1.x) and win32 svn client.
 

@@ -606,13 +606,13 @@ void make_main_menu_bar()
     (Fl_Callback *) read_data, (void*) ASCII);
   main_menu_bar->add( 
     "File/Read binary file   ", 0, 
-    (Fl_Callback *) read_data, (void*) BINARY);
+    (Fl_Callback *) read_data, (void*) BINARY, FL_MENU_DIVIDER);
   main_menu_bar->add( 
     "File/Write ASCII file   ", 0, 
     (Fl_Callback *) write_data, (void*) ASCII);
   main_menu_bar->add( 
     "File/Write binary file   ", 0, 
-    (Fl_Callback *) write_data, (void*) BINARY, FL_MENU_DIVIDER);
+    (Fl_Callback *) write_data, (void*) BINARY);
 
   // KLUDGE ALERT!  Add an offset to the integer referenced by the
   // user_data pointer to indicate a different write mode
@@ -869,14 +869,22 @@ void npoints_changed( Fl_Widget *o)
 // the arrays that depend on the value of nplots and initialize
 // any new values of the selection arrays.  This should be called 
 // whenever nplots is changed
+//
+// MCL XXX - this whole function and the globals and public functions
+// it references could go away if we made the globals and public
+// functions into members of class plot_window.  However, this
+// requires some way of handling the extra "non-selected" selection
+// which does not really belong to any one plot window.
 void resize_selection_index_arrays( int nplots_old, int nplots)
 {
   blitz::Range NPTS( 0, npoints-1);
-  indices_selected.resizeAndPreserve(nplots+1,npoints);
-  number_selected.resizeAndPreserve(nplots+1);
+//  indices_selected.resizeAndPreserve(nplots+1,npoints);
+//  number_selected.resizeAndPreserve(nplots+1);
+  pws[0]->indices_selected.resizeAndPreserve(nplots+1,npoints);
+  pws[0]->number_selected.resizeAndPreserve(nplots+1);
   for( int i=nplots_old+1; i<nplots+1; i++) {
-    indices_selected(i,NPTS) = 0;
-    number_selected(i) = 0;
+    pws[0]->indices_selected(i,NPTS) = 0;
+    pws[0]->number_selected(i) = 0;
     #ifdef USE_VBO
       pws[i]->initialize_indexVBO(i);
       pws[i]->fill_indexVBO(i);

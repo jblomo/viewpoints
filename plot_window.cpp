@@ -35,6 +35,18 @@
 #include "plot_window.h"
 #include "control_panel_window.h"
 
+#define CHECK_GL_ERROR(msg)                    \
+    {                                          \
+        GLenum TMerrCode = glGetError();       \
+        if (TMerrCode != GL_NO_ERROR) {        \
+            printf("%s: %s %s at %s:%d\n",     \
+                   __FUNCTION__,               \
+                   gluErrorString(TMerrCode),  \
+                   (msg), __FILE__, __LINE__); \
+            abort();                           \
+        }                                      \
+    }
+
 // initialize static data members for class plot_window::
 
 // Initial number of plot windows
@@ -57,6 +69,9 @@ double plot_window::b_deselected=0.01;
 // colors_hide_deselected --  used when deselected points are not shown
 blitz::Array<GLfloat,2> plot_window::colors_show_deselected(MAXPLOTS+1,4);
 blitz::Array<GLfloat,2> plot_window::colors_hide_deselected(MAXPLOTS+1,4);
+
+blitz::Array<unsigned int,1> plot_window::number_selected(MAXPLOTS+1);
+blitz::Array<unsigned int,2> plot_window::indices_selected(MAXPLOTS+1,1); 
 
 //GLfloat plot_window::texenvcolor[ 4] = { 1, 1, 1, 1};
 //GLuint plot_window::texnames[ 2] = { };
@@ -133,6 +148,9 @@ void plot_window::initialize()
       exit (-1);
     }
     global_GLContext = context();
+	#ifdef USE_VBO
+      indexVBOsinitialized=0;
+    #endif // USE_VBO
   } else {
     // all other plot_windows share the same GLContext, so we set their contexts explicitly.
     // I bet closing plot_window 0 while others are open could screw the context, or worse....
@@ -867,7 +885,7 @@ void plot_window::print_selection_stats ()
   // Print selection statistics, centered, near the top of the window
   snprintf( buf, sizeof(buf), "%8d (%5.2f%%) selected", nselected, 100.0*nselected/(float)npoints);
   gl_font( FL_HELVETICA_BOLD, 11);
-  glWindowPos2i( (w()-gl_width(buf))/2, 95*h()/100); // LR-centered, upper 95th percentile of the window
+  glWindowPos2i( (w()-(int)gl_width(buf))/2, 95*h()/100); // LR-centered, upper 95th percentile of the window
   gl_draw( (const char *) buf);
 
   // Print x-ranges at left and right sides of selection box
@@ -1002,7 +1020,7 @@ void plot_window::color_array_from_selection()
   assert(sum(number_selected(blitz::Range(0,nplots))) == (unsigned int)npoints);
   #ifdef USE_VBO
     indexVBOsfilled = 0;
-  #endif USE_VBO
+  #endif // USE_VBO
 }
 
 //*****************************************************************
@@ -1107,21 +1125,14 @@ void plot_window::draw_data_points()
          // glDrawElements( GL_POINTS, (GLsizei)count, GL_UNSIGNED_INT, BUFFER_OFFSET(0));
          glDrawRangeElements( GL_POINTS, 0, npoints, count, GL_UNSIGNED_INT, BUFFER_OFFSET(0));
          // make sure we succeeded 
-         {
-           GLenum errorCode=glGetError();
-           if (errorCode != GL_NO_ERROR) {
-             std::string errorString((char *) gluErrorString(errorCode));
-             cerr << "plot_window::draw_data_points():  glDrawElements() failed with error " << errorString << endl;
-             abort();
-           }
-         }
-		  #else // USE_VBO
+		 CHECK_GL_ERROR("drawing");
+	  #else // USE_VBO
         // Create an alias to slice
         blitz::Array<unsigned int, 1> tmpArray = indices_selected( set, blitz::Range(0,npoints-1));
         unsigned int *indices = (unsigned int *) (tmpArray.data());
         // glDrawElements( GL_POINTS, count, GL_UNSIGNED_INT, indices);
         glDrawRangeElements( GL_POINTS, 0, npoints, count, GL_UNSIGNED_INT, indices);
-			#endif // USE_VBO
+      #endif // USE_VBO
     }
   }
   if( alpha_test_enabled ) {
@@ -1810,9 +1821,6 @@ void plot_window::initialize_selection()
   indices_selected = 0;
   for( int i=0; i<npoints; i++) {
     indices_selected(0,i) = i;
-    #ifdef USE_VBO
-      indices_selected_packed[i] = i;
-    #endif USE_VBO
   }
 
   // Initialize selection arrays
@@ -1900,27 +1908,13 @@ void plot_window::initialize_VBO()
   if (!VBOinitialized) {
     // Create a VBO. Index 0 is reserved.
     glBindBufferARB(GL_ARRAY_BUFFER_ARB, index+1);  
-    {
-      GLenum errorCode=glGetError();
-      if (errorCode != GL_NO_ERROR) {
-        std::string errorString((char *) gluErrorString(errorCode));
-        cerr << "glBindBufferARB() failed with error " << errorString << endl;
-        abort();
-      }
-    }
+	CHECK_GL_ERROR ("");
 
     // reserve enough space in openGL server memory VBO to hold all the vertices, but do not initilize it.
     glBufferDataARB(GL_ARRAY_BUFFER_ARB, (GLsizeiptrARB)npoints*3*sizeof(GLfloat), (void *)NULL, GL_STATIC_DRAW_ARB);
 
     // make sure we succeeded 
-    {
-      GLenum errorCode=glGetError();
-      if (errorCode != GL_NO_ERROR) {
-        std::string errorString((char *) gluErrorString(errorCode));
-        cerr << "glBufferDataARB() failed with error " << errorString << endl;
-        abort();
-      }
-    }
+	CHECK_GL_ERROR ("");
     cerr << " successfully initialized VBO " << index << endl;
     VBOinitialized = 1;
   }
@@ -1932,6 +1926,7 @@ void plot_window::fill_VBO()
     glBindBufferARB(GL_ARRAY_BUFFER_ARB, index+1);  
     void *vertexp = (void *)vertices.data();
     glBufferSubDataARB(GL_ARRAY_BUFFER, (GLintptrARB)0, (GLsizeiptrARB)(npoints*3*sizeof(GLfloat)), vertexp);
+	CHECK_GL_ERROR("");
     VBOfilled = 1;
   }
 }
@@ -1964,14 +1959,7 @@ void plot_window::fill_indexVBO(int set)
   unsigned int *indices = (unsigned int *) (tmpArray.data());
   glBufferSubDataARB(GL_ELEMENT_ARRAY_BUFFER_ARB, (GLintptrARB)0, (GLsizeiptrARB)(number_selected(set)*sizeof(GLuint)), indices);
   // make sure we succeeded 
-  {
-    GLenum errorCode=glGetError();
-    if (errorCode != GL_NO_ERROR) {
-      std::string errorString((char *) gluErrorString(errorCode));
-      cerr << "plot_window::draw_data_points():  glBufferDataARB() failed with error " << errorString << endl;
-      abort();
-    }
-  }
+  CHECK_GL_ERROR("");
 }
 
 void plot_window::fill_indexVBOs() 

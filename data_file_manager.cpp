@@ -30,6 +30,7 @@
 
 // Include associated headers and source code
 #include "data_file_manager.h"
+#include "plot_window.h"
 
 // Set static data members for class data_file_manager::
 //
@@ -870,13 +871,12 @@ void data_file_manager::resize_global_arrays()
   selected.resize( npoints);
   previously_selected.resize( npoints);
   saved_selection.resize(npoints);
-  indices_selected.resize(nplots+1,npoints);
-  number_selected.resize(nplots+1);
-  indices_selected_packed.resize(npoints);
+  plot_window::indices_selected.resize(nplots+1,npoints);
+  plot_window::number_selected.resize(nplots+1);
 
   // Initialize selection arrays
-  number_selected = 0; 
-  indices_selected = 0;
+  plot_window::number_selected = 0; 
+  plot_window::indices_selected = 0;
   newly_selected = 0;
   selected = 0;
   previously_selected = 0;
@@ -884,8 +884,6 @@ void data_file_manager::resize_global_arrays()
   nselected = 0;
   selection_is_inverted = false;
 
-  // Intially, all points are in the nonselected set
-  number_selected( 0) = npoints;
 }
 
 
