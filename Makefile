@@ -15,7 +15,8 @@ endif
 # flags for C++ compiler:
 # PROFILE		= -pg
 #DEBUG		= -O0 -ggdb -g3 -Wall -Wunused -DBZ_DEBUG -fexceptions
-DEBUG		= -g -ggdb -g3 -Wall -Wunused -fexceptions
+#DEBUG		= -g -ggdb -g3 -Wall -Wunused -fexceptions
+DEBUG		= -gfull -ggdb -Wall -Wunused -fexceptions
 
 
 ifeq ($(platform),Darwin)
@@ -29,7 +30,7 @@ ifeq ($(platform),Darwin)
 #	OPTIM = -O6 -ftree-vectorize -ftree-vectorizer-verbose=0 -Wall -Wno-long-double -fno-exceptions -ffast-math -fsigned-char -maltivec -mabi=altivec -faltivec -mpowerpc-gfxopt -g
 
 # uncomment optimize for intel mac
-	OPTIM = -O6 -ftree-vectorize -ftree-vectorizer-verbose=0 -Wall -Wno-long-double -fno-exceptions -ffast-math -fsigned-char -g
+	OPTIM = -O6 -ftree-vectorize -ftree-vectorizer-verbose=0 -Wall -Wno-long-double -fno-exceptions -ffast-math -fsigned-char -gfull
 
 else
 # platform assumed to be linux

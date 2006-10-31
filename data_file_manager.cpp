@@ -198,6 +198,16 @@ int data_file_manager::read_ascii_file_with_headers()
   // empty, examine the first line of the data block to determine 
   // the number of columns and generate a set of column labels.
   if( nHeaderLines == 0 || lastHeaderLine.length() == 0) {
+    // replace user-specified delimiter characters with " " so operator>> will work.
+    if (delimiter_char != ' ') {
+      //  MCL XXX I think this should do the job, but it doesn't.  Why not??
+      //    line.replace(line.begin(), line.end(), delimiter_char, ' ');
+      //  So instead we use:
+      for (unsigned int i=0; i<line.length(); i++)
+        if (line[i] == delimiter_char)
+          line[i] = ' ';
+    }
+
     std::stringstream ss( line);
     std::string buf;
     while( ss >> buf) {
@@ -223,6 +233,14 @@ int data_file_manager::read_ascii_file_with_headers()
     if( lastHeaderLine.find_first_of( "!#%") == 0) 
       lastHeaderLine.erase( 0, 1);
       
+    // replace user-specified delimiter characters with " " so operator>> will work.
+		// MCL XXX see previous XXX above, and refator.
+    if (delimiter_char != ' ') {
+      for (unsigned int i=0; i<lastHeaderLine.length(); i++)
+        if (lastHeaderLine[i] == delimiter_char)
+          lastHeaderLine[i] = ' ';
+    }
+
     // Loop: Insert the input string into a stream, define a 
     // buffer, read successive labels into the buffer and load 
     // them into the array of column labels

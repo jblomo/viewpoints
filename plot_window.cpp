@@ -1121,7 +1121,7 @@ void plot_window::draw_data_points()
       // then render the points
       #ifdef USE_VBO
          assert (VBOinitialized && VBOfilled && indexVBOsinitialized && indexVBOsfilled) ;
-         glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, MAXPLOTS+set); // can move this outside of loop?
+         glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, MAXPLOTS+set); 
          // glDrawElements( GL_POINTS, (GLsizei)count, GL_UNSIGNED_INT, BUFFER_OFFSET(0));
          glDrawRangeElements( GL_POINTS, 0, npoints, count, GL_UNSIGNED_INT, BUFFER_OFFSET(0));
          // make sure we succeeded 
