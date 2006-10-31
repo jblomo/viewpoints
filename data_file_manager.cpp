@@ -49,6 +49,16 @@ data_file_manager::data_file_manager()
   initialize();
 }
 
+void data_file_manager::replace_chars (std::string &s, const char oldChar, const char newChar)
+{
+  //  MCL XXX I think this should do the job, but it doesn't.  Why not??
+  //    s.replace(s.begin(), s.end(), oldChar, newChar);
+  //  So instead we use:
+  for (unsigned int i=0; i<s.length(); i++)
+    if (s[i] == oldChar)
+      s[i] = newChar;
+}
+
 //*****************************************************************
 // data_file_manager::initialize() -- Reset control parameters.
 void data_file_manager::initialize()
@@ -199,13 +209,9 @@ int data_file_manager::read_ascii_file_with_headers()
   // the number of columns and generate a set of column labels.
   if( nHeaderLines == 0 || lastHeaderLine.length() == 0) {
     // replace user-specified delimiter characters with " " so operator>> will work.
+    replace_chars (line, '\t', ' ');
     if (delimiter_char != ' ') {
-      //  MCL XXX I think this should do the job, but it doesn't.  Why not??
-      //    line.replace(line.begin(), line.end(), delimiter_char, ' ');
-      //  So instead we use:
-      for (unsigned int i=0; i<line.length(); i++)
-        if (line[i] == delimiter_char)
-          line[i] = ' ';
+      replace_chars (line, delimiter_char, ' ');
     }
 
     std::stringstream ss( line);
@@ -233,12 +239,10 @@ int data_file_manager::read_ascii_file_with_headers()
     if( lastHeaderLine.find_first_of( "!#%") == 0) 
       lastHeaderLine.erase( 0, 1);
       
-    // replace user-specified delimiter characters with " " so operator>> will work.
-		// MCL XXX see previous XXX above, and refator.
+    // replace user-specified delimiter characters and/or tabs with " " so operator>> will work.
+    replace_chars (lastHeaderLine, '\t', ' ');
     if (delimiter_char != ' ') {
-      for (unsigned int i=0; i<lastHeaderLine.length(); i++)
-        if (lastHeaderLine[i] == delimiter_char)
-          lastHeaderLine[i] = ' ';
+      replace_chars (lastHeaderLine, delimiter_char, ' ');
     }
 
     // Loop: Insert the input string into a stream, define a 
@@ -319,6 +323,8 @@ int data_file_manager::read_ascii_file_with_headers()
 
     // Loop: Insert the string into a stream and read it
 
+    // replace tabs with ' ' so operator>> will work
+    replace_chars (line, '\t', ' ');
     std::stringstream ss(line); 
     unsigned isBadData = 0;
 

@@ -82,7 +82,8 @@ class data_file_manager
   protected:
     void remove_trivial_columns();
     void resize_global_arrays();
-
+    static void replace_chars (std::string &s, const char oldChar, const char newChar);
+    
     string inFileSpec;
     string sPathname;
 

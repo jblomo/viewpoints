@@ -697,3 +697,30 @@ Mon Oct 30 16:11:40 2006
 3. After paul makes these patches, we will make a new release.
 4. And we will get him going with Makefile (for e.g. fltk-1.1.x) and win32 svn client.
 
+11:22:25 31 Oct 06
+
+TODO:
+  build script / build instructions
+  compile for powerpc
+    upload to trotsky
+    make tarballs for mac & linux versions    
+  VBOS for indices
+    does glDrawElements() have to start from 0 when indices are in a VBO?
+    does glBufferSubData() have to start from 0? 
+    Or do multiple calls behave in an unexpected way?
+  VBOs to conserve main memory - can we do it
+  point sprites
+  hls for color selection
+  see bugs & ideas file
+  add back reading from stdin
+  code walkthrough
+  write paper
+    submit to arxiv, NASA TR
+  start opensource proceedure
+  write eric for viewpoints.org?
+  software of the year
+  presentation(s) at arc
+  presentations at fermilab, slac.....
+  FAQ
+  changelog ?
+
