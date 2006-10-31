@@ -300,14 +300,15 @@ int data_file_manager::read_ascii_file_with_headers()
     nTestCycle++;
 
     // Loop: Insert the string into a stream and read it
+
     std::stringstream ss(line); 
     unsigned isBadData = 0;
-    for( int j=0; j<nvars; j++) {
-      double x;
-      ss >> x;
-      points( j, i) = (float) x;
 
-      // Skip lines that do not appear to contain enough data
+    double x;
+    for( int j=0; j<nvars; j++) {
+      ss >> x;
+
+			// Skip lines that do not appear to contain enough data
       if( ss.eof() && j<nvars-1) {
         cerr << " -WARNING, not enough data on line " << nRead
              << ", skipping this line!" << endl;
@@ -315,6 +316,16 @@ int data_file_manager::read_ascii_file_with_headers()
         break;
       }
       
+      // Replace bad (non-numberic) or missing values with a default value.
+      // Note: whitespace delimited files simply skip lines with missing values.
+      if(!ss) {
+        points(j,i) = bad_value_proxy;
+        ss.clear();
+      } else {
+        points(j,i) = (float) x;
+      }
+      ss.ignore(std::numeric_limits<streamsize>::max(),delimiter_char);
+
       // Check for unreadable data and flag line to be skipped
       if( !ss.good() && j<nvars-1) {
         cerr << " -WARNING, unreadable data "
@@ -326,6 +337,7 @@ int data_file_manager::read_ascii_file_with_headers()
         isBadData = 1;
         break;
       }
+
       DEBUG (cout << "points(" << j << "," << i << ") = " << points(j,i) << endl);
     }
 
@@ -363,7 +375,7 @@ int data_file_manager::read_ascii_file_with_headers()
        << " records." << endl;
   cout << "  " << nHeaderLines 
        << " header + " << i 
-       << " data + " << nSkip 
+       << " good data + " << nSkip 
        << " skipped lines = " << nRead << " total." << endl;
 
   // Close input file, report results of file read operation

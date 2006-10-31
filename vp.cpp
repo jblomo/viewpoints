@@ -166,12 +166,16 @@ void usage()
        << "don't show decorations on plot windows" << endl;
   cerr << "  -c, --cols=NCOLS            "
        << "startup showing this many columns of plot windows, default=2" << endl;
+  cerr << "  -d, --delimiter=CHAR        "
+       << "interpret CHAR as field separator, default is whitespace" << endl;
   cerr << "  -f, --format={ascii,binary} "
        << "input file format, default=ascii" << endl;
   cerr << "  -i, --input_file=FILENAME   "
        << "read input data from FILENAME" << endl;
   cerr << "  -m, --monitors=NSCREENS     "
        << "try and force output to display across NSCREENS screens if available" << endl;
+  cerr << "  -M, --missing_values=NUMBER "
+       << "set the value of any unreadable, nonnumeric, empty, or missing values to NUMBER, default=0.0" << endl;
   cerr << "  -n, --npoints=NPOINTS       "
        << "read at most NPOINTS from input file, default is min(until_EOF, 2000000)" << endl;
   cerr << "  -o, --ordering={rowmajor,columnmajor} "
@@ -184,7 +188,7 @@ void usage()
        << "input has NVARS values per point (only for row major binary data)" << endl;
   cerr << "  -h, --help                  "
        << "display this message and then exit" << endl;
-  cerr << "      --version               "
+  cerr << "  -V, --version               "
        << "output version information and then exit" << endl;
 
   exit( -1);
@@ -1121,6 +1125,8 @@ int main( int argc, char **argv)
     { "cols", required_argument, 0, 'c'},
     { "monitors", required_argument, 0, 'm'},
     { "input_file", required_argument, 0, 'i'},
+    { "missing_values", required_argument, 0, 'M'},
+    { "delimiter", required_argument, 0, 'd'},
     { "borderless", no_argument, 0, 'b'},
     { "help", no_argument, 0, 'h'},
     { "version", no_argument, 0, 'V'},
@@ -1140,7 +1146,7 @@ int main( int argc, char **argv)
   while( 
     ( c = getopt_long( 
         argc, argv, 
-        "f:n:v:s:o:r:c:m:i:bhV", long_options, NULL)) != -1) {
+        "f:n:v:s:o:r:c:m:i:M:d:bhV", long_options, NULL)) != -1) {
   
     // Examine command-line options and extract any optional
     // arguments
@@ -1221,6 +1227,25 @@ int main( int argc, char **argv)
       case 'm':
         number_of_screens = atoi( optarg);
         if( number_of_screens < 1)  {
+          usage();
+          exit( -1);
+        }
+        break;
+
+      // Missing or unreadable values get set to this number
+      case 'M':
+        bad_value_proxy = strtof (optarg, NULL);
+        if( !bad_value_proxy) {
+          usage();
+          exit( -1);
+        }
+        break;
+
+      // Missing or unreadable values get set to this number
+      case 'd':
+        if (optarg!=NULL)
+          delimiter_char = optarg[0];
+        else {
           usage();
           exit( -1);
         }

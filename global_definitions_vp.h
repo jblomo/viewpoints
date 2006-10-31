@@ -155,6 +155,17 @@ EXTERN plot_window *pws[ MAXPLOTS];
 // associated plot window - it affects all (unlocked) plots.
 EXTERN control_panel_window *cps[ MAXPLOTS+1]; 
 
+// MCL XXX Paul probably knows a better place to put these next two....
+
+// Assigned to unreadable/nonnumeric/empty/missing values:
+EXTERN float bad_value_proxy INIT(0.0);
+
+// Delimiter for files, e.g. ',' for CSV.  Default is whitespace.
+// Note that missing values can be specified in asci input file as long as
+// the delimiter is not whitespace.  E.g.
+//   1,2,3,,5,,,8,9,10
+EXTERN char delimiter_char INIT(' ');
+
 //*****************************************************************
 // Class: myCompare
 //
