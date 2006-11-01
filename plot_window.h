@@ -1,6 +1,6 @@
 // viewpoints - interactive linked scatterplots and more.
 // copyright 2005 Creon Levit, all rights reserved.
-//*****************************************************************
+//***************************************************************************
 // File name: plot_window.h
 //
 // Class definitions:
@@ -27,8 +27,8 @@
 //   1) Review and add comments!
 //
 // Author: Creon Levitt   unknown
-// Modified: P. R. Gazis  02-OCT-2006
-//*****************************************************************
+// Modified: P. R. Gazis  31-OCT-2006
+//***************************************************************************
 
 // Protection to make sure this header is not included twice
 #ifndef PLOT_WINDOW_H
@@ -43,7 +43,7 @@
 // Declare class control_panel_window here so it can be referenced
 // class control_panel_window;
 
-//*****************************************************************
+//***************************************************************************
 // Class: plot_window
 //
 // Class definitions:
@@ -52,11 +52,10 @@
 // Classes referenced:
 //   control_panel_window
 //
-// Purpose: Derived class of Fl_Gl_Window to construct, draw,
-//   and manage a plot window.  Tthe plot_window class is subclass 
-//   of an ftlk openGL window that also handles certain keyboard & 
-//   mouse events.  It is where data is displayed.  There are 
-//   usually several open at one time.
+// Purpose: Derived class of Fl_Gl_Window to construct, draw, and manage a 
+//   plot window.  Tthe plot_window class is subclass of an ftlk openGL 
+//   window that also handles certain keyboard & mouse events.  It is where 
+//   data is displayed.  There are usually several open at one time.
 //
 // Functions:
 //   plot_window( w, h) -- Constructor
@@ -71,12 +70,18 @@
 //
 //   handle( event) -- Main event handler
 //   handle_selection() -- Handle this selection?
+//   run_timing_test() -- ???
 //
 //   void screen_to_world( xs, ys, x, y) -- Screen to word coords?
 //   void print_selection_stats() -- ???
 //
 //   compute_histogram( int) -- Compute a histogram
 //   draw_histograms() -- Draw histograms
+//
+//   initialize_VBO() -- Initialize VBOs to hold vetrex data
+//   fill_VBO() -- Fill VBOs with vertex data
+//   initialize_indexVBOs() -- Initialize index VBOs to hold selections
+//   fill_indexVBOs() -- Fill index VBOs with selections
 //
 //   compute_rank( blitz::Array<float,1>, blitz::Array<int,1>);
 //   compute_histograms () -- Compute histograms
@@ -94,6 +99,9 @@
 //   redraw_one_plot() -- Redraw one plot
 //   change_axes() -- Change axes of this plot
 //
+//   initialize_indexVBO( set) -- Initialize this index VBO
+//   fill_indexVBO( set) -- Fill this index VBO
+//
 // Static functions:
 //   upper_triangle_incr( i, j, nvars) -- Traverse upper triangle
 //   redraw_all_plots( p) -- Redraw all plots
@@ -102,35 +110,16 @@
 //   toggle_display_delected( *o) -- Toggle colors
 //   initialize_selection() -- Clear selection
 //   clear_selection( *o) -- Clear selection and redraw plots
-//   initialize_textures() -- initial setup of rgba used for selected 
-//     and deselected points
+//   initialize_textures() -- initial setup of rgba used for selected  and
+//     deselected points
 //
 // Author: Creon Levitt    unknown
-// Modified: P. R. Gazis   26-OCT-2006
-//*****************************************************************
+// Modified: P. R. Gazis   31-OCT-2006
+//***************************************************************************
 class plot_window : public Fl_Gl_Window
 {
   protected:
     
-    // If they are available, use vertex buffer objects (VBOs)
-    #ifdef USE_VBO
-      // have we initialized the openGL vertex buffer object?
-      int VBOinitialized;
-      void initialize_VBO();
-      // and have we filled it with our chunk of vertex data yet?
-      int VBOfilled;
-      void fill_VBO();
-      
-      // have we initialized the shared openGL index vertex buffer objects?
-      static int indexVBOsinitialized;
-      void initialize_indexVBOs();
-      // and are they filled with the latest index data?
-      static int indexVBOsfilled;
-      void fill_indexVBOs();
-
-      // MCL XXX there are also some public VBO initializers below :-(
-    #endif // USE_VBO
-
     // Draw routines
     void draw();
     void draw_grid();
@@ -164,6 +153,28 @@ class plot_window : public Fl_Gl_Window
     void compute_histogram( int);
     void draw_histograms();
 
+    // If they are available, use vertex buffer objects (VBOs)
+    #ifdef USE_VBO
+
+      // Have we initialized the openGL vertex buffer object?
+      int VBOinitialized;
+      void initialize_VBO();
+
+      // Have we filled it with our chunk of vertex data yet?
+      int VBOfilled;
+      void fill_VBO();
+      
+      // Have we initialized the shared openGL index vertex buffer objects?
+      static int indexVBOsinitialized;
+      void initialize_indexVBOs();
+
+      // Are they filled with the latest index data?
+      static int indexVBOsfilled;
+      void fill_indexVBOs();
+
+      // MCL XXX there are also some public VBO initializers below :-(
+    #endif // USE_VBO
+
     int show_center_glyph;
     int selection_changed;
 
@@ -185,16 +196,17 @@ class plot_window : public Fl_Gl_Window
     static const int nbins_max = 1024;
 
     // Routines to compute histograms and normalize data
-    void compute_rank(blitz::Array<float,1> a, blitz::Array<int,1> a_rank, int var_index);
+    void compute_rank( 
+      blitz::Array<float,1> a, blitz::Array<int,1> a_rank, int var_index);
     void compute_histograms();
-    int normalize(blitz::Array<float,1> a, blitz::Array<int,1> a_rank, int style, int axis_index);
+    int normalize(
+      blitz::Array<float,1> a, blitz::Array<int,1> a_rank, int style, int axis_index);
 
     // Define strings to hold axis labels
     std::string xlabel, ylabel, zlabel;
 
-    // Pointer to and index of the control panel tab associated 
-    // with this plot window.  Each plot window has the same index
-    // as its associated tab.
+    // Pointer to and index of the control panel tab associated with this plot 
+    // window.  Each plot window has the same index as its associated tab.
     control_panel_window *cp;
     int index;
 
@@ -232,16 +244,17 @@ class plot_window : public Fl_Gl_Window
     static void clear_selection( Fl_Widget *o);
     static void initialize_textures();
     
-    // Static variable to hold he initial fraction of the window 
-    // to be used for data to allow room for axes, labels, etc.
+    // Static variable to hold he initial fraction of the window to be used 
+    // for data to allow room for axes, labels, etc.
     static const float initial_pscale; 
 
-    // Specify how the RGB and alpha source and destination 
-    // blending factors are computed.
+    // Specify how the RGB and alpha source and destination blending factors 
+    // are computed.
     static int sfactor;
     static int dfactor;
 
-    // Count of points in each plot's selected set, index zero reserved for nonselected.
+    // Count of points in each plot's selected set, index zero reserved for 
+    // nonselected.
     // number_selected[1] = count of points selected in 1st plot (i.e, pws[0])....
     // number_selected[n+1] = count of points selected in nth plot (pws[n])
     // number_selected[0] = count of nonselected points
@@ -258,8 +271,8 @@ class plot_window : public Fl_Gl_Window
     static void *global_GLContext; // the GLContextshared by all plot_windows
 
 #ifdef USE_VBO
-    void initialize_indexVBO(int);
-    void fill_indexVBO(int);
+    void initialize_indexVBO( int set);
+    void fill_indexVBO( int set);
 #endif // USE_VBO
 
 };

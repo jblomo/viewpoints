@@ -1,6 +1,6 @@
 // viewpoints - interactive linked scatterplots and more.
 // copyright 2005 Creon Levit, all rights reserved.
-//*****************************************************************
+//***************************************************************************
 // File name: control_panel_window.h
 //
 // Class definitions:
@@ -20,8 +20,7 @@
 // Compiler directives:
 //   May require D__WIN32__ for the C++ compiler
 //
-// Purpose: Control panel window class for Creon Levitt's 
-//   viewpoints
+// Purpose: Control panel window class for Creon Levitt's viewpoints
 //
 // General design philosophy:
 //   1) This might be a good place to consolidate references to
@@ -29,7 +28,7 @@
 //
 // Author: Creon Levit    2005-2006
 // Modified: P. R. Gazis  26-OCT-2006
-//*****************************************************************
+//***************************************************************************
 
 // Protection to make sure this header is not included twice
 #ifndef CONTROL_PANEL_WINDOW_H
@@ -44,11 +43,11 @@
 // Declare class plot_window here so it can be referenced
 // class plot_window;
 
-// Include associated headers and source code.  NOTE: not needed if
-// this class has already been declared
+// Include associated headers and source code.  NOTE: not needed if this 
+// class has already been declared
 #include "plot_window.h"
 
-//*****************************************************************
+//***************************************************************************
 // Class: control_panel_window
 //
 // Class definitions:
@@ -57,8 +56,8 @@
 // Classes referenced:
 //   plot_window -- Maintain and manage plot window
 //
-// Purpose: Derived class of Fl_Gl_Window to construct, draw,
-//   and manage a plot window
+// Purpose: Derived class of Fl_Gl_Window to construct, draw, and manage a 
+//   control panel tab or window
 //
 // Functions:
 //   control_panel_window( w, h) -- Constructor
@@ -69,7 +68,8 @@
 //
 // Static functions for access by Fl_Button::callback
 //   choose_color_selected( *w, *cpw) -- Color of selected points
-//   static_extract_and_redraw( *w, *cpw) -- extract a variable, renormalize it, etc.
+//   static_extract_and_redraw( *w, *cpw) -- extract a variable, renormalize 
+//     it, etc.
 //   static_maybe_redraw( *w, *cpw) -- Set redraw flag nicely.
 //   replot( *w, *cpw) -- set redraw flag.
 //   reset_view( *w, *cpw) -- Reset one plot's view
@@ -78,8 +78,8 @@
 //   This comment also conveys nothing.
 //
 // Author: Creon Levitt   unknown
-// Modified: P. R. Gazis  08-MAR-2006
-//*****************************************************************
+// Modified: P. R. Gazis  31-OCT-2006
+//***************************************************************************
 class control_panel_window : public Fl_Group
 {
   protected:
@@ -130,9 +130,9 @@ class control_panel_window : public Fl_Group
               *y_normalization_style, 
               *z_normalization_style;
 
-    // Pointer to and index of the plot window associated with 
-    // this control panel tab.  Each plot window has the same 
-    // color and index as its associated control panel tab.
+    // Pointer to and index of the plot window associated with this control 
+    // panel tab.  Each plot window has the same color and index as its 
+    // associated control panel tab.
     plot_window *pw;
     int index;  
     

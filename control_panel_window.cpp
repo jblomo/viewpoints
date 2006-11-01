@@ -1,6 +1,6 @@
 // viewpoints - interactive linked scatterplots and more.
 // copyright 2005 Creon Levit, all rights reserved.
-//*****************************************************************
+//***************************************************************************
 // File name: control_panel_window.cpp
 //
 // Class definitions:
@@ -22,8 +22,8 @@
 // Purpose: Source code for <control_panel_window.h>
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  26-OCT-2006
-//*****************************************************************
+// Modified: P. R. Gazis  31-OCT-2006
+//***************************************************************************
 
 // Include the necessary include libraries
 #include "include_libraries_vp.h"
@@ -68,36 +68,34 @@ char *control_panel_window::normalization_style_labels[ 11] = {
   "trim 10^-3", "threesigma", "log_10", "squash", "rank",
   "gaussianize"};
 
-//*****************************************************************
-// control_panel_window::control_panel_window( x, y, w, h) -- 
-// Default constructor.  Do nothing except call the constructor 
-// for the parent class, Fl_Group.
+//***************************************************************************
+// control_panel_window::control_panel_window( x, y, w, h) -- Default 
+// constructor.  Do nothing except call the constructor for the parent 
+// class, Fl_Group.
 control_panel_window::control_panel_window(
   int x, int y, int w, int h) : Fl_Group( x, y, w, h)
 {}
 
-//*****************************************************************
-// control_panel_window::broadcast_change (*master_widget) -- 
-// broadcast an interaction from the master panel to all (unlocked) 
-// panels.
+//***************************************************************************
+// control_panel_window::broadcast_change (*master_widget) -- Broadcast an 
+// interaction from the master panel to all (unlocked) panels.
 void control_panel_window::broadcast_change (Fl_Widget *master_widget)
 {
-  // Define a pointer to the parent of the master widget and verify
-  // that it exists
+  // Define a pointer to the parent of the master widget and verify that it
+  // exists
   const Fl_Group *master_panel = master_widget->parent();
   assert( master_panel);
 
-  // Indentify the index of the maser widget and verify that it has
-  // a plausible value
+  // Indentify the index of the maser widget and verify that it has a
+  // plausible value
   const int widget_index = master_panel->find(master_widget);
   assert( widget_index >= 0 && widget_index < master_panel->children());
 
-  // Loop: Apply operation defined by the master widget to 
-  // succesive windows
+  // Loop: Apply operation defined by the master widget to succesive windows
   for (int i=0; i<nplots; i++)
   {
-    // Define a pointer to the relevant widget in this window and
-    // verify thay it exists
+    // Define a pointer to the relevant widget in this window and verify that 
+    // it exists
     Fl_Widget *slave_widget = cps[i]->child(widget_index);
     assert( slave_widget);
     
@@ -109,9 +107,9 @@ void control_panel_window::broadcast_change (Fl_Widget *master_widget)
 
     // MCL XXX downcasting to dispatch on type is considered very bad form.  
     // If value() were a virtual function of Fl_Widget (like callback() and 
-    // do_callback() are) it would be cleaner.  Or we could bite the bullet and 
-    // use one of the fltk publish/subscribe extensions.  That could clean up 
-    // all sort of things.....
+    // do_callback() are) it would be cleaner.  Or we could bite the bullet 
+    // and use one of the fltk publish/subscribe extensions.  That could 
+    // clean up all sort of things.....
     
     // Apply an Fl_Button widget
     {
@@ -137,8 +135,8 @@ void control_panel_window::broadcast_change (Fl_Widget *master_widget)
         lp->value(gp->value());
     }
 
-    // If the slave widget returns a callback value, pass it to
-    // the relevant control panel window
+    // If the slave widget returns a callback value, pass it to the relevant
+    //  control panel window
     if( slave_widget->callback())
     {
       // cout << ".. doing callback for widget " << widget_index 
@@ -148,9 +146,9 @@ void control_panel_window::broadcast_change (Fl_Widget *master_widget)
   }
 }
 
-//*****************************************************************
-// control_panel_window::maybe_draw() -- Check plot window to see
-// if they need to be redrawn.
+//***************************************************************************
+// control_panel_window::maybe_draw() -- Check plot window to see if they 
+// need to be redrawn.
 void control_panel_window::maybe_redraw() 
 {
   // kludge.  Avoid double redraw when setting "don't clear".
@@ -160,9 +158,9 @@ void control_panel_window::maybe_redraw()
   pw->needs_redraw = 1;
 }
 
-//*****************************************************************
-// plot_window::extract_and_redraw() -- Extract data for these 
-// (new?) axes and redraw plot.  For one local control panel only.
+//***************************************************************************
+// plot_window::extract_and_redraw() -- Extract data for these (new?) axes 
+// and redraw plot.  For one local control panel only.
 void control_panel_window::extract_and_redraw ()
 {
   if( pw->extract_data_points()) {
@@ -170,20 +168,22 @@ void control_panel_window::extract_and_redraw ()
     #ifdef USE_VBO
       glBindBufferARB(GL_ARRAY_BUFFER_ARB, index+1);
       void *vertexp = (void *)pw->vertices.data();
-      glBufferSubDataARB( GL_ARRAY_BUFFER, (GLintptrARB) 0, (GLsizeiptrARB)(npoints*3*sizeof(GLfloat)), vertexp);
+      glBufferSubDataARB( 
+        GL_ARRAY_BUFFER, (GLintptrARB) 0, 
+        (GLsizeiptrARB)(npoints*3*sizeof(GLfloat)), vertexp);
     #endif // USE_VBO
 
     pw->needs_redraw = 1;
   }
 }
 
-//*****************************************************************
+//***************************************************************************
 // control_panel_window::make_widgets( cpw) -- Make widgets
 void control_panel_window::make_widgets( control_panel_window *cpw)
 {
-  // Since these (virtual) control panels are really groups inside 
-  // a tab inside a window, set their child widget's coordinates 
-  // relative to their enclosing window's position. 
+  // Since these (virtual) control panels are really groups inside a tab 
+  // inside a window, set their child widget's coordinates relative to their 
+  // enclosing window's position. 
   int xpos = this->x()+50;
   int ypos = this->y()+20;
 
@@ -370,8 +370,8 @@ void control_panel_window::make_widgets( control_panel_window *cpw)
     (Fl_Callback*)static_maybe_redraw, this);
 
   // Define Fl_Group to hold plot transform styles
-  // XXX - this group should probably be a menu, or at least have a box around it
-  // to show that they are radio buttons.
+  // XXX - this group should probably be a menu, or at least have a box around 
+  // it to show that they are radio buttons.
   transform_style = new Fl_Group (xpos2-1, ypos+25-1, 20+2, 4*25+2);
 
   // Button (4,1): No transform
@@ -477,5 +477,4 @@ void control_panel_window::make_widgets( control_panel_window *cpw)
   b->type(FL_TOGGLE_BUTTON); 
   b->selection_color(FL_BLUE); 
   b->value(1);
-
 }
