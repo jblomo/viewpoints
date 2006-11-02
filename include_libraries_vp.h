@@ -169,4 +169,17 @@
   //}
 #endif // __APPLE__
 
+// Make absolutely certain variables for point sprites are defined
+//#ifndef GL_ARB_point_sprite
+//  #define GL_ARB_point_sprite 1
+//  #define GL_POINT_SPRITE_ARB               0x8861
+//  #define GL_COORD_REPLACE_ARB              0x8862
+//#endif
+#ifndef GL_POINT_SPRITE_ARB
+  #define GL_POINT_SPRITE_ARB 0x8861
+#endif
+#ifndef GL_COORD_REPLACE_ARB
+  #define GL_COORD_REPLACE_ARB 0x8862
+#endif
+
 #endif   // INCLUDE_LIBRARIES_VP_H

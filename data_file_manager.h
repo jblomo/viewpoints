@@ -1,6 +1,6 @@
 // viewpoints - interactive linked scatterplots and more.
 // copyright 2005 Creon Levit, all rights reserved.
-//*****************************************************************
+//***************************************************************************
 // File name: data_file_manager.h
 //
 // Class definitions:
@@ -19,22 +19,21 @@
 // Purpose: Data file manager for Creon Levit's viewpoints
 //
 // General design philosophy:
-//   1) The binary and ASCII read operations are sufficiently
-//      different that they should be handled by entirely separate
-//      methods.
+//   1) The binary and ASCII read operations are sufficiently different that 
+//      they should be handled by entirely separate methods.
 //   2) Data are read into global variables.
-//   3) Arguments are passed as strings rather than const char* 
-//      under the 'if only it were JAVA' approach to C++ style and 
-//      to take advantage of STL's powerful string manipulation 
-//      tools.  Unfortunately, this means that c_str() must be used
-//      to pass some of these strings on to other methods.
-//   4) NOTE: There is considerable duplicate code here.  In 
-//      particular, the code to read headers and the calls fo
-//      Fl_File_Chooser here and in vp.cpp could be consolidated.
+//   3) Arguments are passed as strings rather than const char* under the 'if 
+//      only it were JAVA' approach to C++ style and to take advantage of 
+//      STL's powerful string manipulation tools.  Unfortunately, this means 
+//      that c_str() must be used to pass some of these strings on to other 
+//      methods.
+//   4) NOTE: There is considerable duplicate code here.  In particular, the 
+//      code to read headers and the calls to Fl_File_Chooser here and in 
+//      vp.cpp could be consolidated.
 //
 // Author: Creon Levit    unknown
-// Modified: P. R. Gazis  26-OCT-2006
-//*****************************************************************
+// Modified: P. R. Gazis  01-NOV-2006
+//***************************************************************************
 
 // Protection to make sure this header is not included twice
 #ifndef DATA_FILE_MANAGER_H
@@ -46,7 +45,7 @@
 // Include globals
 #include "global_definitions_vp.h"
 
-//*****************************************************************
+//***************************************************************************
 // Class: data_file_manager
 //
 // Class definitions:
@@ -63,6 +62,10 @@
 //   remove_trivial_columns() -- Remove identical data
 //   resize_global_arrays() -- Resize global arrays
 //
+//   make_confirm_window() -- Manage confirmation window
+//
+//   static_replace_chars( s, oldChar, newChar) -- Replace characters
+//
 //   load_data_file( *inFileSpec) -- Load and initialize data
 //   read_ascii_file_with_headers( *inFileSpec) -- Read ASCII
 //   read_binary_file_with_headers( *inFileSpec) -- Read binary
@@ -75,15 +78,23 @@
 //   inFileSpec() -- Get input filespec
 //
 // Author: Creon Levit   unknown
-// Modified: P. R. Gazis  09-MAY-2006
-//*****************************************************************
+// Modified: P. R. Gazis  01-NOV-2006
+//***************************************************************************
 class data_file_manager
 {
   protected:
     void remove_trivial_columns();
     void resize_global_arrays();
-    static void replace_chars (std::string &s, const char oldChar, const char newChar);
-    
+
+    // Create and manage confirmation window
+    void make_confirm_window( const char* output_file_name);
+    enum enumConfirmResult { CANCEL_FILE = 0, NO_FILE, YES_FILE} confirmResult;
+
+    // Utility method to replace characters.  Why is this static?
+    static void static_replace_chars( 
+      std::string &s, const char oldChar, const char newChar);
+
+    // Buffers to hold filespec and pathname
     string inFileSpec;
     string sPathname;
 
@@ -109,11 +120,13 @@ class data_file_manager
     int nSkipHeaderLines;  // Number of header lines to skip
     unsigned uWriteAll;  // Write all data?
 
-    // Define number of points and  number of variables specified 
-    // by the command line argument.  NOTE: 0 means read to EOF
-    // and/or end of line.
+    // Define number of points and  number of variables specified by the 
+    // command line argument.  NOTE: 0 means read to EOF and/or end of line.
     int npoints_cmd_line;
     int nvars_cmd_line;
+
+    // Define pointers to hold file confirmation window
+    Fl_Window *confirm_window;
 
     // Define statics to hold header format
     static const int MAX_HEADER_LENGTH;
