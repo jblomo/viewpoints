@@ -1,6 +1,6 @@
 // viewpoints - interactive linked scatterplots and more.
 // copyright 2005 Creon Levit, all rights reserved.
-//***************************************************************************
+//*****************************************************************
 // File name: control_panel_window.h
 //
 // Class definitions:
@@ -20,7 +20,8 @@
 // Compiler directives:
 //   May require D__WIN32__ for the C++ compiler
 //
-// Purpose: Control panel window class for Creon Levitt's viewpoints
+// Purpose: Control panel window class for Creon Levitt's 
+//   viewpoints
 //
 // General design philosophy:
 //   1) This might be a good place to consolidate references to
@@ -28,7 +29,7 @@
 //
 // Author: Creon Levit    2005-2006
 // Modified: P. R. Gazis  26-OCT-2006
-//***************************************************************************
+//*****************************************************************
 
 // Protection to make sure this header is not included twice
 #ifndef CONTROL_PANEL_WINDOW_H
@@ -43,11 +44,11 @@
 // Declare class plot_window here so it can be referenced
 // class plot_window;
 
-// Include associated headers and source code.  NOTE: not needed if this 
-// class has already been declared
+// Include associated headers and source code.  NOTE: not needed if
+// this class has already been declared
 #include "plot_window.h"
 
-//***************************************************************************
+//*****************************************************************
 // Class: control_panel_window
 //
 // Class definitions:
@@ -56,8 +57,8 @@
 // Classes referenced:
 //   plot_window -- Maintain and manage plot window
 //
-// Purpose: Derived class of Fl_Gl_Window to construct, draw, and manage a 
-//   control panel tab or window
+// Purpose: Derived class of Fl_Gl_Window to construct, draw,
+//   and manage a plot window
 //
 // Functions:
 //   control_panel_window( w, h) -- Constructor
@@ -68,8 +69,7 @@
 //
 // Static functions for access by Fl_Button::callback
 //   choose_color_selected( *w, *cpw) -- Color of selected points
-//   static_extract_and_redraw( *w, *cpw) -- extract a variable, renormalize 
-//     it, etc.
+//   static_extract_and_redraw( *w, *cpw) -- extract a variable, renormalize it, etc.
 //   static_maybe_redraw( *w, *cpw) -- Set redraw flag nicely.
 //   replot( *w, *cpw) -- set redraw flag.
 //   reset_view( *w, *cpw) -- Reset one plot's view
@@ -78,8 +78,8 @@
 //   This comment also conveys nothing.
 //
 // Author: Creon Levitt   unknown
-// Modified: P. R. Gazis  31-OCT-2006
-//***************************************************************************
+// Modified: P. R. Gazis  08-MAR-2006
+//*****************************************************************
 class control_panel_window : public Fl_Group
 {
   protected:
@@ -107,7 +107,7 @@ class control_panel_window : public Fl_Group
 
     // Pointers to sliders & menus
     Fl_Hor_Value_Slider_Input *pointsize_slider, *selected_pointsize_slider;
-    Fl_Hor_Value_Slider_Input *Bkg, *Lum, *Alph;
+    Fl_Hor_Value_Slider_Input *Bkg, *Lum, *Lum2, *Alph;
     Fl_Hor_Value_Slider_Input *rot_slider;
     Fl_Hor_Value_Slider_Input *nbins_slider;
     Fl_Choice *varindex1, *varindex2, *varindex3;
@@ -115,7 +115,6 @@ class control_panel_window : public Fl_Group
   
     // Pointers to buttons
     Fl_Button *reset_view_button;
-    Fl_Button *smooth_points_button;
     Fl_Button *spin, *dont_clear, *show_points, 
               *show_deselected_points, 
               *show_axes, *show_grid, *show_labels, 
@@ -130,14 +129,24 @@ class control_panel_window : public Fl_Group
               *y_normalization_style, 
               *z_normalization_style;
 
-    // Pointer to and index of the plot window associated with this control 
-    // panel tab.  Each plot window has the same color and index as its 
-    // associated control panel tab.
+    // points, round points, crosses, etc.
+    Fl_Choice *symbol_menu;
+    enum symbol_type {
+        SQUARE_POINTS,
+        SMOOTH_POINTS,
+        SPRITES
+    };
+    static Fl_Menu_Item symbol_menu_items[];
+
+    // Pointer to and index of the plot window associated with 
+    // this control panel tab.  Each plot window has the same 
+    // color and index as its associated control panel tab.
     plot_window *pw;
     int index;  
     
     // constants that describe normalization styles.  
     // MCL XXX this stuff is now full of icky magic numbers like 11 and 12.  Fix!
+    // use enums.
     static const int control_panel_window::n_normalization_styles = 11;
     static const int control_panel_window::NORMALIZATION_NONE   = 0;
     static const int control_panel_window::NORMALIZATION_MINMAX = 1;
@@ -151,12 +160,14 @@ class control_panel_window : public Fl_Group
     static const int control_panel_window::NORMALIZATION_RANK = 9;
     static const int control_panel_window::NORMALIZATION_GAUSSIANIZE = 10;
 
+    static Fl_Menu_Item varindex_menu_items[]; 
+
     // Static variables that use and apply different normalization 
     // styles.
-    static Fl_Menu_Item varindex_menu_items[]; 
+    static Fl_Menu_Item normalization_style_menu_items[];
     static int normalization_styles[];  
     static char *normalization_style_labels[];
-    static Fl_Menu_Item normalization_style_menu_items[];
+
 };
 
 #endif   // CONTROL_PANEL_WINDOW_H

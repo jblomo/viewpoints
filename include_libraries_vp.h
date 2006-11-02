@@ -1,6 +1,6 @@
 // viewpoints - interactive linked scatterplots and more.
 // copyright 2005 Creon Levit, all rights reserved.
-//***************************************************************************
+//*****************************************************************
 // File name: include_libraries_vp.h
 //
 // Class definitions: none
@@ -26,26 +26,28 @@
 //   1) Add comments and get this code to run under Windows.
 //
 // Author: Creon Levit     unknown
-// Modified: P. R. Gazis   31-OCT-2006
-//***************************************************************************
+// Modified: P. R. Gazis   26-OCT-2006
+//*****************************************************************
 
 // Protection to make sure this header is not included twice
 #ifndef INCLUDE_LIBRARIES_VP_H
 #define INCLUDE_LIBRARIES_VP_H 1
 
-// Defines under Windows: Several defines are required to account for variable 
-// and function definitions that seem to be missing.  This is a temporary fix 
-// that should be replaced by actual source code if possible.
+// Defines under Windows: Several defines are required to account 
+// for variable and function definitions that seem to be missing.
+// This is a temporary fix that should be replaced by actual 
+// source code if possible.
 #ifdef __WIN32__
   #define MAXFLOAT 3.402823466e+38f 
   #define usleep(v) Sleep(v/1000)
 #endif // __WIN32__
 
-// Include libraries under Windows in the Dev-C++ programming environment: 
-// The FLTK package should be handled by Dev-C++ as a 'devpak', but several 
-// include libraries are needed in addition to the regular Dev-C++ and FLTK 
-// libraries.  These are listed below along with their locations on the 
-// primary Windows development system.
+// Include libraries under Windows in the Dev-C++ programming 
+// environment: The FLTK package should be handled by Dev-C++ as
+// a 'devpak', but several include libraries are needed in 
+// addition to the regular Dev-C++ and FLTK libraries.  These are 
+// listed below along with their locations on the primary Windows 
+// development system.
 //
 // Flews
 //   c:\devusr\flews
@@ -57,10 +59,11 @@
 // Blitz++
 //   c:\devusr\blitz
 
-// Add C includes here.  Note that under Windows in the Dev-C++ programming 
-// environment, some of the relevant libraries are part of GSL rather than the 
-// Dev-C++ package.  Locations of some crucial files on the primary Windows 
-// development system are listed below:
+// Add C includes here.  Note that under Windows in the Dev-C++ 
+// programming environment, some of the relevant libraries are 
+// part of GSL rather than the Dev-C++ package.  Locations of some 
+// crucial files on the primary Windows development system are 
+// listed below:
 // <unistd.h>    -- c:\Dev-cpp\include
 // <fcntl.h>     -- c:\Dev-cpp\include
 // <assert.h>    -- c:\Dev-cpp\include
@@ -100,7 +103,8 @@
 #include <string>
 #include <algorithm>
  
-// FLTK.  These includes should be handled by the relevant Dev-C++ 'dev-pak'.
+// FLTK.  These includes should be handled by the relevant Dev-C++
+// 'dev-pak'.
 #include <FL/math.h>
 #include <FL/gl.h>
 #include <FL/Fl.H>
@@ -119,14 +123,14 @@
 #include <FL/Fl_Multiline_Output.H>
 #include <FL/Fl_Help_View.H>
 
-// flews (FLTK extension) extras.  On the primary Windows system, these should 
-// be located in c:\devusr\flews as described above
+// flews (FLTK extension) extras.  On the primary Windows system,
+// these should be located in c:\devusr\flews as described above
 #include <FL/Fl_flews.h>
 #include <FL/Fl_Value_Slider_Input.H>
 #include "Fl_Hor_Value_Slider_Input.H"  // my modified flews slider
 
-// OpenGL extensions.  NOTE: Some of these will clobber a Windows compile, so 
-// they must be excluded by the relevant defines!
+// OpenGL extensions.  NOTE: Some of these will clobber a Windows 
+// compile, so they must be excluded by the relevant defines!
 #ifdef __APPLE__
   #include <OpenGL/glext.h>
   #include <OpenGL/glu.h>
@@ -136,8 +140,8 @@
   #include <GL/glu.h>
 #endif // __linux__
 #ifdef __WIN32__
-  // OglExt.  Obtain from c:\devusr\oglext\include as described above and 
-  // invoke as described in OGLEXT documentation
+  // OglExt.  Obtain from c:\devusr\oglext\include as described
+  // above and invoke as described in OGLEXT documentation
   #define GL_GLEXT_PROTOTYPES
   #include <glext.h>
   #include <GL/glext.h>
