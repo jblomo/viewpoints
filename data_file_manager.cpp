@@ -194,12 +194,10 @@ int data_file_manager::read_ascii_file_with_headers()
   // examine the first line of the data block to determine the number of 
   // columns and generate a set of column labels.
   if( nHeaderLines == 0 || lastHeaderLine.length() == 0) {
-
-    // Replace user-specified delimiter characters with " " so that 
-    // operator>> will work.
-    static_replace_chars( line, '\t', ' ');
-    if( delimiter_char != ' ') {
-      static_replace_chars( line, delimiter_char, ' ');
+    // replace user-specified delimiter characters and/or tabs with " " so operator>> will work.
+    replace (line.begin(), line.end(), '\t', ' ');
+    if (delimiter_char != ' ') {
+      replace (line.begin(), line.end(), delimiter_char, ' ');
     }
 
     std::stringstream ss( line);
@@ -226,11 +224,10 @@ int data_file_manager::read_ascii_file_with_headers()
     if( lastHeaderLine.find_first_of( "!#%") == 0) 
       lastHeaderLine.erase( 0, 1);
       
-    // Replace user-specified delimiter characters and/or tabs with " " so 
-    // the operator>> will work.
-    static_replace_chars( lastHeaderLine, '\t', ' ');
-    if( delimiter_char != ' ') {
-      static_replace_chars (lastHeaderLine, delimiter_char, ' ');
+    // replace user-specified delimiter characters and/or tabs with " " so operator>> will work.
+    replace (lastHeaderLine.begin(), lastHeaderLine.end(), '\t', ' ');
+    if (delimiter_char != ' ') {
+      replace (lastHeaderLine.begin(), lastHeaderLine.end(), delimiter_char, ' ');
     }
 
     // Loop: Insert the input string into a stream, define a buffer, read 
@@ -247,8 +244,7 @@ int data_file_manager::read_ascii_file_with_headers()
   // If there were more than nvars_cmd_line variables, truncate the vector of 
   // column labels and reset nvars.
   if( nvars_cmd_line > 0 && nvars > nvars_cmd_line) {
-    column_labels.erase( 
-      column_labels.begin()+nvars_cmd_line, column_labels.end());
+    column_labels.erase( column_labels.begin()+nvars_cmd_line, column_labels.end());
     nvars = column_labels.size();
     cout << " -Truncated list to " << nvars 
          << " column labels." << endl;
@@ -312,8 +308,8 @@ int data_file_manager::read_ascii_file_with_headers()
 
     // Loop: Insert the string into a stream and read it
 
-    // Replace tabs with ' ' so operator>> will work
-    static_replace_chars (line, '\t', ' ');
+    // replace tabs with ' ' so operator>> will work
+    replace (line.begin(), line.end(), '\t', ' ');
     std::stringstream ss(line); 
     unsigned isBadData = 0;
 
@@ -333,14 +329,17 @@ int data_file_manager::read_ascii_file_with_headers()
       // Note: whitespace delimited files simply skip lines with missing 
       // values.
       if(!ss) {
+        // error state -> found nonumeric data, or nothing at all (a missing value)
         points(j,i) = bad_value_proxy;
         ss.clear();
       } else {
         points(j,i) = (float) x;
       }
-      ss.ignore(std::numeric_limits<streamsize>::max(),delimiter_char);
+      // advance past the next field delimiter character, or to the end of the line, whichever comes first.
+      ss.ignore(line.length(),delimiter_char);
 
       // Check for unreadable data and flag line to be skipped
+      // MCL XXX I am not sure if this ever happens, but just to be sure.....
       if( !ss.good() && j<nvars-1) {
         cerr << " -WARNING, unreadable data "
              << "(binary or ASCII?) at line " << nRead
@@ -450,8 +449,7 @@ int data_file_manager::read_binary_file_with_headers()
   // If there were more than nvars_cmd_line variables, truncate the vector of 
   // column labels and reset nvars.
   if( nvars_cmd_line > 0 && nvars > nvars_cmd_line) {
-    column_labels.erase( 
-      column_labels.begin()+nvars_cmd_line, column_labels.end());
+    column_labels.erase( column_labels.begin()+nvars_cmd_line, column_labels.end());
     nvars = column_labels.size();
     cout << " -Truncated list to " << nvars 
          << " column labels." << endl;
@@ -681,7 +679,7 @@ void data_file_manager::write_ascii_file_with_headers()
     
     // We've verified that this file exists and the user intends to overwrite
     // it, so close it and move on
-    confirmResult == YES_FILE;
+    confirmResult = YES_FILE;
     fclose( pFile);
     break;
   } 
@@ -814,7 +812,7 @@ void data_file_manager::write_binary_file_with_headers()
     
     // We've verified that this file exists and the user intends to overwrite
     // it, so close it and move on
-    confirmResult == YES_FILE;
+    confirmResult = YES_FILE;
     fclose( pFile);
     break;
   } 
@@ -1053,7 +1051,7 @@ void data_file_manager::directory( string sPathnameIn)
 void data_file_manager::make_confirm_window( const char* output_file_name)
 {
   // Intialize flag and destroy any existing window
-  confirmResult == CANCEL_FILE;
+  confirmResult == CANCEL_FILE;   // MCL XXX rule #2: "Compile cleanly at high warning levels." 
   if( confirm_window != NULL) confirm_window->hide();
   
   // Create confirmation window
@@ -1119,18 +1117,4 @@ void data_file_manager::make_confirm_window( const char* output_file_name)
       }
     }
   }
-}
-
-//***************************************************************************
-// data_file_manager::static_replace_chars( inputStrings, oldChar, newChar) 
-// -- STATIC method to replace characters.  Why is this static?
-void data_file_manager::static_replace_chars(
-  std::string &s, const char oldChar, const char newChar)
-{
-  //  MCL XXX I think this should do the job, but it doesn't.  Why not??
-  //  s.replace( s.begin(), s.end(), oldChar, newChar);
-  //  So instead we use:
-  for (unsigned int i=0; i<s.length(); i++)
-    if (s[i] == oldChar)
-      s[i] = newChar;
 }

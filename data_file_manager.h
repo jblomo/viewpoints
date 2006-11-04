@@ -64,7 +64,6 @@
 //
 //   make_confirm_window() -- Manage confirmation window
 //
-//   static_replace_chars( s, oldChar, newChar) -- Replace characters
 //
 //   load_data_file( *inFileSpec) -- Load and initialize data
 //   read_ascii_file_with_headers( *inFileSpec) -- Read ASCII
@@ -89,10 +88,6 @@ class data_file_manager
     // Create and manage confirmation window
     void make_confirm_window( const char* output_file_name);
     enum enumConfirmResult { CANCEL_FILE = 0, NO_FILE, YES_FILE} confirmResult;
-
-    // Utility method to replace characters.  Why is this static?
-    static void static_replace_chars( 
-      std::string &s, const char oldChar, const char newChar);
 
     // Buffers to hold filespec and pathname
     string inFileSpec;

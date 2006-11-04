@@ -705,7 +705,7 @@ TODO:
     upload to trotsky
     make tarballs for mac & linux versions    
   VBOS for indices
-    does glDrawElements() have to start from 0 when indices are in a VBO?
+    does glDrawElements() have to start from 0 when indices are in a VBO?  Is this a GL bug?
     does glBufferSubData() have to start from 0? 
     Or do multiple calls behave in an unexpected way?
   VBOs to conserve main memory - can we do it
@@ -724,3 +724,64 @@ TODO:
   FAQ
   changelog ?
 
+12:45:04 03 Nov 06
+
+why does the linux version crash on xx.to ?
+
+add "blend" button, default=on, which turns blending on/off.
+
+allow different textures (sprites) for different selected sets.
+
+add separate control of point appearance (hue, lum1, lum2, size,
+symbol, alpha?...) for selected and deselected sets. Could have
+"broadcast" switches (default=on, or "local", default=off) which
+controls whether or not the parameter it controls are broacast to
+(i.e. used by) the other windows.  Panels could also have "protect"
+switches which protect them from these broadcasts, similar to "lock
+axis" protection.  When the global panel is active, changes to the
+selected set's appearance affect all selected points in all windows.
+
+could decouple selections from windows: choose a "brush", select
+anywhere, maybe choose another brush, select anywhere.....  Could
+optionally have windows remember the last brush they were using.
+
+need to be able to selectively clear a window's selection without
+clearing everything.  This might be much easier with (per-window)
+brushes - just reset a particular brush to have the characteristcs of
+the non-selected points?
+
+could optionally allow point size to scale with window transformation.
+
+can optionally use glPointarameters() size scaling when third axis is
+active.
+
+can we use fog to change color based on "third" axis in 2D plots?  3D plots?
+
+Ideas for paper:  Good survey at:
+  wiki.eurovotech.org/pub/VOTech/DS6RelatedPublications/DimenReducAlgs.pdf
+  vp may excel at:
+    Data ink ratio = (data ink)/(total ink in the plot) 
+    Data density = (number of entries in data matrix)/(area of graphic) 
+
+ideas from rank ordering (Schneiderman & Seo)
+  univariate orderings (to order axis in axis menu?)
+   Size of the biggest gap (0 to max range of dimensions): 
+   Normality of the distribution (0 to inf): 
+   Uniformity of the distribution (0 to inf): 
+   The number of potential outliers (0 to n): 
+   The number of unique values (0 to n): 
+   Size of the biggest gap (0 to max range of dimensions): 
+   kurtosis
+   skew, etc.
+   entropy, burges entropy, etc...
+  Bivariate orderings
+   pearson
+   entropy
+   # outliers
+   MI, etc, etc
+   # in "region of interest" (see below)
+  scatterplot browser, esp. axis sliders.  see fig. 3 (& test) of Seo & Schneiderman
+   /www.cs.umd.edu/hcil/multi-cluster/presentations/seo_shneiderman_rff_ivs.pdf
+  after (or before) doing this, we can generalize to meta-scatterplot.
+    E.g. plot pearson vs. MI where each point represents a bivariate scatterplot.  select in here.
+  
