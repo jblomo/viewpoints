@@ -87,7 +87,7 @@ TARGET = vp$(EXEEXT)
 
 default: $(TARGET)
 
-all: depend tags $(TARGET)
+all: depend tags $(TARGET) 
 
 %.o : %.c	
 	echo Compiling $<...

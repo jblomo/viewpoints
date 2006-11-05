@@ -72,7 +72,7 @@ char *control_panel_window::normalization_style_labels[ 11] = {
 Fl_Menu_Item control_panel_window::symbol_menu_items[] = {
   {"points", 				0, 0, (void *)SQUARE_POINTS},
   {"smooth points", 0, 0, (void *)SMOOTH_POINTS},
-  {"sprites", 			0, 0, (void *)SPRITES},
+  {"crosses", 			0, 0, (void *)SPRITES},
   {0}
 };
 
@@ -204,7 +204,7 @@ void control_panel_window::make_widgets( control_panel_window *cpw)
   pointsize_slider->align(FL_ALIGN_LEFT);
   pointsize_slider->value(pointsize);
   pointsize_slider->step(0.25);
-  pointsize_slider->bounds(0.25,20.0);
+  pointsize_slider->bounds(1.0,50.0);
   pointsize_slider->callback((Fl_Callback*)replot, this);
 
   // symbol types menu
@@ -215,12 +215,12 @@ void control_panel_window::make_widgets( control_panel_window *cpw)
   symbol_menu->value(SQUARE_POINTS);
   symbol_menu->callback( (Fl_Callback*)replot, this);
 
-  // scale factor for selected point size
+  // size for selected point size
   selected_pointsize_slider = new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, cpw->w()-125, 20, "size2");
   selected_pointsize_slider->align(FL_ALIGN_LEFT);
-  selected_pointsize_slider->value(0.0);
-  // selected_pointsize_slider->step(0.1);
-  selected_pointsize_slider->bounds(-1.0,+1.0);
+  selected_pointsize_slider->value(pointsize);
+  selected_pointsize_slider->step(0.25);
+  selected_pointsize_slider->bounds(1.0,50.0);
   selected_pointsize_slider->callback((Fl_Callback*)replot, this);
 
   // Background color slider
@@ -252,8 +252,7 @@ void control_panel_window::make_widgets( control_panel_window *cpw)
   Alph->align(FL_ALIGN_LEFT);
   Alph->callback((Fl_Callback*)replot, this);
   Alph->step(0.0001);
-  // Alph->bounds(0.25,0.5); // MCL XXX removed for sprites
-  Alph->bounds(0.0,2.0); // MCL XXX removed for sprites
+  Alph->bounds(0.0,1.0);
   Alph->value(1.0);
 
   // Rotation (and spin) slider
@@ -344,7 +343,7 @@ void control_panel_window::make_widgets( control_panel_window *cpw)
   x_normalization_style->align(FL_ALIGN_TOP);
   x_normalization_style->textsize(12);
   x_normalization_style->menu(normalization_style_menu_items);
-  x_normalization_style->value(NORMALIZATION_TRIM_1E3);
+  x_normalization_style->value(NORMALIZATION_MINMAX);
   x_normalization_style->callback( (Fl_Callback*)static_extract_and_redraw, this);
  
   // Y-axis normalization and scaling
@@ -352,7 +351,7 @@ void control_panel_window::make_widgets( control_panel_window *cpw)
   y_normalization_style->align(FL_ALIGN_TOP);
   y_normalization_style->textsize(12);
   y_normalization_style->menu(normalization_style_menu_items);
-  y_normalization_style->value(NORMALIZATION_TRIM_1E3); 
+  y_normalization_style->value(NORMALIZATION_MINMAX); 
   y_normalization_style->callback( (Fl_Callback*)static_extract_and_redraw, this);
  
   // Z-axis normalization and scaling
@@ -360,7 +359,7 @@ void control_panel_window::make_widgets( control_panel_window *cpw)
   z_normalization_style->align(FL_ALIGN_TOP);
   z_normalization_style->textsize(12);
   z_normalization_style->menu(normalization_style_menu_items);
-  z_normalization_style->value(NORMALIZATION_TRIM_1E3); 
+  z_normalization_style->value(NORMALIZATION_MINMAX); 
   z_normalization_style->callback( (Fl_Callback*)static_extract_and_redraw, this);
  
   // XXX Add some additional y-offset

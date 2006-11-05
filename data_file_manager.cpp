@@ -944,9 +944,8 @@ void data_file_manager::resize_global_arrays()
   ranked = 0;
   
   // Resize temporary array used for sort
-  tmp_points.resize(npoints);
-
-  // Resize array used for color map?
+  // tmp_points.resize(npoints); // MCL: eliminated using new sort code.
+  // Resize initial index array (gets permuted by sort)
   identity.resize( npoints);
 
   // Resize selection arrays
@@ -1051,7 +1050,7 @@ void data_file_manager::directory( string sPathnameIn)
 void data_file_manager::make_confirm_window( const char* output_file_name)
 {
   // Intialize flag and destroy any existing window
-  confirmResult == CANCEL_FILE;   // MCL XXX rule #2: "Compile cleanly at high warning levels." 
+  confirmResult = CANCEL_FILE;   // MCL XXX rule #2: "Compile cleanly at high warning levels." 
   if( confirm_window != NULL) confirm_window->hide();
   
   // Create confirmation window

@@ -755,6 +755,12 @@ could optionally allow point size to scale with window transformation.
 can optionally use glPointarameters() size scaling when third axis is
 active.
 
+Definitely have luminance scale with plot (optionally).
+
+Have optional legend, (on lum, etc, sliders?) that is a fat line drawn
+0,1,2...1000 times, on top of itself, shorter each time, with the
+appropriate color, blending, etc.
+
 can we use fog to change color based on "third" axis in 2D plots?  3D plots?
 
 Ideas for paper:  Good survey at:
@@ -780,8 +786,52 @@ ideas from rank ordering (Schneiderman & Seo)
    # outliers
    MI, etc, etc
    # in "region of interest" (see below)
+   Chi^2 (see. p86 of ftp://ftp.cs.umd.edu/pub/hcil/Reports-Abstracts-Bibliography/2005-20html/2005-20.pdf)
+
   scatterplot browser, esp. axis sliders.  see fig. 3 (& test) of Seo & Schneiderman
    /www.cs.umd.edu/hcil/multi-cluster/presentations/seo_shneiderman_rff_ivs.pdf
+  or browse in 2D ordering diplay (slide vert, slide horiz...)
+    3rd component?
   after (or before) doing this, we can generalize to meta-scatterplot.
     E.g. plot pearson vs. MI where each point represents a bivariate scatterplot.  select in here.
   
+10:16:24 05 Nov 06
+
+Memory Performance puzzle: (OSX)  Read in 10 million points, six vars.  2 windows.  My calculations are:
+
+ theoretical: 10 M ps * (6+4) var/pt * 2 wd/var * 4 byte/wd  +  2 window * 10 M vert/window * 4 wd/vert * 4 byte/wd = 800Mb + 320Mb = 1120Mb
+
+ but performance monitor (big top) shows: 1900Mb VM (1500 MB resident)
+
+ seems to be using 2-3 x as much memeory as it should.  Bad.  Why?  Attempt to debug using
+
+                                  virtual  resident
+   npoints nvars nplots predicted measured measured
+   10M     6     2     1120MB     1900MB   1500MB
+    1.1M   21    2      210MB      667MB    280MB
+    1.1M   21    25     600MB      953MB    953MB
+    
+ checking with ObjectAlloc tool suggests ranked data is being kept
+ both per plot and globally.  Let's check this.  There are a lot of
+ global arrays, especially having to do with selection.  Do we need
+ *all* of them? identity - do we need it?
+  
+ OK - tried to eliminate the separate ranked data held be each & every
+ plot window, by replacing it with aliases tot he globally raked data,
+ which is kept around anyway.  This seems to work.  But memory s still high:
+  
+ looks like 2M points are allocated, even when npoints<2M
+
+                                  virtual  resident
+   npoints nvars nplots predicted measured measured
+   10M     6     2      1120MB     1700MB   1300MB
+    5M     6    10      1200MB     2250MB   1370MB
+    1M     6    50       900MB     2000MB   1300MB
+    1M     6     1       100MB      600MB    190MB
+   10M     6     1      1000MB     1400MB    873MB
+
+  Well, objectalloc says the last case is only using 900MB, so maybe the resident size is all that matters?
+
+  more investigations later.
+
+

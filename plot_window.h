@@ -78,7 +78,7 @@
 //   compute_histogram( int) -- Compute a histogram
 //   draw_histograms() -- Draw histograms
 //
-//   compute_rank( blitz::Array<float,1>, blitz::Array<int,1>);
+//   compute_rank(int var_index);
 //   compute_histograms () -- Compute histograms
 //   normalize() -- Normalize data
 //
@@ -102,8 +102,8 @@
 //   toggle_display_delected( *o) -- Toggle colors
 //   initialize_selection() -- Clear selection
 //   clear_selection( *o) -- Clear selection and redraw plots
-//   initialize_textures() -- initial setup of rgba used for selected 
-//     and deselected points
+//   initialize_sprites() -- initial setup of rgba used for selected 
+//     and deselected points when rendered as openGL point sprites.
 //
 // Author: Creon Levitt    unknown
 // Modified: P. R. Gazis   26-OCT-2006
@@ -139,8 +139,8 @@ class plot_window : public Fl_Gl_Window
     void draw_data_points();
     void draw_center_glyph();
     void update_linked_transforms();
-    void enable_textures();
-    void disable_textures();
+    void enable_sprites();
+    void disable_sprites();
 
     // Event handlers
     int handle( int event);
@@ -187,7 +187,7 @@ class plot_window : public Fl_Gl_Window
     static const int nbins_max = 1024;
 
     // Routines to compute histograms and normalize data
-    void compute_rank(blitz::Array<float,1> a, blitz::Array<int,1> a_rank, int var_index);
+    void compute_rank(int var_index);
     void compute_histograms();
     int normalize(blitz::Array<float,1> a, blitz::Array<int,1> a_rank, int style, int axis_index);
 
@@ -232,7 +232,7 @@ class plot_window : public Fl_Gl_Window
     static void toggle_display_deselected( Fl_Widget *o);
     static void initialize_selection();
     static void clear_selection( Fl_Widget *o);
-    static void initialize_textures();
+    static void initialize_sprites();
     
     // Static variable to hold he initial fraction of the window 
     // to be used for data to allow room for axes, labels, etc.
@@ -256,7 +256,7 @@ class plot_window : public Fl_Gl_Window
     static blitz::Array<GLfloat,2> colors_show_deselected; // when deselected points are visible
     static blitz::Array<GLfloat,2> colors_hide_deselected; // when deselected points are invisible
     static GLfloat pointscolor[ 4];
-    static int textures_initialized;
+    static int sprites_initialized;
     static void *global_GLContext; // the GLContextshared by all plot_windows
 
 #ifdef USE_VBO

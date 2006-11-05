@@ -882,8 +882,6 @@ void npoints_changed( Fl_Widget *o)
 void resize_selection_index_arrays( int nplots_old, int nplots)
 {
   blitz::Range NPTS( 0, npoints-1);
-//  indices_selected.resizeAndPreserve(nplots+1,npoints);
-//  number_selected.resizeAndPreserve(nplots+1);
   pws[0]->indices_selected.resizeAndPreserve(nplots+1,npoints);
   pws[0]->number_selected.resizeAndPreserve(nplots+1);
   for( int i=nplots_old+1; i<nplots+1; i++) {

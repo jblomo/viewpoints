@@ -75,7 +75,7 @@ blitz::Array<unsigned int,2> plot_window::indices_selected(MAXPLOTS+1,1);
 
 //GLfloat plot_window::texenvcolor[ 4] = { 1, 1, 1, 1};
 //GLuint plot_window::texnames[ 2] = { };
-int plot_window::textures_initialized = 0;
+int plot_window::sprites_initialized = 0;
 void *plot_window::global_GLContext = NULL;
 #ifdef USE_VBO
 int plot_window::indexVBOsinitialized = 0;
@@ -115,10 +115,6 @@ void plot_window::initialize()
 
   // Resize arrays
   vertices.resize( npoints, 3);
-  //vertex_ranks.resize( npoints, 3);
-  x_rank.resize( npoints);
-  y_rank.resize( npoints);
-  z_rank.resize( npoints);
   nbins = nbins_default;
   counts.resize( nbins_max, 3);
   counts_selected.resize( nbins_max, 3);
@@ -587,8 +583,8 @@ void plot_window::draw()
 {
   DEBUG (cout << "in draw: " << xcenter << " " << ycenter << " " << xscale << " " << yscale << endl);
 
-  if (!textures_initialized)
-    initialize_textures();
+  if (!sprites_initialized)
+    initialize_sprites();
 
   // the valid() property can avoid reinitializing matrix for 
   // each redraw:
@@ -1055,16 +1051,16 @@ void plot_window::draw_data_points()
   sym = (control_panel_window::symbol_type) cp->symbol_menu->value();
   switch (sym) {
     case control_panel_window::SQUARE_POINTS:
-      disable_textures ();
+      disable_sprites ();
       glDisable (GL_POINT_SMOOTH);
       break;
     case control_panel_window::SMOOTH_POINTS:
-      disable_textures ();
+      disable_sprites ();
       glEnable(GL_POINT_SMOOTH);
       glHint(GL_POINT_SMOOTH_HINT,GL_NICEST);
       break;
     case control_panel_window::SPRITES:
-      enable_textures();
+      enable_sprites();
       break;
     default:
       assert (!"invalid symbol type");
@@ -1118,15 +1114,11 @@ void plot_window::draw_data_points()
 
       // Set the pointsize for this set of points (hard limit from 1.0 to 50.0)
       // to avoid GL errors.
-      float pointsize = min(max(cp->pointsize_slider->value(), 1.0),50.0);
       if (set==0) {
-        glPointSize( pointsize);
+        glPointSize(min(max(cp->pointsize_slider->value(), 1.0),50.0));
       }
       else {
-        // selected points are from 0.1 to 10.0 times the size of unselected points.
-			  // limit their size.
-        float selected_pointsize = pow(10.0,cp->selected_pointsize_slider->value()) * pointsize;
-        glPointSize(selected_pointsize);
+        glPointSize(min(max(cp->selected_pointsize_slider->value(), 1.0),50.0));
       }
       // set the color for this set of points
       float lum = cp->Lum->value(), lum2 = cp->Lum2->value(), alpha=cp->Alph->value(); 
@@ -1485,34 +1477,33 @@ int plot_window::normalize(
 }
 
 //*****************************************************************
-// plot_window::compute_rank() -- Order data for normalization or
+// plot_window::compute_rank() -- Order data for normalization and
 // generation of histograms
-void plot_window::compute_rank(
-  blitz::Array<float,1> a, 
-  blitz::Array<int,1> a_rank, 
-  int var_index)
+void plot_window::compute_rank(int var_index)
 {
-  blitz::Range NPTS(0,npoints-1);
-  if( !ranked( var_index)) {
-    if( !a.isStorageContiguous()) {
-      cerr << "Warning: sorting with non-contiguous data." << endl;
-    }
-    if( !a_rank.isStorageContiguous()) {
-      cerr << "Warning: sorting with non-contiguous rank." << endl;
-    }
-    a_rank(NPTS) = identity(NPTS);
-    
-    tmp_points.reference(a);
-    int *lo = a_rank.data(), *hi = lo + npoints;
-    std::stable_sort(lo, hi, myCompare());
-
-    ranked(var_index) = 1;  // now we are ranked
-	ranked_points(var_index,NPTS) = a_rank(NPTS);  // and our rank is cached!
-    // cout << "  cache STORE at index " << var_index << endl;
+  if (ranked(var_index)) {
+    // We have a rank "cache hit"
+    return; 
   }
   else {
-    a_rank=ranked_points(var_index,NPTS);// use previously cached rank!
-    // cout << "  CACHE HIT   at index " << var_index << endl;
+    blitz::Range NPTS(0,npoints-1);
+    // The blitz copy constructor aliases the RHS,
+    // So this next statement just creates a new view of the rhs.
+    blitz::Array<int,1> a_ranked_indices = ranked_points(var_index, NPTS); 
+
+    // initialize the ranked indices to be sequential.  The following sort will
+    // permute them into the correct order.
+    a_ranked_indices(NPTS) = identity(NPTS);
+    
+    // the sort method myCompare() needs a global alias (tmp_points) to the data being used
+    // as the sort key.  We can't use the copy contructor this time because we aren't contructing
+    // tmp_points - it was already constructed at startup.  Lucky for us, blitz provides the
+    // reference() metod for this purpose.
+    tmp_points.reference(points(var_index, NPTS));
+    int *lo = a_ranked_indices.data(), *hi = lo + npoints;
+    std::stable_sort(lo, hi, myCompare());
+    ranked(var_index) = 1;  // now we are ranked
+    return;
   }
 }
 
@@ -1541,7 +1532,8 @@ int plot_window::extract_data_points ()
   cout << " pre-normalization: " << endl;
 
   // Rank points by x-axis value
-  compute_rank( points( axis0, NPTS), x_rank, axis0);
+  compute_rank(axis0);
+  x_rank.reference(ranked_points(axis0, NPTS));
   cout << "  min: " << xlabel 
        << "(" << x_rank(0) << ") = " 
        << points( axis0, x_rank(0));
@@ -1550,17 +1542,19 @@ int plot_window::extract_data_points ()
        << points( axis0, x_rank(npoints-1)) << endl;
   
   // Rank points by y-axis value
-  compute_rank( points( axis1, NPTS), y_rank,axis1);
+  compute_rank(axis1);
+  y_rank.reference(ranked_points(axis1, NPTS));
   cout << "  min: " << ylabel 
        << "("  << y_rank(0) << ") = " 
        << points(axis1,y_rank(0));
   cout << "  max: " << ylabel 
        << "(" << y_rank(npoints-1) << ") = " 
        << points( axis1, y_rank(npoints-1)) << endl;
-
+  
   // If z-axis was specified, rank points by z-axis value
   if( axis2 != nvars) {
-    compute_rank( points(axis2,NPTS),z_rank,axis2);
+    compute_rank(axis2);
+    z_rank.reference(ranked_points(axis2, NPTS));
     cout << "  min: " << zlabel 
          << "(" << z_rank(0) << ") = " 
          << points(axis2,z_rank(0));
@@ -1949,7 +1943,7 @@ GLubyte spriteData[spriteWidth*spriteHeight*spriteDepth] = {
 };
 
 void
-plot_window::initialize_textures()
+plot_window::initialize_sprites()
 {
 
 	glEnable (GL_TEXTURE_2D);
@@ -1959,12 +1953,12 @@ plot_window::initialize_textures()
 	gluBuild2DMipmaps (GL_TEXTURE_2D, GL_RGBA, spriteWidth, spriteHeight, GL_RGBA, GL_UNSIGNED_BYTE, spriteData);
   CHECK_GL_ERROR("");
 
-  textures_initialized = 1;
+  sprites_initialized = 1;
   cout << "Textures initialized!" << endl;
 }
     
 void
-plot_window::enable_textures()
+plot_window::enable_sprites()
 {
 	glEnable (GL_TEXTURE_2D);
   glEnable (GL_POINT_SPRITE_ARB);
@@ -1978,7 +1972,7 @@ plot_window::enable_textures()
 }
 
 void 
-plot_window::disable_textures()
+plot_window::disable_sprites()
 {
 	glDisable (GL_TEXTURE_2D);
   glDisable (GL_POINT_SPRITE_ARB);
