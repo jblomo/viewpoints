@@ -1858,89 +1858,46 @@ void plot_window::clear_selection( Fl_Widget *o)
 }
 
 #if 0
-//*****************************************************************
-// plot_window::initialize_textures() -- STATIC method to 
-// initialize textures.  This is a static method used only by 
-// class plot_window.  It makes use of a global flag variable, 
-// textures_initialized. 
-void plot_window::initialize_textures()
-{
-  if( textures_initialized) return;
+const GLsizei spriteWidth = 8, spriteHeight = 8, spriteDepth  = 2;
+// + shaped "plus"
+GLubyte spriteData[spriteWidth*spriteHeight*spriteDepth] = {
+	255,0,    255,0,    255,0,    255,255,  255,255,  255,0,    255,0,    255,0,
+	255,0,    255,0,    255,0,    255,255,  255,255,  255,0,    255,0,    255,0,
+	255,0,    255,0,    255,0,    255,255,  255,255,  255,0,    255,0,    255,0,
+	255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,
+	255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,
+	255,0,    255,0,    255,0,    255,255,  255,255,  255,0,    255,0,    255,0,
+	255,0,    255,0,    255,0,    255,255,  255,255,  255,0,    255,0,    255,0,
+	255,0,    255,0,    255,0,    255,255,  255,255,  255,0,    255,0,    255,0
+};
 
-  // Generate texture names
-  // glPixelStorei( GL_UNPACK_ALIGNMENT, 1);
-  // glGenTextures( 2, texnames);
-
-  // Color for de-selected points when they are displayed
-  texture_images[0][0] = r_deselected;
-  texture_images[0][1] = g_deselected;
-  texture_images[0][2] = b_deselected;
-  texture_images[0][3] = 1.0; 
-
-  // Color for de-selected points when they are not displayed
-  texture_images[1][0] = 0.00; 
-  texture_images[1][1] = 0.00; 
-  texture_images[1][2] = 0.00; 
-  texture_images[1][3] = 0.0;
-
-  // Loop: Set color(s) for selected points.  Remember that 
-  // the 0th color is reserved for deselected points.
-  for( int i=0; i<nplots; i++) {
-    int j=4*(i+1);  
-
-    // Initial colors of selected points
-    texture_images[0][j+0] = 
-      texture_images[1][j+0] = pws[0]->r_selected;  // need to fix this.
-    texture_images[0][j+1] = 
-      texture_images[1][j+1] = pws[0]->g_selected;
-    texture_images[0][j+2] = 
-      texture_images[1][j+2] = pws[0]->b_selected;
-    texture_images[0][j+3] = 
-      texture_images[1][j+3] = 1.0; 
-  }
-
-  // Loop: Set textures?
-  for( unsigned int i=0; 
-       i < sizeof(texnames)/sizeof(texnames[0]); i++) {
-    glBindTexture( GL_TEXTURE_1D, texnames[ i]);
-    glTexParameteri( GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri( GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri( GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexImage1D( GL_TEXTURE_1D, 0, GL_RGBA8, MAXPLOTS, 0, GL_RGBA, GL_FLOAT, texture_images[i]);
-  }
-  
-  // Set flag to indicate that textures have been initialized
-  textures_initialized = 1;
-}
+const GLsizei spriteWidth = 8, spriteHeight = 8, spriteDepth  = 2;
+// x-shaped "cross"
+GLubyte spriteData[spriteWidth*spriteHeight*spriteDepth] = {
+	255,127,  255,127,  255,0,    255,0,    255,0,    255,0,    255,127,  255,127,
+	255,127,  255,255,  255,127,  255,0,    255,0,    255,127,  255,255,  255,127,
+	255,0,    255,127,  255,255,  255,127,  255,127,  255,255,  255,127,  255,0,
+	255,0,    255,0,    255,127,  255,255,  255,255,  255,127,  255,0,    255,0,
+	255,0,    255,0,    255,127,  255,255,  255,255,  255,127,  255,0,    255,0,
+	255,0,    255,127,  255,255,  255,127,  255,127,  255,255,  255,127,  255,0,
+	255,127,  255,255,  255,127,  255,0,    255,0,    255,127,  255,255,  255,127,
+	255,127,  255,127,  255,0,    255,0,    255,0,    255,0,    255,127,  255,127
+};
 #endif // 0
 
-
-const GLsizei spriteWidth = 4, spriteHeight = 4, spriteDepth  = 4;
-
+const GLsizei spriteWidth = 8, spriteHeight = 8, spriteDepth  = 2;
+// "square" (unfilled)
 GLubyte spriteData[spriteWidth*spriteHeight*spriteDepth] = {
-
- 255,255,255,0,
- 255,255,255,255,
- 255,255,255,255,
- 255,255,255,0,
-
- 255,255,255,255,
- 255,255,255,255,
- 255,255,255,255,
- 255,255,255,255,
-
- 255,255,255,255,
- 255,255,255,255,
- 255,255,255,255,
- 255,255,255,255,
-
- 255,255,255,0,
- 255,255,255,255,
- 255,255,255,255,
- 255,255,255,0
-
-
+	255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,
+	255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,
+  255,255,  255,255,  255,0,    255,0,    255,0,    255,0,    255,255,  255,255,
+  255,255,  255,255,  255,0,    255,0,    255,0,    255,0,    255,255,  255,255,
+  255,255,  255,255,  255,0,    255,0,    255,0,    255,0,    255,255,  255,255,
+  255,255,  255,255,  255,0,    255,0,    255,0,    255,0,    255,255,  255,255,
+	255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,
+	255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255
 };
+
 
 void
 plot_window::initialize_sprites()
@@ -1950,7 +1907,7 @@ plot_window::initialize_sprites()
   glEnable (GL_POINT_SPRITE_ARB);
 	glGenTextures (1, &spriteTextureID);
 	glBindTexture (GL_TEXTURE_2D, spriteTextureID);
-	gluBuild2DMipmaps (GL_TEXTURE_2D, GL_RGBA, spriteWidth, spriteHeight, GL_RGBA, GL_UNSIGNED_BYTE, spriteData);
+	gluBuild2DMipmaps (GL_TEXTURE_2D, GL_LUMINANCE_ALPHA, spriteWidth, spriteHeight, GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, spriteData);
   CHECK_GL_ERROR("");
 
   sprites_initialized = 1;
@@ -1963,8 +1920,8 @@ plot_window::enable_sprites()
 	glEnable (GL_TEXTURE_2D);
   glEnable (GL_POINT_SPRITE_ARB);
 	glBindTexture (GL_TEXTURE_2D, spriteTextureID);
-	glTexParameteri (GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR_MIPMAP_LINEAR);
-	glTexParameteri (GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
+	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
   glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
   glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);

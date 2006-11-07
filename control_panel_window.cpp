@@ -70,10 +70,10 @@ char *control_panel_window::normalization_style_labels[ 11] = {
 
 // array to hold menu items for symbol menu
 Fl_Menu_Item control_panel_window::symbol_menu_items[] = {
-  {"points", 				0, 0, (void *)SQUARE_POINTS},
-  {"smooth points", 0, 0, (void *)SMOOTH_POINTS},
-  {"crosses", 			0, 0, (void *)SPRITES},
-  {0}
+  {"points", 				0, 0, (void *)SQUARE_POINTS, 0, 0, 0, 0, 0},
+  {"smooth points", 0, 0, (void *)SMOOTH_POINTS, 0, 0, 0, 0, 0},
+  {"crosses", 			0, 0, (void *)SPRITES,       0, 0, 0, 0, 0},
+  {0,               0, 0, (void *)0,             0, 0, 0, 0, 0}
 };
 
 
