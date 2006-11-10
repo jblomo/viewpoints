@@ -19,7 +19,7 @@
 //   3) Consider putting these variables into a NAMESPACE?
 //
 // Author: Creon Levit    unknown
-// Modified: P. R. Gazis  26-OCT-2006
+// Modified: P. R. Gazis  09-NOV-2006
 //*****************************************************************
 
 #ifndef VP_GLOBAL_DEFINITIONS_VP_H
@@ -111,18 +111,18 @@ EXTERN bool selection_is_inverted;
 EXTERN blitz::Array<float,1> tmp_points;
 
 // Define vector of strings to hold variable names.  Used extensively by the
-// main routine and class control_panel_window
+// main routine and class Control_panel_window
 EXTERN std::vector<std::string> column_labels; 
 
 // Global toggle between scale histogram & scale view :-(
 EXTERN int scale_histogram INIT(0);
 
 // Define variable to hold pointsize.  Used in main routine and classes 
-// control_panel_window and plot_window.  (Move to class plot_window?)
+// Control_panel_window and Plot_window.  (Move to class plot_window?)
 EXTERN float pointsize INIT(1.0);
 
 // Define main control panel's top level (global) widgets.  Many of these must 
-// also be accessible to class plot_window and possibly control_panel_window 
+// also be accessible to class plot_window and possibly Control_panel_window 
 // so these are left global.
 // cpt -- Tab widget to hold virtual control panels for individual plots.
 // npoints_slider -- maximum number of points to display in all 
@@ -140,20 +140,20 @@ EXTERN Fl_Button *change_all_axes_button, *link_all_axes_button;
 EXTERN Fl_Button *reload_plot_window_array_button;
 EXTERN Fl_Button *read_data_button;
 
-// Declare classes control_panel_window and plot_window here so they can be 
+// Declare classes Control_panel_window and Plot_window here so they can be 
 // referenced
-class control_panel_window;
-class plot_window;
+class Control_panel_window;
+class Plot_window;
 
 // Define pointer arrays of plot windows and control panel windows.  This 
 // can't be done until after the relevant class definitions.  NOTE: In the 
 // long run, it might be safer to store these in instances of the 
 // <vector> container class.
-EXTERN plot_window *pws[ MAXPLOTS];
+EXTERN Plot_window *pws[ MAXPLOTS];
 
-// There is one extra control_panel_window, with index=MAXPLOTS.  It has no 
+// There is one extra Control_panel_window, with index=MAXPLOTS.  It has no 
 // associated plot window - it affects all (unlocked) plots.
-EXTERN control_panel_window *cps[ MAXPLOTS+1]; 
+EXTERN Control_panel_window *cps[ MAXPLOTS+1]; 
 
 // MCL XXX Paul probably knows a better place to put these next two....
 
@@ -166,11 +166,24 @@ EXTERN float bad_value_proxy INIT(0.0);
 //   1,2,3,,5,,,8,9,10
 EXTERN char delimiter_char INIT(' ');
 
+// Make absolutely certain variables for point sprites are defined
+//#ifndef GL_ARB_point_sprite
+//  #define GL_ARB_point_sprite 1
+//  #define GL_POINT_SPRITE_ARB               0x8861
+//  #define GL_COORD_REPLACE_ARB              0x8862
+//#endif
+#ifndef GL_POINT_SPRITE_ARB
+  #define GL_POINT_SPRITE_ARB 0x8861
+#endif
+#ifndef GL_COORD_REPLACE_ARB
+  #define GL_COORD_REPLACE_ARB 0x8862
+#endif
+
 //*****************************************************************
-// Class: myCompare
+// Class: MyCompare
 //
 // Class definitions:
-//   myCompare -- Member class to maintain a comparison operator
+//   MyCompare -- Member class to maintain a comparison operator
 //
 // Classes referenced: none
 //
@@ -183,7 +196,7 @@ EXTERN char delimiter_char INIT(' ');
 // Author: Creon Levit     unknown
 // Modified: P. R. Gazis   25-MAR-2006
 //*****************************************************************
-class myCompare
+class MyCompare
 {
 public:
   bool operator()( const int i, const int j) {  
