@@ -1,14 +1,14 @@
 // viewpoints - interactive linked scatterplots and more.
 // copyright 2005 Creon Levit, all rights reserved.
-//*****************************************************************
-// File name: plot_window.h
+//***************************************************************************
+// File name: Plot_window.h
 //
 // Class definitions:
-//   plot_window -- Plot window
+//   Plot_Window -- Plot window
 //
 // Classes referenced:
-//   control_panel_window -- Control panel window
-//   myCompare -- Member class used by std::stable_sort
+//   Control_panel_window -- Control panel window
+//   MyCompare -- Member class used by std::stable_sort
 //
 // Required packages
 //    FLTK 1.1.6 -- Fast Light Toolkit graphics package
@@ -26,9 +26,9 @@
 // General design philosophy:
 //   1) Review and add comments!
 //
-// Author: Creon Levitt   unknown
-// Modified: P. R. Gazis  02-OCT-2006
-//*****************************************************************
+// Author: Creon Levit    2005-2006
+// Modified: P. R. Gazis  10-NOV-2006
+//***************************************************************************
 
 // Protection to make sure this header is not included twice
 #ifndef PLOT_WINDOW_H
@@ -43,24 +43,28 @@
 // Declare class control_panel_window here so it can be referenced
 // class control_panel_window;
 
-//*****************************************************************
-// Class: plot_window
+//***************************************************************************
+// Class: Plot_Window
 //
 // Class definitions:
-//   plot_window -- Maintain and manage plot window
+//   Plot_Window -- Maintain and manage plot window
 //
 // Classes referenced:
-//   control_panel_window
+//   Control_panel_window
 //
-// Purpose: Derived class of Fl_Gl_Window to construct, draw,
-//   and manage a plot window.  Tthe plot_window class is subclass 
-//   of an ftlk openGL window that also handles certain keyboard & 
-//   mouse events.  It is where data is displayed.  There are 
-//   usually several open at one time.
+// Purpose: Derived class of Fl_Gl_Window to construct, draw, and manage a 
+//   plot window.  The Plot_Window class is subclass of an ftlk openGL window 
+//   that also handles certain keyboard and mouse events.  It is where data is
+//   displayed.  There are usually several open at one time.
 //
 // Functions:
-//   plot_window( w, h) -- Constructor
+//   Plot_Window( w, h) -- Constructor
 //   initialize() -- Initialization method
+//
+//   initialize_VBO() --
+//   fill_VBO() --
+//   initialize_indexVBOs() --
+//   fill_indexVBOs() --
 //
 //   draw() -- Draw plot
 //   draw_grid() -- Draw grid
@@ -78,7 +82,7 @@
 //   compute_histogram( int) -- Compute a histogram
 //   draw_histograms() -- Draw histograms
 //
-//   compute_rank( blitz::Array<float,1>, blitz::Array<int,1>);
+//   compute_rank(int var_index);
 //   compute_histograms () -- Compute histograms
 //   normalize() -- Normalize data
 //
@@ -87,7 +91,7 @@
 //   reset_selection_box() -- Reset selection box
 //   color_array_from_new_selection() -- ???
 //   color_array_from_selection() -- Fill index arrays
-//   update_selection_color_table() -- change the rgba tables used for 
+//   update_selection_color_table() -- change the rgba tables used for
 //     selected and/or deselected points
 //   choose_color_selected() -- Choose color of selcted data
 //   reset_view() -- Reset plot
@@ -102,13 +106,13 @@
 //   toggle_display_delected( *o) -- Toggle colors
 //   initialize_selection() -- Clear selection
 //   clear_selection( *o) -- Clear selection and redraw plots
-//   initialize_textures() -- initial setup of rgba used for selected 
-//     and deselected points
+//   initialize_sprites() -- initial setup of rgba used for selected 
+//     and deselected points when rendered as openGL point sprites.
 //
-// Author: Creon Levitt    unknown
-// Modified: P. R. Gazis   26-OCT-2006
-//*****************************************************************
-class plot_window : public Fl_Gl_Window
+// Author: Creon Levit    2005-2006
+// Modified: P. R. Gazis   10-NOV-2006
+//***************************************************************************
+class Plot_Window : public Fl_Gl_Window
 {
   protected:
     
@@ -139,8 +143,8 @@ class plot_window : public Fl_Gl_Window
     void draw_data_points();
     void draw_center_glyph();
     void update_linked_transforms();
-    void enable_textures();
-    void disable_textures();
+    void enable_sprites();
+    void disable_sprites();
 
     // Event handlers
     int handle( int event);
@@ -173,7 +177,7 @@ class plot_window : public Fl_Gl_Window
     static int count; // MCL XXX isn't this the same as nplots?  is it consistent?
 
   public:
-    plot_window( int w, int h, int new_index);   // Constructor
+    Plot_Window( int w, int h, int new_index);   // Constructor
     void initialize();
 
     // min and max for data's bounding box in x, y, and z;
@@ -187,17 +191,19 @@ class plot_window : public Fl_Gl_Window
     static const int nbins_max = 1024;
 
     // Routines to compute histograms and normalize data
-    void compute_rank(blitz::Array<float,1> a, blitz::Array<int,1> a_rank, int var_index);
+    void compute_rank(int var_index);
     void compute_histograms();
-    int normalize(blitz::Array<float,1> a, blitz::Array<int,1> a_rank, int style, int axis_index);
+    int normalize( 
+      blitz::Array<float,1> a, 
+      blitz::Array<int,1> a_rank, 
+      int style, int axis_index);
 
     // Define strings to hold axis labels
     std::string xlabel, ylabel, zlabel;
 
-    // Pointer to and index of the control panel tab associated 
-    // with this plot window.  Each plot window has the same index
-    // as its associated tab.
-    control_panel_window *cp;
+    // Pointer to and index of the control panel tab associated with this plot 
+    // window.  Each plot window has the same index as its associated tab.
+    Control_Panel_Window *cp;
     int index;
 
     // Initial ordering of windows on screen.  Upper left is (1,1)
@@ -232,18 +238,19 @@ class plot_window : public Fl_Gl_Window
     static void toggle_display_deselected( Fl_Widget *o);
     static void initialize_selection();
     static void clear_selection( Fl_Widget *o);
-    static void initialize_textures();
+    static void initialize_sprites();
     
-    // Static variable to hold he initial fraction of the window 
-    // to be used for data to allow room for axes, labels, etc.
+    // Static variable to hold he initial fraction of the window to be used 
+    // for data to allow room for axes, labels, etc.
     static const float initial_pscale; 
 
-    // Specify how the RGB and alpha source and destination 
-    // blending factors are computed.
+    // Specify how the RGB and alpha source and destination blending factors 
+    // are computed.
     static int sfactor;
     static int dfactor;
 
-    // Count of points in each plot's selected set, index zero reserved for nonselected.
+    // Count of points in each plot's selected set, index zero reserved for 
+    // nonselected.
     // number_selected[1] = count of points selected in 1st plot (i.e, pws[0])....
     // number_selected[n+1] = count of points selected in nth plot (pws[n])
     // number_selected[0] = count of nonselected points
@@ -253,11 +260,17 @@ class plot_window : public Fl_Gl_Window
     // Indices of points for rendering, packed acording to selection state;
     static blitz::Array<unsigned int,2> indices_selected; 
 
-    static blitz::Array<GLfloat,2> colors_show_deselected; // when deselected points are visible
-    static blitz::Array<GLfloat,2> colors_hide_deselected; // when deselected points are invisible
+    // Colors to use deselected points are visible or invisible
+    static blitz::Array<GLfloat,2> colors_show_deselected;
+    static blitz::Array<GLfloat,2> colors_hide_deselected;
     static GLfloat pointscolor[ 4];
-    static int textures_initialized;
-    static void *global_GLContext; // the GLContextshared by all plot_windows
+
+    // Buffers for use with sprites
+    static GLuint spriteTextureID;
+    static int sprites_initialized;
+
+    // The GLContextshared by all Plot_Windows
+    static void *global_GLContext; 
 
 #ifdef USE_VBO
     void initialize_indexVBO(int);

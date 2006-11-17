@@ -4,7 +4,7 @@
 // File name: data_file_manager.h
 //
 // Class definitions:
-//   data_file_manager -- Data file manager
+//   Data_File_Manager -- Data file manager
 //
 // Classes referenced:
 //   Various BLITZ templates
@@ -31,8 +31,8 @@
 //      code to read headers and the calls to Fl_File_Chooser here and in 
 //      vp.cpp could be consolidated.
 //
-// Author: Creon Levit    unknown
-// Modified: P. R. Gazis  01-NOV-2006
+// Author: Creon Levit    2005-2006
+// Modified: P. R. Gazis  10-NOV-2006
 //***************************************************************************
 
 // Protection to make sure this header is not included twice
@@ -46,17 +46,17 @@
 #include "global_definitions_vp.h"
 
 //***************************************************************************
-// Class: data_file_manager
+// Class: Data_File_Manager
 //
 // Class definitions:
-//   data_file_manager -- Data file manager
+//   Data_File_Manager -- Data file manager
 //
 // Classes referenced: none
 //
 // Purpose: Data file manager to open, read, and write data files
 //
 // Functions:
-//   data_file_manager() -- Constructor
+//   Data_File_Manager() -- Constructor
 //   initialize() -- Initializer
 //
 //   remove_trivial_columns() -- Remove identical data
@@ -64,23 +64,40 @@
 //
 //   make_confirm_window() -- Manage confirmation window
 //
-//   static_replace_chars( s, oldChar, newChar) -- Replace characters
-//
-//   load_data_file( *inFileSpec) -- Load and initialize data
-//   read_ascii_file_with_headers( *inFileSpec) -- Read ASCII
-//   read_binary_file_with_headers( *inFileSpec) -- Read binary
+//   findInputFile() -- Query user to find input file
+//   load_data_file( inFileSpec) -- Load and initialize data
+//   load_data_file() -- Load and initialize data
+//   read_ascii_file_with_headers() -- Read ASCII
+//   read_binary_file_with_headers() -- Read binary
 //   create_default_data( nvars_in) -- Create default data
+//
+//   save_data_file( *outFileSpec) -- Save data
+//   save_data_file() -- Save data
 //   write_ascii_file_with_headers() -- Write ASCII file
 //   write_binary_file_with_headers() -- Write binary file
 //
+//   findOutputFile() -- Query user to find output file
 //   directory() -- Get pathname
 //   directory( sPathnameIn) -- Set pathname
-//   inFileSpec() -- Get input filespec
+//   input_filespec() -- Get input filespec
+//   input_filespec( inFileSpecIn) -- Set input filespec
+//   output_filespec() -- Get output filespec
+//   output_filespec( outFileSpecIn) -- Set output filespec
 //
-// Author: Creon Levit   unknown
-// Modified: P. R. Gazis  01-NOV-2006
+//   inFileSpec() -- Get input filespec
+//   ascii_input() -- Get ASCII input flag
+//   ascii_input( i) -- Set ASCII input flag
+//   ascii_output() -- Get ASCII output flag
+//   ascii_output( i) -- Set ASCII output flag
+//   selected_data() -- Get 'use selected data' flag
+//   selected_data( i)-- Set 'use selected data' flag
+//   column_major() -- Get column major flag
+//   column_major( i) -- Set column major flag
+//
+// Author: Creon Levit    2005-2006
+// Modified: P. R. Gazis  10-NOV-2006
 //***************************************************************************
-class data_file_manager
+class Data_File_Manager
 {
   protected:
     void remove_trivial_columns();
@@ -90,36 +107,52 @@ class data_file_manager
     void make_confirm_window( const char* output_file_name);
     enum enumConfirmResult { CANCEL_FILE = 0, NO_FILE, YES_FILE} confirmResult;
 
-    // Utility method to replace characters.  Why is this static?
-    static void static_replace_chars( 
-      std::string &s, const char oldChar, const char newChar);
-
     // Buffers to hold filespec and pathname
-    string inFileSpec;
-    string sPathname;
+    string sPathname, inFileSpec, outFileSpec;
+    
+    // State variables
+    int nSkipHeaderLines;
+    int isAsciiInput, isAsciiOutput;
+    int useSelectedData;
+    int isColumnMajor;
 
   public:
-    data_file_manager();
+    Data_File_Manager();
     void initialize();
 
-    // File i/o methods    
-    int load_data_file( string inFileSpecIn);
+    // File i/o methods
+    int findInputFile();
+    int load_data_file( string inFileSpec);
+    int load_data_file();
     int read_ascii_file_with_headers();
     int read_binary_file_with_headers();
     void create_default_data( int nvars_in);
-    void write_ascii_file_with_headers();
-    void write_binary_file_with_headers();
+
+    int findOutputFile();
+    int save_data_file( string outFileSpec);
+    int save_data_file();
+    int write_ascii_file_with_headers();
+    int write_binary_file_with_headers();
 
     // Access methods
     string directory();
     void directory( string sPathnameIn);
-    
-    // Define values for file reads.
-    int format;  // ASCII or binary
-    int ordering;  // Input data ordering
-    int nSkipHeaderLines;  // Number of header lines to skip
-    unsigned uWriteAll;  // Write all data?
+    string input_filespec();
+    void input_filespec( string inFileSpecIn);
+    int n_skip_header_lines() { return nSkipHeaderLines;}
+    void n_skip_header_lines( int i) { nSkipHeaderLines = i;}
+    string output_filespec();
+    void output_filespec( string outFileSpecIn);
 
+    int ascii_input() { return isAsciiInput;}
+    void ascii_input( int i) { isAsciiInput = (i==1);}
+    int ascii_output() { return isAsciiOutput;}
+    void ascii_output( int i) { isAsciiOutput = (i==1);}
+    int selected_data() { return useSelectedData;}
+    void selected_data( int i) { useSelectedData = (i==1);}
+    int column_major() { return isColumnMajor;}
+    void column_major( int i) { isColumnMajor = (i==1);}
+    
     // Define number of points and  number of variables specified by the 
     // command line argument.  NOTE: 0 means read to EOF and/or end of line.
     int npoints_cmd_line;

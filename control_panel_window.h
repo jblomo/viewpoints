@@ -4,10 +4,10 @@
 // File name: control_panel_window.h
 //
 // Class definitions:
-//   control_panel_window -- Control panel window
+//   Control_Panel_Window -- Control panel window
 //
 // Classes referenced:
-//   plot_window -- Plot window
+//   Plot_Window -- Plot window
 //   May require various BLITZ templates
 //
 // Required packages
@@ -25,10 +25,10 @@
 //
 // General design philosophy:
 //   1) This might be a good place to consolidate references to
-//      normalization schemes used here and by class plot_windows.
+//      normalization schemes used here and by class Plot_Windows.
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  26-OCT-2006
+// Modified: P. R. Gazis  10-NOV-2006
 //*****************************************************************
 
 // Protection to make sure this header is not included twice
@@ -41,27 +41,27 @@
 // Include globals
 #include "global_definitions_vp.h"
 
-// Declare class plot_window here so it can be referenced
-// class plot_window;
+// Declare class Plot_Window here so it can be referenced
+// class Plot_Window;
 
 // Include associated headers and source code.  NOTE: not needed if
 // this class has already been declared
 #include "plot_window.h"
 
 //*****************************************************************
-// Class: control_panel_window
+// Class: Control_Panel_Window
 //
 // Class definitions:
-//   control_panel_window
+//   Control_Panel_Window
 //
 // Classes referenced:
-//   plot_window -- Maintain and manage plot window
+//   Plot_Window -- Maintain and manage plot window
 //
 // Purpose: Derived class of Fl_Gl_Window to construct, draw,
 //   and manage a plot window
 //
 // Functions:
-//   control_panel_window( w, h) -- Constructor
+//   Control_Panel_Window( w, h) -- Constructor
 //
 //   maybe_redraw() -- Set redraw flag nicely
 //   make_widgets( *cpw) -- Make widgets for this tab
@@ -77,32 +77,32 @@
 //
 //   This comment also conveys nothing.
 //
-// Author: Creon Levitt   unknown
-// Modified: P. R. Gazis  08-MAR-2006
+// Author: Creon Levit    2005-2006
+// Modified: P. R. Gazis  10-NOV-2006
 //*****************************************************************
-class control_panel_window : public Fl_Group
+class Control_Panel_Window : public Fl_Group
 {
   protected:
     void maybe_redraw();
 
   public:
-    control_panel_window( int x, int y, int w, int h);
-    void make_widgets( control_panel_window *cpw);
+    Control_Panel_Window( int x, int y, int w, int h);
+    void make_widgets( Control_Panel_Window *cpw);
     void extract_and_redraw();
 
     // Static functions for access by Fl Widget callbacks
     static void broadcast_change( Fl_Widget *global_widget);
-    static void choose_color_selected( Fl_Widget *w, control_panel_window *cpw)
+    static void choose_color_selected( Fl_Widget *w, Control_Panel_Window *cpw)
     { cpw->pw->choose_color_selected() ;}
-    static void static_extract_and_redraw( Fl_Widget *w, control_panel_window *cpw)
+    static void static_extract_and_redraw( Fl_Widget *w, Control_Panel_Window *cpw)
     { cpw->extract_and_redraw(); }
-    static void static_maybe_redraw( Fl_Widget *w, control_panel_window *cpw)
+    static void static_maybe_redraw( Fl_Widget *w, Control_Panel_Window *cpw)
     { cpw->maybe_redraw() ;}
-    static void replot( Fl_Widget *w, control_panel_window *cpw)
+    static void replot( Fl_Widget *w, Control_Panel_Window *cpw)
     { cpw->pw->needs_redraw=1;}
-    static void reset_view( Fl_Widget *w, control_panel_window *cpw)
+    static void reset_view( Fl_Widget *w, Control_Panel_Window *cpw)
     { cpw->pw->reset_view() ;}
-    static void redraw_one_plot( Fl_Widget *w, control_panel_window *cpw)
+    static void redraw_one_plot( Fl_Widget *w, Control_Panel_Window *cpw)
     { cpw->pw->redraw_one_plot();}
 
     // Pointers to sliders & menus
@@ -132,7 +132,7 @@ class control_panel_window : public Fl_Group
     // points, round points, crosses, etc.
     Fl_Choice *symbol_menu;
     enum symbol_type {
-        SQUARE_POINTS,
+        SQUARE_POINTS = 0,
         SMOOTH_POINTS,
         SPRITES
     };
@@ -141,24 +141,24 @@ class control_panel_window : public Fl_Group
     // Pointer to and index of the plot window associated with 
     // this control panel tab.  Each plot window has the same 
     // color and index as its associated control panel tab.
-    plot_window *pw;
+    Plot_Window *pw;
     int index;  
     
     // constants that describe normalization styles.  
     // MCL XXX this stuff is now full of icky magic numbers like 11 and 12.  Fix!
     // use enums.
-    static const int control_panel_window::n_normalization_styles = 11;
-    static const int control_panel_window::NORMALIZATION_NONE   = 0;
-    static const int control_panel_window::NORMALIZATION_MINMAX = 1;
-    static const int control_panel_window::NORMALIZATION_ZEROMAX = 2;
-    static const int control_panel_window::NORMALIZATION_MAXABS = 3;
-    static const int control_panel_window::NORMALIZATION_TRIM_1E2 = 4;
-    static const int control_panel_window::NORMALIZATION_TRIM_1E3 = 5;
-    static const int control_panel_window::NORMALIZATION_THREESIGMA = 6;
-    static const int control_panel_window::NORMALIZATION_LOG10 = 7;
-    static const int control_panel_window::NORMALIZATION_SQUASH = 8;
-    static const int control_panel_window::NORMALIZATION_RANK = 9;
-    static const int control_panel_window::NORMALIZATION_GAUSSIANIZE = 10;
+    static const int Control_Panel_Window::n_normalization_styles = 11;
+    static const int Control_Panel_Window::NORMALIZATION_NONE   = 0;
+    static const int Control_Panel_Window::NORMALIZATION_MINMAX = 1;
+    static const int Control_Panel_Window::NORMALIZATION_ZEROMAX = 2;
+    static const int Control_Panel_Window::NORMALIZATION_MAXABS = 3;
+    static const int Control_Panel_Window::NORMALIZATION_TRIM_1E2 = 4;
+    static const int Control_Panel_Window::NORMALIZATION_TRIM_1E3 = 5;
+    static const int Control_Panel_Window::NORMALIZATION_THREESIGMA = 6;
+    static const int Control_Panel_Window::NORMALIZATION_LOG10 = 7;
+    static const int Control_Panel_Window::NORMALIZATION_SQUASH = 8;
+    static const int Control_Panel_Window::NORMALIZATION_RANK = 9;
+    static const int Control_Panel_Window::NORMALIZATION_GAUSSIANIZE = 10;
 
     static Fl_Menu_Item varindex_menu_items[]; 
 

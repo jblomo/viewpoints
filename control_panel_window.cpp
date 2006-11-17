@@ -4,10 +4,10 @@
 // File name: control_panel_window.cpp
 //
 // Class definitions:
-//   control_panel_window -- Control panel window
+//   Control_Panel_Window -- Control panel window
 //
 // Classes referenced:
-//   plot_window -- Plot window
+//   Plot_Window -- Plot window
 //
 // Required packages
 //    FLTK 1.1.6 -- Fast Light Toolkit graphics package
@@ -19,10 +19,10 @@
 // Compiler directives:
 //   May require D__WIN32__ for the C++ compiler
 //
-// Purpose: Source code for <control_panel_window.h>
+// Purpose: Source code for <Control_Panel_Window.h>
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  26-OCT-2006
+// Modified: P. R. Gazis  10-NOV-2006
 //*****************************************************************
 
 // Include the necessary include libraries
@@ -37,23 +37,23 @@
 #include "plot_window.h"
 #include "control_panel_window.h"
 
-// Set static data members for class control_panel_window::
+// Set static data members for class Control_Panel_Window::
 //
 
 // array to hold menu items for axis menus.  
 Fl_Menu_Item 
-  control_panel_window::varindex_menu_items[ MAXVARS+2] = 
+  Control_Panel_Window::varindex_menu_items[ MAXVARS+2] = 
   { Fl_Menu_Item()};
 
 // array to hold menu items for normalization styles
 // MCL XXX this needs to be cleaned up to avoid magic numbers like 11, 12.....
 Fl_Menu_Item 
-  control_panel_window::normalization_style_menu_items[ 12] =
+  Control_Panel_Window::normalization_style_menu_items[ 12] =
    { Fl_Menu_Item()};
 
 // Set the array of normalization schemes.  NOTE: If possible, 
 // this should be be made CONST.
-int control_panel_window::normalization_styles[ 11] = {
+int Control_Panel_Window::normalization_styles[ 11] = {
   NORMALIZATION_NONE, NORMALIZATION_MINMAX,
   NORMALIZATION_ZEROMAX, NORMALIZATION_MAXABS, 
   NORMALIZATION_TRIM_1E2, NORMALIZATION_TRIM_1E3, 
@@ -63,34 +63,32 @@ int control_panel_window::normalization_styles[ 11] = {
 
 // Set the array of character arrays that describe normalization
 // schemes.  NOTE: If possible, this should be be made CONST.
-char *control_panel_window::normalization_style_labels[ 11] = { 
+char *Control_Panel_Window::normalization_style_labels[ 11] = { 
   "none", "minmax", "zeromax", "maxabs", "trim 10^-2", 
   "trim 10^-3", "threesigma", "log_10", "squash", "rank",
   "gaussianize"};
 
 // array to hold menu items for symbol menu
-Fl_Menu_Item control_panel_window::symbol_menu_items[] = {
-  {"points", 				0, 0, (void *)SQUARE_POINTS},
-  {"smooth points", 0, 0, (void *)SMOOTH_POINTS},
-  {"sprites", 			0, 0, (void *)SPRITES},
-  {0}
+Fl_Menu_Item Control_Panel_Window::symbol_menu_items[] = {
+  { "points", 0, 0, (void *) SQUARE_POINTS, 0, 0, 0, 0, 0},
+  { "smooth points", 0, 0, (void *) SMOOTH_POINTS, 0, 0, 0, 0, 0},
+  { "crosses", 0, 0, (void *) SPRITES, 0, 0, 0, 0, 0},
+  { 0, 0, 0, (void *) 0, 0, 0, 0, 0, 0}
 };
 
-
-
 //*****************************************************************
-// control_panel_window::control_panel_window( x, y, w, h) -- 
+// Control_Panel_Window::Control_Panel_Window( x, y, w, h) -- 
 // Default constructor.  Do nothing except call the constructor 
 // for the parent class, Fl_Group.
-control_panel_window::control_panel_window(
+Control_Panel_Window::Control_Panel_Window(
   int x, int y, int w, int h) : Fl_Group( x, y, w, h)
 {}
 
 //*****************************************************************
-// control_panel_window::broadcast_change (*master_widget) -- 
+// Control_Panel_Window::broadcast_change (*master_widget) -- 
 // broadcast an interaction from the master panel to all (unlocked) 
 // panels.
-void control_panel_window::broadcast_change (Fl_Widget *master_widget)
+void Control_Panel_Window::broadcast_change (Fl_Widget *master_widget)
 {
   // Define a pointer to the parent of the master widget and verify
   // that it exists
@@ -159,9 +157,9 @@ void control_panel_window::broadcast_change (Fl_Widget *master_widget)
 }
 
 //*****************************************************************
-// control_panel_window::maybe_draw() -- Check plot window to see
+// Control_Panel_Window::maybe_draw() -- Check plot window to see
 // if they need to be redrawn.
-void control_panel_window::maybe_redraw() 
+void Control_Panel_Window::maybe_redraw() 
 {
   // kludge.  Avoid double redraw when setting "don't clear".
   if( dont_clear->value()) return;
@@ -171,16 +169,18 @@ void control_panel_window::maybe_redraw()
 }
 
 //*****************************************************************
-// plot_window::extract_and_redraw() -- Extract data for these 
+// Plot_Window::extract_and_redraw() -- Extract data for these 
 // (new?) axes and redraw plot.  For one local control panel only.
-void control_panel_window::extract_and_redraw ()
+void Control_Panel_Window::extract_and_redraw ()
 {
   if( pw->extract_data_points()) {
 
     #ifdef USE_VBO
       glBindBufferARB(GL_ARRAY_BUFFER_ARB, index+1);
       void *vertexp = (void *)pw->vertices.data();
-      glBufferSubDataARB( GL_ARRAY_BUFFER, (GLintptrARB) 0, (GLsizeiptrARB)(npoints*3*sizeof(GLfloat)), vertexp);
+      glBufferSubDataARB( 
+        GL_ARRAY_BUFFER, (GLintptrARB) 0, 
+        (GLsizeiptrARB)(npoints*3*sizeof(GLfloat)), vertexp);
     #endif // USE_VBO
 
     pw->needs_redraw = 1;
@@ -188,8 +188,8 @@ void control_panel_window::extract_and_redraw ()
 }
 
 //*****************************************************************
-// control_panel_window::make_widgets( cpw) -- Make widgets
-void control_panel_window::make_widgets( control_panel_window *cpw)
+// Control_Panel_Window::make_widgets( cpw) -- Make widgets
+void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
 {
   // Since these (virtual) control panels are really groups inside 
   // a tab inside a window, set their child widget's coordinates 
@@ -200,27 +200,30 @@ void control_panel_window::make_widgets( control_panel_window *cpw)
   Fl_Button *b;
 
   // Pointsize slider
-  pointsize_slider = new Fl_Hor_Value_Slider_Input( xpos, ypos, cpw->w()-125, 20, "size");
+  pointsize_slider = 
+    new Fl_Hor_Value_Slider_Input( xpos, ypos, cpw->w()-125, 20, "size");
   pointsize_slider->align(FL_ALIGN_LEFT);
   pointsize_slider->value(pointsize);
   pointsize_slider->step(0.25);
-  pointsize_slider->bounds(0.25,20.0);
+  pointsize_slider->bounds(1.0,50.0);
   pointsize_slider->callback((Fl_Callback*)replot, this);
 
   // symbol types menu
-  symbol_menu = new Fl_Choice(xpos+pointsize_slider->w()+5, ypos, 60, 20, "symbol");
+  symbol_menu = 
+    new Fl_Choice(xpos+pointsize_slider->w()+5, ypos, 60, 20, "symbol");
   symbol_menu->align(FL_ALIGN_TOP);
   symbol_menu->textsize(12);
   symbol_menu->menu(symbol_menu_items);
   symbol_menu->value(SQUARE_POINTS);
   symbol_menu->callback( (Fl_Callback*)replot, this);
 
-  // scale factor for selected point size
-  selected_pointsize_slider = new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, cpw->w()-125, 20, "size2");
+  // size for selected point size
+  selected_pointsize_slider = 
+    new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, cpw->w()-125, 20, "size2");
   selected_pointsize_slider->align(FL_ALIGN_LEFT);
-  selected_pointsize_slider->value(0.0);
-  // selected_pointsize_slider->step(0.1);
-  selected_pointsize_slider->bounds(-1.0,+1.0);
+  selected_pointsize_slider->value(pointsize);
+  selected_pointsize_slider->step(0.25);
+  selected_pointsize_slider->bounds(1.0,50.0);
   selected_pointsize_slider->callback((Fl_Callback*)replot, this);
 
   // Background color slider
@@ -252,12 +255,12 @@ void control_panel_window::make_widgets( control_panel_window *cpw)
   Alph->align(FL_ALIGN_LEFT);
   Alph->callback((Fl_Callback*)replot, this);
   Alph->step(0.0001);
-  // Alph->bounds(0.25,0.5); // MCL XXX removed for sprites
-  Alph->bounds(0.0,2.0); // MCL XXX removed for sprites
+  Alph->bounds(0.0,1.0);
   Alph->value(1.0);
 
   // Rotation (and spin) slider
-  rot_slider = new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, cpw->w()-60, 20, "rot");
+  rot_slider = 
+    new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, cpw->w()-60, 20, "rot");
   rot_slider->align(FL_ALIGN_LEFT);
   rot_slider->callback((Fl_Callback*)replot, this);
   rot_slider->value(0.0);
@@ -265,12 +268,13 @@ void control_panel_window::make_widgets( control_panel_window *cpw)
   rot_slider->bounds(-180.0, 180.0);
 
   // Number of histogram bins slider
-  nbins_slider = new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, cpw->w()-60, 20, "nbins");
+  nbins_slider = 
+    new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, cpw->w()-60, 20, "nbins");
   nbins_slider->align(FL_ALIGN_LEFT);
   nbins_slider->callback((Fl_Callback*)redraw_one_plot, this);
-  nbins_slider->value(plot_window::nbins_default);
+  nbins_slider->value(Plot_Window::nbins_default);
   nbins_slider->step(1);
-  nbins_slider->bounds(2,plot_window::nbins_max);
+  nbins_slider->bounds(2,Plot_Window::nbins_max);
 
   // dynamically build the variables menu
   // cout << "starting menu build, nvars = " << nvars << endl;
@@ -340,28 +344,34 @@ void control_panel_window::make_widgets( control_panel_window *cpw)
   normalization_style_menu_items[n_normalization_styles].label(0);
 
   // X-axis normalization and scaling
-  x_normalization_style = new Fl_Choice (xpos, ypos+=70, 100, 25, "normalize x");
-  x_normalization_style->align(FL_ALIGN_TOP);
-  x_normalization_style->textsize(12);
-  x_normalization_style->menu(normalization_style_menu_items);
-  x_normalization_style->value(NORMALIZATION_TRIM_1E3);
-  x_normalization_style->callback( (Fl_Callback*)static_extract_and_redraw, this);
+  x_normalization_style = 
+    new Fl_Choice( xpos, ypos+=70, 100, 25, "normalize x");
+  x_normalization_style->align( FL_ALIGN_TOP);
+  x_normalization_style->textsize( 12);
+  x_normalization_style->menu( normalization_style_menu_items);
+  x_normalization_style->value( NORMALIZATION_MINMAX);
+  x_normalization_style->callback( 
+    (Fl_Callback*)static_extract_and_redraw, this);
  
   // Y-axis normalization and scaling
-  y_normalization_style = new Fl_Choice (xpos+100, ypos, 100, 25, "normalize y");
+  y_normalization_style = 
+    new Fl_Choice( xpos+100, ypos, 100, 25, "normalize y");
   y_normalization_style->align(FL_ALIGN_TOP);
   y_normalization_style->textsize(12);
   y_normalization_style->menu(normalization_style_menu_items);
-  y_normalization_style->value(NORMALIZATION_TRIM_1E3); 
-  y_normalization_style->callback( (Fl_Callback*)static_extract_and_redraw, this);
+  y_normalization_style->value(NORMALIZATION_MINMAX); 
+  y_normalization_style->callback( 
+    (Fl_Callback*)static_extract_and_redraw, this);
  
   // Z-axis normalization and scaling
-  z_normalization_style = new Fl_Choice (xpos+200, ypos, 100, 25, "normalize z");
+  z_normalization_style = 
+    new Fl_Choice( xpos+200, ypos, 100, 25, "normalize z");
   z_normalization_style->align(FL_ALIGN_TOP);
   z_normalization_style->textsize(12);
   z_normalization_style->menu(normalization_style_menu_items);
-  z_normalization_style->value(NORMALIZATION_TRIM_1E3); 
-  z_normalization_style->callback( (Fl_Callback*)static_extract_and_redraw, this);
+  z_normalization_style->value(NORMALIZATION_MINMAX); 
+  z_normalization_style->callback( 
+    (Fl_Callback*)static_extract_and_redraw, this);
  
   // XXX Add some additional y-offset
   ypos+=5;
@@ -371,7 +381,8 @@ void control_panel_window::make_widgets( control_panel_window *cpw)
   int ypos2 = ypos;
 
   // Button (1,1) Reset view in this plot
-  reset_view_button = b = new Fl_Button(xpos2, ypos+=25, 20, 20, "reset view ");
+  reset_view_button = b = 
+    new Fl_Button(xpos2, ypos+=25, 20, 20, "reset view ");
   b->align(FL_ALIGN_RIGHT); b->selection_color(FL_BLUE);
   b->callback((Fl_Callback*) reset_view, this);
 
@@ -401,7 +412,8 @@ void control_panel_window::make_widgets( control_panel_window *cpw)
   b->selection_color(FL_BLUE);
 
   // Button (5,1): Sum vs difference transform
-  sum_vs_difference = b = new Fl_Button(xpos2, ypos+=25, 20, 20, "sum vs. diff.");
+  sum_vs_difference = b = 
+    new Fl_Button(xpos2, ypos+=25, 20, 20, "sum vs. diff.");
   b->callback((Fl_Callback*)static_extract_and_redraw, this);
   b->align(FL_ALIGN_RIGHT); 
   b->type(FL_RADIO_BUTTON); 
@@ -473,7 +485,8 @@ void control_panel_window::make_widgets( control_panel_window *cpw)
   b->value(0);
 
   // Button (6,2): Show histograms for this plot
-  show_histogram = b = new Fl_Button(xpos, ypos+=25, 20, 20, "histograms");
+  show_histogram = b = 
+    new Fl_Button(xpos, ypos+=25, 20, 20, "histograms");
   b->callback((Fl_Callback*)redraw_one_plot, this);
   b->align(FL_ALIGN_RIGHT); 
   b->type(FL_TOGGLE_BUTTON); 
@@ -484,17 +497,18 @@ void control_panel_window::make_widgets( control_panel_window *cpw)
   xpos=xpos2+200;
 
   // Button (1,3): Choose selection color
-  choose_selection_color_button = b = new Fl_Button(xpos, ypos+=25, 20, 20, "selection color");
+  choose_selection_color_button = b = 
+    new Fl_Button(xpos, ypos+=25, 20, 20, "selection color");
   b->align(FL_ALIGN_RIGHT); 
   b->selection_color(FL_BLUE); 
   b->callback((Fl_Callback*)choose_color_selected, this);
 
   // Button (2,3): z-buffering control
-  z_bufferring_button = b = new Fl_Button(xpos, ypos+=25, 20, 20, "z-bufferring");
+  z_bufferring_button = b = 
+    new Fl_Button(xpos, ypos+=25, 20, 20, "z-bufferring");
   b->callback((Fl_Callback*)redraw_one_plot, this);
   b->align(FL_ALIGN_RIGHT); 
   b->type(FL_TOGGLE_BUTTON); 
   b->selection_color(FL_BLUE); 
   b->value(1);
-
 }

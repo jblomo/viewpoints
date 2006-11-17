@@ -25,8 +25,8 @@
 // General design philosophy:
 //   1) Add comments and get this code to run under Windows.
 //
-// Author: Creon Levit     unknown
-// Modified: P. R. Gazis   26-OCT-2006
+// Author: Creon Levit    2005-2006
+// Modified: P. R. Gazis   10-NOV-2006
 //*****************************************************************
 
 // Protection to make sure this header is not included twice
@@ -168,18 +168,5 @@
   //# include <cblas.h>
   //}
 #endif // __APPLE__
-
-// Make absolutely certain variables for point sprites are defined
-//#ifndef GL_ARB_point_sprite
-//  #define GL_ARB_point_sprite 1
-//  #define GL_POINT_SPRITE_ARB               0x8861
-//  #define GL_COORD_REPLACE_ARB              0x8862
-//#endif
-#ifndef GL_POINT_SPRITE_ARB
-  #define GL_POINT_SPRITE_ARB 0x8861
-#endif
-#ifndef GL_COORD_REPLACE_ARB
-  #define GL_COORD_REPLACE_ARB 0x8862
-#endif
 
 #endif   // INCLUDE_LIBRARIES_VP_H

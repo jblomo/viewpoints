@@ -4,7 +4,7 @@
 // File name: data_file_manager.cpp
 //
 // Class definitions:
-//   data_file_manager -- Data file manager
+//   Data_File_Manager -- Data file manager
 //
 // Classes referenced:
 //   Various BLITZ templates
@@ -18,8 +18,8 @@
 //
 // Purpose: Source code for <data_file_manager.h>
 //
-// Author: Creon Levit    unknown (really? I knew him well)
-// Modified: P. R. Gazis  01-NOV-2006
+// Author: Creon Levit    2005-2006
+// Modified: P. R. Gazis  10-NOV-2006
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -32,34 +32,36 @@
 #include "data_file_manager.h"
 #include "plot_window.h"
 
-// Set static data members for class data_file_manager::
-//
+// Set static data members for class Data_File_Manager::
 
 // Define and set maximums length of header lines and number of lines in the 
 // header block
-const int data_file_manager::MAX_HEADER_LENGTH = MAXVARS*100;
-const int data_file_manager::MAX_HEADER_LINES = 2000;
+const int Data_File_Manager::MAX_HEADER_LENGTH = MAXVARS*100;
+const int Data_File_Manager::MAX_HEADER_LINES = 2000;
 
 //***************************************************************************
-// data_file_manager::data_file_manager() -- Default constructor, calls the
+// Data_File_Manager::Data_File_Manager() -- Default constructor, calls the
 // initializer.
-data_file_manager::data_file_manager()
+Data_File_Manager::Data_File_Manager() : isAsciiInput( 1), 
+  isAsciiOutput( 0), useSelectedData( 0), isColumnMajor( 0)
 {
   sPathname = ".";  // Default pathname
   initialize();
 }
 
 //***************************************************************************
-// data_file_manager::initialize() -- Reset control parameters.
-void data_file_manager::initialize()
+// Data_File_Manager::initialize() -- Reset control parameters.
+void Data_File_Manager::initialize()
 {
   // Set default values for file reads.
-  // format=ASCII;   // default input file format
-  ordering=COLUMN_MAJOR;   // default input data ordering
+  isAsciiInput = 1;
+  isAsciiOutput = 0;
+  useSelectedData = 0;
+
+  isColumnMajor = 1;
   nSkipHeaderLines = 1;  // Number of header lines to skip
   // sPathname = ".";  // Default pathname
   inFileSpec = "";  // Default input filespec
-  uWriteAll = 1;   // Write all data by default
 
   // Initialize the number of points and variables specified by the command 
   // line arguments.  NOTE: 0 means read to EOF or end of line.
@@ -71,33 +73,135 @@ void data_file_manager::initialize()
   nvars = MAXVARS;
 }
 
+
 //***************************************************************************
-// data_file_manager::load_data_file( inFileSpec) -- Read an ASCII or binary 
+// Data_File_Manager::findInputFile() -- Query user to find the input file.
+// Class FL_File_Chooser is used in preference to the fl_file_chooser method 
+// to obtain access to member functions such as directory() and to allow the 
+// possibility of a derived class with additional controls in the 
+// file_chooser window.  Returns 0 if successful.  
+int Data_File_Manager::findInputFile()
+{
+  // Generate text, file extensions, etc, for this file type
+  char* title = NULL;
+  char* pattern = NULL;
+  if( isAsciiInput) {
+    title = "Read ASCII input from file";
+    pattern = "*.{txt,lis,asc}\tAll Files (*)";
+  }
+  else {
+    title =  "Read binary input from file";
+    pattern = "*.bin\tAll Files (*)";
+  }
+
+  // Initialize read status and filespec.  NOTE: cInFileSpec is defined as
+  // const char* for use with Fl_File_Chooser, which means it could be 
+  // destroyed by the relevant destructors!
+  const char *cInFileSpec = directory().c_str();
+
+  // Instantiate and show an Fl_File_Chooser widget.  NOTE: The pathname must
+  // be passed as a variable or the window will begin in some root directory.
+  Fl_File_Chooser* file_chooser = 
+    new Fl_File_Chooser( cInFileSpec, pattern, Fl_File_Chooser::SINGLE, title);
+
+  // Loop: Select fileSpecs until a non-directory is obtained
+  while( 1) {
+    if( cInFileSpec != NULL) file_chooser->directory( cInFileSpec);
+
+    // Loop: wait until the file selection is done
+    file_chooser->show();
+    while( file_chooser->shown()) Fl::wait();
+    cInFileSpec = file_chooser->value();   
+
+    // If no file was specified then quit
+    if( cInFileSpec == NULL) {
+      cerr << "Data_File_Manager::findInputFile: "
+           << "No input file was specified" << endl;
+      break;
+    }
+
+    // For some reason, the fl_filename_isdir method doesn't seem to work, so 
+    // try to open this file to see if it is a directory.
+    FILE* pFile = fopen( cInFileSpec, "r");
+    if( pFile == NULL) {
+      file_chooser->directory( cInFileSpec);
+      directory( (string) cInFileSpec);
+      continue;
+    }
+    fclose( pFile);
+    break;         
+  } 
+
+  // If no file was specified then quit and deallocate the 
+  // Fl_File_Chooser object
+  if( cInFileSpec == NULL) {
+    cerr << "Data_File_Manager::findInputFile: "
+         << "No input file was specified" << endl;
+    delete file_chooser;  // WARNING! Destroys cInFileSpec!
+    return -1;
+  }
+
+  // Load inFileSpec
+  inFileSpec.assign( (string) cInFileSpec);
+  if( isAsciiInput == 1) 
+    cout << "Data_File_Manager::findInputFile: Reading ASCII data from <";
+  else 
+    cout << "Data_File_Manager::findInputFile: Reading binary data from <";
+  cout << inFileSpec.c_str() << ">" << endl;
+
+  // Deallocate file_chooser
+  delete file_chooser;  // WARNING! This destroys cInFileSpec!
+
+  // Perform partial initialization and return success
+  nSkipHeaderLines = 1;
+  npoints_cmd_line = 0;
+  nvars_cmd_line = 0;
+  npoints = MAXPOINTS;
+  nvars = MAXVARS;
+
+  return 0;
+}
+
+//***************************************************************************
+// Data_File_Manager::load_data_file( inFileSpec) -- Copy input filespec, then
+// invoke load_data_file to load  this file.
+int Data_File_Manager::load_data_file( string inFileSpec) 
+{
+  input_filespec( inFileSpec);
+  load_data_file();
+}
+
+//***************************************************************************
+// Data_File_Manager::load_data_file( inFileSpec) -- Read an ASCII or binary 
 // data file, resize arrays to allocate meomory, and set identity array.  
 // Returns 0 if successful.
-// MCL XXX - refactor this with read_data()
-int data_file_manager::load_data_file( string inFileSpecIn) 
+// int Data_File_Manager::load_data_file( string inFileSpecIn) 
+int Data_File_Manager::load_data_file() 
 {
   // PRG XXX: Would it be possible or desirable to examine the file directly 
   // here to determine or verify its format?
-
-  // Load input filespec
-  inFileSpec = inFileSpecIn;
-         
+  if( inFileSpec.length() <= 0) {
+    cout << "Data_File_Manager::load_data_file: "
+         << "No input file was specified" << endl;
+    return -1;
+  }
+  
   // Read data file and report results
   cout << "Reading input data from <" << inFileSpec.c_str() << ">" << endl;
   int iReadStatus = 0;
-  if( format == BINARY)
+  if( isAsciiInput == 0)
     iReadStatus = read_binary_file_with_headers();
-  else if( format == ASCII)
+  else
     iReadStatus = read_ascii_file_with_headers();
 
   if( iReadStatus != 0) {
-    cout << "Problems reading file <" << inFileSpec.c_str() << ">" << endl;
+    cout << "Data_File_Manager::load_data_file: "
+         << "Problems reading file <" << inFileSpec.c_str() << ">" << endl;
     return -1;
   }
   else
-    cout << "Finished reading file <" << inFileSpec.c_str() << ">" << endl;
+    cout << "Data_File_Manager::load_data_file: Finished reading file <" 
+         << inFileSpec.c_str() << ">" << endl;
 
   // Remove trivial columns
   remove_trivial_columns();
@@ -135,10 +239,10 @@ int data_file_manager::load_data_file( string inFileSpecIn)
 }
 
 //***************************************************************************
-// data_file_manager::read_ascii_file_with_headers() -- Open an ASCII file 
+// Data_File_Manager::read_ascii_file_with_headers() -- Open an ASCII file 
 // for input, read and discard the headers, read the data block, and close 
 // the file.  Returns 0 if successful.
-int data_file_manager::read_ascii_file_with_headers() 
+int Data_File_Manager::read_ascii_file_with_headers() 
 {
   // Attempt to open input file and make sure it exists
   ifstream inFile;
@@ -194,12 +298,12 @@ int data_file_manager::read_ascii_file_with_headers()
   // examine the first line of the data block to determine the number of 
   // columns and generate a set of column labels.
   if( nHeaderLines == 0 || lastHeaderLine.length() == 0) {
-
-    // Replace user-specified delimiter characters with " " so that 
+    
+    // Replace user-specified delimiter characters and/or tabs with " " so 
     // operator>> will work.
-    static_replace_chars( line, '\t', ' ');
-    if( delimiter_char != ' ') {
-      static_replace_chars( line, delimiter_char, ' ');
+    replace (line.begin(), line.end(), '\t', ' ');
+    if (delimiter_char != ' ') {
+      replace (line.begin(), line.end(), delimiter_char, ' ');
     }
 
     std::stringstream ss( line);
@@ -227,10 +331,10 @@ int data_file_manager::read_ascii_file_with_headers()
       lastHeaderLine.erase( 0, 1);
       
     // Replace user-specified delimiter characters and/or tabs with " " so 
-    // the operator>> will work.
-    static_replace_chars( lastHeaderLine, '\t', ' ');
-    if( delimiter_char != ' ') {
-      static_replace_chars (lastHeaderLine, delimiter_char, ' ');
+    // operator>> will work.
+    replace (lastHeaderLine.begin(), lastHeaderLine.end(), '\t', ' ');
+    if (delimiter_char != ' ') {
+      replace (lastHeaderLine.begin(), lastHeaderLine.end(), delimiter_char, ' ');
     }
 
     // Loop: Insert the input string into a stream, define a buffer, read 
@@ -247,8 +351,7 @@ int data_file_manager::read_ascii_file_with_headers()
   // If there were more than nvars_cmd_line variables, truncate the vector of 
   // column labels and reset nvars.
   if( nvars_cmd_line > 0 && nvars > nvars_cmd_line) {
-    column_labels.erase( 
-      column_labels.begin()+nvars_cmd_line, column_labels.end());
+    column_labels.erase( column_labels.begin()+nvars_cmd_line, column_labels.end());
     nvars = column_labels.size();
     cout << " -Truncated list to " << nvars 
          << " column labels." << endl;
@@ -312,8 +415,8 @@ int data_file_manager::read_ascii_file_with_headers()
 
     // Loop: Insert the string into a stream and read it
 
-    // Replace tabs with ' ' so operator>> will work
-    static_replace_chars (line, '\t', ' ');
+    // replace tabs with ' ' so operator>> will work
+    replace (line.begin(), line.end(), '\t', ' ');
     std::stringstream ss(line); 
     unsigned isBadData = 0;
 
@@ -333,14 +436,18 @@ int data_file_manager::read_ascii_file_with_headers()
       // Note: whitespace delimited files simply skip lines with missing 
       // values.
       if(!ss) {
+        // error state -> found nonumeric data, or nothing at all (a missing value)
         points(j,i) = bad_value_proxy;
         ss.clear();
       } else {
         points(j,i) = (float) x;
       }
-      ss.ignore(std::numeric_limits<streamsize>::max(),delimiter_char);
+      // Advance past the next field delimiter character, or to the end of the 
+      // line, whichever comes first.
+      ss.ignore(line.length(),delimiter_char);
 
       // Check for unreadable data and flag line to be skipped
+      // MCL XXX I am not sure if this ever happens, but just to be sure.....
       if( !ss.good() && j<nvars-1) {
         cerr << " -WARNING, unreadable data "
              << "(binary or ASCII?) at line " << nRead
@@ -399,13 +506,13 @@ int data_file_manager::read_ascii_file_with_headers()
 }
 
 //***************************************************************************
-// data_file_manager::read_binary_file_with_headers() -- Open and read a 
+// Data_File_Manager::read_binary_file_with_headers() -- Open and read a 
 // binary file.  The file is asssumed to consist of a single header line of 
 // ASCII with column information, terminated by a newline, followed by a block
 // of binary data.  The only viable way to read this seems to be with 
 // conventional C-style methods: fopen, fgets, fread, feof, and fclose, from 
 // <stdio>.  Returns 0 if successful.
-int data_file_manager::read_binary_file_with_headers() 
+int Data_File_Manager::read_binary_file_with_headers() 
 {
   // Attempt to open input file and make sure it exists
   FILE * pInFile;
@@ -450,8 +557,7 @@ int data_file_manager::read_binary_file_with_headers()
   // If there were more than nvars_cmd_line variables, truncate the vector of 
   // column labels and reset nvars.
   if( nvars_cmd_line > 0 && nvars > nvars_cmd_line) {
-    column_labels.erase( 
-      column_labels.begin()+nvars_cmd_line, column_labels.end());
+    column_labels.erase( column_labels.begin()+nvars_cmd_line, column_labels.end());
     nvars = column_labels.size();
     cout << " -Truncated list to " << nvars 
          << " column labels." << endl;
@@ -491,10 +597,10 @@ int data_file_manager::read_binary_file_with_headers()
   }
 
   // Assert possible types or ordering  
-  assert( ordering == COLUMN_MAJOR || ordering == ROW_MAJOR);
+  // assert( ordering == COLUMN_MAJOR || ordering == ROW_MAJOR);
 
   // Read file in Column Major order
-  if( ordering == COLUMN_MAJOR) {
+  if( isColumnMajor == 1) {
     cout << " -Attempting to read binary file in"
          << " column-major order" << endl;
     blitz::Array<float,1> vars( nvars_in);
@@ -543,7 +649,7 @@ int data_file_manager::read_binary_file_with_headers()
   }
 
   // Read file in Row Major order
-  if( ordering == ROW_MAJOR) {
+  if( isColumnMajor != 1) {
     cout << " -Attempting to read binary file in"
          << "row-major order with nvars=" << nvars_in
          << ", npoints=" << npoints << endl;
@@ -609,53 +715,65 @@ int data_file_manager::read_binary_file_with_headers()
 }
 
 //***************************************************************************
-// data_file_manager::write_ascii_file_with_headers() -- Open and write an 
-// ASCII data file.  File will consist of an ASCII header with column names 
-// terminated by a newline, followed by successive lines of ASCII data.
-void data_file_manager::write_ascii_file_with_headers()
+// Data_File_Manager::findOutputFile() -- Query user to find the output file.
+// Class FL_File_Chooser is used in preference to the fl_file_chooser method 
+// to obtain access to member functions such as directory() and to allow the 
+// possibility of a derived class with additional controls in the 
+// file_chooser window.  Returns 0 if successful.  
+int Data_File_Manager::findOutputFile()
 {
-  // Initialize the output file name, pattern, and title for the file_chooser
-  // window.  NOTE 1): pathnames, etc., must be is defined as const char* for 
-  // use with Fl_File_Chooser, which means they could be destroyed by the 
-  // relevant destructors!  NOTE 2): output_file_name does triple duty as a
-  // pathname, filespec, and means to determine if a file exists.
-  const char *output_file_name = sPathname.c_str();
-  const char* pattern = "*.{txt,lis,asc}\tAll Files (*)";
-  const char* title = "write ASCII output to file";
+  // Generate query text and list file extensions, etc for this file type
+  char* title = NULL;
+  char* pattern = NULL;
+  if( isAsciiOutput) {
+    if( useSelectedData != 0) title = "Write ASCII output to file";
+    else title = "Write selected ASCII output to file";
+    pattern = "*.{txt,lis,asc}\tAll Files (*)";
+  }
+  else {
+    if( useSelectedData != 0) title = "Write binary output to file";
+    else title = "Write selected binary output to file";
+    pattern = "*.bin\tAll Files (*)";
+  }
+
+  // Initialize output filespec.  NOTE: cOutFileSpec is defined as const 
+  // char* for use with Fl_File_Chooser, which means it could be destroyed 
+  // by the relevant destructors!
+  const char *cOutFileSpec = sPathname.c_str();
 
   // Instantiate and show an Fl_File_Chooser widget.  NOTE: The pathname 
   // must be passed as a variable or the window will begin in some root 
   // directory.
   Fl_File_Chooser* file_chooser = 
     new Fl_File_Chooser( 
-      output_file_name, pattern, Fl_File_Chooser::CREATE, title);
+      cOutFileSpec, pattern, Fl_File_Chooser::CREATE, title);
 
   // Loop: Select succesive filespecs until a non-directory is obtained
   while( 1) {
-    if( output_file_name != NULL) file_chooser->directory( output_file_name);
+    if( cOutFileSpec != NULL) file_chooser->directory( cOutFileSpec);
 
     // Loop: wait until the selection is done, then extract the value.  NOTE: 
     // This usage of while and Fl::wait() seems strange.
     file_chooser->show();
     while( file_chooser->shown()) Fl::wait();
-    output_file_name = file_chooser->value();   
+    cOutFileSpec = file_chooser->value();   
 
     // If no file was specified then quit
-    if( output_file_name == NULL) break;
+    if( cOutFileSpec == NULL) break;
 
     // If this is a new file, it can't be opened for read, and we're done
-    FILE* pFile = fopen( output_file_name, "r");
+    FILE* pFile = fopen( cOutFileSpec, "r");
     if( pFile == NULL) break;
-
+    
     // For some reason, the fl_filename_isdir method doesn't seem to work, so
     // make sure this file is closed, the try to open this file to see if it 
     // is a directory.  If it is, update pathname and contnue.
     if( pFile != NULL) fclose( pFile);
-    pFile = fopen( output_file_name, "w");
+    pFile = fopen( cOutFileSpec, "w");
     if( pFile == NULL) {
-      file_chooser->directory( output_file_name);
+      file_chooser->directory( cOutFileSpec);
       sPathname.erase( sPathname.begin(), sPathname.end());
-      sPathname.append( output_file_name);
+      sPathname.append( cOutFileSpec);
       continue;
     }
     
@@ -663,12 +781,12 @@ void data_file_manager::write_ascii_file_with_headers()
     // overwritten, so open a confirmation window and wait for the button 
     // handler to do something.
     confirmResult = CANCEL_FILE;
-    make_confirm_window( output_file_name);
+    make_confirm_window( cOutFileSpec);
 
     // If this was a 'CANCEL' request, make sure file is closed, then return.
     if( confirmResult == CANCEL_FILE) {
       fclose( pFile);
-      return;
+      return -1;
     }
     
     // If this was a 'NO' request, make sure the pathname is correct, then 
@@ -681,34 +799,87 @@ void data_file_manager::write_ascii_file_with_headers()
     
     // We've verified that this file exists and the user intends to overwrite
     // it, so close it and move on
-    confirmResult == YES_FILE;
+    confirmResult = YES_FILE;
     fclose( pFile);
     break;
   } 
 
   // Obtain file name using the FLTK member function.  This doesn't work, but
   // is retained for descriptive purposes.
-  // char *output_file_name = 
-  //   fl_file_chooser( 
-  //     "write ASCII output to file", NULL, NULL, 0);
+  // char *cOutFileSpec = 
+  //   fl_file_chooser( "write ASCII output to file", NULL, NULL, 0);
 
+  // Load outFileSpec
+  int iResult = 0;
+  if( cOutFileSpec == NULL) {
+    outFileSpec = "";
+    cout << "Data_File_Manager::findOutputFile: "
+         << "closed with no output file specified" << endl;
+    iResult = -1;
+  }
+  else{
+    outFileSpec.assign( (string) cOutFileSpec);
+    if( isAsciiOutput == 1) 
+      cout << "Data_File_Manager::findOutputFile: Writing ASCII data to <";
+    else 
+      cout << "Data_File_Manager::findOutputFile: Writing binary data to <";
+    cout << outFileSpec.c_str() << ">" << endl;
+    iResult = 0;
+  }
+
+  // Deallocate the Fl_File_Chooser object
+  delete file_chooser;  // WARNING! This destroys cOutFileSpec!
+
+  // Report result
+  return iResult;
+}
+
+//***************************************************************************
+// Data_File_Manager::save_data_file( outFileSpec) -- Write ASCII or binary 
+// data file to disk.  Returns 0 if successful.
+int Data_File_Manager::save_data_file( string outFileSpec)
+{
+  output_filespec( outFileSpec);
+  return save_data_file();
+}
+
+//***************************************************************************
+// Data_File_Manager::save_data_file() -- Write ASCII or binary data file to 
+// disk.  Returns 0 if successful.
+int Data_File_Manager::save_data_file()
+{
+  if( isAsciiOutput != 1) return write_binary_file_with_headers();
+  else return write_ascii_file_with_headers();
+}
+
+//***************************************************************************
+// Data_File_Manager::write_ascii_file_with_headers() -- Open and write an 
+// ASCII data file.  File will consist of an ASCII header with column names 
+// terminated by a newline, followed by successive lines of ASCII data.
+// Returns 0 if successful.
+int Data_File_Manager::write_ascii_file_with_headers()
+{
   // Make sure a file name was specified, create and write the file
-  if( output_file_name) {
+  if( outFileSpec.length() <= 0){
+    cout << "Data_File_Manager::write_ascii_file_with_headers "
+         << "reports that no file was specified" << endl;
+    return -1;
+  }
+  else {
     blitz::Array<float,1> vars( nvars);
     blitz::Range NVARS( 0, nvars-1);
     
     // Open output stream and report any problems
     ofstream os;
-    os.open( output_file_name, ios::out|ios::trunc);
+    os.open( outFileSpec.c_str(), ios::out|ios::trunc);
     if( os.fail()) {
-      cerr << "Error opening" << output_file_name 
+      cerr << "Error opening" << outFileSpec.c_str() 
            << "for writing" << endl;
-      delete file_chooser;
-      return;
+      return -1;
     }
     
     // Write output file name (and additional information?) to the header
-    os << "! File Name: " << output_file_name << endl;
+    os << "! File Name: " << outFileSpec.c_str() << endl;
     
     // Loop: Write column labels to the header
     for( int i=0; i < nvars; i++ ) {
@@ -722,7 +893,7 @@ void data_file_manager::write_ascii_file_with_headers()
     os << setiosflags( ios::scientific) << setw( 8);
     int rows_written = 0;
     for( int irow = 0; irow < npoints; irow++) {
-      if( uWriteAll > 0 || selected( irow) > 0) {
+      if( useSelectedData == 0 || selected( irow) > 0) {
         for( int jcol = 0; jcol < nvars; jcol++) {
           if( jcol > 0) os << " ";
           os << points( jcol, irow);
@@ -734,114 +905,39 @@ void data_file_manager::write_ascii_file_with_headers()
 
     // Report results
     cout << "wrote " << rows_written << " rows of " << nvars 
-         << " variables to ascii file " << output_file_name << endl;
+         << " variables to ascii file " << outFileSpec.c_str() << endl;
   }
-
-  // Deallocate the Fl_File_Chooser object
-  delete file_chooser;
+  return 0;
 }
 
 //***************************************************************************
-// data_file_manager::write_binary_file_with_headers() -- Open and write a 
+// Data_File_Manager::write_binary_file_with_headers() -- Open and write a 
 // binary data file.  File will consist of an ASCII header with column names 
-// terminated by a newline, followed by a long block of binary data. 
-void data_file_manager::write_binary_file_with_headers()
+// terminated by a newline, followed by a long block of binary data.  Returns
+// 0 if successful.
+int Data_File_Manager::write_binary_file_with_headers()
 {
-  // Initialize the output file name, pattern, and title for the file_chooser
-  // window.  NOTE 1): pathnames, etc., must be is defined as const char* for 
-  // use with Fl_File_Chooser, which means they could be destroyed by the 
-  // relevant destructors!  NOTE 2): output_file_spec does triple duty as a
-  // pathname, filespec, and means to determine if a file exists.
-  const char *output_file_name = sPathname.c_str();
-  const char* pattern = "*.{txt,lis,asc}\tAll Files (*)";
-  const char* title = "write binary output to file";
-
-  // Instantiate and show an Fl_File_Chooser widget.  NOTE: The pathname 
-  // must be passed as a variable or the window will begin in some root 
-  // directory.
-  Fl_File_Chooser* file_chooser = 
-    new Fl_File_Chooser( 
-      output_file_name, pattern, Fl_File_Chooser::CREATE, title);
-
-  // Loop: Select succesive filespecs until a non-directory is obtained
-  while( 1) {
-    if( output_file_name != NULL) file_chooser->directory( output_file_name);
-
-    // Loop: wait until the selection is done, then extract the value.  NOTE: 
-    // This usage of while and Fl::wait() seems strange.
-    file_chooser->show();
-    while( file_chooser->shown()) Fl::wait();
-    output_file_name = file_chooser->value();   
-
-    // If no file was specified then quit
-    if( output_file_name == NULL) break;
-
-    // If this is a new file, it can't be opened for read, and we're done
-    FILE* pFile = fopen( output_file_name, "r");
-    if( pFile == NULL) break;
-
-    // For some reason, the fl_filename_isdir method doesn't seem to work, so
-    // make sure this file is closed, the try to open this file to see if it 
-    // is a directory.  If it is, update pathname and contnue.
-    if( pFile != NULL) fclose( pFile);
-    pFile = fopen( output_file_name, "w");
-    if( pFile == NULL) {
-      file_chooser->directory( output_file_name);
-      sPathname.erase( sPathname.begin(), sPathname.end());
-      sPathname.append( output_file_name);
-      continue;
-    }
-    
-    // If we got this far, the file must exist and be available to be
-    // overwritten, so open a confirmation window and wait for the button 
-    // handler to do something.
-    confirmResult = CANCEL_FILE;
-    make_confirm_window( output_file_name);
-
-    // If this was a 'CANCEL' request, make sure file is closed, then return.
-    if( confirmResult == CANCEL_FILE) {
-      fclose( pFile);
-      return;
-    }
-    
-    // If this was a 'NO' request, make sure the pathname is correct, then 
-    // continue.
-    if( confirmResult == NO_FILE) {
-      file_chooser->directory( sPathname.c_str());
-      fclose( pFile);
-      continue;
-    }
-    
-    // We've verified that this file exists and the user intends to overwrite
-    // it, so close it and move on
-    confirmResult == YES_FILE;
-    fclose( pFile);
-    break;
-  } 
-
-  // Obtain file name using the FLTK member function.  This doesn't work, but
-  // is retained for descriptive purposes.
-  // char *output_file_name = 
-  //   fl_file_chooser( 
-  //     "write binary output to file", NULL, NULL, 0);
-
-  // Make sure a file name was specified, create and write file
-  if( output_file_name) {
+  // Make sure a file name was specified, create and write the file
+  if( outFileSpec.length() <= 0){
+    cout << "Data_File_Manager::write_binary_file_with_headers "
+         << "reports that no file was specified" << endl;
+    return -1;
+  }
+  else {
     blitz::Array<float,1> vars( nvars);
     blitz::Range NVARS( 0, nvars-1);
     
     // Open output stream and report any problems
     ofstream os;
     os.open( 
-      output_file_name, 
+      outFileSpec.c_str(), 
       ios::out|ios::trunc|ios::binary);
       // fstream::out | fstream::trunc | fstream::binary);
 
     if( os.fail()) {
-      cerr << "Error opening" << output_file_name 
+      cerr << "Error opening" << outFileSpec.c_str() 
            << "for writing" << endl;
-      delete file_chooser;
-      return;
+      return -1;
     }
     
     // Loop: Write column labels to the header
@@ -852,13 +948,12 @@ void data_file_manager::write_binary_file_with_headers()
     int nBlockSize = nvars*sizeof(float);
     int rows_written = 0;
     for( int i=0; i<npoints; i++) {
-      if( uWriteAll > 0 || selected( i) > 0) {
+      if( useSelectedData == 0 || selected( i) > 0) {
         vars = points( NVARS, i);
         os.write( (const char*) vars.data(), nBlockSize);
         if( os.fail()) {
-          cerr << "Error writing to" << output_file_name << endl;
-          delete file_chooser;
-          return;
+          cerr << "Error writing to" << outFileSpec.c_str() << endl;
+          return 1;
         }
         rows_written++;
       }
@@ -866,18 +961,16 @@ void data_file_manager::write_binary_file_with_headers()
     
     // Report results
     cout << "wrote " << rows_written << " rows of " << nBlockSize 
-         << " bytes to binary file " << output_file_name << endl;
+         << " bytes to binary file " << outFileSpec.c_str() << endl;
   }
-
-  // Deallocate the Fl_File_Chooser object
-  delete file_chooser;
+  return 0;
 }
 
 //***************************************************************************
-// data_file_manager::remove_trivial_columns -- Examine an array of data and 
+// Data_File_Manager::remove_trivial_columns -- Examine an array of data and 
 // remove columns for which all values are identical.  Part of the read 
 // process.
-void data_file_manager::remove_trivial_columns()
+void Data_File_Manager::remove_trivial_columns()
 {
   blitz::Range NPTS( 0, npoints-1);
   int nvars_save = nvars;
@@ -933,9 +1026,9 @@ void data_file_manager::remove_trivial_columns()
 }
 
 //***************************************************************************
-// data_file_manager::resize_global_arrays -- Resize various all the global 
+// Data_File_Manager::resize_global_arrays -- Resize various all the global 
 // arrays used store raw, sorted, and selected data.
-void data_file_manager::resize_global_arrays()
+void Data_File_Manager::resize_global_arrays()
 {
   // points.resizeAndPreserve(nvars,npoints);  
 
@@ -946,9 +1039,8 @@ void data_file_manager::resize_global_arrays()
   ranked = 0;
   
   // Resize temporary array used for sort
-  tmp_points.resize(npoints);
-
-  // Resize array used for color map?
+  // tmp_points.resize(npoints); // MCL: eliminated using new sort code.
+  // Resize initial index array (gets permuted by sort)
   identity.resize( npoints);
 
   // Resize selection arrays
@@ -956,12 +1048,12 @@ void data_file_manager::resize_global_arrays()
   selected.resize( npoints);
   previously_selected.resize( npoints);
   saved_selection.resize(npoints);
-  plot_window::indices_selected.resize(nplots+1,npoints);
-  plot_window::number_selected.resize(nplots+1);
+  Plot_Window::indices_selected.resize(nplots+1,npoints);
+  Plot_Window::number_selected.resize(nplots+1);
 
   // Initialize selection arrays
-  plot_window::number_selected = 0; 
-  plot_window::indices_selected = 0;
+  Plot_Window::number_selected = 0; 
+  Plot_Window::indices_selected = 0;
   newly_selected = 0;
   selected = 0;
   previously_selected = 0;
@@ -972,9 +1064,9 @@ void data_file_manager::resize_global_arrays()
 }
 
 //***************************************************************************
-// data_file_manager::create_default_data( nvars_in) -- Load data arrays with 
+// Data_File_Manager::create_default_data( nvars_in) -- Load data arrays with 
 // default data consisting of dummy data.
-void data_file_manager::create_default_data( int nvars_in)
+void Data_File_Manager::create_default_data( int nvars_in)
 {
   // Protect against screwy values of nvars_in
   if( nvars_in < 2) return;
@@ -1034,26 +1126,55 @@ void data_file_manager::create_default_data( int nvars_in)
 }
 
 //***************************************************************************
-// data_file_manager::directory() --  Get pathname.
-string data_file_manager::directory()
+// Data_File_Manager::directory() -- Get pathname.
+string Data_File_Manager::directory()
 {
   return sPathname; 
 }
      
 //***************************************************************************
-// data_file_manager::directory( sPathname) --  Set pathname.
-void data_file_manager::directory( string sPathnameIn)
+// Data_File_Manager::directory( sPathname) -- Set pathname.
+void Data_File_Manager::directory( string sPathnameIn)
 {
   sPathname = sPathnameIn;
 }
 
 //***************************************************************************
-// data_file_manager::make_confirm_window( output_file_name) -- Confirmation 
+// Data_File_Manager::input_filespec() -- Get input filespec.
+string Data_File_Manager::input_filespec()
+{
+  return inFileSpec;
+}
+
+//***************************************************************************
+// Data_File_Manager::input_filespec( outFileSpecIn) -- Set input_filespec.
+void Data_File_Manager::input_filespec( string inFileSpecIn)
+{
+  inFileSpec = inFileSpecIn;
+}
+
+//***************************************************************************
+// Data_File_Manager::output_filespec() -- Get output filespec.
+string Data_File_Manager::output_filespec()
+{
+  return outFileSpec;
+}
+
+//***************************************************************************
+// Data_File_Manager::output_filespec( outFileSpecIn) -- Set output_filespec.
+void Data_File_Manager::output_filespec( string outFileSpecIn)
+{
+  outFileSpec = outFileSpecIn;
+}
+
+//***************************************************************************
+// Data_File_Manager::make_confirm_window( output_file_name) -- Confirmation 
 // window
-void data_file_manager::make_confirm_window( const char* output_file_name)
+void Data_File_Manager::make_confirm_window( const char* output_file_name)
 {
   // Intialize flag and destroy any existing window
-  confirmResult == CANCEL_FILE;
+  // MCL XXX rule #2: "Compile cleanly at high warning levels." 
+  confirmResult = CANCEL_FILE;
   if( confirm_window != NULL) confirm_window->hide();
   
   // Create confirmation window
@@ -1096,7 +1217,7 @@ void data_file_manager::make_confirm_window( const char* output_file_name)
       Fl_Widget* o = Fl::readqueue();
       if( !o) break;
 
-      // Has the window closed or a button been pushed?
+      // Has the window been closed or a button been pushed?
       if( o == yes_button) {
         confirmResult = YES_FILE;
         confirm_window->hide();
@@ -1114,23 +1235,11 @@ void data_file_manager::make_confirm_window( const char* output_file_name)
       }
       else if( o == confirm_window) {
         confirmResult = CANCEL_FILE;
-        // confirm_window->hide();   // Not needed because window was deleted
+
+        // Don't need to hide window because user has already deleted it
+        // confirm_window->hide();
         return;
       }
     }
   }
-}
-
-//***************************************************************************
-// data_file_manager::static_replace_chars( inputStrings, oldChar, newChar) 
-// -- STATIC method to replace characters.  Why is this static?
-void data_file_manager::static_replace_chars(
-  std::string &s, const char oldChar, const char newChar)
-{
-  //  MCL XXX I think this should do the job, but it doesn't.  Why not??
-  //  s.replace( s.begin(), s.end(), oldChar, newChar);
-  //  So instead we use:
-  for (unsigned int i=0; i<s.length(); i++)
-    if (s[i] == oldChar)
-      s[i] = newChar;
 }
