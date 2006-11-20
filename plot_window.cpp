@@ -114,11 +114,8 @@ GLubyte spriteData[spriteWidth*spriteHeight*spriteDepth] = {
 };
 #endif // 0
 
-// Set sprite dimensions
-const GLsizei spriteWidth = 8, spriteHeight = 8, spriteDepth  = 2;
-
 // Load buffer to define a "square" (unfilled) sprite
-GLubyte spriteData[ spriteWidth*spriteHeight*spriteDepth] = {
+GLubyte Plot_Window::spriteData[ spriteWidth*spriteHeight*spriteDepth] = {
   255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,
   255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,
   255,255,  255,255,  255,0,    255,0,    255,0,    255,0,    255,255,  255,255,

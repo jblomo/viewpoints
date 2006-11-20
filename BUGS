@@ -95,7 +95,12 @@
     *fixed*
 
 26. selection box and numbers should be visibile on white
+    *fixed*
 
-28. Everyibe wants "write (selction to) ascii file" functionality.
+28. Everybody wants "write (selction to) ascii file" functionality.
+    *fixed*
 
+29. last window needs a refresh after (global) change_axes.  May more of them do, too.
+
+30. deleting plot windows does not free their memory.
 

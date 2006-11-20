@@ -168,7 +168,7 @@ int Data_File_Manager::findInputFile()
 int Data_File_Manager::load_data_file( string inFileSpec) 
 {
   input_filespec( inFileSpec);
-  load_data_file();
+  return load_data_file();
 }
 
 //***************************************************************************

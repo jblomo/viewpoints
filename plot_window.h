@@ -265,9 +265,13 @@ class Plot_Window : public Fl_Gl_Window
     static blitz::Array<GLfloat,2> colors_hide_deselected;
     static GLfloat pointscolor[ 4];
 
-    // Buffers for use with sprites
+    // flags and openGL IDs for use with sprites
     static GLuint spriteTextureID;
     static int sprites_initialized;
+
+	// Buffers to hold sprite (image) data
+    static const GLsizei spriteWidth = 8, spriteHeight = 8, spriteDepth  = 2;
+    static GLubyte spriteData [spriteWidth*spriteHeight*spriteDepth];
 
     // The GLContextshared by all Plot_Windows
     static void *global_GLContext; 

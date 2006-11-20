@@ -834,4 +834,6 @@ Memory Performance puzzle: (OSX)  Read in 10 million points, six vars.  2 window
 
   more investigations later.
 
-
+  One thing we coud do is eliminate the vertexes from plot_window
+  (when using VBOs).  Just store them in their VBOs, and non in main
+  memory.
