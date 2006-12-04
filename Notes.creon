@@ -842,6 +842,57 @@ Memory Performance puzzle: (OSX)  Read in 10 million points, six vars.  2 window
 
 IDEA: when reading only one column, create a "line number" column.  So that basic plotting works.  
   perhaps there should always be a line number column.  (It does not need to be sorted).
+  (actually, no.  It could be created, optionally, say via a cmd line argument.  it should be
+  created automatically only when there is but a single column in the input data file.
+
+14:09:41 04 Dec 06
+
+FROM my todo list:
+
+ set up presentations
+    slac, arc, fermilab....
+  build script / build instructions
+  compile for powerpc
+    upload to trotsky
+    make tarballs for mac & linux versions    
+  VBOS for indices
+    glDrawElements() have to start from 0?
+    does glBufferSubData() have to start from 0? 
+    Or do multiple calls behave in an unexpected way?
+  Run time VBO check, cmd line arg.
+  VBOs to conserve main memory - can we do it?
+  More symbols.
+  Histogram filled. (w/alpha).
+  use hls for color selection
+  Brush object - has hls, color, symbol, size, footprint...
+     All points render using brush 0 initially
+     All windows start selecting using brush 1...
+     maybe not
+     Any window can change which brush it uses dynamically
+     Updates to brush properties are implicitly broadcast
+  need "overlap" (multiple selection) brush too
+  Windows also have additional brightness, bkg, size...
+  Windows need overplot button, default=on
+  3 modes for auto-clear selection:
+    always
+    when focus changes
+    when focus returns
+    never
+  "track cursor position" mode - prints numeric posn.
+  merge these w/bugs & ideas file
+  add back reading from stdin
+  code walkthrough
+  write paper
+    submit to arxiv, NASA TR
+  start opensource proceedure
+  write eric for viewpoints.org?
+  software of the year
+  open source approvals.
+  presentation(s) at arc
+  FAQ
+  man page
+  changelog ?
+
 
 
   

@@ -101,6 +101,7 @@
     *fixed*
 
 29. last window needs a refresh after (global) change_axes.  May more of them do, too.
+    *fixed*
 
 30. deleting plot windows does not free their memory.
 

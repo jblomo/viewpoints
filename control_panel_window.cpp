@@ -501,5 +501,4 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   b->align(FL_ALIGN_RIGHT); 
   b->type(FL_TOGGLE_BUTTON); 
   b->selection_color(FL_BLUE); 
-  b->value(1);
 }

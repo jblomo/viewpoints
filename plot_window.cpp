@@ -155,7 +155,7 @@ void Plot_Window::initialize()
 
 #ifdef USE_VBO
   VBOinitialized = 0;
-  VBOfilled = 0;
+  VBOfilled = false;
 #endif // USE_VBO
 
   // Resize arrays
@@ -1149,12 +1149,7 @@ void Plot_Window::draw_data_points()
     // if the variables we are plotting were changed, then the vertex VBO must be updated to
     // contain the correct vertex data, and it has to be done here, where the correct window and
     // context are active.
-    if (vertices_changed) {
-      void *vertexp = (void *)vertices.data();
-      glBufferSubDataARB( GL_ARRAY_BUFFER, (GLintptrARB) 0, (GLsizeiptrARB)(npoints*3*sizeof(GLfloat)), vertexp);
-      // don't need to update again unless data to be plotted get changed in extract_data_points()
-      vertices_changed = false;
-    }
+    if (!VBOfilled) fill_VBO();
 
     glVertexPointer (3, GL_FLOAT, 0, BUFFER_OFFSET(0));
   #else // USE_VBO    
@@ -1691,7 +1686,7 @@ int Plot_Window::extract_data_points ()
   #ifdef USE_VBO
   // VBO will have to be updated to hold the new vertices in draw_data_points(), so we set a flag.
   // We can't update the VBO now, since we can't call openGL functions from within an fltk callback.
-  vertices_changed = true;
+  VBOfilled = false;
   #endif // USE_VBO
 
   // Reset pan, zoom, and view-angle
@@ -1989,13 +1984,9 @@ void Plot_Window::initialize_VBO()
 
     // Reserve enough space in openGL server memory VBO to hold all the 
     // vertices, but do not initilize it.
-    glBufferDataARB(
-      GL_ARRAY_BUFFER_ARB, 
-      (GLsizeiptrARB)npoints*3*sizeof(GLfloat), 
-      (void *)NULL, GL_STATIC_DRAW_ARB);
-
+    glBufferDataARB(GL_ARRAY_BUFFER_ARB, (GLsizeiptrARB)npoints*3*sizeof(GLfloat), (void *)NULL, GL_STATIC_DRAW_ARB);
     // make sure we succeeded 
-	CHECK_GL_ERROR ("");
+    CHECK_GL_ERROR ("");
     cerr << " successfully initialized VBO " << index << endl;
     VBOinitialized = 1;
   }
@@ -2008,11 +1999,9 @@ void Plot_Window::fill_VBO()
   if (!VBOfilled) {
     glBindBufferARB(GL_ARRAY_BUFFER_ARB, index+1);  
     void *vertexp = (void *)vertices.data();
-    glBufferSubDataARB(
-      GL_ARRAY_BUFFER, (GLintptrARB) 0, 
-      (GLsizeiptrARB)(npoints*3*sizeof(GLfloat)), vertexp);
-	CHECK_GL_ERROR("");
-    VBOfilled = 1;
+    glBufferSubDataARB(GL_ARRAY_BUFFER, (GLintptrARB) 0, (GLsizeiptrARB)(npoints*3*sizeof(GLfloat)), vertexp);
+    CHECK_GL_ERROR("");
+    VBOfilled = true;
   }
 }
 
@@ -2024,10 +2013,7 @@ void Plot_Window::initialize_indexVBO(int set)
   //   indexVBO bound to MAXPLOTS holds indices of nonselected points
   //   indexVBO bound to MAXPLOTS+1 holds indices of points selected in set 1, etc.
   glBindBufferARB( GL_ELEMENT_ARRAY_BUFFER, MAXPLOTS+set);  // a safe place....
-  glBufferDataARB(
-    GL_ELEMENT_ARRAY_BUFFER, 
-    (GLsizeiptrARB)(npoints*sizeof(GLuint)), 
-    (void *)NULL, GL_DYNAMIC_DRAW_ARB);
+  glBufferDataARB(GL_ELEMENT_ARRAY_BUFFER, (GLsizeiptrARB)(npoints*sizeof(GLuint)), (void *)NULL, GL_DYNAMIC_DRAW_ARB);
 }
 
 //***************************************************************************
@@ -2047,14 +2033,10 @@ void Plot_Window::initialize_indexVBOs()
 void Plot_Window::fill_indexVBO(int set)
 {
   glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, MAXPLOTS+set);
-
   // Create an alias to slice
   blitz::Array<unsigned int, 1> tmpArray = indices_selected( set, blitz::Range(0,npoints-1));
   unsigned int *indices = (unsigned int *) (tmpArray.data());
-  glBufferSubDataARB(
-    GL_ELEMENT_ARRAY_BUFFER_ARB, (GLintptrARB) 0, 
-    (GLsizeiptrARB)(number_selected(set)*sizeof(GLuint)), indices);
-
+  glBufferSubDataARB(GL_ELEMENT_ARRAY_BUFFER_ARB, (GLintptrARB) 0, (GLsizeiptrARB)(number_selected(set)*sizeof(GLuint)), indices);
   // make sure we succeeded 
   CHECK_GL_ERROR("");
 }

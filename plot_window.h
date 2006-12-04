@@ -122,7 +122,7 @@ class Plot_Window : public Fl_Gl_Window
       int VBOinitialized;
       void initialize_VBO();
       // and have we filled it with our chunk of vertex data yet?
-      int VBOfilled;
+      bool VBOfilled;
       void fill_VBO();
       
       // have we initialized the shared openGL index vertex buffer objects?
@@ -279,7 +279,6 @@ class Plot_Window : public Fl_Gl_Window
 #ifdef USE_VBO
     void initialize_indexVBO(int);
     void fill_indexVBO(int);
-    bool vertices_changed;
 #endif // USE_VBO
 
 };
