@@ -174,15 +174,6 @@ void Control_Panel_Window::maybe_redraw()
 void Control_Panel_Window::extract_and_redraw ()
 {
   if( pw->extract_data_points()) {
-
-    #ifdef USE_VBO
-      glBindBufferARB(GL_ARRAY_BUFFER_ARB, index+1);
-      void *vertexp = (void *)pw->vertices.data();
-      glBufferSubDataARB( 
-        GL_ARRAY_BUFFER, (GLintptrARB) 0, 
-        (GLsizeiptrARB)(npoints*3*sizeof(GLfloat)), vertexp);
-    #endif // USE_VBO
-
     pw->needs_redraw = 1;
   }
 }

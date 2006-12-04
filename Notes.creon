@@ -835,5 +835,13 @@ Memory Performance puzzle: (OSX)  Read in 10 million points, six vars.  2 window
   more investigations later.
 
   One thing we coud do is eliminate the vertexes from plot_window
-  (when using VBOs).  Just store them in their VBOs, and non in main
+  (when using VBOs).  Just store them in their VBOs, and not in main
   memory.
+
+15:19:32 30 Nov 06
+
+IDEA: when reading only one column, create a "line number" column.  So that basic plotting works.  
+  perhaps there should always be a line number column.  (It does not need to be sorted).
+
+
+  

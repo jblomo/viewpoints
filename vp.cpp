@@ -827,6 +827,7 @@ void change_all_axes( Fl_Widget *o)
            cps[i]->lock_axis2_button->value()))
       pws[i]->change_axes( 0);
   }
+  Plot_Window::redraw_all_plots(0);
 }
 
 //***************************************************************************

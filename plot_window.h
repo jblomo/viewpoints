@@ -279,6 +279,7 @@ class Plot_Window : public Fl_Gl_Window
 #ifdef USE_VBO
     void initialize_indexVBO(int);
     void fill_indexVBO(int);
+    bool vertices_changed;
 #endif // USE_VBO
 
 };

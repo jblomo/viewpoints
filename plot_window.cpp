@@ -1145,6 +1145,17 @@ void Plot_Window::draw_data_points()
   #ifdef USE_VBO
     // bind VBO for vertex data
     glBindBufferARB(GL_ARRAY_BUFFER_ARB, index+1);
+
+    // if the variables we are plotting were changed, then the vertex VBO must be updated to
+    // contain the correct vertex data, and it has to be done here, where the correct window and
+    // context are active.
+    if (vertices_changed) {
+      void *vertexp = (void *)vertices.data();
+      glBufferSubDataARB( GL_ARRAY_BUFFER, (GLintptrARB) 0, (GLsizeiptrARB)(npoints*3*sizeof(GLfloat)), vertexp);
+      // don't need to update again unless data to be plotted get changed in extract_data_points()
+      vertices_changed = false;
+    }
+
     glVertexPointer (3, GL_FLOAT, 0, BUFFER_OFFSET(0));
   #else // USE_VBO    
     glVertexPointer (3, GL_FLOAT, 0, (GLfloat *)vertices.data()); 
@@ -1677,6 +1688,12 @@ int Plot_Window::extract_data_points ()
   }
   cout << endl;
 
+  #ifdef USE_VBO
+  // VBO will have to be updated to hold the new vertices in draw_data_points(), so we set a flag.
+  // We can't update the VBO now, since we can't call openGL functions from within an fltk callback.
+  vertices_changed = true;
+  #endif // USE_VBO
+
   // Reset pan, zoom, and view-angle
   reset_view();
   (void) transform_2d();
@@ -1745,10 +1762,9 @@ void Plot_Window::redraw_all_plots( int p)
   // active plot (the one where we are making the selection) must update the 
   // selected set and set arrays *before* all the other plots get redrawn.  
   // Ugh.  Also, they are queued in reverse order, since is the order in which
-  // fltk will actually draw() them (most recently defined gets draw first).
+  // fltk will actually draw() them (most recently defined gets drawn first).
   for( int i=0; i<nplots; i++) {
-    int j = p-i;
-    if (j<0) j=nplots+j;  // p, p-1, p-2, ..., 0, nplots-1, nplots-2, ... , p+1.
+    int j = (p+i)%nplots;
     assert (j>=0);
     assert (j<nplots);
     pws[j]->compute_histograms();
