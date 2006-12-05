@@ -1547,14 +1547,16 @@ void Plot_Window::compute_rank(int var_index)
   }
   else {
     blitz::Range NPTS(0,npoints-1);
+
     // The blitz copy constructor aliases the RHS,
     // So this next statement just creates a new view of the rhs.
     blitz::Array<int,1> a_ranked_indices = ranked_points(var_index, NPTS); 
-
-    // initialize the ranked indices to be sequential.  The following sort will
-    // permute them into the correct order.
-    a_ranked_indices(NPTS) = identity(NPTS);
     
+    // initialize the ranked indices to be sequential.  The sort (following) will
+    // permute them into the correct order.
+    blitz::firstIndex ident;
+    a_ranked_indices = ident;
+
     // the sort method myCompare() needs a global alias (tmp_points) to the 
     // data being used as the sort key.  We can't use the copy contructor this 
     // time because we aren't contructing tmp_points - it was already 
@@ -1713,30 +1715,32 @@ int Plot_Window::extract_data_points ()
 // axis labels.
 void Plot_Window::upper_triangle_incr( int &i, int &j, const int n)
 {
-  // cout << "  upper_triangle_incr before: i, j = " << " " << i << " " << j << endl;
-  // diagonals get incremented together, with wrapping
-  if (i==j)
-  {
-    i=(i+1)%n;
-    j = i;
-  }
-  // upper triangle gets incremented "down and to the right" with diagonal wrapping
-  else if (i<j) {
-    if (i<n-2 && j<n-1)
+  i++;
+  j++;
+  if (i==n && j==n) 
     {
-      i++;
-      j++;
-    } else {
-      j = (n-i);
-      if (j>n-1) j=1;
       i = 0;
+      j = 1;
     }
-  }
-  // lower triangle gets treated as upprt triangle, with the two axes swapped.
-  else if (i>j) {
-    upper_triangle_incr( j, i, n);
-  }
-  // cout << "  upper_triangle_incr after:  i, j = " << " " << i << " " << j << endl;
+  else if (j==n) 
+    {
+      int d = j-i;
+      d++;
+      i = 0;
+      j = d;
+      if (j>=n) 
+        {
+          i = n-1;
+          j = 0;
+        }
+    }
+  else if (i==n) 
+    {
+      int d = i-j;
+      d--;
+      i = d;
+      j = 0;
+    }
   assert( i >= 0);
   assert( j >= 0);
   assert( i < n);

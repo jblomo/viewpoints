@@ -39,6 +39,8 @@
 const int Data_File_Manager::MAX_HEADER_LENGTH = MAXVARS*100;
 const int Data_File_Manager::MAX_HEADER_LINES = 2000;
 
+const bool include_line_number = true; // MCL XXX This should be an option
+
 //***************************************************************************
 // Data_File_Manager::Data_File_Manager() -- Default constructor, calls the
 // initializer.
@@ -173,7 +175,7 @@ int Data_File_Manager::load_data_file( string inFileSpec)
 
 //***************************************************************************
 // Data_File_Manager::load_data_file( inFileSpec) -- Read an ASCII or binary 
-// data file, resize arrays to allocate meomory, and set identity array.  
+// data file, resize arrays to allocate meomory.
 // Returns 0 if successful.
 // int Data_File_Manager::load_data_file( string inFileSpecIn) 
 int Data_File_Manager::load_data_file() 
@@ -218,12 +220,21 @@ int Data_File_Manager::load_data_file()
          << " samples with " << nvars << " fields" << endl;
   }
   
+  // MCL XXX Now that we're done reading, we can update nvars to count possible
+  // additional program-generated variables (presently only the line number).
+  if (include_line_number) {
+    nvars = nvars+1;
+  }
+  
   // If we read a different number of points then we anticipated, we resize 
-  // and preserve.  Note this can take lot of time and memory, temporarily.
+  // and preserve the main data array.  Note this can take lot of time and memory
+  // temporarily.  XXX it would be better to handle the growth/shrinkage of this
+  // array while reading.
   if( npoints != npoints_cmd_line)
     points.resizeAndPreserve( nvars, npoints);
 
-  // Resize global arrays
+  // Now that we know the number of variables and the number of points
+  // that we've read, we can allocate/reallocateResize the other global arrays.
   resize_global_arrays ();
 
   // Set the 'selected' flag to initialize the selections to zero.  NOTE: 
@@ -232,9 +243,6 @@ int Data_File_Manager::load_data_file()
   // for( int i=0; i<npoints; i++) indices_selected(0,i)=i;
   selected = 0;
 
-  // Load the identity array
-  cout << "Making identity array, a(i)=i" << endl;
-  for( int i=0; i<npoints; i++) identity( i)=i;
   return 0;
 }
 
@@ -366,6 +374,14 @@ int Data_File_Manager::read_ascii_file_with_headers()
     return 1;
   }
   
+  cout << " -Examined header of <" << inFileSpec.c_str() << ">," << endl
+       << "  There should be " << nvars 
+       << " fields (columns) per record (row)" << endl;
+
+  if (include_line_number) {
+    column_labels.push_back( string( "-line number-"));
+  }
+  
   // Add a final column label that says 'nothing'.
   column_labels.push_back( string( "-nothing-"));
   cout << " -column_labels:";
@@ -379,17 +395,18 @@ int Data_File_Manager::read_ascii_file_with_headers()
     cout << " " << column_labels[ i];
   }
   cout << endl;
-  cout << " -Examined header of <" << inFileSpec.c_str() << ">," << endl
-       << "  There should be " << nvars 
-       << " fields (columns) per record (row)" << endl;
 
   // Now we know the number of variables (nvars), so if we know the number of 
   // points (e.g. from the command line, we can size the main points array 
   // once and for all, and not waste memory.
   if( npoints_cmd_line > 0) npoints = npoints_cmd_line;
   else npoints = MAXPOINTS;
-  points.resize( nvars, npoints);
-
+  if (include_line_number) {
+    points.resize( nvars+1, npoints);
+  } else {
+    points.resize( nvars, npoints);
+  }
+  
   // Loop: Read successive lines from the file
   int nSkip = 0, i = 0;
   unsigned uFirst = 1;
@@ -571,7 +588,14 @@ int Data_File_Manager::read_binary_file_with_headers()
     fclose( pInFile);
     return 1;
   }
+
+  if (include_line_number) {
+    column_labels.push_back( string( "-line number-"));
+  }
+
+  // Add a final column label that says 'nothing'.
   column_labels.push_back(string("-nothing-"));
+
   cout << "column_labels = ";
   for( unsigned int i=0; i < column_labels.size(); i++ ) {
     cout << column_labels[i] << " ";
@@ -586,7 +610,11 @@ int Data_File_Manager::read_binary_file_with_headers()
   // once and for all, and not waste memory.
   if( npoints_cmd_line > 0) npoints = npoints_cmd_line;
   else npoints = MAXPOINTS;
-  points.resize( nvars, npoints);
+  if (include_line_number) {
+    points.resize( nvars+1, npoints);
+  } else {
+    points.resize( nvars, npoints);
+  }
   
   // Warn if the input buffer is non-contiguous.
   if( !points.isStorageContiguous()) {
@@ -680,7 +708,7 @@ int Data_File_Manager::read_binary_file_with_headers()
 
       // Read the next NVAR values using conventional C-style fread.
       unsigned int ret = 
-        fread( (void *)(vars.data()), sizeof(float), nvars, pInFile);
+        fread( (void *)(vars.data()), sizeof(float), npoints, pInFile);
 
       // Check for normal termination
       if( ret == 0 || feof( pInFile)) {
@@ -691,7 +719,7 @@ int Data_File_Manager::read_binary_file_with_headers()
       }
       
       // If wrong number of values was returned, report error.
-      if( ret != (unsigned int)nvars) {
+      if( ret != (unsigned int)npoints) {
         cerr << " -ERROR reading column[ " << i+1 << "], "
              << "returned values " << ret 
              << " NE number of variables " << nvars << endl;
@@ -1030,19 +1058,25 @@ void Data_File_Manager::remove_trivial_columns()
 // arrays used store raw, sorted, and selected data.
 void Data_File_Manager::resize_global_arrays()
 {
+  blitz::Range NPTS( 0, npoints-1);
+  
+  // done elsewhere, if necessary:
   // points.resizeAndPreserve(nvars,npoints);  
-
+  
+  // If line numbers are to be included as another field (column) of data array, create them
+  // as the last column.
+  if (include_line_number) {
+    for (int i=0; i<npoints; i++) {
+      points(nvars-1,i) = (float)(i+1);
+    }
+  }
+  
   // Resize and reinitialize list of ranked points to reflect the fact that no
   // ranking has been done.
   ranked_points.resize( nvars, npoints);
   ranked.resize( nvars);
   ranked = 0;
   
-  // Resize temporary array used for sort
-  // tmp_points.resize(npoints); // MCL: eliminated using new sort code.
-  // Resize initial index array (gets permuted by sort)
-  identity.resize( npoints);
-
   // Resize selection arrays
   newly_selected.resize( npoints);
   selected.resize( npoints);
@@ -1115,10 +1149,6 @@ void Data_File_Manager::create_default_data( int nvars_in)
 
   // Resize global arrays
   resize_global_arrays ();
-
-  // Load the identity array
-  cout << "Making identity array, a(i)=i" << endl;
-  for( int i=0; i<npoints; i++) identity( i)=i;
 
   // Report results
   cout << "Generated default data with " << npoints 

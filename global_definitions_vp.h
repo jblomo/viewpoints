@@ -70,7 +70,6 @@ EXTERN int nvars INIT(MAXVARS);		// number of columns in data file
 EXTERN blitz::Array<float,2> points;  // main data array
 EXTERN blitz::Array<int,2> ranked_points;   // data, ranked, as needed.
 EXTERN blitz::Array<int,1> ranked;	  // flag: 1->column is ranked, 0->not
-EXTERN blitz::Array<int,1> identity;   // holds a(i)=i.
 
 // Define blitz::Arrays to flag selected points.  As with the raw data, these 
 // are left global for simplicity and clarity.
