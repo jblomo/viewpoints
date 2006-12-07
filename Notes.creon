@@ -893,6 +893,12 @@ FROM my todo list:
   man page
   changelog ?
 
+20:19:05 06 Dec 06
+
+  Use Flmm_tabs for tab bar - it allows an arbitrary number of tabs.
+
+  Make organized list of vp tasks/features/fixes.
+
 
 
   

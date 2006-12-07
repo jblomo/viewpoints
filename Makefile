@@ -1,6 +1,9 @@
 # Are we compiling on Darwin (mac OSX) or Linux ?
 platform := $(shell uname)
 
+# Are we compiling on intel or powerPC ?
+hardware := $(shell uname -m)
+
 # compiler names:
 CXX		= g++
 CC		= cc
@@ -19,21 +22,22 @@ endif
 DEBUG		= -gfull -ggdb -Wall -Wunused -fexceptions
 
 
+# compiling for darwin (OSX) ?
 ifeq ($(platform),Darwin)
 
-### Uncomment ONE of the following
+# compiling for OSX on intel ?
+ifeq ($(hardware),i386)
+	OPTIM = -O6 -ftree-vectorize -ftree-vectorizer-verbose=0 -Wall -Wno-long-double -fno-exceptions -ffast-math -fsigned-char -gfull
+# compiling for OSX on powerPC ?
+else
+	OPTIM = -O6 -ftree-vectorize -ftree-vectorizer-verbose=0 -Wall -Wno-long-double -fno-exceptions -ffast-math -fsigned-char -maltivec -mabi=altivec -faltivec -mpowerpc-gfxopt -gfull
+endif
 
 # uncomment for debugging version
 #	OPTIM = $(DEBUG)
 
-# uncomment to optimize for PowerPC (G4 and G5) 
-	OPTIM = -O6 -ftree-vectorize -ftree-vectorizer-verbose=0 -Wall -Wno-long-double -fno-exceptions -ffast-math -fsigned-char -maltivec -mabi=altivec -faltivec -mpowerpc-gfxopt -gfull
-
-# uncomment optimize for intel mac
-#	OPTIM = -O6 -ftree-vectorize -ftree-vectorizer-verbose=0 -Wall -Wno-long-double -fno-exceptions -ffast-math -fsigned-char -gfull
-
 else
-# platform assumed to be linux
+# compiling on linux, assume intel.
 
 #	OPTIM = -O0 $(DEBUG)
 	OPTIM = -O6 -Wextra -ffast-math -fno-exceptions -g
