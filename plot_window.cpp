@@ -86,10 +86,9 @@ void *Plot_Window::global_GLContext = NULL;
 
 // Define variables and methods for use with sprites.  NOTE: As of now, many
 // of these are globals and should be made static members of Plot_Window
-#if 0
 const GLsizei spriteWidth = 8, spriteHeight = 8, spriteDepth  = 2;
 // + shaped "plus"
-GLubyte spriteData[spriteWidth*spriteHeight*spriteDepth] = {
+GLubyte Plot_Window::spriteData[spriteWidth*spriteHeight*spriteDepth] = {
 	255,0,    255,0,    255,0,    255,255,  255,255,  255,0,    255,0,    255,0,
 	255,0,    255,0,    255,0,    255,255,  255,255,  255,0,    255,0,    255,0,
 	255,0,    255,0,    255,0,    255,255,  255,255,  255,0,    255,0,    255,0,
@@ -100,9 +99,10 @@ GLubyte spriteData[spriteWidth*spriteHeight*spriteDepth] = {
 	255,0,    255,0,    255,0,    255,255,  255,255,  255,0,    255,0,    255,0
 };
 
+#if 0
 const GLsizei spriteWidth = 8, spriteHeight = 8, spriteDepth  = 2;
 // x-shaped "cross"
-GLubyte spriteData[spriteWidth*spriteHeight*spriteDepth] = {
+GLubyte Plot_Window::spriteData[spriteWidth*spriteHeight*spriteDepth] = {
 	255,127,  255,127,  255,0,    255,0,    255,0,    255,0,    255,127,  255,127,
 	255,127,  255,255,  255,127,  255,0,    255,0,    255,127,  255,255,  255,127,
 	255,0,    255,127,  255,255,  255,127,  255,127,  255,255,  255,127,  255,0,
@@ -112,7 +112,6 @@ GLubyte spriteData[spriteWidth*spriteHeight*spriteDepth] = {
 	255,127,  255,255,  255,127,  255,0,    255,0,    255,127,  255,255,  255,127,
 	255,127,  255,127,  255,0,    255,0,    255,0,    255,0,    255,127,  255,127
 };
-#endif // 0
 
 // Load buffer to define a "square" (unfilled) sprite
 GLubyte Plot_Window::spriteData[ spriteWidth*spriteHeight*spriteDepth] = {
@@ -125,6 +124,7 @@ GLubyte Plot_Window::spriteData[ spriteWidth*spriteHeight*spriteDepth] = {
   255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,
   255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255
 };
+#endif // 0
 
 // This should be made static
 // GLuint spriteTextureID;
