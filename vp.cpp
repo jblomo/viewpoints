@@ -163,6 +163,8 @@ void usage()
   cerr << "Optional arguments:" << endl;
   cerr << "  -b, --borderless            "
        << "don't show decorations on plot windows" << endl;
+  cerr << "  -B, --no_vbo                "
+       << "don't use openGL vertex buffer objects" << endl;
   cerr << "  -c, --cols=NCOLS            "
        << "startup showing this many columns of plot windows, default=2" << endl;
   cerr << "  -d, --delimiter=CHAR        "
@@ -206,7 +208,8 @@ void make_help_about_window( Fl_Widget *o)
   about_window->selection_color( FL_BLUE);
   about_window->labelsize( 10);
   
-  string sAbout = "viewpoints $Revision$\n";
+  string sAbout = "viewpoints\n";
+  sAbout += "$Revision$\n";
   sAbout += "(c) 2006 C. Levit and P. R. Gazis\n\n";
   sAbout += "contact information:\n";
   sAbout += " Creon Levit creon.levit@@nasa.gov\n";
@@ -863,10 +866,10 @@ void resize_selection_index_arrays( int nplots_old, int nplots)
   for( int i=nplots_old+1; i<nplots+1; i++) {
     pws[0]->indices_selected(i,NPTS) = 0;
     pws[0]->number_selected(i) = 0;
-    #ifdef USE_VBO
+    if (use_VBOs) {
       pws[i]->initialize_indexVBO(i);
       pws[i]->fill_indexVBO(i);
-    #endif // USE_VBO
+    }
   }
 }
 
@@ -1036,6 +1039,7 @@ int main( int argc, char **argv)
     { "missing_values", required_argument, 0, 'M'},
     { "delimiter", required_argument, 0, 'd'},
     { "borderless", no_argument, 0, 'b'},
+    { "no_vbo", no_argument, 0, 'B'},
     { "help", no_argument, 0, 'h'},
     { "version", no_argument, 0, 'V'},
     { 0, 0, 0, 0}
@@ -1053,7 +1057,7 @@ int main( int argc, char **argv)
   while( 
     ( c = getopt_long( 
         argc, argv, 
-        "f:n:v:s:o:r:c:m:i:M:d:bhV", long_options, NULL)) != -1) {
+        "f:n:v:s:o:r:c:m:i:M:d:bBhV", long_options, NULL)) != -1) {
   
     // Examine command-line options and extract any optional arguments
     switch( c) {
@@ -1147,7 +1151,7 @@ int main( int argc, char **argv)
         }
         break;
 
-      // Missing or unreadable values get set to this number
+      // set field delimiter character
       case 'd':
         if (optarg!=NULL)
           delimiter_char = optarg[0];
@@ -1167,7 +1171,12 @@ int main( int argc, char **argv)
         borderless = 1;
         break;
 
-      // show version information (managed by svn), and exit
+      // don't use openGL vertex buffer objects (VBOs)
+      case 'B':
+        use_VBOs = false;
+        break;
+
+     // show version information (managed by svn), and exit
       case 'V':
         cout << "$Id$" << endl;
         exit (-1);

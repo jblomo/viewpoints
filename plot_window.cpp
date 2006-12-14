@@ -77,11 +77,9 @@ blitz::Array<unsigned int,2> Plot_Window::indices_selected(MAXPLOTS+1,1);
 //GLuint Plot_Window::texnames[ 2] = { };
 int Plot_Window::sprites_initialized = 0;
 void *Plot_Window::global_GLContext = NULL;
-#ifdef USE_VBO
-  int Plot_Window::indexVBOsinitialized = 0;
-  int Plot_Window::indexVBOsfilled = 0;
+int Plot_Window::indexVBOsinitialized = 0;
+int Plot_Window::indexVBOsfilled = 0;
 #define BUFFER_OFFSET(vbo_offset) ((char *)NULL + (vbo_offset))
-#endif // USE_VBO
 
 
 // Define variables and methods for use with sprites.  NOTE: As of now, many
@@ -153,10 +151,8 @@ void Plot_Window::initialize()
   selection_changed = 0;
   r_selected=0.0, g_selected=0.0, b_selected=1.0;
 
-#ifdef USE_VBO
   VBOinitialized = 0;
   VBOfilled = false;
-#endif // USE_VBO
 
   // Resize arrays
   vertices.resize( npoints, 3);
@@ -192,9 +188,7 @@ void Plot_Window::initialize()
     
     global_GLContext = context();
 
-    #ifdef USE_VBO
-      indexVBOsinitialized=0;
-    #endif // USE_VBO
+    indexVBOsinitialized=0;
   } 
 
   // all other Plot_Windows share the same GLContext, so we set their contexts 
@@ -675,12 +669,12 @@ void Plot_Window::draw()
     draw_grid();
   }
 
-  #ifdef USE_VBO
+  if (use_VBOs) {
     if (!VBOinitialized) initialize_VBO();
     if (!VBOfilled) fill_VBO();
     if (!indexVBOsinitialized) initialize_indexVBOs();
     if (!indexVBOsfilled) fill_indexVBOs();
-  #endif // USE_VBO
+  }
 
   draw_data_points();
   if( selection_changed) {
@@ -1071,9 +1065,7 @@ void Plot_Window::color_array_from_selection()
   }
   nselected = npoints - number_selected(0);
   assert(sum(number_selected(blitz::Range(0,nplots))) == (unsigned int)npoints);
-  #ifdef USE_VBO
-    indexVBOsfilled = 0;
-  #endif // USE_VBO
+  indexVBOsfilled = 0;
 }
 
 //***************************************************************************
@@ -1142,7 +1134,7 @@ void Plot_Window::draw_data_points()
   }
 
   // Tell the GPU where to find the vertices for this plot.
-  #ifdef USE_VBO
+  if (use_VBOs) {
     // bind VBO for vertex data
     glBindBufferARB(GL_ARRAY_BUFFER_ARB, index+1);
 
@@ -1152,9 +1144,10 @@ void Plot_Window::draw_data_points()
     if (!VBOfilled) fill_VBO();
 
     glVertexPointer (3, GL_FLOAT, 0, BUFFER_OFFSET(0));
-  #else // USE_VBO    
+  }
+  else {
     glVertexPointer (3, GL_FLOAT, 0, (GLfloat *)vertices.data()); 
-  #endif // USE_VBO
+  }
 
   // Loop: Draw points in successive sets.  Each plot window brushes using its
   // own selection color, and there is a single non-selected color.  This 
@@ -1195,20 +1188,21 @@ void Plot_Window::draw_data_points()
                   colors_show_deselected(set,3)*alpha);
       }
       // then render the points
-      #ifdef USE_VBO
-         assert (VBOinitialized && VBOfilled && indexVBOsinitialized && indexVBOsfilled) ;
-         glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, MAXPLOTS+set); 
-         // glDrawElements( GL_POINTS, (GLsizei)count, GL_UNSIGNED_INT, BUFFER_OFFSET(0));
-         glDrawRangeElements( GL_POINTS, 0, npoints, count, GL_UNSIGNED_INT, BUFFER_OFFSET(0));
-         // make sure we succeeded 
-		     CHECK_GL_ERROR("drawing points from VBO");
-     #else // USE_VBO
+      if (use_VBOs) {
+        assert (VBOinitialized && VBOfilled && indexVBOsinitialized && indexVBOsfilled) ;
+        glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, MAXPLOTS+set); 
+        // glDrawElements( GL_POINTS, (GLsizei)count, GL_UNSIGNED_INT, BUFFER_OFFSET(0));
+        glDrawRangeElements( GL_POINTS, 0, npoints, count, GL_UNSIGNED_INT, BUFFER_OFFSET(0));
+        // make sure we succeeded 
+        CHECK_GL_ERROR("drawing points from VBO");
+      }
+      else {
         // Create an alias to slice
         blitz::Array<unsigned int, 1> tmpArray = indices_selected( set, blitz::Range(0,npoints-1));
         unsigned int *indices = (unsigned int *) (tmpArray.data());
         // glDrawElements( GL_POINTS, count, GL_UNSIGNED_INT, indices);
         glDrawRangeElements( GL_POINTS, 0, npoints, count, GL_UNSIGNED_INT, indices);
-      #endif // USE_VBO
+      }
     }
   }
   if( alpha_test_enabled ) {
@@ -1685,11 +1679,9 @@ int Plot_Window::extract_data_points ()
   }
   cout << endl;
 
-  #ifdef USE_VBO
   // VBO will have to be updated to hold the new vertices in draw_data_points(), so we set a flag.
   // We can't update the VBO now, since we can't call openGL functions from within an fltk callback.
   VBOfilled = false;
-  #endif // USE_VBO
 
   // Reset pan, zoom, and view-angle
   reset_view();
@@ -1976,7 +1968,6 @@ void Plot_Window::disable_sprites()
 //***************************************************************************
 // Defne methods to use vertex buffer objects (VBOs)
 
-#ifdef USE_VBO
 //***************************************************************************
 // Plot_Window::initialize_VBO() -- Initialize VBO for this window
 void Plot_Window::initialize_VBO()
@@ -1991,7 +1982,7 @@ void Plot_Window::initialize_VBO()
     glBufferDataARB(GL_ARRAY_BUFFER_ARB, (GLsizeiptrARB)npoints*3*sizeof(GLfloat), (void *)NULL, GL_STATIC_DRAW_ARB);
     // make sure we succeeded 
     CHECK_GL_ERROR ("");
-    cerr << " successfully initialized VBO " << index << endl;
+    cerr << " initialized VBO for plot window " << index << endl;
     VBOinitialized = 1;
   }
 }
@@ -2057,5 +2048,4 @@ void Plot_Window::fill_indexVBOs()
   }
 }
 
-#endif // USE_VBO
 

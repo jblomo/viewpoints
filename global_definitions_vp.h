@@ -35,9 +35,6 @@
 // Use the Standard Template Library
 using namespace std;
 
-// use openGL vertex buffer objects (VBOs).  
-#define USE_VBO
-
 // Define debug flag and statement (move to global_definitions.h)
 EXTERN int debugging INIT(0);
 
@@ -64,6 +61,9 @@ EXTERN int nplots INIT(nrows*ncols);  // Default number of plot windows
 EXTERN int npoints INIT(MAXPOINTS);   // number of rows in data file
 EXTERN int nvars INIT(MAXVARS);		// number of columns in data file
 
+// use openGL vertex buffer objects (VBOs).  
+EXTERN bool use_VBOs INIT(true);
+
 // Define blitz::Arrays to hold raw and ranked (sorted) data arrays.  Used 
 // extensively in many classes, so for reasons of simplicity and clarity, 
 // these are left global
@@ -83,20 +83,7 @@ EXTERN blitz::Array<int,1> selected;
 EXTERN blitz::Array<int,1> previously_selected;
 EXTERN blitz::Array<int,1> saved_selection;
 EXTERN int nselected;	
-
-// Indices of points for rendering, packed acording to selection state;
-// EXTERN blitz::Array<unsigned int,2> indices_selected; 
-
-// packed indices for VBO (could eleiminate this with map buffer)
-// EXTERN std::vector<GLuint> indices_selected_packed; 
-
-// Count of points in each plot's selected set, index zero reserved for nonselected.
-// number_selected[1] = count of points selected in 1st plot (i.e, pws[0])....
-// number_selected[n+1] = count of points selected in nth plot (pws[n])
-// number_selected[0] = count of nonselected points
-// sum(number_selected)==npoints;
-// EXTERN blitz::Array<unsigned int,1> number_selected; 
-EXTERN bool selection_is_inverted;
+EXTERN bool selection_is_inverted INIT(false);
 
 // Temporary array (reference) for use with qsort
 EXTERN blitz::Array<float,1> tmp_points;

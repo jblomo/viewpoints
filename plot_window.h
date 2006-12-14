@@ -117,24 +117,20 @@ class Plot_Window : public Fl_Gl_Window
   protected:
     
     // If they are available, use vertex buffer objects (VBOs)
-    #ifdef USE_VBO
-      // have we initialized the openGL vertex buffer object?
-      int VBOinitialized;
-      void initialize_VBO();
-      // and have we filled it with our chunk of vertex data yet?
-      bool VBOfilled;
-      void fill_VBO();
-      
-      // have we initialized the shared openGL index vertex buffer objects?
-      static int indexVBOsinitialized;
-      void initialize_indexVBOs();
-      // and are they filled with the latest index data?
-      static int indexVBOsfilled;
-      void fill_indexVBOs();
-
-      // MCL XXX there are also some public VBO initializers below :-(
-    #endif // USE_VBO
-
+    // have we initialized the openGL vertex buffer object?
+    int VBOinitialized;
+    void initialize_VBO();
+    // and have we filled it with our chunk of vertex data yet?
+    bool VBOfilled;
+    void fill_VBO();
+    
+    // have we initialized the shared openGL index vertex buffer objects?
+    static int indexVBOsinitialized;
+    void initialize_indexVBOs();
+    // and are they filled with the latest index data?
+    static int indexVBOsfilled;
+    void fill_indexVBOs();
+    
     // Draw routines
     void draw();
     void draw_grid();
@@ -276,10 +272,8 @@ class Plot_Window : public Fl_Gl_Window
     // The GLContextshared by all Plot_Windows
     static void *global_GLContext; 
 
-#ifdef USE_VBO
     void initialize_indexVBO(int);
     void fill_indexVBO(int);
-#endif // USE_VBO
 
 };
 
