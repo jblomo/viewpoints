@@ -15,8 +15,9 @@
 
 <p>
 When <em><b>viewpoints</b></em> is invoked from the 
-<em><b>vp</b></em> icon, it display a control panel along with 
-an 2x2 array of linked scatter plots of default data.  These 
+<em><b>vp</b></em> icon, it displays a control panel at the far right
+along with 
+a 2x2 array of linked scatter plots of default data.  These 
 windows can be moved and resized in the conventional fashion.  
 If you delete some window by accident, you can restore every 
 window using the <em>reload plots</em> command from the command
@@ -50,6 +51,22 @@ The following commands are available from the main menu bar.
 <tr>
  <td>File|Open binary file</td>
  <td>Read a binary input file</td>
+</tr>
+<tr>
+ <td>File|Write ASCII file</td>
+ <td>Write all the current data as an ASCII file</td>
+</tr>
+<tr>
+ <td>File|Write binary file</td>
+ <td>Write all the current data as a binary file (much faster to read back in)</td>
+</tr>
+<tr>
+ <td>File|Write selected ASCII data</td>
+ <td>Write only the currently selected data as an ASCII file</td>
+</tr>
+<tr>
+ <td>File|Write selected binary data</td>
+ <td>Write only the currently selected data as a binary file</td>
 </tr>
 <tr>
  <td>File|Quit</td>
@@ -87,48 +104,11 @@ The following commands are available from the main menu bar.
 </p>
 
 
-<h3>Keys & Buttons in plot windows:</h3>
-
-<p>
-The following mouse key and button combinations can be used 
-while the cursor is postioned above a plot window
-<table>
-<tr>
- <th align="LEFT">Action</th><th align="LEFT">Key</th>
-</tr>
-<tr>
- <td>new selection</td><td>left-mouse</td>
-</tr>
-<tr>
- <td>move selection</td><td>left-mouse + shift</td>
-</tr>
-<tr>
- <td>invert selection</td><td>i</td>
-</tr>
-<tr>
- <td>display deselected</td><td>d</td>
-</tr>
-<tr>
- <td>clear selection</td><td>c</td>
-</tr>
-<tr>
- <td>kill selected points</td><td>x</td>
-</tr>
-<tr>
- <td>reset view</td><td>r</td>
-</tr>
-<tr>
- <td>quit</td><td>q</td>
-</tr>
-</table>
-</p>
-
-
 <h3>Mouse Gestures in plot windows:</h3>
 
 <p>
-Mouse key and gesture combinations wil ave the following effects
-when the cursor is positioned over a plot window.
+Mouse gestures combinations have the following effects
+when the window manager focus is on a plot window.
 <table>
 <tr>
  <th align="LEFT">Action</th><th align="LEFT">Gesture</th>
@@ -137,7 +117,7 @@ when the cursor is positioned over a plot window.
  <td>select points</td><td>left-mouse</td>
 </tr>
 <tr>
- <td>drag selection</td><td>shift + left-mouse</td>
+ <td>move selection</td><td>shift + left-mouse</td>
 </tr>
 <tr>
  <td>translate</td><td>right-mouse  (opt-mouse on OSX)</td>
@@ -166,16 +146,23 @@ Some of these controls are described below
  <th align="LEFT">Control</th><th align="LEFT">Action</th>
 </tr>
 <tr>
- <td>size</td><td>point size, in pixels</td>
+ <td>size</td><td>size of non-selected points, in pixels</td>
 </tr>
 <tr>
- <td>smooth</td><td>Use smoothed points</td>
+<tr>
+ <td>size2</td><td>size of selected points, in pixels</td>
 </tr>
 <tr>
- <td>Bkg</td><td>background color (try bkg=0.5, lum=0.2)</td>
+ <td>symbol</td><td>plot all points using this symbol</td>
 </tr>
 <tr>
- <td>Lum</td><td>point brightness</td>
+ <td>Bkg</td><td>background color (try bkg=0.5, lum2=0.2)</td>
+</tr>
+<tr>
+ <td>Lum</td><td>successive brightness increase for overplotting</td>
+</tr>
+<tr>
+ <td>Lum2</td><td>base brightness of a single point before overplotting</td>
 </tr>
 <tr>
  <td>Alph</td><td>point opacity</td>
@@ -193,7 +180,7 @@ Some of these controls are described below
  <td>axis 1-3</td><td>Attribute to be displayed in that axis</td>
 </tr>
 <tr>
- <td>lock axes</td><td>Lock occurences of these axes</td>
+ <td>lock axes</td><td>Lock an axis so it won't change when invoking "change axes"</td>
 </tr>
 <tr>
  <td>normalize x,y,z</td><td>Normalization scheme for that axis</td>
@@ -234,7 +221,7 @@ Some of these controls are described below
  <td>scales</td><td>Show axes scales</td>
 </tr>
 <tr>
- <td>grid</td><td>Show grid</td>
+ <td>grid</td><td>Show grid (broken)</td>
 </tr>
 <tr>
  <td>histogram</td><td>Show histograms along x and y axes</td>
@@ -243,7 +230,7 @@ Some of these controls are described below
  <td>selection color</td><td>Pick color of selections from this panel</td>
 </tr>
 <tr>
- <td>z-buffering</td><td>Use z-buffering</td>
+ <td>z-buffering</td><td>Use z-buffering (only for 3D plots)</td>
 </tr>
 </table>
 </p>
@@ -255,28 +242,25 @@ Some of these controls are described below
  <th align="LEFT">Control</th><th align="LEFT">Action</th>
 </tr>
 <tr>
- <td>npts</td><td>number of points displayed</td>
-</tr>
-<tr>
- <td>show nonselected</td><td>Show unselected points</td>
+ <td>show nonselected</td><td>Show/don't show unselected points in all plots</td>
 </tr>
 <tr>
  <td>invert selection</td><td>Invert selected and nonselected points</td>
 </tr>
 <tr>
- <td>clear selcetion</td><td>Clear selection</td>
+ <td>clear selcetion</td><td>Clear all selections</td>
 </tr>
 <tr>
- <td>kill selection</td><td>Delete all selected points</td>
+ <td>kill selection</td><td>Delete all selected points and renormalize (useful after selecting outliers)</td>
 </tr>
 <tr>
  <td>unselected color</td><td>Chose color of unselected points</td>
 </tr>
 <tr>
- <td>change axes</td><td>Change all (unlocked) axes
+ <td>change axes</td><td>Change all (unlocked) axes in all plots.  Good for browsing.
 </tr>
 <tr>
- <td>link axes</td><td>Link similar axes</td>
+ <td>link axes</td><td>Link similar axes so they translate and scale together</td>
 </tr>
 <tr>
  <td>reload plots</td><td>Restore plot windows to default layout</td>
@@ -300,7 +284,7 @@ These are chosen on a per-axis basis.
  <td>zeromax</td><td>show all positive data</td>
 </tr>
 <tr>
- <td>maxabs</td><td>show all data, center of window at zero</td>
+ <td>maxabs</td><td>show all data, center of window at data zero</td>
 </tr>
 <tr>
  <td>trim 10<sup>-2</sup></td>
@@ -332,9 +316,40 @@ These are chosen on a per-axis basis.
 </table>
 </p>
 
+<h3>Keys & Buttons in plot windows:</h3>
+
 <p>
-Please note that <b><em>Viewpoints</em> (vp)</b> is a development 
-routine.  While each version is tested before release to make certain 
+The following keyboard shortcuts can be used 
+while the window manager focus is on a plot window:
+<table>
+<tr>
+ <th align="LEFT">Action</th><th align="LEFT">Key</th>
+</tr>
+<tr>
+ <td>invert selection</td><td>i</td>
+</tr>
+<tr>
+ <td>display deselected</td><td>d</td>
+</tr>
+<tr>
+ <td>clear selection</td><td>c</td>
+</tr>
+<tr>
+ <td>kill selected points</td><td>x</td>
+</tr>
+<tr>
+ <td>reset view</td><td>r</td>
+</tr>
+<tr>
+ <td>quit</td><td>q</td>
+</tr>
+</table>
+</p>
+
+
+<p>
+Please note that <b><em>Viewpoints</em> (vp)</b> is in development.
+While each version is tested before release to make certain 
 that it will function properly (or fail gracefully in the event  
 something goes wrong), we are continuing to updated and modify the 
 package and add features in response to experience, suggestions, and 
@@ -354,8 +369,8 @@ Thank you.
 
 <p>
 <b>Compatibility:</b> The Linux version has been tested on Fedora
-Core 4 while the MacOS versions have been tested on MacOS G4 and
-G5, respectively.  The Windows version should run on any recent
+Core 4 while the MacOS versions have been tested on MacOS 10.4.8 on G4,
+G5 and intel macs.  The Windows version should run on any recent
 system with the necessary functionality from OpenGL 1.2 through 1.6.  
 It will not run on older systems that are restricted to OpenGL 1.1.
 </p>

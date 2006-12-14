@@ -206,27 +206,21 @@ void make_help_about_window( Fl_Widget *o)
   about_window->selection_color( FL_BLUE);
   about_window->labelsize( 10);
   
-  // Compose text. NOTE use of @@ in conjunction with label()
-  // PRG XXX: Put svn keyword $Id$ here...
-  string sAbout = "viewpoints 1.1.0\n";
+  string sAbout = "viewpoints $Id$";
   sAbout += "(c) 2006 C. Levit and P. R. Gazis\n\n";
   sAbout += "contact information:\n";
   sAbout += " Creon Levit creon.levit@@nasa.gov\n";
   sAbout += " Paul R Gazis pgazis@@mail.arc.nasa.gov\n\n";
 
-  // Write text (old version with Fl_Multiline_Output)
-  // Fl_Multiline_Output* output_widget = 
-  //   new Fl_Multiline_Output( 5, 5, 290, 190); 
-  // output_widget->value( sAbout.c_str());
-
   // Write text to box label and align it inside box
-  Fl_Box* output_box = new Fl_Box( 5, 5, 290, 160, sAbout.c_str());
+  Fl_Box* output_box = new Fl_Box( 5, 5, 290, 160);
   output_box->box(FL_SHADOW_BOX);
   output_box->color(7);
   output_box->selection_color(52);
   output_box->labelfont(FL_HELVETICA);
   output_box->labelsize(15);
   output_box->align(FL_ALIGN_TOP|FL_ALIGN_CENTER|FL_ALIGN_INSIDE);
+  output_box->copy_label(sAbout.c_str());
 
   // Invoke universal callback function to close window
   Fl_Button* close = new Fl_Button( 200, 170, 60, 25, "&Close");
