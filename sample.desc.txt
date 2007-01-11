@@ -3,7 +3,7 @@ Author: Paul R. gazis
 Date: 7-APR-2006
 
 This file contains a description of the contents of sample.bin, a
-binary file of sample data for demonstattion of the 'viewpoints'
+binary file of sample data for demonstration of the 'viewpoints'
 analysis package, along with a brief description of how that data
 can be used.  This file contains a small subset of the Pioneer 10 
 data set.  The Pioneer 10 and 11 spacecraft, launched in 1972 and

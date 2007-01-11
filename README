@@ -92,6 +92,29 @@ The calling sequence for the command line version is:
   --help [shortcut: -h]
     Print a short help message.
 
+  --ordering={rowmajor,columnmajor}
+    ordering for binary data, default=columnmajor
+
+  --nvars [shortcut -v <int>]
+       input has NVARS values per point (only for row major binary data)
+
+  --delimiter [shortcut -d=<char>]
+    interpret CHAR as field separator, default is whitespace.
+
+  --missing_values [shortcut -M <number>]
+    set the value of any unreadable, nonnumeric, empty, or missing values to NUMBER, default=0.0
+
+  --no_vbo [shortcut -B]
+    don't use openGL vertex buffer objects.  Useful if you have an older graphics card or if
+    the graphics are inconsistent or are very slow.
+
+  --version [shortcut -V]
+    print version information and then exit.
+
+  --help [shortcut -h]
+    print out brief usage message and then exit.
+
+
 When 'viewpoints' is invoked, it will read the input file, then
 display a control panel along with an 'r' x 'c' array of linked 
 scatter plots.  These windows can be moved and resized in the
