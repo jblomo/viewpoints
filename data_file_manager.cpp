@@ -909,8 +909,12 @@ int Data_File_Manager::write_ascii_file_with_headers()
     // Write output file name (and additional information?) to the header
     os << "! File Name: " << outFileSpec.c_str() << endl;
     
+    // Do not write out "line-number" column (header or data)
+    // it gets created automatically when a file is read in
+    int nvars_out = include_line_number?nvars-1:nvars;
+
     // Loop: Write column labels to the header
-    for( int i=0; i < nvars; i++ ) {
+    for( int i=0; i < nvars_out; i++ ) {
       if( i == 0) os << "!" << setw( 12) << column_labels[ i];
       else os << " " << setw( 13) << column_labels[ i];
     }
@@ -922,7 +926,7 @@ int Data_File_Manager::write_ascii_file_with_headers()
     int rows_written = 0;
     for( int irow = 0; irow < npoints; irow++) {
       if( useSelectedData == 0 || selected( irow) > 0) {
-        for( int jcol = 0; jcol < nvars; jcol++) {
+        for( int jcol = 0; jcol < nvars_out; jcol++) {
           if( jcol > 0) os << " ";
           os << points( jcol, irow);
         }
@@ -952,8 +956,13 @@ int Data_File_Manager::write_binary_file_with_headers()
     return -1;
   }
   else {
-    blitz::Array<float,1> vars( nvars);
-    blitz::Range NVARS( 0, nvars-1);
+
+    // Do not write out "line-number" column (header or data)
+    // it gets created automatically when a file is read in
+    int nvars_out = include_line_number?nvars-1:nvars;
+
+    blitz::Array<float,1> vars( nvars_out);
+    blitz::Range NVARS( 0, nvars_out-1);
     
     // Open output stream and report any problems
     ofstream os;
@@ -969,7 +978,7 @@ int Data_File_Manager::write_binary_file_with_headers()
     }
     
     // Loop: Write column labels to the header
-    for( int i=0; i < nvars; i++ ) os << column_labels[ i] << " ";
+    for( int i=0; i < nvars_out; i++ ) os << column_labels[ i] << " ";
     os << endl;
     
     // Loop: Write data and report any problems

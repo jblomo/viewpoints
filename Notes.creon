@@ -899,6 +899,84 @@ FROM my todo list:
 
   Make organized list of vp tasks/features/fixes.
 
+17:45:19 03 Jan 07
+
+Insstead of plotting x_i_k in column i vs. x_j_k in column j for each row k, create new "virttual" data file (perl?) containing 
 
 
-  
+k i x_k_i and read that in.
+
+12:09:50 04 Jan 07
+
+Meetging w/Paul
+
+priorities:
+
+For intial release:
+
+1) VBO command line argument
+   -- done
+
+3) Fix sprites for selected only or remove them
+
+4) Fix brightness sliders
+
+4.5) window titles: "plot 4, pressure vs. temp"....
+
+5) Documentation is accurate (readme, man page, about.html)
+
+6) remove "line number" from asci/binary output
+   -- done
+
+6.5) fix "sum vs. diff" noralization so data remains (approximately) centered in window.
+
+7) Paul fix bugs in file chooser path
+
+8) test
+
+9) freeze, zip, and post
+
+10) send out email
+
+11) Schedule more talks/demos/marketing
+
+12) Roses proposal
+
+13) if possible, buttons in file dialog for: file type, selected/nonselected/all, line number/not, header modification, selection id.
+
+14) if possible, pop up a confirm quit window when quitting, and when the user closes the control panel window, or the last plot window.
+
+For "official" release
+
+1) Paul one-click svn for windows
+
+2) Paul break dependecy on devc++ devpack
+
+3) fltk 2.0 / remove flews
+
+4) Brushes
+
+5) spreadsheet view?
+
+6) some sort of save state
+
+6) Fix window tiling to eleiminate big spaces between windows, make sure borderless works on mac.
+
+6) mouse cursor tracking (option)
+
+7) selection box dranw w/selection (brush) color
+
+8) more file types
+
+8) axis slider(s) (on plot windows?)
+
+8) mutual info, corelation, etc, ranking in background, fed to change axes
+
+9) axis pair(s) display(s), for selecting pairs based on MI, core, etc.
+
+8) web site
+
+9) freeze, test, zip, post, email.
+
+10) software of the year.
+

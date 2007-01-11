@@ -340,6 +340,8 @@ int Plot_Window::handle( int event)
       else if( Fl::event_state(FL_BUTTON3) || 
                (Fl::event_state() == (FL_BUTTON1 | FL_ALT)) ) {
         show_center_glyph = 1;
+
+
         needs_redraw = 1;
       }
 
@@ -963,7 +965,7 @@ void Plot_Window::print_selection_stats ()
 // selection by calling draw_selection_information().
 void Plot_Window::handle_selection ()
 {
-  if (selection_is_inverted) invert_selection(); // MCL XXX ???
+  // if (selection_is_inverted) invert_selection();
 
   blitz::Range NPTS( 0, npoints-1);	
 
@@ -1384,10 +1386,15 @@ int Plot_Window::transform_2d()
   blitz::Array <float,1> tmp1(npoints), tmp2(npoints);
   tmp1 = vertices(NPTS,0);
   tmp2 = vertices(NPTS,1);
+  float tmp_max, tmp_min;
 
   if( cp->sum_vs_difference->value()) {
     vertices(NPTS,0) = (sqrt(2.0)/2.0) * (tmp1 + tmp2);
     vertices(NPTS,1) = (sqrt(2.0)/2.0) * (tmp1 - tmp2);
+    tmp_max =  (sqrt(2.0)/2.0)*(wmax[0] + wmax[1]);
+    tmp_min = -(sqrt(2.0)/2.0)*(wmax[0] + wmax[1]);
+    wmin[0] = wmin[1] = tmp_min;
+    wmax[0] = wmax[1] = tmp_max;
   }
   else if( cp->polar->value()) {
     vertices(NPTS,0) = atan2(tmp1, tmp2);
@@ -1548,7 +1555,7 @@ void Plot_Window::compute_rank(int var_index)
     
     // initialize the ranked indices to be sequential.  The sort (following) will
     // permute them into the correct order.
-    blitz::firstIndex ident;
+    blitz::firstIndex ident;    // MCL XXX don't we have a global holding this?
     a_ranked_indices = ident;
 
     // the sort method myCompare() needs a global alias (tmp_points) to the 
@@ -1568,6 +1575,10 @@ void Plot_Window::compute_rank(int var_index)
 // Plot_Window::extract_data_points() -- Extract column labels and data for a 
 // set of axes, rank (order) and normalize and scale data, compute histograms, 
 // and compute axes scales.
+//
+// MCL XXX this routine (and others) could be refactored to loop over the axes
+// instead of having so much code replicated for each axis.
+//
 int Plot_Window::extract_data_points ()
 {
   // Get the labels for the plot's axes
@@ -1587,6 +1598,7 @@ int Plot_Window::extract_data_points ()
   // report progress
   cout << "plot " << row << ", " << column << endl;
   cout << " pre-normalization: " << endl;
+
 
   // Rank points by x-axis value
   compute_rank(axis0);
@@ -1620,24 +1632,33 @@ int Plot_Window::extract_data_points ()
          << points(axis2,z_rank(npoints-1)) << endl;
   }
 
-  // Load vertices and points for the x-axis.
-  // This copies the data...
-  vertices( NPTS, 0) = points( axis0, NPTS);  
-  // ...but this doesn't. See blitz++ manual.
-  blitz::Array<float,1> xpoints = vertices( NPTS, 0); 
-  
-  // Load vertices and points for the y-axis.
-  vertices( NPTS, 1) = points( axis1, NPTS);
-  blitz::Array<float,1> ypoints = vertices( NPTS, 1);
+  // OpenGL vertices, vertex arrays, and VBOs all need to have their x, y, and z coordinates
+  // interleaved i.e. stored in adjacent memory locations:  x[0],y[0],z[0],x[1],y[1],z[1],.....
+  // This is not, unfortunately, how the raw data is stored in the blitz points() array.
+  // So we copy the appropriate data "columns" from the points() array into the appropriate
+  // components of the vertex() array.
+  //
+  // Though this copying takes up time and memory, it is OK since we almost certainly want to
+  // normalize and/or transform the vertices prior rendering them.  Since we don't want to
+  // transform and/or normalize (i.e. clobber) the "original" data, we transform and/or normalize
+  // using aliases to the vertex data.  Since the vertex data are copies (not aliases) of the
+  // original uncorrupted points() data, this works out fine.
 
-  // Load vertices and points, if any, for the z-axis.  
-  if( axis2 != nvars)
-    vertices( NPTS, 2) = points( axis2, NPTS);
-  else
+  // copy appropriate column of points() data into correct component of vertex() array
+  vertices( NPTS, 0) = points( axis0, NPTS);  
+  vertices( NPTS, 1) = points( axis1, NPTS);
+  // if z-axis is set to "-nothing-" (which it is, by default), then all z=0.
+  if( axis2 == nvars)
     vertices( NPTS, 2) = 0.0;
+  else
+    vertices( NPTS, 2) = points( axis2, NPTS);
+
+  // create aliases to newly copied vertex data for normalization & transformation.
+  blitz::Array<float,1> xpoints = vertices( NPTS, 0); 
+  blitz::Array<float,1> ypoints = vertices( NPTS, 1);
   blitz::Array<float,1> zpoints = vertices( NPTS, 2);
 
-  // Apply the normalize() method to normalize and scale the data 
+  // Apply the normalize() method to normalize and scale the x-axis data 
   // and report results
   cout << " post-normalization: " << endl;
   (void) normalize( xpoints, x_rank, cp->x_normalization_style->value(), 0);
@@ -1684,8 +1705,8 @@ int Plot_Window::extract_data_points ()
   VBOfilled = false;
 
   // Reset pan, zoom, and view-angle
-  reset_view();
   (void) transform_2d();
+  reset_view();
 
   // XXX need to refactor this.  This is needed to make sure the
   // scale marks on the axis are updated

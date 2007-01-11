@@ -250,8 +250,7 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   Alph->value(1.0);
 
   // Rotation (and spin) slider
-  rot_slider = 
-    new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, cpw->w()-60, 20, "rot");
+  rot_slider = new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, cpw->w()-60, 20, "rot");
   rot_slider->align(FL_ALIGN_LEFT);
   rot_slider->callback((Fl_Callback*)replot, this);
   rot_slider->value(0.0);
@@ -259,8 +258,7 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   rot_slider->bounds(-180.0, 180.0);
 
   // Number of histogram bins slider
-  nbins_slider = 
-    new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, cpw->w()-60, 20, "nbins");
+  nbins_slider = new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, cpw->w()-60, 20, "nbins");
   nbins_slider->align(FL_ALIGN_LEFT);
   nbins_slider->callback((Fl_Callback*)redraw_one_plot, this);
   nbins_slider->value(Plot_Window::nbins_default);
@@ -327,42 +325,34 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
 
   // NLoop: Genenerate normalization style menu
   for( int i=0; i<n_normalization_styles; i++) {
-    normalization_style_menu_items[i].label(
-      normalization_style_labels[i]);
-    normalization_style_menu_items[i].user_data(
-      (void *)normalization_styles[i]);
+    normalization_style_menu_items[i].label(normalization_style_labels[i]);
+    normalization_style_menu_items[i].user_data((void *)normalization_styles[i]);
   }
   normalization_style_menu_items[n_normalization_styles].label(0);
 
   // X-axis normalization and scaling
-  x_normalization_style = 
-    new Fl_Choice( xpos, ypos+=70, 100, 25, "normalize x");
+  x_normalization_style = new Fl_Choice( xpos, ypos+=70, 100, 25, "normalize x");
   x_normalization_style->align( FL_ALIGN_TOP);
   x_normalization_style->textsize( 12);
   x_normalization_style->menu( normalization_style_menu_items);
   x_normalization_style->value( NORMALIZATION_MINMAX);
-  x_normalization_style->callback( 
-    (Fl_Callback*)static_extract_and_redraw, this);
+  x_normalization_style->callback( (Fl_Callback*)static_extract_and_redraw, this);
  
   // Y-axis normalization and scaling
-  y_normalization_style = 
-    new Fl_Choice( xpos+100, ypos, 100, 25, "normalize y");
+  y_normalization_style = new Fl_Choice( xpos+100, ypos, 100, 25, "normalize y");
   y_normalization_style->align(FL_ALIGN_TOP);
   y_normalization_style->textsize(12);
   y_normalization_style->menu(normalization_style_menu_items);
   y_normalization_style->value(NORMALIZATION_MINMAX); 
-  y_normalization_style->callback( 
-    (Fl_Callback*)static_extract_and_redraw, this);
+  y_normalization_style->callback( (Fl_Callback*)static_extract_and_redraw, this);
  
   // Z-axis normalization and scaling
-  z_normalization_style = 
-    new Fl_Choice( xpos+200, ypos, 100, 25, "normalize z");
+  z_normalization_style = new Fl_Choice( xpos+200, ypos, 100, 25, "normalize z");
   z_normalization_style->align(FL_ALIGN_TOP);
   z_normalization_style->textsize(12);
   z_normalization_style->menu(normalization_style_menu_items);
   z_normalization_style->value(NORMALIZATION_MINMAX); 
-  z_normalization_style->callback( 
-    (Fl_Callback*)static_extract_and_redraw, this);
+  z_normalization_style->callback( (Fl_Callback*)static_extract_and_redraw, this);
  
   // XXX Add some additional y-offset
   ypos+=5;
@@ -372,8 +362,7 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   int ypos2 = ypos;
 
   // Button (1,1) Reset view in this plot
-  reset_view_button = b = 
-    new Fl_Button(xpos2, ypos+=25, 20, 20, "reset view ");
+  reset_view_button = b = new Fl_Button(xpos2, ypos+=25, 20, 20, "reset view ");
   b->align(FL_ALIGN_RIGHT); b->selection_color(FL_BLUE);
   b->callback((Fl_Callback*) reset_view, this);
 
@@ -387,8 +376,7 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   dont_clear->align(FL_ALIGN_RIGHT);
   dont_clear->type(FL_TOGGLE_BUTTON);
   dont_clear->selection_color(FL_BLUE);
-  dont_clear->callback(
-    (Fl_Callback*)static_maybe_redraw, this);
+  dont_clear->callback((Fl_Callback*)static_maybe_redraw, this);
 
   // Define Fl_Group to hold plot transform styles
   // XXX - this group should probably be a menu, or at least have a box around it
@@ -403,8 +391,7 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   b->selection_color(FL_BLUE);
 
   // Button (5,1): Sum vs difference transform
-  sum_vs_difference = b = 
-    new Fl_Button(xpos2, ypos+=25, 20, 20, "sum vs. diff.");
+  sum_vs_difference = b = new Fl_Button(xpos2, ypos+=25, 20, 20, "sum vs. diff.");
   b->callback((Fl_Callback*)static_extract_and_redraw, this);
   b->align(FL_ALIGN_RIGHT); 
   b->type(FL_RADIO_BUTTON); 
@@ -432,8 +419,7 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   b->value(1);
 
   // Button (2,2): Show deselected points
-  show_deselected_points = b = 
-    new Fl_Button(xpos, ypos+=25, 20, 20, " unselected");
+  show_deselected_points = b = new Fl_Button(xpos, ypos+=25, 20, 20, " unselected");
   b->callback((Fl_Callback*)static_maybe_redraw, this);
   b->align(FL_ALIGN_RIGHT); 
   b->type(FL_TOGGLE_BUTTON); 
@@ -441,8 +427,7 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   b->value(1);
 
   // Button (3,2): Show axes
-  show_axes = b = 
-    new Fl_Button(xpos, ypos+=25, 20, 20, "axes");
+  show_axes = b = new Fl_Button(xpos, ypos+=25, 20, 20, "axes");
   b->callback((Fl_Callback*)static_maybe_redraw, this);
   b->align(FL_ALIGN_RIGHT); 
   b->type(FL_TOGGLE_BUTTON); 
@@ -450,8 +435,7 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   b->value(1);
 
   // Button (4,2): Show axis labels
-  show_labels = b = 
-    new Fl_Button(xpos, ypos+=25, 20, 20, "labels");
+  show_labels = b = new Fl_Button(xpos, ypos+=25, 20, 20, "labels");
   b->callback((Fl_Callback*)static_maybe_redraw, this);
   b->align(FL_ALIGN_RIGHT); 
   b->type(FL_TOGGLE_BUTTON); 
@@ -459,8 +443,7 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   b->value(1);
 
   // Button (4,2): Show axis scale
-  show_scale = b = 
-    new Fl_Button(xpos, ypos+=25, 20, 20, "scales");
+  show_scale = b = new Fl_Button(xpos, ypos+=25, 20, 20, "scales");
   b->callback((Fl_Callback*)static_maybe_redraw, this);
   b->align(FL_ALIGN_RIGHT); 
   b->type(FL_TOGGLE_BUTTON); 
@@ -474,10 +457,9 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   b->type(FL_TOGGLE_BUTTON); 
   b->selection_color(FL_BLUE);
   b->value(0);
-
+  
   // Button (6,2): Show histograms for this plot
-  show_histogram = b = 
-    new Fl_Button(xpos, ypos+=25, 20, 20, "histograms");
+  show_histogram = b = new Fl_Button(xpos, ypos+=25, 20, 20, "histograms");
   b->callback((Fl_Callback*)redraw_one_plot, this);
   b->align(FL_ALIGN_RIGHT); 
   b->type(FL_TOGGLE_BUTTON); 
