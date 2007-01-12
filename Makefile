@@ -10,7 +10,7 @@ CC		= cc
 MAKEDEPEND	= $(CXX) -E -M
 
 ifeq ($(platform),Darwin)
-	POSTBUILD = /Developer/Tools/Rez -t APPL -o
+	POSTBUILD = /Developer/Tools/Rez mac.r -o vp
 else
 	POSTBUILD = echo
 endif
@@ -89,6 +89,8 @@ OBJS:=	$(SRCS:.cpp=.o)
 
 TARGET = vp$(EXEEXT)
 
+DOCUMENTATION = README vp_help_manual.htm sampledata.txt sample.desc.txt
+
 default: $(TARGET)
 
 all: depend tags $(TARGET) 
@@ -104,13 +106,17 @@ all: depend tags $(TARGET)
 $(TARGET):	$(OBJS)
 	echo Linking $@...
 	$(CXX) $(CXXFLAGS) $(OBJS) $(LIBPATH) $(LINKFLEWS) $(LINKFLTK) $(LINKBLITZ) $(LDLIBS) -o $@
-	$(POSTBUILD) $@ ./mac.r
+	$(POSTBUILD)
 
 clean:
 	rm -f $(ALL) *.o $(TARGET) vp core* TAGS *.gch makedepend 
 
 depend:	$(SRCS)
 	$(MAKEDEPEND) $(INCBLITZ) $(INCPATH) $(INCFLEWS) $(SRCS) > makedepend
+
+release: $(TARGET)
+	cp -r $(TARGET) $(DOCUMENTATION) /tmp/vp
+	ditto -c -k -X --rsrc /tmp/vp vp.zip
 
 # Automatically generated dependencies if they are there...
 -include makedepend
