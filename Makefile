@@ -115,8 +115,19 @@ depend:	$(SRCS)
 	$(MAKEDEPEND) $(INCBLITZ) $(INCPATH) $(INCFLEWS) $(SRCS) > makedepend
 
 release: $(TARGET)
+	if test -e /tmp/vp; then \
+		/bin/rm -rf /tmp/vp ; \
+	fi
+	mkdir /tmp/vp
 	cp -r $(TARGET) $(DOCUMENTATION) /tmp/vp
+ifeq ($(platform),Darwin)
 	ditto -c -k -X --rsrc /tmp/vp vp.zip
+	chmod 775 vp.zip
+else
+	tar -cvf vp.tar /tmp/vp
+	gzip vp.tar
+	chmod 775 vp.tar.gz
+endif
 
 # Automatically generated dependencies if they are there...
 -include makedepend
