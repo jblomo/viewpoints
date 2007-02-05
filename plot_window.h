@@ -160,7 +160,7 @@ class Plot_Window : public Fl_Gl_Window
     int extend_selection;
 
     // Arrays and routines for histograms
-    int nbins;
+    int nbins[2];
     blitz::Array<float,2> counts, counts_selected;
     float xhscale, yhscale;
     void compute_histogram( int);

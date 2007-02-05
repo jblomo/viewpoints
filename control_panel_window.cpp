@@ -119,7 +119,8 @@ void Control_Panel_Window::broadcast_change (Fl_Widget *master_widget)
     // If value() were a virtual function of Fl_Widget (like callback() and 
     // do_callback() are) it would be cleaner.  Or we could bite the bullet and 
     // use one of the fltk publish/subscribe extensions.  That could clean up 
-    // all sort of things.....
+    // all sort of things.....  Or we could take a stab at refactoring the
+    // repetitive parts of the following code using templates.
     
     // Apply an Fl_Button widget
     {
@@ -134,6 +135,14 @@ void Control_Panel_Window::broadcast_change (Fl_Widget *master_widget)
       Fl_Valuator *gp, *lp;
       if( (gp = dynamic_cast <Fl_Valuator*> (master_widget)) && 
           (lp = dynamic_cast <Fl_Valuator*> (slave_widget)))
+        lp->value(gp->value());
+    }
+
+    // Apply an Fl_Spinner (Fl_Spinner is not an Fl_Valuator)
+    {
+      Fl_Spinner *gp, *lp;
+      if( (gp = dynamic_cast <Fl_Spinner*> (master_widget)) && 
+          (lp = dynamic_cast <Fl_Spinner*> (slave_widget)))
         lp->value(gp->value());
     }
 
@@ -241,14 +250,6 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   Lum2->bounds(0.0,5.0);
   Lum2->value(1.0);
 
-  // Alpha plane slider
-  Alph = new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, cpw->w()-60, 20, "Alph");
-  Alph->align(FL_ALIGN_LEFT);
-  Alph->callback((Fl_Callback*)replot, this);
-  Alph->step(0.0001);
-  Alph->bounds(0.0,1.0);
-  Alph->value(1.0);
-
   // Rotation (and spin) slider
   rot_slider = new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, cpw->w()-60, 20, "rot");
   rot_slider->align(FL_ALIGN_LEFT);
@@ -257,13 +258,23 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   rot_slider->step(0.001);
   rot_slider->bounds(-180.0, 180.0);
 
-  // Number of histogram bins slider
-  nbins_slider = new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, cpw->w()-60, 20, "nbins");
-  nbins_slider->align(FL_ALIGN_LEFT);
-  nbins_slider->callback((Fl_Callback*)redraw_one_plot, this);
-  nbins_slider->value(Plot_Window::nbins_default);
-  nbins_slider->step(1);
-  nbins_slider->bounds(2,Plot_Window::nbins_max);
+  // x-axis (histogram) bin count slider
+  xbins_slider = new Fl_Spinner( xpos, ypos+=25, 60, 20, "xbins");
+  xbins_slider->align(FL_ALIGN_LEFT);
+  xbins_slider->callback((Fl_Callback*)redraw_one_plot, this);
+  xbins_slider->value(Plot_Window::nbins_default);
+  xbins_slider->step(2);
+  xbins_slider->range(0,Plot_Window::nbins_max);
+  nbins_slider[0] = xbins_slider;
+
+  // y-axis (histogram) bin count slider
+  ybins_slider = new Fl_Spinner( xpos, ypos+=25, 60, 20, "ybins");
+  ybins_slider->align(FL_ALIGN_LEFT);
+  ybins_slider->callback((Fl_Callback*)redraw_one_plot, this);
+  ybins_slider->value(Plot_Window::nbins_default);
+  ybins_slider->step(2);
+  ybins_slider->range(0,Plot_Window::nbins_max);
+  nbins_slider[1] = ybins_slider;
 
   // dynamically build the variables menu
   // cout << "starting menu build, nvars = " << nvars << endl;
@@ -278,7 +289,7 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
 
   xpos = 10;
 
-  // X-axis parameter
+  // X-axis variable selection menu
   varindex1 = new Fl_Choice (xpos, ypos+=45, 100, 25, "axis 1");
   varindex1->align(FL_ALIGN_TOP);
   varindex1->textsize(12);
@@ -293,7 +304,15 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   b->align(FL_ALIGN_LEFT);
   b->value(0);
 
-  // Y-axis parameter
+  // Show histogram for this plot's x-axis
+  show_histogram[0] = b = new Fl_Button(xpos+80, ypos+50, 20, 20, "hist");
+  b->callback((Fl_Callback*)redraw_one_plot, this);
+  b->align(FL_ALIGN_LEFT); 
+  b->type(FL_TOGGLE_BUTTON); 
+  b->selection_color(FL_BLUE);  
+  b->value(0);
+
+  // Y-axis variable selection menu
   varindex2 = new Fl_Choice (xpos+100, ypos, 100, 25, "axis 2");
   varindex2->align(FL_ALIGN_TOP);
   varindex2->textsize(12);
@@ -308,7 +327,15 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   b->align(FL_ALIGN_LEFT);
   b->value(0);
 
-  // Z-axis parameter
+  // Show histogram for this plot's x-axis
+  show_histogram[1] = b = new Fl_Button(xpos+100+80, ypos+50, 20, 20, "hist");
+  b->callback((Fl_Callback*)redraw_one_plot, this);
+  b->align(FL_ALIGN_LEFT); 
+  b->type(FL_TOGGLE_BUTTON); 
+  b->selection_color(FL_BLUE);  
+  b->value(0);
+
+  // Z-axis variable selection menu
   varindex3 = new Fl_Choice (xpos+200, ypos, 100, 25, "axis 3");
   varindex3->align(FL_ALIGN_TOP);
   varindex3->textsize(12);
@@ -331,7 +358,7 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   normalization_style_menu_items[n_normalization_styles].label(0);
 
   // X-axis normalization and scaling
-  x_normalization_style = new Fl_Choice( xpos, ypos+=70, 100, 25, "normalize x");
+  x_normalization_style = new Fl_Choice( xpos, ypos+=95, 100, 25, "normalize x");
   x_normalization_style->align( FL_ALIGN_TOP);
   x_normalization_style->textsize( 12);
   x_normalization_style->menu( normalization_style_menu_items);
@@ -458,14 +485,6 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   b->selection_color(FL_BLUE);
   b->value(0);
   
-  // Button (6,2): Show histograms for this plot
-  show_histogram = b = new Fl_Button(xpos, ypos+=25, 20, 20, "histograms");
-  b->callback((Fl_Callback*)redraw_one_plot, this);
-  b->align(FL_ALIGN_RIGHT); 
-  b->type(FL_TOGGLE_BUTTON); 
-  b->selection_color(FL_BLUE);  
-  b->value(0);
-
   ypos=ypos2;
   xpos=xpos2+200;
 

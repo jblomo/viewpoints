@@ -929,6 +929,7 @@ For intial release:
    -- done
 
 6.5) fix "sum vs. diff" noralization so data remains (approximately) centered in window.
+   -- done
 
 7) Paul fix bugs in file chooser path
 
@@ -980,3 +981,6 @@ For "official" release
 
 10) software of the year.
 
+10:54:41 18 Jan 07
+
+"spin" control is too fast.  Scale down rotation angle fro mrot slider before accumulating during spin.

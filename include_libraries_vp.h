@@ -117,6 +117,7 @@
 #include <FL/Fl_Gl_Window.H>
 #include <FL/Fl_File_Chooser.H>
 #include <FL/Fl_Color_Chooser.H>
+#include <FL/Fl_Spinner.H>
 
 // XXX: for main menu bar
 #include <FL/Fl_Menu_Bar.H>
