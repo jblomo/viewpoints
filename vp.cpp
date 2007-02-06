@@ -100,16 +100,16 @@ static int help_topline;
 // virtual control panel positions.  Consolidated here for reasons of clarity.
 
 // Increase this when the main panel needs to get wider:
-static const int main_w = 350; 			
+static const int main_w = 365; 			
 
 // Increase this when the main panel needs to get taller, including situations
 // when cp_widget_h increases:
-static const int main_h = 750;			
+static const int main_h = 760;			
 
 // Increase this when the controls for individual windows need more height to 
 // fit in their subpanel
 // static const int cp_widget_h = 505; 
-static const int cp_widget_h = 525; 
+static const int cp_widget_h = 565; 
 
 // The rest of these should not have to change
 static const int tabs_widget_h = cp_widget_h+20;
@@ -133,8 +133,7 @@ Fl_Help_View *help_view_widget;
 // Function definitions for the main method
 void usage();
 void make_help_about_window( Fl_Widget *o);
-void create_main_control_panel( 
-  int main_x, int main_y, int main_w, int main_h, char* cWindowLabel);
+void create_main_control_panel( int main_x, int main_y, int main_w, int main_h, char* cWindowLabel);
 void create_broadcast_group();
 void manage_plot_window_array( Fl_Widget *o);
 void make_main_menu_bar();

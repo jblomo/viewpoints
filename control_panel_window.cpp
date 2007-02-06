@@ -105,7 +105,7 @@ void Control_Panel_Window::broadcast_change (Fl_Widget *master_widget)
   for (int i=0; i<nplots; i++)
   {
     // Define a pointer to the relevant widget in this window and
-    // verify thay it exists
+    // verify that it exists
     Fl_Widget *slave_widget = cps[i]->child(widget_index);
     assert( slave_widget);
     
@@ -122,7 +122,8 @@ void Control_Panel_Window::broadcast_change (Fl_Widget *master_widget)
     // all sort of things.....  Or we could take a stab at refactoring the
     // repetitive parts of the following code using templates.
     
-    // Apply an Fl_Button widget
+    // If the master widget is a button then set the slave's value using
+    // the master's value.
     {
       Fl_Button *gp, *lp;
       if( (gp = dynamic_cast <Fl_Button*> (master_widget)) && 
@@ -130,7 +131,7 @@ void Control_Panel_Window::broadcast_change (Fl_Widget *master_widget)
         lp->value(gp->value());
     }
 
-    // Apply an Fl_Valuator widget
+    // See previous comment
     {
       Fl_Valuator *gp, *lp;
       if( (gp = dynamic_cast <Fl_Valuator*> (master_widget)) && 
@@ -138,7 +139,7 @@ void Control_Panel_Window::broadcast_change (Fl_Widget *master_widget)
         lp->value(gp->value());
     }
 
-    // Apply an Fl_Spinner (Fl_Spinner is not an Fl_Valuator)
+    // See previous comment
     {
       Fl_Spinner *gp, *lp;
       if( (gp = dynamic_cast <Fl_Spinner*> (master_widget)) && 
@@ -146,7 +147,7 @@ void Control_Panel_Window::broadcast_change (Fl_Widget *master_widget)
         lp->value(gp->value());
     }
 
-    // Apply an Fl_Choice widget
+    // See previous comment
     {
       Fl_Choice *gp, *lp;
       if( (gp = dynamic_cast <Fl_Choice*> (master_widget)) && 
@@ -154,8 +155,8 @@ void Control_Panel_Window::broadcast_change (Fl_Widget *master_widget)
         lp->value(gp->value());
     }
 
-    // If the slave widget returns a callback value, pass it to
-    // the relevant control panel window
+    // If the slave widget has a callback function defined, call the
+    // callback (since the slave widget's value() may have just been updated).
     if( slave_widget->callback())
     {
       // cout << ".. doing callback for widget " << widget_index 
@@ -199,6 +200,167 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
 
   Fl_Button *b;
 
+  // the following portion of the panel deals with axes and their properties
+
+  xpos = 50;
+  int subwidth=105;  // ~1/3 of (width - extra room)
+
+  // label for row of variable chooser menus
+  b = new Fl_Button (xpos, ypos+=5, 45, 25, ""); // cleaner look with nothing here?
+  b->labelsize(14);
+  b->align(FL_ALIGN_LEFT);
+  b->box(FL_NO_BOX);
+
+  // dynamically build the variables menu
+  // cout << "starting menu build, nvars = " << nvars << endl;
+  for( int i=0; i<=nvars; i++) {
+    // cout << "label " << i 
+    //      << " = " << column_labels[i].c_str() << endl;
+    varindex_menu_items[i].label((const char *)(column_labels[i].c_str()));
+    varindex_menu_items[i].user_data((void *)i);
+  }
+  varindex_menu_items[nvars+1].label(0);
+
+  // X-axis variable selection menu
+  varindex1 = new Fl_Choice (xpos, ypos, subwidth-15, 25, "X axis");
+  varindex1->align(FL_ALIGN_TOP);
+  varindex1->textsize(12);
+  varindex1->copy( varindex_menu_items);
+  varindex1->mode( nvars, FL_MENU_INACTIVE);  // disable "--nothing--" as a choice for axis1
+  varindex1->callback( (Fl_Callback*)static_extract_and_redraw, this);
+
+  // Y-axis variable selection menu
+  varindex2 = new Fl_Choice (xpos+subwidth, ypos, subwidth-15, 25, "Y axis");
+  varindex2->align(FL_ALIGN_TOP);
+  varindex2->textsize(12);
+  varindex2->copy( varindex_menu_items);
+  varindex2->mode( nvars, FL_MENU_INACTIVE);  // disable "--nothing--" as a choice for axis2
+  varindex2->callback( (Fl_Callback*)static_extract_and_redraw, this);
+
+  // Z-axis variable selection menu
+  varindex3 = new Fl_Choice (xpos+2*subwidth, ypos, subwidth-15, 25, "Z axis");
+  varindex3->align(FL_ALIGN_TOP);
+  varindex3->textsize(12);
+  varindex3->copy( varindex_menu_items);
+  varindex3->value(nvars);  // initially, axis3 == "-nothing-"
+  varindex3->callback( (Fl_Callback*)static_extract_and_redraw, this);
+
+  // label for row of normalization menus
+  b = new Fl_Button (xpos, ypos+=35, 45, 25, "scale");
+  b->labelsize(14);
+  b->align(FL_ALIGN_LEFT);
+  b->box(FL_NO_BOX);
+
+  // NLoop: Genenerate normalization style menu items
+  for( int i=0; i<n_normalization_styles; i++) {
+    normalization_style_menu_items[i].label(normalization_style_labels[i]);
+    normalization_style_menu_items[i].user_data((void *)normalization_styles[i]);
+  }
+  normalization_style_menu_items[n_normalization_styles].label(0);
+
+  // X-axis normalization and scaling
+  x_normalization_style = new Fl_Choice( xpos, ypos, subwidth-15, 25);
+  x_normalization_style->textsize( 12);
+  x_normalization_style->menu( normalization_style_menu_items);
+  x_normalization_style->value( NORMALIZATION_MINMAX);
+  x_normalization_style->callback( (Fl_Callback*)static_extract_and_redraw, this);
+ 
+  // Y-axis normalization and scaling
+  y_normalization_style = new Fl_Choice( xpos+subwidth, ypos, subwidth-15, 25);
+  y_normalization_style->textsize(12);
+  y_normalization_style->menu(normalization_style_menu_items);
+  y_normalization_style->value(NORMALIZATION_MINMAX); 
+  y_normalization_style->callback( (Fl_Callback*)static_extract_and_redraw, this);
+ 
+  // Z-axis normalization and scaling
+  z_normalization_style = new Fl_Choice( xpos+2*subwidth, ypos, subwidth-15, 25);
+  z_normalization_style->textsize(12);
+  z_normalization_style->menu(normalization_style_menu_items);
+  z_normalization_style->value(NORMALIZATION_MINMAX); 
+  z_normalization_style->callback( (Fl_Callback*)static_extract_and_redraw, this);
+ 
+  // one label for row of histogram buttons
+  b = new Fl_Button (xpos, ypos+=30, 85, 25, "histo");
+  b->labelsize(14);
+  b->align(FL_ALIGN_LEFT);
+  b->box(FL_NO_BOX);
+
+  // create three show histogram buttons, one for each axis.
+  for (int i=0; i<3; i++) {
+    show_histogram[i] = new Fl_Button(xpos+i*subwidth, ypos, 20, 20);
+    show_histogram[i]->callback((Fl_Callback*)redraw_one_plot, this);
+    show_histogram[i]->type(FL_TOGGLE_BUTTON); 
+    show_histogram[i]->selection_color(FL_BLUE);  
+    show_histogram[i]->value(0);
+  }
+  // no Z-axis histograms (yet)
+  show_histogram[2]->deactivate();
+
+  // one label for row of bin count sliders
+  b = new Fl_Button (xpos, ypos+=25, 45, 25, "N bins");
+  b->labelsize(14);
+  b->align(FL_ALIGN_LEFT);
+  b->box(FL_NO_BOX);
+
+  // create three bin count sliders, one for each axis.
+  for (int i=0; i<3; i++) {
+    nbins_slider[i] = new Fl_Hor_Value_Slider_Input(xpos+i*subwidth, ypos, subwidth-15, 20);
+    nbins_slider[i]->textboxsize(30);
+    nbins_slider[i]->callback((Fl_Callback*)redraw_one_plot, this);
+    nbins_slider[i]->range(0.0,log2((double)Plot_Window::nbins_max));
+    // nbins_slider[i]->precision(0);
+    nbins_slider[i]->value(log2((double)Plot_Window::nbins_default));
+    nbins_slider[i]->set_changed();
+  }    
+  // no Z-axis histograms (yet)
+  nbins_slider[2]->deactivate();
+    
+  // one label for row of histogram height sliders
+  b = new Fl_Button (xpos, ypos+=25, 45, 25, "bin ht");
+  b->labelsize(14);
+  b->align(FL_ALIGN_LEFT);
+  b->box(FL_NO_BOX);
+
+  // create three bin height sliders, one for each axis.
+  for (int i=0; i<3; i++) {
+    hscale_slider[i] = new Fl_Hor_Value_Slider_Input(xpos+i*subwidth, ypos, subwidth-15, 20);
+    hscale_slider[i]->textboxsize(30);
+    hscale_slider[i]->callback((Fl_Callback*)redraw_one_plot, this);
+    hscale_slider[i]->range(0.0,10.0);
+    hscale_slider[i]->value(1.0);
+    hscale_slider[i]->set_changed();
+  }    
+  // no Z-axis histograms (yet)
+  hscale_slider[2]->deactivate();
+    
+  // one label for row of lock axis buttons
+  b = new Fl_Button (xpos, ypos+=25, 65, 25, "lock");
+  b->labelsize(14);
+  b->align(FL_ALIGN_LEFT);
+  b->box(FL_NO_BOX);
+
+  // Lock x-axis button
+  lock_axis1_button = b = new Fl_Button(xpos+0*subwidth, ypos, 20, 20);
+  b->type(FL_TOGGLE_BUTTON); 
+  b->selection_color(FL_BLUE);
+  b->value(0);
+
+  // Lock y-axis button
+  lock_axis2_button = b = new Fl_Button(xpos+1*subwidth, ypos, 20, 20);
+  b->type(FL_TOGGLE_BUTTON); 
+  b->selection_color(FL_BLUE);
+  b->value(0);
+
+  // Lock z-axis button
+  lock_axis3_button = b = new Fl_Button(xpos+2*subwidth, ypos, 20, 20);
+  b->type(FL_TOGGLE_BUTTON); 
+  b->selection_color(FL_BLUE);
+  b->value(0);
+
+  // next portion of the panel deals with point qualities
+  //
+  ypos += 60;
+
   // Pointsize slider
   pointsize_slider = 
     new Fl_Hor_Value_Slider_Input( xpos, ypos, cpw->w()-125, 20, "size");
@@ -209,9 +371,7 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   pointsize_slider->callback((Fl_Callback*)replot, this);
 
   // symbol types menu
-  symbol_menu = 
-    new Fl_Choice(xpos+pointsize_slider->w()+5, ypos, 60, 20, "symbol");
-  symbol_menu->align(FL_ALIGN_TOP);
+  symbol_menu = new Fl_Choice(xpos+pointsize_slider->w()+5, ypos, 60, 20);
   symbol_menu->textsize(12);
   symbol_menu->menu(symbol_menu_items);
   symbol_menu->value(SQUARE_POINTS);
@@ -258,134 +418,12 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   rot_slider->step(0.001);
   rot_slider->bounds(-180.0, 180.0);
 
-  // x-axis (histogram) bin count slider
-  xbins_slider = new Fl_Spinner( xpos, ypos+=25, 60, 20, "xbins");
-  xbins_slider->align(FL_ALIGN_LEFT);
-  xbins_slider->callback((Fl_Callback*)redraw_one_plot, this);
-  xbins_slider->value(Plot_Window::nbins_default);
-  xbins_slider->step(2);
-  xbins_slider->range(0,Plot_Window::nbins_max);
-  nbins_slider[0] = xbins_slider;
-
-  // y-axis (histogram) bin count slider
-  ybins_slider = new Fl_Spinner( xpos, ypos+=25, 60, 20, "ybins");
-  ybins_slider->align(FL_ALIGN_LEFT);
-  ybins_slider->callback((Fl_Callback*)redraw_one_plot, this);
-  ybins_slider->value(Plot_Window::nbins_default);
-  ybins_slider->step(2);
-  ybins_slider->range(0,Plot_Window::nbins_max);
-  nbins_slider[1] = ybins_slider;
-
-  // dynamically build the variables menu
-  // cout << "starting menu build, nvars = " << nvars << endl;
-  for( int i=0; i<=nvars; i++) {
-    // cout << "label " << i 
-    //      << " = " << column_labels[i].c_str() << endl;
-    varindex_menu_items[i].label(
-      (const char *)(column_labels[i].c_str()));
-    varindex_menu_items[i].user_data((void *)i);
-  }
-  varindex_menu_items[nvars+1].label(0);
-
-  xpos = 10;
-
-  // X-axis variable selection menu
-  varindex1 = new Fl_Choice (xpos, ypos+=45, 100, 25, "axis 1");
-  varindex1->align(FL_ALIGN_TOP);
-  varindex1->textsize(12);
-  varindex1->copy( varindex_menu_items);
-  varindex1->mode( nvars, FL_MENU_INACTIVE);  // disable "--nothing--" as a choice for axis1
-  varindex1->callback( (Fl_Callback*)static_extract_and_redraw, this);
-
-  // Lock x-axis button
-  lock_axis1_button = b = new Fl_Button(xpos+80, ypos+25, 20, 20, "lock ");
-  b->type(FL_TOGGLE_BUTTON); 
-  b->selection_color(FL_BLUE);
-  b->align(FL_ALIGN_LEFT);
-  b->value(0);
-
-  // Show histogram for this plot's x-axis
-  show_histogram[0] = b = new Fl_Button(xpos+80, ypos+50, 20, 20, "hist");
-  b->callback((Fl_Callback*)redraw_one_plot, this);
-  b->align(FL_ALIGN_LEFT); 
-  b->type(FL_TOGGLE_BUTTON); 
-  b->selection_color(FL_BLUE);  
-  b->value(0);
-
-  // Y-axis variable selection menu
-  varindex2 = new Fl_Choice (xpos+100, ypos, 100, 25, "axis 2");
-  varindex2->align(FL_ALIGN_TOP);
-  varindex2->textsize(12);
-  varindex2->copy( varindex_menu_items);
-  varindex2->mode( nvars, FL_MENU_INACTIVE);  // disable "--nothing--" as a choice for axis2
-  varindex2->callback( (Fl_Callback*)static_extract_and_redraw, this);
-
-  // Lock y-axis button
-  lock_axis2_button = b = new Fl_Button(xpos+100+80, ypos+25, 20, 20, "lock ");
-  b->type(FL_TOGGLE_BUTTON); 
-  b->selection_color(FL_BLUE);
-  b->align(FL_ALIGN_LEFT);
-  b->value(0);
-
-  // Show histogram for this plot's x-axis
-  show_histogram[1] = b = new Fl_Button(xpos+100+80, ypos+50, 20, 20, "hist");
-  b->callback((Fl_Callback*)redraw_one_plot, this);
-  b->align(FL_ALIGN_LEFT); 
-  b->type(FL_TOGGLE_BUTTON); 
-  b->selection_color(FL_BLUE);  
-  b->value(0);
-
-  // Z-axis variable selection menu
-  varindex3 = new Fl_Choice (xpos+200, ypos, 100, 25, "axis 3");
-  varindex3->align(FL_ALIGN_TOP);
-  varindex3->textsize(12);
-  varindex3->copy( varindex_menu_items);
-  varindex3->value(nvars);  // initially, axis3 == "-nothing-"
-  varindex3->callback( (Fl_Callback*)static_extract_and_redraw, this);
-
-  // Lock z-axis button
-  lock_axis3_button = b = new Fl_Button(xpos+200+80, ypos+25, 20, 20, "lock ");
-  b->type(FL_TOGGLE_BUTTON); 
-  b->selection_color(FL_BLUE);
-  b->align(FL_ALIGN_LEFT);
-  b->value(0);
-
-  // NLoop: Genenerate normalization style menu
-  for( int i=0; i<n_normalization_styles; i++) {
-    normalization_style_menu_items[i].label(normalization_style_labels[i]);
-    normalization_style_menu_items[i].user_data((void *)normalization_styles[i]);
-  }
-  normalization_style_menu_items[n_normalization_styles].label(0);
-
-  // X-axis normalization and scaling
-  x_normalization_style = new Fl_Choice( xpos, ypos+=95, 100, 25, "normalize x");
-  x_normalization_style->align( FL_ALIGN_TOP);
-  x_normalization_style->textsize( 12);
-  x_normalization_style->menu( normalization_style_menu_items);
-  x_normalization_style->value( NORMALIZATION_MINMAX);
-  x_normalization_style->callback( (Fl_Callback*)static_extract_and_redraw, this);
- 
-  // Y-axis normalization and scaling
-  y_normalization_style = new Fl_Choice( xpos+100, ypos, 100, 25, "normalize y");
-  y_normalization_style->align(FL_ALIGN_TOP);
-  y_normalization_style->textsize(12);
-  y_normalization_style->menu(normalization_style_menu_items);
-  y_normalization_style->value(NORMALIZATION_MINMAX); 
-  y_normalization_style->callback( (Fl_Callback*)static_extract_and_redraw, this);
- 
-  // Z-axis normalization and scaling
-  z_normalization_style = new Fl_Choice( xpos+200, ypos, 100, 25, "normalize z");
-  z_normalization_style->align(FL_ALIGN_TOP);
-  z_normalization_style->textsize(12);
-  z_normalization_style->menu(normalization_style_menu_items);
-  z_normalization_style->value(NORMALIZATION_MINMAX); 
-  z_normalization_style->callback( (Fl_Callback*)static_extract_and_redraw, this);
- 
-  // XXX Add some additional y-offset
-  ypos+=5;
+  // Next portion of the panel is miscellanious stuff, per plot
+  // needs to be more organized.
+  ypos+=30;
 
   // Initialize positions for buttons
-  int xpos2 = xpos;
+  int xpos2 = 25;
   int ypos2 = ypos;
 
   // Button (1,1) Reset view in this plot
@@ -469,8 +507,8 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   b->selection_color(FL_BLUE);  
   b->value(1);
 
-  // Button (4,2): Show axis scale
-  show_scale = b = new Fl_Button(xpos, ypos+=25, 20, 20, "scales");
+  // Button (4,2): Show axis tickmarks
+  show_scale = b = new Fl_Button(xpos, ypos+=25, 20, 20, "ticks");
   b->callback((Fl_Callback*)static_maybe_redraw, this);
   b->align(FL_ALIGN_RIGHT); 
   b->type(FL_TOGGLE_BUTTON); 

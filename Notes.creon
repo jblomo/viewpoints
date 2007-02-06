@@ -984,3 +984,17 @@ For "official" release
 10:54:41 18 Jan 07
 
 "spin" control is too fast.  Scale down rotation angle fro mrot slider before accumulating during spin.
+
+11:47:35 05 Feb 07
+
+ideas for histograms & densities:
+
+1. make histogram stuff per axis
+   on/off, type (none, equiwidth, equidepth, ash...), nbins, scaling, coloring/filling
+2. add new types (equidepth!)
+3. create new variable (or "normalization"/transform): density estimate based on 1-D histogram
+4. then allow user to form conditional estimates and joint estimates and product estimates.
+5. Is conditional estimate P(y|x) something like the x-rank of a point within a particular y-bin?  
+   In any case, that's what I want for voronoi volume of galaxy cluster normalized by distance.
+
+We could do some nice ui things (in opengl windows) with Fl_Menu_Button::type(POPUP[123]).....

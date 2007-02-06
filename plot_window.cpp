@@ -1237,8 +1237,8 @@ void Plot_Window::compute_histogram( int axis)
 {
   if (!cp->show_histogram[axis]->value()) return;
   // Get number of bins, initialize arrays, and set range
-  int nbins = (int)(cp->nbins_slider[axis]->value());
-  if (nbins == 0) return;
+  int nbins = (int)(exp2(cp->nbins_slider[axis]->value()));
+  if (nbins <= 0) return;
   blitz::Range BINS( 0, nbins-1);
   counts( BINS, axis) = 0.0;
   counts_selected( BINS, axis) = 0.0;
@@ -1280,8 +1280,10 @@ void Plot_Window::draw_histograms()
   if( ! ((cp->show_histogram[0]->value()) || (cp->show_histogram[1]->value())))
     return;
 
+  int xbins = (int)exp2(cp->nbins_slider[0]->value());
+  int ybins = (int)exp2(cp->nbins_slider[1]->value());
   // if no axes has bin count > zero, return immediately
-  if (! (((cp->nbins_slider[0]->value()) > 0) || ((cp->nbins_slider[1]->value()) > 0)) )
+  if (xbins <= 0 && ybins <= 0)
     return;
 
   // histograms base is this far from edge of window
@@ -1291,13 +1293,13 @@ void Plot_Window::draw_histograms()
   glPushMatrix();
 
   // x-axis histograms
-  nbins = (int)(cp->nbins_slider[0]->value());
+  nbins = xbins;
   if (nbins > 0 && cp->show_histogram[0]->value()) {
     glLoadIdentity();
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glTranslatef( xzoomcenter*xscale, 0.0, 0);
-    glScalef( xscale, yhscale, 1.0);
-    glTranslatef( -xcenter, -1.0/yhscale, 0.0);
+    glScalef( xscale, yhscale*cp->hscale_slider[0]->value(), 1.0);
+    glTranslatef( -xcenter, -1.0/(yhscale*cp->hscale_slider[0]->value()), 0.0);
     glTranslatef( -xzoomcenter, 0.0, 0);
     glTranslatef( 0, hoffset, 0);
     
@@ -1338,13 +1340,13 @@ void Plot_Window::draw_histograms()
   }
   
   // y-axis histograms
-  nbins = (int)(cp->nbins_slider[1]->value());
+  nbins = ybins;
   if (nbins > 0 && cp->show_histogram[1]->value()) {
     glLoadIdentity();
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glTranslatef( 0.0, yzoomcenter*yscale, 0);
-    glScalef( xhscale, yscale, 1.0);
-    glTranslatef( -1.0/xhscale, -ycenter, 0.0);
+    glScalef( xhscale*cp->hscale_slider[1]->value(), yscale, 1.0);
+    glTranslatef( -1.0/(xhscale*cp->hscale_slider[1]->value()), -ycenter, 0.0);
     glTranslatef( 0.0, -yzoomcenter, 0);
     glTranslatef( hoffset, 0, 0);
     float ywidth = (amax[1]-amin[1]) / (float)(nbins);
