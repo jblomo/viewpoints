@@ -1257,13 +1257,12 @@ void Plot_Window::compute_histogram( int axis)
     counts( bin, axis)++;
     if( selected( i) > 0) counts_selected( bin, axis)++;
   }
-  int maxcount = max(counts(BINS,axis));
+  float maxcount = max(max(counts(BINS,axis),1.0));
   
-  // Normalize results.  NOTE: This must be protected against missing data for
-  // it would die horribly if the number of points was zero
+  // Normalize results.  
   if( npoints > 0) {
-    counts(BINS,axis) = counts(BINS,axis) / (float)maxcount;
-    counts_selected(BINS,axis) = counts_selected(BINS,axis) / (float)maxcount;
+    counts(BINS,axis) = counts(BINS,axis) / maxcount;
+    counts_selected(BINS,axis) = counts_selected(BINS,axis) / maxcount;
   }
 }
 
@@ -1617,7 +1616,7 @@ int Plot_Window::extract_data_points ()
        << "(" << x_rank(npoints-1) << ") = " 
        << points( axis0, x_rank(npoints-1)) << endl;
   
-  // Rank points by y-axis value
+ // Rank points by y-axis value
   compute_rank(axis1);
   y_rank.reference(ranked_points(axis1, NPTS));
   cout << "  min: " << ylabel 
