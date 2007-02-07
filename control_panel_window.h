@@ -110,7 +110,7 @@ class Control_Panel_Window : public Fl_Group
     Fl_Hor_Value_Slider_Input *Bkg, *Lum, *Lum2;
     Fl_Hor_Value_Slider_Input *rot_slider;
     Fl_Hor_Value_Slider_Input *xbins_slider, *ybins_slider, *nbins_slider[3];
-    Fl_Hor_Value_Slider_Input *hscale_slider[3];
+    Fl_Hor_Value_Slider_Input *hscale_slider[3], *hshift_slider[3];
     Fl_Choice *varindex1, *varindex2, *varindex3;
     Fl_Button *lock_axis1_button, *lock_axis2_button, *lock_axis3_button;
   

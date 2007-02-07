@@ -141,14 +141,6 @@ void Control_Panel_Window::broadcast_change (Fl_Widget *master_widget)
 
     // See previous comment
     {
-      Fl_Spinner *gp, *lp;
-      if( (gp = dynamic_cast <Fl_Spinner*> (master_widget)) && 
-          (lp = dynamic_cast <Fl_Spinner*> (slave_widget)))
-        lp->value(gp->value());
-    }
-
-    // See previous comment
-    {
       Fl_Choice *gp, *lp;
       if( (gp = dynamic_cast <Fl_Choice*> (master_widget)) && 
           (lp = dynamic_cast <Fl_Choice*> (slave_widget)))
@@ -314,6 +306,24 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   }    
   // no Z-axis histograms (yet)
   nbins_slider[2]->deactivate();
+    
+  // one label for row of bin count sliders
+  b = new Fl_Button (xpos, ypos+=25, 45, 25, "bin dx");
+  b->labelsize(14);
+  b->align(FL_ALIGN_LEFT);
+  b->box(FL_NO_BOX);
+
+  // create three bin count sliders, one for each axis.
+  for (int i=0; i<3; i++) {
+    hshift_slider[i] = new Fl_Hor_Value_Slider_Input(xpos+i*subwidth, ypos, subwidth-15, 20);
+    hshift_slider[i]->textboxsize(30);
+    hshift_slider[i]->callback((Fl_Callback*)redraw_one_plot, this);
+    hshift_slider[i]->range(-1.0, 1.0);
+    hshift_slider[i]->value(0.0);
+    hshift_slider[i]->set_changed();
+  }    
+  // no Z-axis histograms (yet)
+  hshift_slider[2]->deactivate();
     
   // one label for row of histogram height sliders
   b = new Fl_Button (xpos, ypos+=25, 45, 25, "bin ht");

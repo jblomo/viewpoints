@@ -53,7 +53,7 @@ EXTERN int nplots INIT(nrows*ncols);  // Default number of plot windows
 #define MAXPLOTS 256 // maximum number of plot windows, must be a power of 2.
 
 // Set the maximum number of columns and rows
-#define MAXVARS 256  // Maximum number of columns
+#define MAXVARS 258  // Maximum number of columns
 #define MAXPOINTS 2000000;  // Maximum number of rows (unless overidded by "--npoints=<int>")
 
 // Initialize the actual number of rows (points or values) in the data file 
@@ -114,7 +114,8 @@ EXTERN Fl_Button *show_deselected_button,
 EXTERN Fl_Button *write_data_button;
 EXTERN Fl_Button *choose_color_selected_button, 
           *choose_color_deselected_button; 
-EXTERN Fl_Button *change_all_axes_button, *link_all_axes_button;
+EXTERN Fl_Repeat_Button *change_all_axes_button;
+EXTERN Fl_Button *link_all_axes_button;
 EXTERN Fl_Button *reload_plot_window_array_button;
 EXTERN Fl_Button *read_data_button;
 

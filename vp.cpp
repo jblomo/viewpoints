@@ -772,11 +772,10 @@ void make_global_widgets()
   b->callback( (Fl_Callback*)choose_color_deselected);
 
   // Button(3,2): Randomly change all axes
-  change_all_axes_button = b = 
-    new Fl_Button( xpos, ypos+=25, 20, 20, "change axes");
-  b->align( FL_ALIGN_RIGHT); 
-  b->selection_color( FL_BLUE); 
-  b->callback( (Fl_Callback*)change_all_axes);
+  change_all_axes_button = new Fl_Repeat_Button( xpos, ypos+=25, 20, 20, "change axes");
+  change_all_axes_button->align( FL_ALIGN_RIGHT); 
+  change_all_axes_button->selection_color( FL_BLUE); 
+  change_all_axes_button->callback( (Fl_Callback*)change_all_axes);
 
   // Button(4,2): Link all axes
   link_all_axes_button = b = 
