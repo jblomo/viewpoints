@@ -683,8 +683,8 @@ void Plot_Window::draw()
     draw_selection_information();
   }
   draw_center_glyph();
-  draw_histograms ();
   draw_axes();
+  draw_histograms ();
 }
 
 //***************************************************************************
@@ -1242,7 +1242,7 @@ void Plot_Window::compute_histogram( int axis)
   // Get number of bins, initialize arrays, and set range
   int nbins = (int)(exp2(cp->nbins_slider[axis]->value()));
   if (nbins <= 0) return;
-  blitz::Range BINS( 0, nbins+1);
+  blitz::Range BINS( 0, nbins-1);
   counts( BINS, axis) = 0.0;
   counts_selected( BINS, axis) = 0.0;
   // range is tweaked by (n+1)/n to get the "last" point into the correct bin.
@@ -1251,9 +1251,9 @@ void Plot_Window::compute_histogram( int axis)
   // Loop: Sum over all data points
   for( int i=0; i<npoints; i++) {
     float x = vertices( i, axis);
-    int bin = 1 + (int)(floorf( nbins * ( ( x - amin[axis]) / range) - cp->hshift_slider[axis]->value()));
-    if( bin < 1) bin = 0;
-    if( bin > nbins) bin = nbins+1;
+    int bin = (int)(floorf( nbins * ( ( x - amin[axis]) / range)));
+    if( bin < 0) bin = 0;
+    if( bin > nbins-1) bin = nbins-1;
     counts( bin, axis)++;
     if( selected( i) > 0) counts_selected( bin, axis)++;
   }
@@ -1302,47 +1302,39 @@ void Plot_Window::draw_histograms()
     glLoadIdentity();
     // histograms should cover pointclouds
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    glTranslatef( xzoomcenter*xscale, 0.0, 0);
+    glTranslatef( xzoomcenter*xscale, hoffset, 0);
     glScalef( xscale, yhscale*cp->hscale_slider[0]->value(), 1.0);
     glTranslatef( -xcenter, -1.0/(yhscale*cp->hscale_slider[0]->value()), 0.0);
     glTranslatef( -xzoomcenter, 0.0, 0);
-    glTranslatef( 0, hoffset, 0);
     
     glTranslatef (0.0, 0.0, 0.1);
     float xwidth = (amax[0]-amin[0]) / (float)(nbins);
     
     // Loop: Draw x-axis histogram (all points)
-    float x = amin[0]-xwidth+(cp->hshift_slider[0]->value())*xwidth;
+    float x = amin[0];
     glColor4f( 0.0, 0.5, 0.5, 1.0);
-    for( int bin=0; bin<nbins+2; bin++, x+=xwidth) {
-      // don't draw outlier bins if they're empty
-      if ((bin==0 || bin==nbins+1) && counts(bin,0)==0)
-        continue;
-      glBegin( GL_LINE_STRIP);
-      glVertex2f( x, 0.0);
+    glBegin( GL_LINE_STRIP);
+    for( int bin=0; bin<nbins; bin++, x+=xwidth) {
+      glVertex2f( x, 0.0);  // lower left corner
       glVertex2f( x, counts(bin,0));   // left edge
       glVertex2f( x+xwidth, counts(bin,0));	  // Top edge
       glVertex2f( x+xwidth, 0.0);   // Right edge
-      glEnd();
     }
+    glEnd();
     
     // If points were selected, refactor selected points of the
     // x-axis histogram?
     if( nselected > 0) {
-      x = amin[0]-xwidth;
-      float x = amin[0]-xwidth+(cp->hshift_slider[0]->value())*xwidth;
+      float x = amin[0];
       glColor4f( 0.25, 1.0, 1.0, 1.0);
-      for( int bin=0; bin<nbins+2; bin++, x+=xwidth) {
-        // don't draw outlier bins if they're empty
-        if ((bin==0 || bin==nbins+1) && counts_selected(bin,0)==0)
-          continue;
-        glBegin( GL_LINE_STRIP);
-        glVertex2f( x, 0.0);
+      glBegin( GL_LINE_STRIP);
+      for( int bin=0; bin<nbins; bin++, x+=xwidth) {
+        glVertex2f( x, 0.0); // lower left corner
         glVertex2f( x, counts_selected( bin, 0));   // left edge
         glVertex2f( x+xwidth, counts_selected( bin, 0));   // top edge
         glVertex2f( x+xwidth,0.0);   // right edge 
-        glEnd();
       }
+      glEnd();
     }
   }
   
@@ -1351,41 +1343,38 @@ void Plot_Window::draw_histograms()
   if (nbins > 0 && cp->show_histogram[1]->value()) {
     glLoadIdentity();
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    glTranslatef( 0.0, yzoomcenter*yscale, 0);
+    glTranslatef( hoffset, yzoomcenter*yscale, 0);
     glScalef( xhscale*cp->hscale_slider[1]->value(), yscale, 1.0);
     glTranslatef( -1.0/(xhscale*cp->hscale_slider[1]->value()), -ycenter, 0.0);
     glTranslatef( 0.0, -yzoomcenter, 0);
-    glTranslatef( hoffset, 0, 0);
     float ywidth = (amax[1]-amin[1]) / (float)(nbins);
 
     // Loop: draw y-axis histogram (all points)
-    float y = amin[1]-ywidth;
+    float y = amin[1];
     glColor4f( 0.0, 0.5, 0.5, 1.0);
     glBegin( GL_LINE_STRIP);
-    glVertex2f( 0.0, y);					
-    for( int bin=0; bin<nbins+2; bin++) {
+    for( int bin=0; bin<nbins; bin++) {
+      glVertex2f( 0.0, y);					
       glVertex2f(counts(bin,1),y);   // bottom
       glVertex2f(counts(bin,1), y+ywidth);   // right edge
-      // glVertex2f(0.0, y+ywidth);   // top edge 
+      glVertex2f(0.0, y+ywidth);   // top edge 
       y+=ywidth;
     }
-    glVertex2f(0.0,y);					
     glEnd();
 
     // If points were selected, refactor selected points of the
     // y-axis histogram?
     if( nselected > 0) {
-      y = amin[1]-ywidth;
+      y = amin[1];
       glColor4f( 0.25, 1.0, 1.0, 1.0);
       glBegin( GL_LINE_STRIP);
-      glVertex2f( 0.0, y);
-      for( int bin=0; bin<nbins+2; bin++) {
+      for( int bin=0; bin<nbins; bin++) {
+        glVertex2f( 0.0, y);
         glVertex2f(counts_selected( bin, 1),y);   // bottom
         glVertex2f(counts_selected( bin, 1), y+ywidth);   // right edge
-        // glVertex2f(0.0, y+ywidth);   // top edge 
+        glVertex2f(0.0, y+ywidth);   // top edge 
         y+=ywidth;
       }
-      glVertex2f(0.0,y);					
       glEnd();
     }
   }
