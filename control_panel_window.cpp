@@ -454,8 +454,8 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   b->type(FL_RADIO_BUTTON); 
   b->selection_color(FL_BLUE);
   
-  // Button (6,1): cummulative conditional probability P(Y>y|X=x)
-  cond_prop = b = new Fl_Button(xpos2, ypos+=25, 20, 20, "P(Y>y|X=x)");
+  // Button (6,1): cummulative conditional probability P(Y<y|X=x)
+  cond_prop = b = new Fl_Button(xpos2, ypos+=25, 20, 20, "P(Y<y|X=x)");
   b->callback((Fl_Callback*)static_extract_and_redraw, this);
   b->align(FL_ALIGN_RIGHT); 
   b->type(FL_RADIO_BUTTON); 

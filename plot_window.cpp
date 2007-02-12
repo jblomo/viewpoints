@@ -1257,10 +1257,9 @@ void Plot_Window::compute_histogram( int axis)
     counts( bin, axis)++;
     if( selected( i) > 0) counts_selected( bin, axis)++;
   }
-  int maxcount = max(counts(BINS,axis));
+  float maxcount = max(max(counts(BINS,axis)), 1.0f);
   
-  // Normalize results.  NOTE: This must be protected against missing data for
-  // it would die horribly if the number of points was zero
+  // Normalize results.  
   if( npoints > 0) {
     counts(BINS,axis) = counts(BINS,axis) / (float)maxcount;
     counts_selected(BINS,axis) = counts_selected(BINS,axis) / (float)maxcount;
@@ -1407,7 +1406,9 @@ void moving_average (blitz::Array<float,1> a, const blitz::Array<int,1> indices,
 // approximation of cummulative conditional probability of one array using the (rank of) another array as
 // the conditioning variable.  Input array a is over-written.
 // Note: Too slow.  There is obviously a clever, incremental way of doing this more efficiently.
-void cummulative_condintional (blitz::Array<float,1> a, const blitz::Array<int,1> indices, const int half_width)
+// such as by storing the elements in the current window in an STL sorted container, and incrementally
+// updating it as the window slides.  (or doing the whole thing on the GPU?).
+void cummulative_conditional (blitz::Array<float,1> a, const blitz::Array<int,1> indices, const int half_width)
 {
   if (half_width < 1 || half_width > (npoints-1)/2)
     return;
@@ -1417,16 +1418,8 @@ void cummulative_condintional (blitz::Array<float,1> a, const blitz::Array<int,1
   // i. 
   for (int i=0; i<npoints; i++) {
     // find leftmost and rightmost index elements of conditioning variable
-    int left =i-half_width;
-    int right=i+half_width;
-    if (i-half_width < 0) {
-      left = 0;
-      // right += abs(i-half_width);
-    }
-    if (i+half_width > npoints-1) {
-      right = npoints-1;
-      // left -= (i+half_width)-(npoints-1);
-    }
+    int left =max(i-half_width,0);
+    int right=min(i+half_width,npoints-1);
     // loop from leftmost to rightmost element in sliding window and determine conditional cummulative probablility
     // (e.g. rank within the window) of the appropriate element from a(), which lies at the center of the window.
     float rank = 0;
@@ -1440,6 +1433,27 @@ void cummulative_condintional (blitz::Array<float,1> a, const blitz::Array<int,1
   // unpermute and return in a
   for (int i=0; i<npoints; i++)
     a(indices(i)) = tmp(i);
+}
+
+// compute marginal density estimate along axis using equi-width histogram.
+// Input array a is over-written.
+void Plot_Window::density_1D (blitz::Array<float,1> a, const int axis)
+{
+  // need to compute (but not necessarily display) the x-axis histogram if its not already there.
+  if (!cp->show_histogram[axis]->value()) compute_histogram(axis);
+  int nbins = (int)(exp2(cp->nbins_slider[axis]->value()));
+  // for each point, find which bin its in (since that isn't saved in compute_histogram)
+  // and set the density estimate equal for the point equal to the bin count
+
+  // range is tweaked by (n+1)/n to get the "last" point into the correct bin.
+  float range = (amax[axis] - amin[axis]) * ((float)(npoints+1)/(float)npoints); 
+
+  for( int i=0; i<npoints; i++) {
+    int bin = (int)(floorf( nbins * ( ( vertices(i,axis) - amin[axis]) / range)));
+    if( bin < 0) bin = 0;
+    if( bin > nbins-1) bin = nbins-1;
+    a(i) = counts( bin, axis)/(float)npoints;
+  }
 }
 
 //***************************************************************************
@@ -1465,15 +1479,25 @@ int Plot_Window::transform_2d()
     blitz::Array <float,1> tmpa(npoints);
     tmpa = vertices(NPTS,1);
     int nbins = (int)(exp2(cp->nbins_slider[0]->value()));
-    cummulative_condintional (tmpa, x_rank, (npoints-1)/(nbins*2));
+    cummulative_conditional (tmpa, x_rank, (npoints-1)/(nbins*2));
     vertices(NPTS,1) = tmpa;
 #endif // CCOND
+//#define DENS_1D
+#ifdef DENS_1D
+    blitz::Array <float,1> tmpa(npoints);
+    tmpa = vertices(NPTS,1);
+    int axis=0;
+    density_1D (tmpa, axis);
+    vertices(NPTS,1) = tmpa;
+#endif // DENS_1D
+//#define MAVG
 #ifdef MAVG
     blitz::Array <float,1> tmpa(npoints);
     tmpa = vertices(NPTS,1);
     moving_average (tmpa, x_rank, 100);
     vertices(NPTS,1) = vertices(NPTS,1) / tmpa;
 #endif // MAVG
+//#define POLAR
 #ifdef POLAR
     vertices(NPTS,0) = atan2(tmp1, tmp2);
     vertices(NPTS,1) = sqrt(pow2(tmp1)+pow2(tmp2));

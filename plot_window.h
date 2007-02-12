@@ -165,6 +165,7 @@ class Plot_Window : public Fl_Gl_Window
     float xhscale, yhscale;
     void compute_histogram( int);
     void draw_histograms();
+    void density_1D (blitz::Array<float,1>a, const int axis);
 
     int show_center_glyph;
     int selection_changed;
