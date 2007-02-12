@@ -1257,12 +1257,13 @@ void Plot_Window::compute_histogram( int axis)
     counts( bin, axis)++;
     if( selected( i) > 0) counts_selected( bin, axis)++;
   }
-  float maxcount = max(max(counts(BINS,axis),1.0));
+  int maxcount = max(counts(BINS,axis));
   
-  // Normalize results.  
+  // Normalize results.  NOTE: This must be protected against missing data for
+  // it would die horribly if the number of points was zero
   if( npoints > 0) {
-    counts(BINS,axis) = counts(BINS,axis) / maxcount;
-    counts_selected(BINS,axis) = counts_selected(BINS,axis) / maxcount;
+    counts(BINS,axis) = counts(BINS,axis) / (float)maxcount;
+    counts_selected(BINS,axis) = counts_selected(BINS,axis) / (float)maxcount;
   }
 }
 
@@ -1380,6 +1381,67 @@ void Plot_Window::draw_histograms()
   glPopMatrix();
 }
 
+// centered moving average of one array using the rank of a possibly different array as
+// the index order.  Input array a is over-written.
+void moving_average (blitz::Array<float,1> a, const blitz::Array<int,1> indices, const int half_width)
+{
+  blitz::Array<float,1> tmp(npoints), a2(npoints);
+  tmp = 0;
+  // permute a into a2 using the order specified by the indices array
+  for (int i=0; i<npoints; i++)
+    a2(i) = a(indices(i));
+  // form moving average (inefficiently)
+  for (int i=half_width; i<npoints-half_width; i++)
+    for (int j=-half_width; j<=half_width; j++)
+      tmp(i) += a2(i+j);
+  // clean up elements near left and right edges
+  for (int i=0; i<half_width; i++) {
+    tmp(i) = tmp(half_width);
+    tmp(npoints-(i+1)) = tmp(npoints-(half_width+1));
+  }
+  // unpermute and return moving average in a()
+  for (int i=0; i<npoints; i++)
+    a(indices(i)) = tmp(i)/(float)(2*half_width+1);
+}
+
+// approximation of cummulative conditional probability of one array using the (rank of) another array as
+// the conditioning variable.  Input array a is over-written.
+// Note: Too slow.  There is obviously a clever, incremental way of doing this more efficiently.
+void cummulative_condintional (blitz::Array<float,1> a, const blitz::Array<int,1> indices, const int half_width)
+{
+  if (half_width < 1 || half_width > (npoints-1)/2)
+    return;
+  blitz::Array<float,1> tmp(npoints);
+  tmp = 0;
+  // use sliding window in rank-ordered conditioning variable, window centered on index
+  // i. 
+  for (int i=0; i<npoints; i++) {
+    // find leftmost and rightmost index elements of conditioning variable
+    int left =i-half_width;
+    int right=i+half_width;
+    if (i-half_width < 0) {
+      left = 0;
+      // right += abs(i-half_width);
+    }
+    if (i+half_width > npoints-1) {
+      right = npoints-1;
+      // left -= (i+half_width)-(npoints-1);
+    }
+    // loop from leftmost to rightmost element in sliding window and determine conditional cummulative probablility
+    // (e.g. rank within the window) of the appropriate element from a(), which lies at the center of the window.
+    float rank = 0;
+    for (int j=left; j<=right; j++) {
+      if (a(indices(i)) > a(indices(j)))
+        rank++;
+    }
+    tmp(i) = rank/(float)(right-left);
+    // cout << "i, left, right indices(i) rank = " << i << " " << left << " " << right << " " << rank << " " << indices(i) << endl;
+  }
+  // unpermute and return in a
+  for (int i=0; i<npoints; i++)
+    a(indices(i)) = tmp(i);
+}
+
 //***************************************************************************
 // Plot_Window::transform_2d() -- If requested, transform data to 2D 
 // sum-vs-difference or polar coordinates.
@@ -1392,19 +1454,34 @@ int Plot_Window::transform_2d()
   blitz::Array <float,1> tmp1(npoints), tmp2(npoints);
   tmp1 = vertices(NPTS,0);
   tmp2 = vertices(NPTS,1);
-  float tmp_max, tmp_min;
-
   if( cp->sum_vs_difference->value()) {
     vertices(NPTS,0) = (sqrt(2.0)/2.0) * (tmp1 + tmp2);
     vertices(NPTS,1) = (sqrt(2.0)/2.0) * (tmp1 - tmp2);
-    tmp_max =  (sqrt(2.0)/2.0)*(wmax[0] + wmax[1]);
-    tmp_min = -(sqrt(2.0)/2.0)*(wmax[0] + wmax[1]);
-    wmin[0] = wmin[1] = tmp_min;
-    wmax[0] = wmax[1] = tmp_max;
   }
-  else if( cp->polar->value()) {
+  else if( cp->cond_prop->value()) {
+
+#define CCOND
+#ifdef CCOND
+    blitz::Array <float,1> tmpa(npoints);
+    tmpa = vertices(NPTS,1);
+    int nbins = (int)(exp2(cp->nbins_slider[0]->value()));
+    cummulative_condintional (tmpa, x_rank, (npoints-1)/(nbins*2));
+    vertices(NPTS,1) = tmpa;
+#endif // CCOND
+#ifdef MAVG
+    blitz::Array <float,1> tmpa(npoints);
+    tmpa = vertices(NPTS,1);
+    moving_average (tmpa, x_rank, 100);
+    vertices(NPTS,1) = vertices(NPTS,1) / tmpa;
+#endif // MAVG
+#ifdef POLAR
     vertices(NPTS,0) = atan2(tmp1, tmp2);
     vertices(NPTS,1) = sqrt(pow2(tmp1)+pow2(tmp2));
+#endif // POLAR
+  }
+  for (int i=0; i<2; i++) {
+    wmin[i] = amin[i] = min(vertices(NPTS,i));
+    wmax[i] = amax[i] = max(vertices(NPTS,i));
   }
   return 1;
 }
@@ -1419,126 +1496,125 @@ int Plot_Window::normalize(
 {
   blitz::Range NPTS(0,npoints-1);
 
-  #ifdef CHECK_FOR_NANS_IN_NORMALIZATION
-    blitz::Array<int,1> inrange(npoints);
-    inrange = where(
-      ((a(NPTS) < MAXFLOAT) && (a(NPTS) > -MAXFLOAT)), 1, 0);
-    float tmin = min(where(inrange,a(NPTS), MAXFLOAT));
-    float tmax = max(where(inrange,a(NPTS),-MAXFLOAT));
-  #else // CHECK_FOR_NANS_IN_NORMALIZATION
-    float tmin = a(a_rank(0));
-    float tmax = a(a_rank(npoints-1));
-    blitz::Array<float, 1> tmp(npoints);
-  #endif // CHECK_FOR_NANS_IN_NORMALIZATION
+#ifdef CHECK_FOR_NANS_IN_NORMALIZATION
+  blitz::Array<int,1> inrange(npoints);
+  inrange = where( ((a(NPTS) < MAXFLOAT) && (a(NPTS) > -MAXFLOAT)), 1, 0);
+  float tmin = min(where(inrange,a(NPTS), MAXFLOAT));
+  float tmax = max(where(inrange,a(NPTS),-MAXFLOAT));
+#else // CHECK_FOR_NANS_IN_NORMALIZATION
+  float tmin = a(a_rank(0));
+  float tmax = a(a_rank(npoints-1));
+  blitz::Array<float, 1> tmp(npoints);
+#endif // CHECK_FOR_NANS_IN_NORMALIZATION
 
   float mu,sigma;
   
   switch( style) {
-    case Control_Panel_Window::NORMALIZATION_NONE:
-      wmin[axis_index] = -1;
-      wmax[axis_index] = +1;
-      return 1;
+  case Control_Panel_Window::NORMALIZATION_NONE:
+    wmin[axis_index] = -1;
+    wmax[axis_index] = +1;
+    return 1;
 
-    case Control_Panel_Window::NORMALIZATION_MINMAX:
-      wmin[axis_index] = tmin;
-      wmax[axis_index] = tmax;
-      return 1;
+  case Control_Panel_Window::NORMALIZATION_MINMAX:
+    wmin[axis_index] = tmin;
+    wmax[axis_index] = tmax;
+    return 1;
 
+  case Control_Panel_Window::NORMALIZATION_ZEROMAX: 
     // all positive data fits in window, zero at "left" of axis.
-    case Control_Panel_Window::NORMALIZATION_ZEROMAX: 
-      wmin[axis_index] = 0.0;
-      wmax[axis_index] = tmax;
-      return 1;
+    wmin[axis_index] = 0.0;
+    wmax[axis_index] = tmax;
+    return 1;
 
+  case Control_Panel_Window::NORMALIZATION_MAXABS:  
     // all data fits in window w/zero at center of axis
-    case Control_Panel_Window::NORMALIZATION_MAXABS:  
-      tmax = fmaxf(fabsf(tmin),fabsf(tmax));
-      if( tmax != 0.0) {
-        wmin[axis_index] = -tmax;
-        wmax[axis_index] = tmax;
-      }
-      return 1;
+    tmax = fmaxf(fabsf(tmin),fabsf(tmax));
+    if( tmax != 0.0) {
+      wmin[axis_index] = -tmax;
+      wmax[axis_index] = tmax;
+    }
+    return 1;
 
+  case Control_Panel_Window::NORMALIZATION_TRIM_1E2:
     // median at center of axis, axis extends to include at 
     // least 99% of data
-    case Control_Panel_Window::NORMALIZATION_TRIM_1E2:
-      {
-        float trim = 1e-2;
-        wmin[axis_index] = 
-          a(a_rank((int)((0.0 + (0.5*trim))*npoints)));
-        wmax[axis_index] = 
-          a(a_rank((int)((1.0 - (0.5*trim))*npoints)));
-		return 1;
-      }
+    {
+      float trim = 1e-2;
+      wmin[axis_index] = 
+        a(a_rank((int)((0.0 + (0.5*trim))*npoints)));
+      wmax[axis_index] = 
+        a(a_rank((int)((1.0 - (0.5*trim))*npoints)));
+      return 1;
+    }
 
+  case Control_Panel_Window::NORMALIZATION_TRIM_1E3:  
     // median at center of axis, axis extends to include at 
     // least 99.9% of data
-    case Control_Panel_Window::NORMALIZATION_TRIM_1E3:  
-      {
-        float trim = 1e-3;
-        wmin[axis_index] = 
-          a(a_rank((int)((0.0 + (0.5*trim))*npoints)));
-        wmax[axis_index] = 
-          a(a_rank((int)((1.0 - (0.5*trim))*npoints)));
-        return 1;
-      }
+    {
+      float trim = 1e-3;
+      wmin[axis_index] = 
+        a(a_rank((int)((0.0 + (0.5*trim))*npoints)));
+      wmax[axis_index] = 
+        a(a_rank((int)((1.0 - (0.5*trim))*npoints)));
+      return 1;
+    }
 
+  case Control_Panel_Window::NORMALIZATION_THREESIGMA:  
     // mean at center of axis, axis extends to +/- 3*sigma
-    case Control_Panel_Window::NORMALIZATION_THREESIGMA:  
-      mu = mean(a(NPTS));
-      sigma = sqrt((1.0/(float)npoints)*sum(pow2(a(NPTS)-mu)));
-      DEBUG (cout << "mu, sigma = " << mu << ", " << sigma << endl);
-      if( finite(mu) && (sigma!=0.0)) {
-        wmin[axis_index] = mu - 3*sigma;
-        wmax[axis_index] = mu + 3*sigma;
-      }
-      return 1;
+    mu = mean(a(NPTS));
+    sigma = sqrt((1.0/(float)npoints)*sum(pow2(a(NPTS)-mu)));
+    DEBUG (cout << "mu, sigma = " << mu << ", " << sigma << endl);
+    if( finite(mu) && (sigma!=0.0)) {
+      wmin[axis_index] = mu - 3*sigma;
+      wmax[axis_index] = mu + 3*sigma;
+    }
+    return 1;
 
-    // negative numbers get assigned a log of zero.
-    case Control_Panel_Window::NORMALIZATION_LOG10: 
-      if( tmin <= 0.0) {
-        cerr << "Warning: "
-             << "attempted to take logarithms of nonpositive "
-             << " numbers. Those logs were set to zero." 
-             << endl;
-      }
-      // find smallest positive element
-      a(NPTS) = where( a(NPTS) > 0, log10(a(NPTS)), 0);
-      wmin[axis_index] = min(a(NPTS));
-      wmax[axis_index] = a(a_rank(npoints-1));
-      return 1;
+  case Control_Panel_Window::NORMALIZATION_LOG10: 
+    // log of negative numbers get assigned a value of zero.
+    if( tmin <= 0.0) {
+      cerr << "Warning: "
+           << "attempted to take logarithms of nonpositive "
+           << " numbers. Their logs were set to zero." 
+           << endl;
+    }
+    // find smallest positive element
+    a(NPTS) = where( a(NPTS) > 0, log10(a(NPTS)), 0);
+    wmin[axis_index] = min(a(NPTS));
+    wmax[axis_index] = a(a_rank(npoints-1));
+    return 1;
 
+  case Control_Panel_Window::NORMALIZATION_SQUASH: 
     // simple sigmoid, (-inf,0,+inf) -> (-1,0,+1)
-    case Control_Panel_Window::NORMALIZATION_SQUASH: 
-      a(NPTS) = a(NPTS)/(1+abs(a(NPTS)));
-      wmin[axis_index] = a(a_rank(0));
-      wmax[axis_index] = a(a_rank(npoints-1));
-      return 1;
+    a(NPTS) = a(NPTS)/(1+abs(a(NPTS)));
+    wmin[axis_index] = a(a_rank(0));
+    wmax[axis_index] = a(a_rank(npoints-1));
+    return 1;
 
+  case Control_Panel_Window::NORMALIZATION_RANK:
     // replace each item with its rank, normalized from 0 to 1
-    case Control_Panel_Window::NORMALIZATION_RANK:
-      for( int i=0; i<npoints; i++) {
-        a( a_rank(i)) = float(i) / ((float)npoints-1);
-      }
-      wmin[axis_index] = 0;
-      wmax[axis_index] = 1;
-      return 1;
+    for( int i=0; i<npoints; i++) {
+      a( a_rank(i)) = float(i) / ((float)npoints-1);
+    }
+    wmin[axis_index] = 0;
+    wmax[axis_index] = 1;
+    return 1;
       
+  case Control_Panel_Window::NORMALIZATION_GAUSSIANIZE: 
     // Gaussianize the data, with the cnter of the gaussian 
     // at the median.
-    case Control_Panel_Window::NORMALIZATION_GAUSSIANIZE: 
-      for( int i=0; i<npoints; i++) {
-        a( a_rank(i)) = 
-          (1.0/5.0) *
-          (float)gsl_cdf_ugaussian_Pinv((double)(float(i+1) / 
-          (float)(npoints+2)));
-      }
-      wmin[axis_index] = -1.0;
-      wmax[axis_index] = +1.0;
-      return 1;
-    
+    for( int i=0; i<npoints; i++) {
+      a( a_rank(i)) = 
+        (1.0/5.0) *
+        (float)gsl_cdf_ugaussian_Pinv((double)(float(i+1) / 
+                                               (float)(npoints+2)));
+    }
+    wmin[axis_index] = -1.0;
+    wmax[axis_index] = +1.0;
+    return 1;
+
+  default:
     // Default: do nothing
-    default:
     return 0;
   }
 }
@@ -1616,7 +1692,7 @@ int Plot_Window::extract_data_points ()
        << "(" << x_rank(npoints-1) << ") = " 
        << points( axis0, x_rank(npoints-1)) << endl;
   
- // Rank points by y-axis value
+  // Rank points by y-axis value
   compute_rank(axis1);
   y_rank.reference(ranked_points(axis1, NPTS));
   cout << "  min: " << ylabel 

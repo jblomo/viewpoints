@@ -178,11 +178,16 @@ class Plot_Window : public Fl_Gl_Window
 
     // min and max for data's bounding box in x, y, and z;
     float amin[3], amax[3];
+    // data values at edges of "window"
+    // (the X and Y axes lines bound the left and bottom edges of this "window")
     float wmin[3], wmax[3];
 
-    // Define buffers to calculate histograms
+    // openGL vertices of points to be plotted
     blitz::Array<float,2> vertices;
+    // indices of points when ranked according to their x, y, or z coordinate respectively
     blitz::Array<int,1> x_rank, y_rank, z_rank;
+
+    // constants for histogramming
     static const int nbins_default = 128;
     static const int nbins_max = 1024;
 

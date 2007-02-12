@@ -292,7 +292,7 @@ void create_broadcast_group ()
   // panel, so skip them for now.
   cp->choose_selection_color_button->deactivate();
   cp->sum_vs_difference->deactivate();
-  cp->polar->deactivate();
+  cp->cond_prop->deactivate();
   cp->no_transform->deactivate();
 
   // Initially, this group has no axes (XXX or anything else, for that matter)

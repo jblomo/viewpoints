@@ -998,3 +998,10 @@ ideas for histograms & densities:
    In any case, that's what I want for voronoi volume of galaxy cluster normalized by distance.
 
 We could do some nice ui things (in opengl windows) with Fl_Menu_Button::type(POPUP[123]).....
+
+23:01:51 09 Feb 07
+
+first attempt at conditional density estimation (overlaoded "polar")
+need to make it real.
+
+should probably order (pairs of) variables by "maximum marginal diversity" see Vasconcelos NIPS 2002
