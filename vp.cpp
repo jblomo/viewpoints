@@ -208,7 +208,7 @@ void make_help_about_window( Fl_Widget *o)
   about_window->labelsize( 10);
   
   string sAbout = "viewpoints\n";
-  sAbout += "$Revision$\n";
+  sAbout += "$Rev $\n";
   sAbout += "(c) 2006 C. Levit and P. R. Gazis\n\n";
   sAbout += "contact information:\n";
   sAbout += " Creon Levit creon.levit@@nasa.gov\n";
@@ -1015,7 +1015,7 @@ void redraw_if_changing( void *dummy)
 int main( int argc, char **argv)
 {
   cout << "vp: Creon Levit's viewpoints" << endl;
-  cout << "$Revision$" << endl;
+  cout << "$Rev $" << endl;
 
   // STEP 1: Parse the command line
   // cout << "argc<" << argc << ">" << endl;
