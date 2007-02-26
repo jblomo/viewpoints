@@ -39,7 +39,7 @@
 const int Data_File_Manager::MAX_HEADER_LENGTH = MAXVARS*100;
 const int Data_File_Manager::MAX_HEADER_LINES = 2000;
 
-const bool include_line_number = true; // MCL XXX This should be an option
+const bool include_line_number = false; // MCL XXX This should be an option
 
 //***************************************************************************
 // Data_File_Manager::Data_File_Manager() -- Default constructor, calls the
