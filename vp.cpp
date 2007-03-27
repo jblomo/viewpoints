@@ -1151,7 +1151,7 @@ int main( int argc, char **argv)
 
       // set field delimiter character
       case 'd':
-        if (optarg!=NULL)
+        if( optarg!=NULL)
           delimiter_char = optarg[0];
         else {
           usage();

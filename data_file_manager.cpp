@@ -19,7 +19,7 @@
 // Purpose: Source code for <data_file_manager.h>
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  10-NOV-2006
+// Modified: P. R. Gazis  16-MAR-2007
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -31,6 +31,10 @@
 // Include associated headers and source code
 #include "data_file_manager.h"
 #include "plot_window.h"
+
+// These should not be necessary
+// #include "New_File_Chooser.H"   // PRG's new file chooser
+// #include "New_File_Chooser.cpp"   // PRG's new file chooser
 
 // Set static data members for class Data_File_Manager::
 
@@ -78,7 +82,7 @@ void Data_File_Manager::initialize()
 
 //***************************************************************************
 // Data_File_Manager::findInputFile() -- Query user to find the input file.
-// Class FL_File_Chooser is used in preference to the fl_file_chooser method 
+// Class New_File_Chooser is used in preference to the New_File_Chooser method 
 // to obtain access to member functions such as directory() and to allow the 
 // possibility of a derived class with additional controls in the 
 // file_chooser window.  Returns 0 if successful.  
@@ -97,14 +101,14 @@ int Data_File_Manager::findInputFile()
   }
 
   // Initialize read status and filespec.  NOTE: cInFileSpec is defined as
-  // const char* for use with Fl_File_Chooser, which means it could be 
+  // const char* for use with New_File_Chooser, which means it could be 
   // destroyed by the relevant destructors!
   const char *cInFileSpec = directory().c_str();
 
-  // Instantiate and show an Fl_File_Chooser widget.  NOTE: The pathname must
+  // Instantiate and show an New_File_Chooser widget.  NOTE: The pathname must
   // be passed as a variable or the window will begin in some root directory.
-  Fl_File_Chooser* file_chooser = 
-    new Fl_File_Chooser( cInFileSpec, pattern, Fl_File_Chooser::SINGLE, title);
+  New_File_Chooser* file_chooser =
+    new New_File_Chooser( cInFileSpec, pattern, New_File_Chooser::SINGLE, title);
 
   // Loop: Select fileSpecs until a non-directory is obtained
   while( 1) {
@@ -135,7 +139,7 @@ int Data_File_Manager::findInputFile()
   } 
 
   // If no file was specified then quit and deallocate the 
-  // Fl_File_Chooser object
+  // New_File_Chooser object
   if( cInFileSpec == NULL) {
     cerr << "Data_File_Manager::findInputFile: "
          << "No input file was specified" << endl;
@@ -247,12 +251,13 @@ int Data_File_Manager::load_data_file()
 }
 
 //***************************************************************************
-// Data_File_Manager::read_ascii_file_with_headers() -- Open an ASCII file 
-// for input, read and discard the headers, read the data block, and close 
-// the file.  Returns 0 if successful.
+// Data_File_Manager::read_ascii_file_with_headers() -- Reads and ASCII file.
+// Step 1: Open an ASCII file for input.  Step 2: Read and discard the header
+// block.  Step 3: Generate column labels.  Step 4: Read the data block.  
+// Step 5:  Close the file.  Returns 0 if successful.
 int Data_File_Manager::read_ascii_file_with_headers() 
 {
-  // Attempt to open input file and make sure it exists
+  // STEP 1: Attempt to open input file and make sure it exists
   ifstream inFile;
   inFile.open( inFileSpec.c_str(), ios::in);
   if( inFile.bad() || !inFile.is_open()) {
@@ -265,6 +270,8 @@ int Data_File_Manager::read_ascii_file_with_headers()
     cout << "read_ascii_file_with_headers:" << endl
          << " -Opening <" << inFileSpec.c_str() << ">" << endl;
   }
+
+  // STEP 2: Read and discard the header block
 
   // Loop: Read successive lines to find the last line of the header block and
   // the beginning of the data block. NOTE: Since tellg() and seekg() don't 
@@ -298,28 +305,36 @@ int Data_File_Manager::read_ascii_file_with_headers()
   cout << " -Header block contains " << nHeaderLines 
        << " header lines." << endl;
 
+  // STEP 3: Generate column labels
+
   // Initialize the column labels
   nvars = 0;
   column_labels.erase( column_labels.begin(), column_labels.end());
 
+  // DIAGNOSTIC
+  // delimiter_char = ',';
+  
   // If no header lines were found or the LASTHEADERLINE buffer is empty, 
   // examine the first line of the data block to determine the number of 
   // columns and generate a set of column labels.
   if( nHeaderLines == 0 || lastHeaderLine.length() == 0) {
     
-    // Replace user-specified delimiter characters and/or tabs with " " so 
-    // operator>> will work.
-    replace (line.begin(), line.end(), '\t', ' ');
-    if (delimiter_char != ' ') {
-      replace (line.begin(), line.end(), delimiter_char, ' ');
+    // Invoke the REPLACE method from <algorithm> to replace tabs and/or a
+    // user-specified delimiter character so that operator>> will work.
+    replace( line.begin(), line.end(), '\t', ' ');
+    if( delimiter_char != ' ') {
+      replace( line.begin(), line.end(), delimiter_char, ' ');
     }
 
+    // Loop: Insert the input string into a stream, define a buffer, read 
+    // and count successive tokens, generate default column labels, and 
+    // report results.
     std::stringstream ss( line);
     std::string buf;
     while( ss >> buf) {
       nvars++;
       char cbuf[ 80];
-      (void) sprintf(cbuf, "%d", nvars);
+      (void) sprintf( cbuf, "%d", nvars);
       buf = "Column_";
       buf.append( cbuf);
       column_labels.push_back( buf);
@@ -329,25 +344,25 @@ int Data_File_Manager::read_ascii_file_with_headers()
          << " default column labels." << endl;
   }
 
-  // ...otherwise, examine the LASTHEADERLINE buffer to extract column labels 
+  // ...otherwise, header lines were found, so examine the LASTHEADERLINE 
+  // buffer to extract column labels.
   else {
 
-    // Discard leading comment character, if any.  The rest of the 
-    // line is assumed to contain column labels separated by 
-    // whitespace
+    // Discard the leading comment character, if any.  The rest of the 
+    // line is assumed to contain column labels separated by whitespace
     if( lastHeaderLine.find_first_of( "!#%") == 0) 
       lastHeaderLine.erase( 0, 1);
-      
-    // Replace user-specified delimiter characters and/or tabs with " " so 
-    // operator>> will work.
-    replace (lastHeaderLine.begin(), lastHeaderLine.end(), '\t', ' ');
-    if (delimiter_char != ' ') {
+    
+    // Invoke the REPLACE method from <algorithm> to replace tabs and/or a
+    // user-specified delimiter character so that operator>> will work.
+    replace( lastHeaderLine.begin(), lastHeaderLine.end(), '\t', ' ');
+    if( delimiter_char != ' ') {
       replace (lastHeaderLine.begin(), lastHeaderLine.end(), delimiter_char, ' ');
     }
 
     // Loop: Insert the input string into a stream, define a buffer, read 
-    // successive labels into the buffer and load them into the array of 
-    // column labels
+    // successive labels into the buffer, load them into the array of column
+    // labels, and report results
     std::stringstream ss( lastHeaderLine);
     std::string buf;
     while( ss >> buf) column_labels.push_back(buf);
@@ -373,11 +388,11 @@ int Data_File_Manager::read_ascii_file_with_headers()
     inFile.close();
     return 1;
   }
-  
   cout << " -Examined header of <" << inFileSpec.c_str() << ">," << endl
        << "  There should be " << nvars 
        << " fields (columns) per record (row)" << endl;
 
+  // If requested, add a column to contain line numbers
   if (include_line_number) {
     column_labels.push_back( string( "-line number-"));
   }
@@ -396,16 +411,15 @@ int Data_File_Manager::read_ascii_file_with_headers()
   }
   cout << endl;
 
-  // Now we know the number of variables (nvars), so if we know the number of 
+  // STEP 4: Allocate memory and read data block
+
+  // Now we know the number of variables, NVARS, so if we know the number of 
   // points (e.g. from the command line, we can size the main points array 
   // once and for all, and not waste memory.
   if( npoints_cmd_line > 0) npoints = npoints_cmd_line;
   else npoints = MAXPOINTS;
-  if (include_line_number) {
-    points.resize( nvars+1, npoints);
-  } else {
-    points.resize( nvars, npoints);
-  }
+  if (include_line_number) points.resize( nvars+1, npoints);
+  else points.resize( nvars, npoints);
   
   // Loop: Read successive lines from the file
   int nSkip = 0, i = 0;
@@ -413,14 +427,14 @@ int Data_File_Manager::read_ascii_file_with_headers()
   int nTestCycle = 0, nUnreadableData = 0;
   while( !inFile.eof() && i<npoints) {
   
-    // Get next line and ignore empty lines and coment lines
+    // Get the next line, check for EOF, and increment accounting information
     if( !uFirst) {
       (void) getline( inFile, line, '\n');
-      if( inFile.eof()) break;  // To make accounting work right
+      if( inFile.eof()) break;  // Break here to make accounting work right
       nRead++;
     }
     DEBUG (cout << "line is: " << line << endl);
-
+    
     // Skip blank lines and comment lines
     if( line.length() == 0 || line.find_first_of( "!#%") == 0) {
       nSkip++;
@@ -429,16 +443,24 @@ int Data_File_Manager::read_ascii_file_with_headers()
     }
     uFirst = 0;
     nTestCycle++;
+    
+    // Replace tabs with ' ' so that operator>> will work
+    replace( line.begin(), line.end(), '\t', ' ');
 
     // Loop: Insert the string into a stream and read it
-
-    // replace tabs with ' ' so operator>> will work
-    replace (line.begin(), line.end(), '\t', ' ');
-    std::stringstream ss(line); 
+    std::stringstream ss( line); 
     unsigned isBadData = 0;
-
     double x;
     for( int j=0; j<nvars; j++) {
+      
+      // Invoke opperator>> to read and parse floating point data.  In general,
+      // this will recognize certain types of non-numeric data.
+      // float xTrial;
+      // if( !( ss >> xTrial)) {
+      //   x = bad_value_proxy;
+      //   ss.clear();
+      // }
+      // else x = xTrial;
       ss >> x;
 
       // Skip lines that do not appear to contain enough data
@@ -449,22 +471,24 @@ int Data_File_Manager::read_ascii_file_with_headers()
         break;
       }
       
-      // Replace bad (non-numberic) or missing values with a default value.
-      // Note: whitespace delimited files simply skip lines with missing 
-      // values.
-      if(!ss) {
-        // error state -> found nonumeric data, or nothing at all (a missing value)
+      // Inspect the 'ss' stringstream to check for values of NULL that imply
+      // certain types of bad data and/or missing values, replace these with a
+      // default value, and clear error flags.  NOTE: for whitespace delimited 
+      // files, simply skip lines with missing values.
+      if( !ss) {
         points(j,i) = bad_value_proxy;
         ss.clear();
-      } else {
+      }
+      else {
         points(j,i) = (float) x;
       }
+      
       // Advance past the next field delimiter character, or to the end of the 
       // line, whichever comes first.
-      ss.ignore(line.length(),delimiter_char);
+      ss.ignore( line.length(), delimiter_char);
 
-      // Check for unreadable data and flag line to be skipped
-      // MCL XXX I am not sure if this ever happens, but just to be sure.....
+      // Check for unreadable data and flag this line to be skipped.  NOTE:
+      // This should never happen, because error flags were cleared above.
       if( !ss.good() && j<nvars-1) {
         cerr << " -WARNING, unreadable data "
              << "(binary or ASCII?) at line " << nRead
@@ -479,7 +503,7 @@ int Data_File_Manager::read_ascii_file_with_headers()
       DEBUG (cout << "points(" << j << "," << i << ") = " << points(j,i) << endl);
     }
 
-    // Loop: Check for bad data flags and flag line to be skipped
+    // Loop: Check for bad data flags and flag this line to be skipped
     for( int j=0; j<nvars; j++) {
       if( points(j,i) < -90e99) {
         cerr << " -WARNING, bad data flag (<-90e99) at line " << nRead
@@ -500,6 +524,13 @@ int Data_File_Manager::read_ascii_file_with_headers()
       nTestCycle = 0;
     }
 
+    // DIAGNOSTIC: Report parsed contents of this line
+    // cout << "line[ " << i << "]:";
+    // for( int j=0; j<nvars; j++) {
+    //   cout << " " << points( j, i);
+    // }
+    // cout << endl;
+    
     // If data were good, increment number of lines
     if( !isBadData) {
       i++;
@@ -516,8 +547,8 @@ int Data_File_Manager::read_ascii_file_with_headers()
        << " good data + " << nSkip 
        << " skipped lines = " << nRead << " total." << endl;
 
-  // Close input file, report results of file read operation to the console, 
-  // and return success
+  // STEP 5: Close input file, report results of file read operation to the 
+  // console, and return success
   inFile.close();
   return 0;
 }
@@ -744,7 +775,7 @@ int Data_File_Manager::read_binary_file_with_headers()
 
 //***************************************************************************
 // Data_File_Manager::findOutputFile() -- Query user to find the output file.
-// Class FL_File_Chooser is used in preference to the fl_file_chooser method 
+// Class New_File_Chooser is used in preference to the New_File_Chooser method 
 // to obtain access to member functions such as directory() and to allow the 
 // possibility of a derived class with additional controls in the 
 // file_chooser window.  Returns 0 if successful.  
@@ -765,16 +796,16 @@ int Data_File_Manager::findOutputFile()
   }
 
   // Initialize output filespec.  NOTE: cOutFileSpec is defined as const 
-  // char* for use with Fl_File_Chooser, which means it could be destroyed 
+  // char* for use with New_File_Chooser, which means it could be destroyed 
   // by the relevant destructors!
   const char *cOutFileSpec = sPathname.c_str();
 
-  // Instantiate and show an Fl_File_Chooser widget.  NOTE: The pathname 
+  // Instantiate and show an New_File_Chooser widget.  NOTE: The pathname 
   // must be passed as a variable or the window will begin in some root 
   // directory.
-  Fl_File_Chooser* file_chooser = 
-    new Fl_File_Chooser( 
-      cOutFileSpec, pattern, Fl_File_Chooser::CREATE, title);
+  New_File_Chooser* file_chooser = 
+    new New_File_Chooser( 
+      cOutFileSpec, pattern, New_File_Chooser::CREATE, title);
 
   // Loop: Select succesive filespecs until a non-directory is obtained
   while( 1) {
@@ -835,7 +866,7 @@ int Data_File_Manager::findOutputFile()
   // Obtain file name using the FLTK member function.  This doesn't work, but
   // is retained for descriptive purposes.
   // char *cOutFileSpec = 
-  //   fl_file_chooser( "write ASCII output to file", NULL, NULL, 0);
+  //   New_File_Chooser( "write ASCII output to file", NULL, NULL, 0);
 
   // Load outFileSpec
   int iResult = 0;
@@ -855,7 +886,7 @@ int Data_File_Manager::findOutputFile()
     iResult = 0;
   }
 
-  // Deallocate the Fl_File_Chooser object
+  // Deallocate the New_File_Chooser object
   delete file_chooser;  // WARNING! This destroys cOutFileSpec!
 
   // Report result

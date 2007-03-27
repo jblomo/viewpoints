@@ -102,7 +102,7 @@
 #include <vector>
 #include <string>
 #include <algorithm>
- 
+
 // FLTK.  These includes should be handled by the relevant Dev-C++
 // 'dev-pak'.
 #include <FL/math.h>
@@ -129,6 +129,9 @@
 #include <FL/Fl_flews.h>
 #include <FL/Fl_Value_Slider_Input.H>
 #include "Fl_Hor_Value_Slider_Input.H"  // my modified flews slider
+
+// Make provisions for PRG's new file chooser
+#include "New_File_Chooser.H"
 
 // OpenGL extensions.  NOTE: Some of these will clobber a Windows 
 // compile, so they must be excluded by the relevant defines!
