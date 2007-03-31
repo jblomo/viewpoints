@@ -2049,6 +2049,10 @@ static int new_filename_isdir( const char* pathname)
   //   ( ( thisStat.st_mode & _S_IWRITE) == 0) &&
   //   ( ( thisStat.st_mode & _S_IEXEC) == 0);
   // But since _S_IMFT is the file type mask, the following should work.
+#ifndef WIN32
+  unsigned uModeTest = S_ISDIR(thisStat.st_mode);
+#else // WIN32
   unsigned uModeTest = ( thisStat.st_mode & _S_IFMT) == _S_IFDIR;
+#endif // WIN32
   return uModeTest;
 }

@@ -19,7 +19,7 @@ endif
 # PROFILE		= -pg
 #DEBUG		= -O0 -ggdb -g3 -Wall -Wunused -DBZ_DEBUG -fexceptions
 #DEBUG		= -g -ggdb -g3 -Wall -Wunused -fexceptions
-DEBUG		= -gfull -ggdb -Wall -Wunused -fexceptions
+DEBUG		= -gfull -ggdb -Wall -Wunused -Wconversion -fexceptions 
 
 
 # compiling for darwin (OSX) ?
@@ -27,10 +27,10 @@ ifeq ($(platform),Darwin)
 
 # compiling for OSX on intel ?
 ifeq ($(hardware),i386)
-	OPTIM = -O6 -ftree-vectorize -ftree-vectorizer-verbose=0 -Wall -Wno-long-double -fno-exceptions -ffast-math -fsigned-char -gfull
+	OPTIM = -O6 -ftree-vectorize -ftree-vectorizer-verbose=0 -Wall -Wconversion -Wno-long-double -fno-exceptions -ffast-math -fsigned-char -gfull 
 # compiling for OSX on powerPC ?
 else
-	OPTIM = -O6 -ftree-vectorize -ftree-vectorizer-verbose=0 -Wall -Wno-long-double -fno-exceptions -ffast-math -fsigned-char -maltivec -mabi=altivec -faltivec -mpowerpc-gfxopt -gfull
+	OPTIM = -O6 -ftree-vectorize -ftree-vectorizer-verbose=0 -Wall -Wconversion -Wno-long-double -fno-exceptions -ffast-math -fsigned-char -maltivec -mabi=altivec -faltivec -mpowerpc-gfxopt -gfull
 endif
 
 # uncomment for debugging version
@@ -44,7 +44,7 @@ else
 
 endif
 
-CFLAGS		= $(OPTIM) 
+CFLAGS		= $(OPTIM)
 CXXFLAGS	= $(OPTIM) -DGL_GLEXT_PROTOTYPES
 
 
@@ -82,7 +82,7 @@ LINKBLITZ	= -lblitz
 # The extension to use for executables...
 EXEEXT		= 
 
-SRCS =	vp.cpp control_panel_window.cpp plot_window.cpp data_file_manager.cpp
+SRCS =	vp.cpp control_panel_window.cpp plot_window.cpp data_file_manager.cpp New_File_Chooser.cpp
 #SRCS =	vp.cpp 
 
 OBJS:=	$(SRCS:.cpp=.o)

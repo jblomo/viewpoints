@@ -210,6 +210,8 @@ int Data_File_Manager::load_data_file()
          << inFileSpec.c_str() << ">" << endl;
 
   // Remove trivial columns
+  // XXX this should be a command line (and menu) option, default OFF, since
+  // it can take both time and memory
   remove_trivial_columns();
 
   // If only one or fewer records are available then quit before something 
