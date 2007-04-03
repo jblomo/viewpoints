@@ -78,7 +78,7 @@
 //
 //   findOutputFile() -- Query user to find output file
 //   directory() -- Get pathname
-//   directory( sPathnameIn) -- Set pathname
+//   directory( sDirectory_in) -- Set pathname
 //   input_filespec() -- Get input filespec
 //   input_filespec( inFileSpecIn) -- Set input filespec
 //   output_filespec() -- Get output filespec
@@ -108,7 +108,7 @@ class Data_File_Manager
     enum enumConfirmResult { CANCEL_FILE = 0, NO_FILE, YES_FILE} confirmResult;
 
     // Buffers to hold filespec and pathname
-    string sPathname, inFileSpec, outFileSpec;
+    string sDirectory_, inFileSpec, outFileSpec;
     
     // State variables
     int nSkipHeaderLines;
@@ -136,7 +136,7 @@ class Data_File_Manager
 
     // Access methods
     string directory();
-    void directory( string sPathnameIn);
+    void directory( string sDirectory_in);
     string input_filespec();
     void input_filespec( string inFileSpecIn);
     int n_skip_header_lines() { return nSkipHeaderLines;}

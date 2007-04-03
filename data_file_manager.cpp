@@ -19,7 +19,7 @@
 // Purpose: Source code for <data_file_manager.h>
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  16-MAR-2007
+// Modified: P. R. Gazis  03-APR-2007
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -51,7 +51,7 @@ const bool include_line_number = false; // MCL XXX This should be an option
 Data_File_Manager::Data_File_Manager() : isAsciiInput( 1), 
   isAsciiOutput( 0), useSelectedData( 0), isColumnMajor( 0)
 {
-  sPathname = ".";  // Default pathname
+  sDirectory_ = ".";  // Default pathname
   initialize();
 }
 
@@ -66,7 +66,7 @@ void Data_File_Manager::initialize()
 
   isColumnMajor = 1;
   nSkipHeaderLines = 1;  // Number of header lines to skip
-  // sPathname = ".";  // Default pathname
+  // sDirectory_ = ".";  // Default pathname
   inFileSpec = "";  // Default input filespec
 
   // Initialize the number of points and variables specified by the command 
@@ -103,14 +103,16 @@ int Data_File_Manager::findInputFile()
   // Initialize read status and filespec.  NOTE: cInFileSpec is defined as
   // const char* for use with New_File_Chooser, which means it could be 
   // destroyed by the relevant destructors!
-  const char *cInFileSpec = directory().c_str();
+  // const char *cInFileSpec = directory().c_str();
+  const char *cInFileSpec = sDirectory_.c_str();
 
   // Instantiate and show an New_File_Chooser widget.  NOTE: The pathname must
   // be passed as a variable or the window will begin in some root directory.
   New_File_Chooser* file_chooser =
     new New_File_Chooser( cInFileSpec, pattern, New_File_Chooser::SINGLE, title);
 
-  // Loop: Select fileSpecs until a non-directory is obtained
+  // Loop: Select fileSpecs until a non-directory is obtained.  NOTE: If all
+  // goes well, this should all be handled by the file_chooser object
   while( 1) {
     if( cInFileSpec != NULL) file_chooser->directory( cInFileSpec);
 
@@ -126,20 +128,25 @@ int Data_File_Manager::findInputFile()
       break;
     }
 
-    // For some reason, the fl_filename_isdir method doesn't seem to work, so 
-    // try to open this file to see if it is a directory.
+    // In FLTK 1.1.7 under Windows, the fl_filename_isdir method doesn't work, 
+    // so try to open this file to see if it is a directory.  If it is, set 
+    // the pathname and continue.  Otherwise merely update the pathname.  
     FILE* pFile = fopen( cInFileSpec, "r");
     if( pFile == NULL) {
       file_chooser->directory( cInFileSpec);
       directory( (string) cInFileSpec);
       continue;
     }
+    else {
+      directory( (string) file_chooser->directory());
+    }
+
     fclose( pFile);
     break;         
   } 
 
-  // If no file was specified then quit and deallocate the 
-  // New_File_Chooser object
+  // If no file was specified then report, deallocate the New_File_Chooser 
+  // object, and quit.
   if( cInFileSpec == NULL) {
     cerr << "Data_File_Manager::findInputFile: "
          << "No input file was specified" << endl;
@@ -155,7 +162,7 @@ int Data_File_Manager::findInputFile()
     cout << "Data_File_Manager::findInputFile: Reading binary data from <";
   cout << inFileSpec.c_str() << ">" << endl;
 
-  // Deallocate file_chooser
+  // Deallocate the file_chooser object
   delete file_chooser;  // WARNING! This destroys cInFileSpec!
 
   // Perform partial initialization and return success
@@ -800,7 +807,7 @@ int Data_File_Manager::findOutputFile()
   // Initialize output filespec.  NOTE: cOutFileSpec is defined as const 
   // char* for use with New_File_Chooser, which means it could be destroyed 
   // by the relevant destructors!
-  const char *cOutFileSpec = sPathname.c_str();
+  const char *cOutFileSpec = sDirectory_.c_str();
 
   // Instantiate and show an New_File_Chooser widget.  NOTE: The pathname 
   // must be passed as a variable or the window will begin in some root 
@@ -828,14 +835,17 @@ int Data_File_Manager::findOutputFile()
     
     // For some reason, the fl_filename_isdir method doesn't seem to work, so
     // make sure this file is closed, the try to open this file to see if it 
-    // is a directory.  If it is, update pathname and contnue.
+    // is a directory.  If it is, update pathname and continue.  Otherwise
+    // merely update pathname using the directory in the file chooser.
     if( pFile != NULL) fclose( pFile);
     pFile = fopen( cOutFileSpec, "w");
     if( pFile == NULL) {
       file_chooser->directory( cOutFileSpec);
-      sPathname.erase( sPathname.begin(), sPathname.end());
-      sPathname.append( cOutFileSpec);
+      directory( (string) cOutFileSpec);
       continue;
+    }
+    else {
+      directory( (string) file_chooser->directory());
     }
     
     // If we got this far, the file must exist and be available to be
@@ -853,7 +863,7 @@ int Data_File_Manager::findOutputFile()
     // If this was a 'NO' request, make sure the pathname is correct, then 
     // continue.
     if( confirmResult == NO_FILE) {
-      file_chooser->directory( sPathname.c_str());
+      file_chooser->directory( sDirectory_.c_str());
       fclose( pFile);
       continue;
     }
@@ -865,8 +875,8 @@ int Data_File_Manager::findOutputFile()
     break;
   } 
 
-  // Obtain file name using the FLTK member function.  This doesn't work, but
-  // is retained for descriptive purposes.
+  // Obtain file name using the FLTK member function.  This code doesn't work, 
+  // but is retained as a comment for descriptive purposes.
   // char *cOutFileSpec = 
   //   New_File_Chooser( "write ASCII output to file", NULL, NULL, 0);
 
@@ -887,6 +897,9 @@ int Data_File_Manager::findOutputFile()
     cout << outFileSpec.c_str() << ">" << endl;
     iResult = 0;
   }
+
+  // Make sure thepathname has been updated!
+  directory( (string) file_chooser->directory());
 
   // Deallocate the New_File_Chooser object
   delete file_chooser;  // WARNING! This destroys cOutFileSpec!
@@ -1201,14 +1214,17 @@ void Data_File_Manager::create_default_data( int nvars_in)
 // Data_File_Manager::directory() -- Get pathname.
 string Data_File_Manager::directory()
 {
-  return sPathname; 
+  return sDirectory_; 
 }
      
 //***************************************************************************
-// Data_File_Manager::directory( sPathname) -- Set pathname.
-void Data_File_Manager::directory( string sPathnameIn)
+// Data_File_Manager::directory( sDirectory_in) -- Make sure that any old 
+// pathname is deallocated, then set the pathname.
+void Data_File_Manager::directory( string sDirectory_in)
 {
-  sPathname = sPathnameIn;
+  sDirectory_.erase( sDirectory_.begin(), sDirectory_.end());
+  // sDirectory_.append( sDirectory_);
+  sDirectory_ = sDirectory_in;
 }
 
 //***************************************************************************
