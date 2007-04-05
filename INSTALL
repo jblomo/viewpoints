@@ -1,0 +1,39 @@
+download the latest fltk-1.1.x from http://fltk.org/software.php
+expand
+cd
+./configure --enable-quartz
+make
+sudo make install
+
+download flews from http://dbarrero.tripod.com/software/flews-0.3.tar.gz
+expand
+cd
+./configure
+edit source code to remove bogus "include <values.h>" if necessary
+make  
+  don't worry if flews test doesn't link.  it is not necessary for vp.  
+  If you want to test flews, edit the flews makefile to have the correct locations
+sudo make install
+
+download the latest bltiz from http://sourceforge.net/project/showfiles.php?group_id=63961
+expand
+./configure
+make lib
+make check-testsuite  (see if all tests pass)
+sudo make install
+
+download the lastest gsl from ftp://ftp.gnu.org/gnu/gsl/
+./configure --disable-shared
+make
+make check  (see if all tests pass)
+sudo make install
+
+svn -checkout (or -update) latest vp sources from svn+ssh://trotsky.arc.nasa.gov/export/home/creon/Repository/vp
+edit makefile for appropriate machine/OS/debugging combination
+make
+
+test vp
+
+
+
+
