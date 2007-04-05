@@ -2154,13 +2154,15 @@ void Plot_Window::initialize_indexVBOs()
 // Plot_Window::fill_indexVBO() -- Fill the index VBO
 void Plot_Window::fill_indexVBO(int set)
 {
-  glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, MAXPLOTS+set);
-  // Create an alias to slice
-  blitz::Array<unsigned int, 1> tmpArray = indices_selected( set, blitz::Range(0,npoints-1));
-  unsigned int *indices = (unsigned int *) (tmpArray.data());
-  glBufferSubDataARB(GL_ELEMENT_ARRAY_BUFFER_ARB, (GLintptrARB) 0, (GLsizeiptrARB)(number_selected(set)*sizeof(GLuint)), indices);
-  // make sure we succeeded 
-  CHECK_GL_ERROR("");
+  if (number_selected(set) > 0) {
+    glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, MAXPLOTS+set);
+    // Create an alias to slice
+    blitz::Array<unsigned int, 1> tmpArray = indices_selected( set, blitz::Range(0,npoints-1));
+    unsigned int *indices = (unsigned int *) (tmpArray.data());
+    glBufferSubDataARB(GL_ELEMENT_ARRAY_BUFFER_ARB, (GLintptrARB) 0, (GLsizeiptrARB)(number_selected(set)*sizeof(GLuint)), indices);
+    // make sure we succeeded 
+    CHECK_GL_ERROR("");
+  }
 }
 
 //***************************************************************************

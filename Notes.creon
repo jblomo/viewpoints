@@ -1010,3 +1010,25 @@ should probably order (pairs of) variables by "maximum marginal diversity" see V
 
 Philip (philip@dhapdigital.com) says look at the recent google paper on storage, and at splunk, for vp applications & press.
 
+18:05:25 31 Mar 07
+
+Fixed index VBO bug when number_selected(set)==0
+
+need to add jittering, but first add "real" rank normalization, where
+items with the same value (and hence the same rank) get equal values
+for rank.
+
+Here's how: ad a normalizatio scheme that first ranks the variable,
+then creates a new set of points (like log does) that runs through the
+array in rank order, and increments a counter when ever the real value
+changes, sorting the counter succesively in the new array (idirecting
+through rank, of course).
+
+Then, we can jitter all points with the same rank by
+uniform_rand(-0.5,+0.5)*jitter_slider(?)
+
+13:13:28 04 Apr 07
+
+I think we can do almost all of vp in the GPU, using a vertex program.  We canassemble the vertex coords from different arrays (for x, y, z) check which brush covers each vertex (even for soft brushes), color the vertex appropriately, ksource the vertex component data from separate buffers without overlapping (with separate initial offsets for timeseries), apply per window filters...., source high dimensional vertices and apply high dimensional rotation matrices, do log scaling, use vertex texture lookup for nonlinear transformations (mds, etc)...  
+
+Then use fragment shaders and render to texture to do density estimates, density derivatives, and density functionals (for 2D densities), including on cutting planes (grasmannians) for grand tour projection persuit...
