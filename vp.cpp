@@ -1018,10 +1018,10 @@ int main( int argc, char **argv)
   cout << "$Rev$" << endl;
 
   // STEP 1: Parse the command line
-  // cout << "argc<" << argc << ">" << endl;
-  // for( int i=0; i<argc; i++) {
-  //   cout << "argv[ " << i << "]: <" << argv[ i] << ">" << endl;
-  // }
+  //cout << "argc<" << argc << ">" << endl;
+  //for( int i=0; i<argc; i++) {
+  //  cout << "argv[ " << i << "]: <" << argv[ i] << ">" << endl;
+  //}
 
   // Define structure of command-line options
   static struct option long_options[] = {
@@ -1039,7 +1039,7 @@ int main( int argc, char **argv)
     { "borderless", no_argument, 0, 'b'},
     { "no_vbo", no_argument, 0, 'B'},
     { "help", no_argument, 0, 'h'},
-    { "version", no_argument, 0, 'V'},
+    { "psn_", required_argument, 0, 'p'}, // OSX junk passed in when invoked from icon
     { 0, 0, 0, 0}
   };
 
@@ -1053,9 +1053,9 @@ int main( int argc, char **argv)
   int c;
   string inFileSpec = "";
   while( 
-    ( c = getopt_long( 
+    ( c = getopt_long_only( 
         argc, argv, 
-        "f:n:v:s:o:r:c:m:i:M:d:bBhV", long_options, NULL)) != -1) {
+        "f:n:v:s:o:r:c:m:i:M:d:bBhVp", long_options, NULL)) != -1) {
   
     // Examine command-line options and extract any optional arguments
     switch( c) {
@@ -1178,6 +1178,16 @@ int main( int argc, char **argv)
       case 'V':
         cout << "$Id$" << endl;
         exit (-1);
+        break;
+
+     // Apple OSX gratuitously adds a command line argument -psn_xxx
+     // where xxx is the "process serial number".  We skip over it.
+     // (Is there a cleaner way to do this?)
+      case 'p':
+        cout << "ignoring -psn_xxx argument added by MacOS X" << endl;
+        // skip over the rest of the -psn_* argument that OSX insists on adding
+        argc -= optind;
+        argv += optind;
         break;
 
       // help, or unknown option, or missing argument

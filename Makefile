@@ -10,7 +10,7 @@ CC		= cc
 MAKEDEPEND	= $(CXX) -E -M
 
 ifeq ($(platform),Darwin)
-	POSTBUILD = /Developer/Tools/Rez mac.r -o vp
+	POSTBUILD = make-OSX-application.csh vp viewpoints
 else
 	POSTBUILD = echo
 endif
@@ -119,15 +119,14 @@ release: $(TARGET)
 		/bin/rm -rf /tmp/vp ; \
 	fi
 	mkdir /tmp/vp
-	cp -r $(TARGET) $(DOCUMENTATION) /tmp/vp
+	cp -r $(DOCUMENTATION) /tmp/vp
 ifeq ($(platform),Darwin)
-	ditto -c -k -X --rsrc /tmp/vp vp.zip
-	chmod 775 vp.zip
+	cp -r viewpoints.app /tmp/vp
 else
-	tar -cvf vp.tar /tmp/vp
-	gzip vp.tar
-	chmod 775 vp.tar.gz
+	cp -r $TARGET /tmp/vp
 endif
+	tar -cvzf vp.tar --directory /tmp vp
+	chmod 775 vp.tar.gz
 
 # Automatically generated dependencies if they are there...
 -include makedepend
