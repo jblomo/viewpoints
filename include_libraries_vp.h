@@ -1,6 +1,6 @@
 // viewpoints - interactive linked scatterplots and more.
 // copyright 2005 Creon Levit, all rights reserved.
-//*****************************************************************
+//***************************************************************************
 // File name: include_libraries_vp.h
 //
 // Class definitions: none
@@ -17,37 +17,34 @@
 // Compiler directives:
 //   May require D__WIN32__ for the C++ compiler
 //
-// Purpose: Commands to access the include libraries needed by
-//   Creon Levit's viewpoints.  These are so numerous and involved
-//   that it is simplest to concentrate these commands in one
-//   central header file.
+// Purpose: Commands to access the include libraries needed by Creon Levit's 
+//   viewpoints.  These are so numerous and involved that it is simplest to 
+//   concentrate these commands in one central header file.
 //
 // General design philosophy:
 //   1) Add comments and get this code to run under Windows.
 //
-// Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis   10-NOV-2006
-//*****************************************************************
+// Author: Creon Levit     2005-2006
+// Modified: P. R. Gazis   06-APR-2007
+//***************************************************************************
 
 // Protection to make sure this header is not included twice
 #ifndef INCLUDE_LIBRARIES_VP_H
 #define INCLUDE_LIBRARIES_VP_H 1
 
-// Defines under Windows: Several defines are required to account 
-// for variable and function definitions that seem to be missing.
-// This is a temporary fix that should be replaced by actual 
-// source code if possible.
+// Defines under Windows: Several defines are required to account for 
+// variable and function definitions that seem to be missing.  This is a 
+// temporary fix that should be replaced by actual source code if possible.
 #ifdef __WIN32__
   #define MAXFLOAT 3.402823466e+38f 
   #define usleep(v) Sleep(v/1000)
 #endif // __WIN32__
 
-// Include libraries under Windows in the Dev-C++ programming 
-// environment: The FLTK package should be handled by Dev-C++ as
-// a 'devpak', but several include libraries are needed in 
-// addition to the regular Dev-C++ and FLTK libraries.  These are 
-// listed below along with their locations on the primary Windows 
-// development system.
+// Include libraries under Windows in the Dev-C++ programming environment: 
+// The FLTK package should be handled by Dev-C++ as a 'devpak', but several 
+// include libraries are needed in addition to the regular Dev-C++ and FLTK 
+// libraries.  These are listed below along with their locations on the 
+// primary Windows development system.
 //
 // Flews
 //   c:\devusr\flews
@@ -59,11 +56,10 @@
 // Blitz++
 //   c:\devusr\blitz
 
-// Add C includes here.  Note that under Windows in the Dev-C++ 
-// programming environment, some of the relevant libraries are 
-// part of GSL rather than the Dev-C++ package.  Locations of some 
-// crucial files on the primary Windows development system are 
-// listed below:
+// Add C includes here.  Note that under Windows in the Dev-C++ programming 
+// environment, some of the relevant libraries are part of GSL rather than 
+// the Dev-C++ package.  Locations of some crucial files on the primary 
+// Windows development system are listed below:
 // <unistd.h>    -- c:\Dev-cpp\include
 // <fcntl.h>     -- c:\Dev-cpp\include
 // <assert.h>    -- c:\Dev-cpp\include
@@ -83,7 +79,15 @@
 #include <sys/uio.h>
 #include <sys/stat.h>
 #include <sys/time.h>
-#include <getopt.h>
+
+// For Windows, it is necessary to use the right version of getopt.h to obtain
+// access to getopt_long_only().
+// #include <getopt.h>
+#ifdef __WIN32__
+  #include <C:\devusr\GnuWin32\include\glibc\getopt.h>
+#else
+  #include <getopt.h>
+#endif // __WIN32__
 
 // These includes should all be part of Dev-C++ environment
 // <float.h>  -- c:\Dev-cpp\include
@@ -124,8 +128,8 @@
 #include <FL/Fl_Multiline_Output.H>
 #include <FL/Fl_Help_View.H>
 
-// flews (FLTK extension) extras.  On the primary Windows system,
-// these should be located in c:\devusr\flews as described above
+// flews (FLTK extension) extras.  On the primary Windows system, these should 
+// be located in c:\devusr\flews as described above
 #include <FL/Fl_flews.h>
 #include <FL/Fl_Value_Slider_Input.H>
 #include "Fl_Hor_Value_Slider_Input.H"  // my modified flews slider
@@ -133,8 +137,8 @@
 // Make provisions for PRG's new file chooser
 #include "New_File_Chooser.H"
 
-// OpenGL extensions.  NOTE: Some of these will clobber a Windows 
-// compile, so they must be excluded by the relevant defines!
+// OpenGL extensions.  NOTE: Some of these will clobber a Windows compile, so 
+// they must be excluded by the relevant defines!
 #ifdef __APPLE__
   #include <OpenGL/glext.h>
   #include <OpenGL/glu.h>
@@ -144,8 +148,8 @@
   #include <GL/glu.h>
 #endif // __linux__
 #ifdef __WIN32__
-  // OglExt.  Obtain from c:\devusr\oglext\include as described
-  // above and invoke as described in OGLEXT documentation
+  // OglExt.  Obtain from c:\devusr\oglext\include as described above and
+  // invoke as described in OGLEXT documentation
   #define GL_GLEXT_PROTOTYPES
   #include <glext.h>
   #include <GL/glext.h>
