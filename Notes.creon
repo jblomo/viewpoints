@@ -1032,3 +1032,20 @@ uniform_rand(-0.5,+0.5)*jitter_slider(?)
 I think we can do almost all of vp in the GPU, using a vertex program.  We canassemble the vertex coords from different arrays (for x, y, z) check which brush covers each vertex (even for soft brushes), color the vertex appropriately, ksource the vertex component data from separate buffers without overlapping (with separate initial offsets for timeseries), apply per window filters...., source high dimensional vertices and apply high dimensional rotation matrices, do log scaling, use vertex texture lookup for nonlinear transformations (mds, etc)...  
 
 Then use fragment shaders and render to texture to do density estimates, density derivatives, and density functionals (for 2D densities), including on cutting planes (grasmannians) for grand tour projection persuit...
+
+18:39:01 12 Apr 07
+
+IDEA: use multitextures to combine (mix, intersect, etc) mutliple
+selections/brushes.  
+
+IDEA: use generalized Venn diagrams from that
+weird book to specify mixing algorithm.  I.e. color the regions of the
+ven diagram to show how points that are touched by multiple selections
+should be rendered.
+
+IDEA: use GPU to do nearest neighbors and N-body-like forces,
+multipoint statistics, and spherical statistics using multiple buffers
+for accumulation.
+
+IDEA: have points / glyphs that scale with zoom.
+

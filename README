@@ -1,8 +1,7 @@
-viewpoints -- Fast interactive plotting of extremely large
-  multivariate data sets.
+viewpoints -- Fast interactive linked plotting of large multivariate data sets.
 
-Version: 1.1.0  (Build 101)
-Release date: 25-OCT-2006
+Version: 1.1.0  (Build 152)
+Date: 18 Apr 2007
   
 
 Overview:
@@ -15,9 +14,11 @@ listed below:
 
 File                Comments
 -----------------------------------------------------------------
-README              This documentation file
-vp.exe              viewpoints executable
-vp.ico              viewpoints icon
+README           This documentation file
+vp.exe              viewpoints executable (MS windows only)
+vp.ico               viewpoints icon (MS windows only)
+vp                     viewpoints executable (linux only)
+viewpoints.app  application bundle (Mac OS X only, see below)
 vp_help_manual.htm  HTML help manual
 sampledata.txt      sample data
 libgsl.dll          DLL library for GSL (Windows only)
@@ -31,7 +32,6 @@ Unpack these files into a target directory, then either click on
 the 'vp' icon or run the code from the command line as described 
 below.
 
-
 Usage:
 
 In its current form (Version 1.0.3, build 69) 'viewpoints' is run 
@@ -40,6 +40,22 @@ the directory in which it has been installed or to which a path is
 available.  When viewpoints is run from the icon, it will come up
 with an array of default data.  When it is run from the command
 line, the user must specify the input data file explicitly.
+
+Apple OS X: to run viewpoints from the command line, you will probably
+want to create a shell alias to the actual executable, which is
+located inside the application bundle.  For example, if you dragged
+the viewpoints application "viewpoints.app" to your /Applications
+folder,, then you will probably want to add the following to your
+.cshrc file (assuming you are using csh or tcsh as your shell):
+
+  alias  vp  /Applications/viewpoints.app/Contents/MacOS/viewpoints
+
+A symbolic link will not work.  Use a shell alias.
+
+If you don't care about running it from the command line, ignore the
+above.  You can just double-click on the viewpoints.app icon to start
+it up.
+
 
 The calling sequence for the command line version is:
 
@@ -99,10 +115,13 @@ The calling sequence for the command line version is:
        input has NVARS values per point (only for row major binary data)
 
   --delimiter [shortcut -d=<char>]
-    interpret CHAR as field separator, default is whitespace.
+    interpret CHAR as field separator, default is whitespace.  
+   This delimter is also used in the header, to delimit attribute names.
 
   --missing_values [shortcut -M <number>]
     set the value of any unreadable, nonnumeric, empty, or missing values to NUMBER, default=0.0
+    N.B. if you use the default delimiter (whitespace) then lines with one or more missing values are 
+    skipped and thus this option has no effect. 
 
   --no_vbo [shortcut -B]
     don't use openGL vertex buffer objects.  Useful if you have an older graphics card or if

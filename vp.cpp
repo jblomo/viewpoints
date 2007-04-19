@@ -1039,6 +1039,7 @@ int main( int argc, char **argv)
     { "borderless", no_argument, 0, 'b'},
     { "no_vbo", no_argument, 0, 'B'},
     { "help", no_argument, 0, 'h'},
+    { "version", no_argument, 0, 'V'},
     { "psn_", required_argument, 0, 'p'}, // OSX junk passed in when invoked from icon
     { 0, 0, 0, 0}
   };
@@ -1184,7 +1185,7 @@ int main( int argc, char **argv)
      // where xxx is the "process serial number".  We skip over it.
      // (Is there a cleaner way to do this?)
       case 'p':
-        cout << "ignoring -psn_xxx argument added by MacOS X" << endl;
+        cout << "ignoring -psn_xxx argument added by OSX" << endl;
         // skip over the rest of the -psn_* argument that OSX insists on adding
         argc -= optind;
         argv += optind;
