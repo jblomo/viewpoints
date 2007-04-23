@@ -126,7 +126,6 @@ else
 	cp -r $TARGET /tmp/vp
 endif
 	tar -cvzf vp.tar --directory /tmp vp
-	chmod 775 vp.tar.gz
 
 # Automatically generated dependencies if they are there...
 -include makedepend

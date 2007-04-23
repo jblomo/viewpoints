@@ -125,9 +125,28 @@ class Control_Panel_Window : public Fl_Group
     // Fl_Button *x_equals_delta_x, *y_equals_delta_x;
     Fl_Group *transform_style;
     Fl_Button *sum_vs_difference, *cond_prop, *no_transform;
+
     Fl_Choice *x_normalization_style, 
               *y_normalization_style, 
               *z_normalization_style;
+
+    enum normalization_style {
+        NORMALIZATION_NONE = 0,
+        NORMALIZATION_MINMAX,
+        NORMALIZATION_ZEROMAX,
+        NORMALIZATION_MAXABS,
+        NORMALIZATION_TRIM_1E2,
+        NORMALIZATION_TRIM_1E3,
+        NORMALIZATION_THREESIGMA,
+        NORMALIZATION_LOG10,
+        NORMALIZATION_SQUASH,
+        NORMALIZATION_RANK,
+        NORMALIZATION_PARTIAL_RANK,
+        NORMALIZATION_GAUSSIANIZE
+    };
+    static Fl_Menu_Item normalization_style_menu_items[];
+
+    static Fl_Menu_Item varindex_menu_items[]; 
 
     // points, round points, crosses, etc.
     Fl_Choice *symbol_menu;
@@ -144,30 +163,6 @@ class Control_Panel_Window : public Fl_Group
     Plot_Window *pw;
     int index;  
     
-    // constants that describe normalization styles.  
-    // MCL XXX this stuff is now full of icky magic numbers like 11 and 12.  Fix!
-    // use enums.
-    static const int Control_Panel_Window::n_normalization_styles = 11;
-    static const int Control_Panel_Window::NORMALIZATION_NONE   = 0;
-    static const int Control_Panel_Window::NORMALIZATION_MINMAX = 1;
-    static const int Control_Panel_Window::NORMALIZATION_ZEROMAX = 2;
-    static const int Control_Panel_Window::NORMALIZATION_MAXABS = 3;
-    static const int Control_Panel_Window::NORMALIZATION_TRIM_1E2 = 4;
-    static const int Control_Panel_Window::NORMALIZATION_TRIM_1E3 = 5;
-    static const int Control_Panel_Window::NORMALIZATION_THREESIGMA = 6;
-    static const int Control_Panel_Window::NORMALIZATION_LOG10 = 7;
-    static const int Control_Panel_Window::NORMALIZATION_SQUASH = 8;
-    static const int Control_Panel_Window::NORMALIZATION_RANK = 9;
-    static const int Control_Panel_Window::NORMALIZATION_GAUSSIANIZE = 10;
-
-    static Fl_Menu_Item varindex_menu_items[]; 
-
-    // Static variables that use and apply different normalization 
-    // styles.
-    static Fl_Menu_Item normalization_style_menu_items[];
-    static int normalization_styles[];  
-    static char *normalization_style_labels[];
-
 };
 
 #endif   // CONTROL_PANEL_WINDOW_H

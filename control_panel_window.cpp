@@ -40,40 +40,35 @@
 // Set static data members for class Control_Panel_Window::
 //
 
-// array to hold menu items for axis menus.  
-Fl_Menu_Item 
-  Control_Panel_Window::varindex_menu_items[ MAXVARS+2] = 
-  { Fl_Menu_Item()};
+// Array of menu items for axis selection menus.
+// This gets filled with strings naming the axes (later, after they're read in)
+// and with their respective indices (as user_data).
+Fl_Menu_Item Control_Panel_Window::varindex_menu_items[ MAXVARS+2] = { Fl_Menu_Item()};
 
-// array to hold menu items for normalization styles
-// MCL XXX this needs to be cleaned up to avoid magic numbers like 11, 12.....
-Fl_Menu_Item 
-  Control_Panel_Window::normalization_style_menu_items[ 12] =
-   { Fl_Menu_Item()};
+// Array of menu items for normalization style menus.
+Fl_Menu_Item Control_Panel_Window::normalization_style_menu_items[] = {
+  { "none",         0, 0, (void *) NORMALIZATION_NONE,         0, 0, 0, 0, 0},
+  { "minmax",       0, 0, (void *) NORMALIZATION_MINMAX,       0, 0, 0, 0, 0},
+  { "zeromax",      0, 0, (void *) NORMALIZATION_ZEROMAX,      0, 0, 0, 0, 0},
+  { "maxabs",       0, 0, (void *) NORMALIZATION_MAXABS,       0, 0, 0, 0, 0},
+  { "trim 1e-2",    0, 0, (void *) NORMALIZATION_TRIM_1E2,     0, 0, 0, 0, 0},
+  { "trim 1e-3",    0, 0, (void *) NORMALIZATION_TRIM_1E3,     0, 0, 0, 0, 0},
+  { "three sigma",  0, 0, (void *) NORMALIZATION_THREESIGMA,   0, 0, 0, 0, 0},
+  { "log_10",       0, 0, (void *) NORMALIZATION_LOG10,        0, 0, 0, 0, 0},
+  { "atanh",        0, 0, (void *) NORMALIZATION_SQUASH,       0, 0, 0, 0, 0},
+  { "rank",         0, 0, (void *) NORMALIZATION_RANK,         0, 0, 0, 0, 0},
+  { "partial rank", 0, 0, (void *) NORMALIZATION_PARTIAL_RANK, 0, 0, 0, 0, 0},
+  { "gaussianize",  0, 0, (void *) NORMALIZATION_GAUSSIANIZE,  0, 0, 0, 0, 0},
+  { 0,              0, 0, (void *) 0,                          0, 0, 0, 0, 0}
+};
 
-// Set the array of normalization schemes.  NOTE: If possible, 
-// this should be be made CONST.
-int Control_Panel_Window::normalization_styles[ 11] = {
-  NORMALIZATION_NONE, NORMALIZATION_MINMAX,
-  NORMALIZATION_ZEROMAX, NORMALIZATION_MAXABS, 
-  NORMALIZATION_TRIM_1E2, NORMALIZATION_TRIM_1E3, 
-  NORMALIZATION_THREESIGMA, NORMALIZATION_LOG10,
-  NORMALIZATION_SQUASH, NORMALIZATION_RANK, 
-  NORMALIZATION_GAUSSIANIZE};
-
-// Set the array of character arrays that describe normalization
-// schemes.  NOTE: If possible, this should be be made CONST.
-char *Control_Panel_Window::normalization_style_labels[ 11] = { 
-  "none", "minmax", "zeromax", "maxabs", "trim 10^-2", 
-  "trim 10^-3", "threesigma", "log_10", "squash", "rank",
-  "gaussianize"};
 
 // array to hold menu items for symbol menu
 Fl_Menu_Item Control_Panel_Window::symbol_menu_items[] = {
-  { "points", 0, 0, (void *) SQUARE_POINTS, 0, 0, 0, 0, 0},
+  { "points",        0, 0, (void *) SQUARE_POINTS, 0, 0, 0, 0, 0},
   { "smooth points", 0, 0, (void *) SMOOTH_POINTS, 0, 0, 0, 0, 0},
-  { "crosses", 0, 0, (void *) SPRITES, 0, 0, 0, 0, 0},
-  { 0, 0, 0, (void *) 0, 0, 0, 0, 0, 0}
+  { "crosses",       0, 0, (void *) SPRITES,       0, 0, 0, 0, 0},
+  { 0,               0, 0, (void *) 0,             0, 0, 0, 0, 0}
 };
 
 //*****************************************************************
@@ -88,6 +83,7 @@ Control_Panel_Window::Control_Panel_Window(
 // Control_Panel_Window::broadcast_change (*master_widget) -- 
 // broadcast an interaction from the master panel to all (unlocked) 
 // panels.
+// MCL XXX "locked" panels are not yet implemented.
 void Control_Panel_Window::broadcast_change (Fl_Widget *master_widget)
 {
   // Define a pointer to the parent of the master widget and verify
@@ -203,8 +199,8 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   b->align(FL_ALIGN_LEFT);
   b->box(FL_NO_BOX);
 
-  // dynamically build the variables menu
-  // cout << "starting menu build, nvars = " << nvars << endl;
+  // dynamically build the variables (axes selection) menu(s).
+  // cout << "starting axes menu build, nvars = " << nvars << endl;
   for( int i=0; i<=nvars; i++) {
     // cout << "label " << i 
     //      << " = " << column_labels[i].c_str() << endl;
@@ -243,28 +239,21 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   b->align(FL_ALIGN_LEFT);
   b->box(FL_NO_BOX);
 
-  // NLoop: Genenerate normalization style menu items
-  for( int i=0; i<n_normalization_styles; i++) {
-    normalization_style_menu_items[i].label(normalization_style_labels[i]);
-    normalization_style_menu_items[i].user_data((void *)normalization_styles[i]);
-  }
-  normalization_style_menu_items[n_normalization_styles].label(0);
-
-  // X-axis normalization and scaling
+  // X-axis normalization and scaling menu
   x_normalization_style = new Fl_Choice( xpos, ypos, subwidth-15, 25);
   x_normalization_style->textsize( 12);
   x_normalization_style->menu( normalization_style_menu_items);
   x_normalization_style->value( NORMALIZATION_MINMAX);
   x_normalization_style->callback( (Fl_Callback*)static_extract_and_redraw, this);
  
-  // Y-axis normalization and scaling
+  // Y-axis normalization and scaling menu
   y_normalization_style = new Fl_Choice( xpos+subwidth, ypos, subwidth-15, 25);
   y_normalization_style->textsize(12);
   y_normalization_style->menu(normalization_style_menu_items);
   y_normalization_style->value(NORMALIZATION_MINMAX); 
   y_normalization_style->callback( (Fl_Callback*)static_extract_and_redraw, this);
  
-  // Z-axis normalization and scaling
+  // Z-axis normalization and scaling menu
   z_normalization_style = new Fl_Choice( xpos+2*subwidth, ypos, subwidth-15, 25);
   z_normalization_style->textsize(12);
   z_normalization_style->menu(normalization_style_menu_items);

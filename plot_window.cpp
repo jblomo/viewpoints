@@ -169,12 +169,12 @@ void Plot_Window::initialize()
     }
     else if( can_do(FL_RGB8|FL_DOUBLE|FL_ALPHA|FL_DEPTH)) {
       mode( FL_RGB8|FL_DOUBLE|FL_DEPTH|FL_ALPHA);
-      cout << " mode: FL_RGB8|FL_DOUBLE|FL_DEPTH|FL_ALPHA" << endl;
+      cout << " mode: FL_RGB8|FL_DOUBLE|FL_ALPHA|FL_DEPTH" << endl;
     }
     else if( can_do(FL_RGB|FL_DOUBLE|FL_ALPHA)) {
       cout << "Warning: depth buffering not enabled" << endl;
-      mode( FL_RGB|FL_DOUBLE|FL_DEPTH|FL_ALPHA);
-      cout << " mode: FL_RGB|FL_DOUBLE|FL_DEPTH|FL_ALPHA" << endl;
+      mode( FL_RGB|FL_DOUBLE|FL_ALPHA);
+      cout << " mode: FL_RGB|FL_DOUBLE|FL_ALPHA" << endl;
     }
     else if( can_do(FL_RGB8|FL_DOUBLE|FL_ALPHA)) {
       cout << "Warning: depth buffering not enabled" << endl;
@@ -623,7 +623,7 @@ void Plot_Window::reset_view()
 // Plot_Window::draw() -- Main draw method that calls others.
 void Plot_Window::draw() 
 {
-  DEBUG (cout << "in draw: " << xcenter << " " << ycenter << " " << xscale << " " << yscale << endl);
+  DEBUG (cout << "in draw: " << xcenter << " " << ycenter << " " << xscale << " " << yscale << " " << wmin[0] << " " << wmax[0] << endl);
 
   if (!sprites_initialized) initialize_sprites();
 
@@ -698,6 +698,12 @@ void Plot_Window::draw_grid()
   // glLineWidth(0.5);
   glLineWidth(1.0);
   if( cp->show_grid->value()) {
+    glPushMatrix();
+    glLoadIdentity();
+
+    float c = initial_pscale;
+    glScalef( c, c, c);
+
     if( cp->Bkg->value() <= 0.2)
       glColor4f(0.2,0.2,0.2,0.0);
     else
@@ -730,6 +736,7 @@ void Plot_Window::draw_grid()
       }
     }
     glEnd();
+    glPopMatrix();
   }
 }
 
@@ -739,13 +746,19 @@ void Plot_Window::draw_grid()
 void Plot_Window::screen_to_world( 
   float xscreen, float yscreen, float &xworld, float &yworld)
 {
-  // cout << "screen_to_world" << endl;
-  // cout << "  before" << xscreen << " " << yscreen
-  //      << " " << xworld << " " << yworld << endl;
+  DEBUG (cout << "screen_to_world" << endl
+         << "  before xscreen: " << xscreen << " yscreen: " << yscreen
+         << " xworld: " << xworld << " yworld: " << yworld << endl
+         << " pscale: " << initial_pscale
+         << " xscale: " << xscale << " xcenter: " << xcenter
+         << " yscale: " << yscale << " ycenter: " << ycenter
+         << endl) ;
+
   xworld = ( xscreen*initial_pscale / xscale) + xcenter;
   yworld = ( yscreen*initial_pscale / yscale) + ycenter;
-  //cout << "  after " << xscreen << " " << yscreen
-  //     << " " << xworld << " " << yworld << endl;
+
+  DEBUG (cout << "  after xscreen: " << xscreen << " yscreen: " << yscreen
+         << " xworld: " << xworld << " yworld: " << yworld << endl);
 }
 
 //***************************************************************************
@@ -1531,7 +1544,7 @@ int Plot_Window::normalize(
   blitz::Array<float, 1> tmp(npoints);
 #endif // CHECK_FOR_NANS_IN_NORMALIZATION
 
-  float mu,sigma;
+  float mu,sigma,partial_rank;
   
   switch( style) {
   case Control_Panel_Window::NORMALIZATION_NONE:
@@ -1616,12 +1629,29 @@ int Plot_Window::normalize(
     return 1;
 
   case Control_Panel_Window::NORMALIZATION_RANK:
-    // replace each item with its rank, normalized from 0 to 1
+    // replace each value with its rank, equal values get sequential rank
+    // according to original input order
     for( int i=0; i<npoints; i++) {
-      a( a_rank(i)) = float(i) / ((float)npoints-1);
+      a( a_rank(i)) = (float)(i+1);
     }
-    wmin[axis_index] = 0;
-    wmax[axis_index] = 1;
+    wmin[axis_index] = 1.0;
+    wmax[axis_index] = (float)(npoints);
+    return 1;
+      
+  case Control_Panel_Window::NORMALIZATION_PARTIAL_RANK:
+    // replace each value with its rank, equal values get equal rank
+    partial_rank = 1.0;
+    float previous = a(a_rank(0)); 
+    // subsequent values, if equal, get equal rank.  Otherwise, they get previous + 1.
+    for( int i=0; i<npoints; i++) {
+      if ( a(a_rank(i)) > previous ) {
+        previous = a(a_rank(i));
+        partial_rank += 1.0;
+      }
+      a(a_rank(i)) = partial_rank;
+    }
+    wmin[axis_index] = 1.0;
+    wmax[axis_index] = partial_rank;
     return 1;
       
   case Control_Panel_Window::NORMALIZATION_GAUSSIANIZE: 
@@ -1714,7 +1744,7 @@ int Plot_Window::extract_data_points ()
        << points( axis0, x_rank(0));
   cout << "  max: " << xlabel 
        << "(" << x_rank(npoints-1) << ") = " 
-       << points( axis0, x_rank(npoints-1)) << endl;
+       << points( axis0, x_rank(npoints-1));
   
   // Rank points by y-axis value
   compute_rank(axis1);
@@ -1724,7 +1754,7 @@ int Plot_Window::extract_data_points ()
        << points(axis1,y_rank(0));
   cout << "  max: " << ylabel 
        << "(" << y_rank(npoints-1) << ") = " 
-       << points( axis1, y_rank(npoints-1)) << endl;
+       << points( axis1, y_rank(npoints-1));
   
   // If z-axis was specified, rank points by z-axis value
   if( axis2 != nvars) {
@@ -1735,8 +1765,9 @@ int Plot_Window::extract_data_points ()
          << points(axis2,z_rank(0));
     cout << "  max: " << zlabel 
          << "(" << z_rank(npoints-1) << ") = " 
-         << points(axis2,z_rank(npoints-1)) << endl;
+         << points(axis2,z_rank(npoints-1));
   }
+  cout << endl;
 
   // OpenGL vertices, vertex arrays, and VBOs all need to have their x, y, and z coordinates
   // interleaved i.e. stored in adjacent memory locations:  x[0],y[0],z[0],x[1],y[1],z[1],.....
@@ -1816,8 +1847,9 @@ int Plot_Window::extract_data_points ()
 
   // XXX need to refactor this.  This is needed to make sure the
   // scale marks on the axis are updated
-  screen_to_world( -1, -1, wmin[0], wmin[1]);
-  screen_to_world( +1, +1, wmax[0], wmax[1]);
+  // XXX MCL well, maybe not needed anymore?
+  // screen_to_world( -1, -1, wmin[0], wmin[1]);
+  // screen_to_world( +1, +1, wmax[0], wmax[1]);
 
   compute_histograms();
   return 1;
