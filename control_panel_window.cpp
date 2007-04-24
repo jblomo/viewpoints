@@ -22,7 +22,7 @@
 // Purpose: Source code for <Control_Panel_Window.h>
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  10-NOV-2006
+// Modified: P. R. Gazis  23-APR-2007
 //*****************************************************************
 
 // Include the necessary include libraries

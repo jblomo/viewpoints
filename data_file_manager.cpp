@@ -19,7 +19,7 @@
 // Purpose: Source code for <data_file_manager.h>
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  03-APR-2007
+// Modified: P. R. Gazis  23-APR-2007
 //***************************************************************************
 
 // Include the necessary include libraries

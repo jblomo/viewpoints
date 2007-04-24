@@ -28,7 +28,7 @@
 //      normalization schemes used here and by class Plot_Windows.
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  10-NOV-2006
+// Modified: P. R. Gazis  23-APR-2007
 //*****************************************************************
 
 // Protection to make sure this header is not included twice
@@ -78,7 +78,7 @@
 //   This comment also conveys nothing.
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  10-NOV-2006
+// Modified: P. R. Gazis  23-APR-2007
 //*****************************************************************
 class Control_Panel_Window : public Fl_Group
 {

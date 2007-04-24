@@ -25,7 +25,7 @@
 //   1) Add comments and get this code to run under Windows.
 //
 // Author: Creon Levit     2005-2006
-// Modified: P. R. Gazis   06-APR-2007
+// Modified: P. R. Gazis  23-APR-2007
 //***************************************************************************
 
 // Protection to make sure this header is not included twice
@@ -167,6 +167,17 @@
 
 // Blitz++ (C++ array operations via template metaprogramming)
 #include <blitz/array.h>
+
+// BOOST: Include headers that implement an archive in XML format
+// #include <boost/archive/tmpdir.hpp>
+#include <boost/archive/xml_iarchive.hpp>
+#include <boost/archive/xml_oarchive.hpp>
+
+// BOOST: Include headers that do various useful things
+#include <boost/serialization/nvp.hpp>
+#include <boost/serialization/utility.hpp>
+#include <boost/serialization/list.hpp>
+#include <boost/serialization/version.hpp>
 
 // BLAS
 #ifdef __APPLE__

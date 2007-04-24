@@ -22,7 +22,7 @@
 // Purpose: Source code for <Plot_Window.h>
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  10-NOV-2006
+// Modified: P. R. Gazis  23-APR-2007
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -81,7 +81,6 @@ int Plot_Window::indexVBOsinitialized = 0;
 int Plot_Window::indexVBOsfilled = 0;
 #define BUFFER_OFFSET(vbo_offset) ((char *)NULL + (vbo_offset))
 
-
 // Define variables and methods for use with sprites.  NOTE: As of now, many
 // of these are globals and should be made static members of Plot_Window
 const GLsizei spriteWidth = 8, spriteHeight = 8, spriteDepth  = 2;
@@ -127,6 +126,15 @@ GLubyte Plot_Window::spriteData[ spriteWidth*spriteHeight*spriteDepth] = {
 // This should be made static
 // GLuint spriteTextureID;
 GLuint Plot_Window::spriteTextureID;
+
+// Declarations for global methods defined and used by class Plot_Window.
+// NOTE: Is it a good idea to do this here rather than global_definitions.h?
+void moving_average( 
+  blitz::Array<float,1> a, const blitz::Array<int,1> indices, 
+  const int half_width);
+void cummulative_conditional(
+  blitz::Array<float,1> a, const blitz::Array<int,1> indices, 
+  const int half_width);
 
 //***************************************************************************
 // Plot_Window::Plot_Window( w, h) -- Constructor.  Increment count of plot 
@@ -254,8 +262,8 @@ void Plot_Window::change_axes( int nchange)
 
 //***************************************************************************
 // Plot_Window::update_linked_transforms() -- Use current plot's scale and 
-// offset to update all the others that show (any of) the same axes (using the 
-// same normalization).
+// offset to update all the others that show (any of) the same axes (using 
+// the same normalization).
 void Plot_Window::update_linked_transforms()
 {
   if( !link_all_axes_button->value()) return;
@@ -313,9 +321,11 @@ void Plot_Window::update_linked_transforms()
 // Plot_Window::handle( event) -- Main event handler.
 int Plot_Window::handle( int event)
 {
-  // Current plot window (mouse drags, etc) must get redrawn before others so 
-  // that selections get colored correctly.  Ugh.
+  // Current plot window (button pushes, mouse drags, etc) must get redrawn 
+  // before others so that selections get colored correctly.  Ugh.
   switch(event) {
+
+    // Mouse button push
     case FL_PUSH:
       DEBUG(cout << "FL_PUSH at " << xprev << ", " << yprev << endl);
 
@@ -324,7 +334,7 @@ int Plot_Window::handle( int event)
       xprev = Fl::event_x();
       yprev = Fl::event_y();
 
-      // middle button pushed = start zoom
+      // middle button pushed => start zoom
       if( (Fl::event_state() == FL_BUTTON2) || 
           (Fl::event_state() == (FL_BUTTON1 | FL_CTRL))) {
         // XXX wish this worked
@@ -336,7 +346,7 @@ int Plot_Window::handle( int event)
         #endif
       }
 
-      // right button pushed = start translating
+      // right button pushed => start translating
       else if( Fl::event_state(FL_BUTTON3) || 
                (Fl::event_state() == (FL_BUTTON1 | FL_ALT)) ) {
         show_center_glyph = 1;
@@ -345,7 +355,8 @@ int Plot_Window::handle( int event)
         needs_redraw = 1;
       }
 
-      // left button pushed = start new selection, or extend or move old selection
+      // left button pushed => start new selection, or extend or move the 
+      // old selection
       else if( Fl::event_state() == FL_BUTTON1) {
         static int previous_window, current_window = -1;
         previous_window = current_window;
@@ -354,7 +365,7 @@ int Plot_Window::handle( int event)
           previously_selected( blitz::Range(0,npoints-1)) = 
             selected( blitz::Range( 0, npoints-1));
         
-        // no shift key = new selection
+        // no shift key => new selection
         if(! (Fl::event_key(FL_Shift_L) || Fl::event_key(FL_Shift_R))) {
           extend_selection = 0;
 
@@ -381,6 +392,7 @@ int Plot_Window::handle( int event)
 
       return 1;
 
+    // Mouse drag
     case FL_DRAG:
       DEBUG (printf ("FL_DRAG, event_state: %x\n", Fl::event_state()));
       xcur = Fl::event_x();
@@ -391,7 +403,7 @@ int Plot_Window::handle( int event)
       xprev = xcur;
       yprev = ycur;
 
-      // translate = drag with right mouse (or alt-left-mouse)
+      // translate => drag with right mouse (or alt-left-mouse)
       if( Fl::event_state(FL_BUTTON3) || 
           (Fl::event_state(FL_BUTTON1) && Fl::event_state(FL_ALT))) {
         float xmove = xdragged*(1/xscale)*(2.0/w());
@@ -405,7 +417,7 @@ int Plot_Window::handle( int event)
         update_linked_transforms ();
       }
 
-      // scale = drag with middle-mouse (or c-left-mouse)
+      // scale => drag with middle-mouse (or c-left-mouse)
       else if( Fl::event_state(FL_BUTTON2) || 
                (Fl::event_state(FL_BUTTON1) && Fl::event_state(FL_CTRL))) {
         if( scale_histogram) {
@@ -423,7 +435,7 @@ int Plot_Window::handle( int event)
         update_linked_transforms ();
       }
 
-      // continue selection = drag with left mouse
+      // continue selection => drag with left mouse
       else if( Fl::event_state(FL_BUTTON1)) {
         // right key down = move selection
         // left shift down = extend selection (bug on OSX - no left key events)
@@ -460,7 +472,7 @@ int Plot_Window::handle( int event)
       screen_to_world (+1, +1, wmax[0], wmax[1]);
       return 1;
 
-    // Mouse up
+    // Mouse button up
     case FL_RELEASE:   
       DEBUG (cout << "FL_RELEASE at " << Fl::event_x() << ", " << Fl::event_y() << endl);
       // selection_changed = 0;
@@ -525,6 +537,7 @@ int Plot_Window::handle( int event)
           return 0;
       }
 
+    // Keyboard key up
     case FL_KEYUP:
       DEBUG ( cout << "FL_KEYUP" << endl);
       switch( Fl::event_key()) {
@@ -1156,9 +1169,9 @@ void Plot_Window::draw_data_points()
     // bind VBO for vertex data
     glBindBufferARB(GL_ARRAY_BUFFER_ARB, index+1);
 
-    // if the variables we are plotting were changed, then the vertex VBO must be updated to
-    // contain the correct vertex data, and it has to be done here, where the correct window and
-    // context are active.
+    // If the variables we are plotting were changed, then the vertex VBO must 
+    // be updated to contain the correct vertex data, and it has to be done 
+    // here, where the correct window and context are active.
     if (!VBOfilled) fill_VBO();
 
     glVertexPointer (3, GL_FLOAT, 0, BUFFER_OFFSET(0));
@@ -1393,74 +1406,22 @@ void Plot_Window::draw_histograms()
   glPopMatrix();
 }
 
-// centered moving average of one array using the rank of a possibly different array as
-// the index order.  Input array a is over-written.
-void moving_average (blitz::Array<float,1> a, const blitz::Array<int,1> indices, const int half_width)
-{
-  blitz::Array<float,1> tmp(npoints), a2(npoints);
-  tmp = 0;
-  // permute a into a2 using the order specified by the indices array
-  for (int i=0; i<npoints; i++)
-    a2(i) = a(indices(i));
-  // form moving average (inefficiently)
-  for (int i=half_width; i<npoints-half_width; i++)
-    for (int j=-half_width; j<=half_width; j++)
-      tmp(i) += a2(i+j);
-  // clean up elements near left and right edges
-  for (int i=0; i<half_width; i++) {
-    tmp(i) = tmp(half_width);
-    tmp(npoints-(i+1)) = tmp(npoints-(half_width+1));
-  }
-  // unpermute and return moving average in a()
-  for (int i=0; i<npoints; i++)
-    a(indices(i)) = tmp(i)/(float)(2*half_width+1);
-}
-
-// approximation of cummulative conditional probability of one array using the (rank of) another array as
-// the conditioning variable.  Input array a is over-written.
-// Note: Too slow.  There is obviously a clever, incremental way of doing this more efficiently.
-// such as by storing the elements in the current window in an STL sorted container, and incrementally
-// updating it as the window slides.  (or doing the whole thing on the GPU?).
-void cummulative_conditional (blitz::Array<float,1> a, const blitz::Array<int,1> indices, const int half_width)
-{
-  if (half_width < 1 || half_width > (npoints-1)/2)
-    return;
-  blitz::Array<float,1> tmp(npoints);
-  tmp = 0;
-  // use sliding window in rank-ordered conditioning variable, window centered on index
-  // i. 
-  for (int i=0; i<npoints; i++) {
-    // find leftmost and rightmost index elements of conditioning variable
-    int left =max(i-half_width,0);
-    int right=min(i+half_width,npoints-1);
-    // loop from leftmost to rightmost element in sliding window and determine conditional cummulative probablility
-    // (e.g. rank within the window) of the appropriate element from a(), which lies at the center of the window.
-    float rank = 0;
-    for (int j=left; j<=right; j++) {
-      if (a(indices(i)) > a(indices(j)))
-        rank++;
-    }
-    tmp(i) = rank/(float)(right-left);
-    // cout << "i, left, right indices(i) rank = " << i << " " << left << " " << right << " " << rank << " " << indices(i) << endl;
-  }
-  // unpermute and return in a
-  for (int i=0; i<npoints; i++)
-    a(indices(i)) = tmp(i);
-}
-
-// compute marginal density estimate along axis using equi-width histogram.
-// Input array a is over-written.
+///////////////pooka//////////////
+//***************************************************************************
+// Plot_Window::density_1D( a, axis) -- Compute marginal density estimate 
+// along axis using equi-width histogram.  Input array a is over-written.
 void Plot_Window::density_1D (blitz::Array<float,1> a, const int axis)
 {
-  // need to compute (but not necessarily display) the x-axis histogram if its not already there.
+  // need to compute (but not necessarily display) the x-axis histogram if 
+  // its not already there.
   if (!cp->show_histogram[axis]->value()) compute_histogram(axis);
   int nbins = (int)(exp2(cp->nbins_slider[axis]->value()));
-  // for each point, find which bin its in (since that isn't saved in compute_histogram)
-  // and set the density estimate equal for the point equal to the bin count
 
+  // Loop: For each point, find which bin its in (since that isn't saved in 
+  // compute_histogram) and set the density estimate equal for the point 
+  // equal to the bin count
   // range is tweaked by (n+1)/n to get the "last" point into the correct bin.
   float range = (amax[axis] - amin[axis]) * ((float)(npoints+1)/(float)npoints); 
-
   for( int i=0; i<npoints; i++) {
     int bin = (int)(floorf( nbins * ( ( vertices(i,axis) - amin[axis]) / range)));
     if( bin < 0) bin = 0;
@@ -1557,14 +1518,14 @@ int Plot_Window::normalize(
     wmax[axis_index] = tmax;
     return 1;
 
+  // All positive data fits in window, zero at "left" of axis.
   case Control_Panel_Window::NORMALIZATION_ZEROMAX: 
-    // all positive data fits in window, zero at "left" of axis.
     wmin[axis_index] = 0.0;
     wmax[axis_index] = tmax;
     return 1;
 
+  // All data fits in window w/zero at center of axis
   case Control_Panel_Window::NORMALIZATION_MAXABS:  
-    // all data fits in window w/zero at center of axis
     tmax = fmaxf(fabsf(tmin),fabsf(tmax));
     if( tmax != 0.0) {
       wmin[axis_index] = -tmax;
@@ -1572,32 +1533,26 @@ int Plot_Window::normalize(
     }
     return 1;
 
+  // Median at center of axis, axis extends to include at least 99% of data
   case Control_Panel_Window::NORMALIZATION_TRIM_1E2:
-    // median at center of axis, axis extends to include at 
-    // least 99% of data
-    {
-      float trim = 1e-2;
-      wmin[axis_index] = 
-        a(a_rank((int)((0.0 + (0.5*trim))*npoints)));
-      wmax[axis_index] = 
-        a(a_rank((int)((1.0 - (0.5*trim))*npoints)));
-      return 1;
-    }
+  {
+    float trim = 1e-2;
+    wmin[axis_index] = a( a_rank((int) ((0.0 + (0.5*trim))*npoints)));
+    wmax[axis_index] = a( a_rank((int) ((1.0 - (0.5*trim))*npoints)));
+    return 1;
+  }
 
-  case Control_Panel_Window::NORMALIZATION_TRIM_1E3:  
-    // median at center of axis, axis extends to include at 
-    // least 99.9% of data
-    {
-      float trim = 1e-3;
-      wmin[axis_index] = 
-        a(a_rank((int)((0.0 + (0.5*trim))*npoints)));
-      wmax[axis_index] = 
-        a(a_rank((int)((1.0 - (0.5*trim))*npoints)));
-      return 1;
-    }
+  // Median at center of axis, axis extends to include at least 99.9% of data
+  case Control_Panel_Window::NORMALIZATION_TRIM_1E3:
+  {
+    float trim = 1e-3;
+    wmin[axis_index] = a( a_rank((int) ((0.0 + (0.5*trim))*npoints)));
+    wmax[axis_index] = a( a_rank((int)((1.0 - (0.5*trim))*npoints)));
+    return 1;
+  }
 
+  // Mean at center of axis, axis extends to +/- 3*sigma
   case Control_Panel_Window::NORMALIZATION_THREESIGMA:  
-    // mean at center of axis, axis extends to +/- 3*sigma
     mu = mean(a(NPTS));
     sigma = sqrt((1.0/(float)npoints)*sum(pow2(a(NPTS)-mu)));
     DEBUG (cout << "mu, sigma = " << mu << ", " << sigma << endl);
@@ -1607,8 +1562,8 @@ int Plot_Window::normalize(
     }
     return 1;
 
+  // Log of negative numbers get assigned a value of zero.
   case Control_Panel_Window::NORMALIZATION_LOG10: 
-    // log of negative numbers get assigned a value of zero.
     if( tmin <= 0.0) {
       cerr << "Warning: "
            << "attempted to take logarithms of nonpositive "
@@ -1621,16 +1576,16 @@ int Plot_Window::normalize(
     wmax[axis_index] = a(a_rank(npoints-1));
     return 1;
 
+  // Simple sigmoid, (-inf,0,+inf) -> (-1,0,+1)
   case Control_Panel_Window::NORMALIZATION_SQUASH: 
-    // simple sigmoid, (-inf,0,+inf) -> (-1,0,+1)
     a(NPTS) = a(NPTS)/(1+abs(a(NPTS)));
     wmin[axis_index] = a(a_rank(0));
     wmax[axis_index] = a(a_rank(npoints-1));
     return 1;
 
+  // Replace each value with its rank, equal values get sequential rank
+  // according to original input order
   case Control_Panel_Window::NORMALIZATION_RANK:
-    // replace each value with its rank, equal values get sequential rank
-    // according to original input order
     for( int i=0; i<npoints; i++) {
       a( a_rank(i)) = (float)(i+1);
     }
@@ -1638,11 +1593,14 @@ int Plot_Window::normalize(
     wmax[axis_index] = (float)(npoints);
     return 1;
       
+  // Replace each value with its rank, equal values get equal rank
   case Control_Panel_Window::NORMALIZATION_PARTIAL_RANK:
-    // replace each value with its rank, equal values get equal rank
+  {
     partial_rank = 1.0;
     float previous = a(a_rank(0)); 
-    // subsequent values, if equal, get equal rank.  Otherwise, they get previous + 1.
+
+    // Loop: Subsequent values, if equal, get equal rank.  Otherwise, they 
+    // get previous + 1.
     for( int i=0; i<npoints; i++) {
       if ( a(a_rank(i)) > previous ) {
         previous = a(a_rank(i));
@@ -1653,10 +1611,10 @@ int Plot_Window::normalize(
     wmin[axis_index] = 1.0;
     wmax[axis_index] = partial_rank;
     return 1;
+  }
       
+  // Gaussianize the data, with the cnter of the gaussian at the median.
   case Control_Panel_Window::NORMALIZATION_GAUSSIANIZE: 
-    // Gaussianize the data, with the cnter of the gaussian 
-    // at the median.
     for( int i=0; i<npoints; i++) {
       a( a_rank(i)) = 
         (1.0/5.0) *
@@ -1667,8 +1625,8 @@ int Plot_Window::normalize(
     wmax[axis_index] = +1.0;
     return 1;
 
+  // Default: do nothing
   default:
-    // Default: do nothing
     return 0;
   }
 }
@@ -1837,8 +1795,9 @@ int Plot_Window::extract_data_points ()
   }
   cout << endl;
 
-  // VBO will have to be updated to hold the new vertices in draw_data_points(), so we set a flag.
-  // We can't update the VBO now, since we can't call openGL functions from within an fltk callback.
+  // VBO will have to be updated to hold the new vertices in draw_data_points(), 
+  // so we set a flag.  We can't update the VBO now, since we can't call openGL 
+  // functions from within an fltk callback.
   VBOfilled = false;
 
   // Reset pan, zoom, and view-angle
@@ -2138,7 +2097,11 @@ void Plot_Window::initialize_VBO()
 
     // Reserve enough space in openGL server memory VBO to hold all the 
     // vertices, but do not initilize it.
-    glBufferDataARB(GL_ARRAY_BUFFER_ARB, (GLsizeiptrARB)npoints*3*sizeof(GLfloat), (void *)NULL, GL_STATIC_DRAW_ARB);
+    glBufferDataARB(
+      GL_ARRAY_BUFFER_ARB, 
+      (GLsizeiptrARB) npoints*3*sizeof(GLfloat), 
+      (void *)NULL, GL_STATIC_DRAW_ARB);
+
     // make sure we succeeded 
     CHECK_GL_ERROR ("");
     cerr << " initialized VBO for plot window " << index << endl;
@@ -2153,7 +2116,9 @@ void Plot_Window::fill_VBO()
   if (!VBOfilled) {
     glBindBufferARB(GL_ARRAY_BUFFER_ARB, index+1);  
     void *vertexp = (void *)vertices.data();
-    glBufferSubDataARB(GL_ARRAY_BUFFER, (GLintptrARB) 0, (GLsizeiptrARB)(npoints*3*sizeof(GLfloat)), vertexp);
+    glBufferSubDataARB(
+      GL_ARRAY_BUFFER, (GLintptrARB) 0, 
+      (GLsizeiptrARB) (npoints*3*sizeof(GLfloat)), vertexp);
     CHECK_GL_ERROR("");
     VBOfilled = true;
   }
@@ -2167,7 +2132,10 @@ void Plot_Window::initialize_indexVBO(int set)
   //   indexVBO bound to MAXPLOTS holds indices of nonselected points
   //   indexVBO bound to MAXPLOTS+1 holds indices of points selected in set 1, etc.
   glBindBufferARB( GL_ELEMENT_ARRAY_BUFFER, MAXPLOTS+set);  // a safe place....
-  glBufferDataARB(GL_ELEMENT_ARRAY_BUFFER, (GLsizeiptrARB)(npoints*sizeof(GLuint)), (void *)NULL, GL_DYNAMIC_DRAW_ARB);
+  glBufferDataARB( 
+    GL_ELEMENT_ARRAY_BUFFER, 
+    (GLsizeiptrARB) (npoints*sizeof(GLuint)), 
+    (void*) NULL, GL_DYNAMIC_DRAW_ARB);
 }
 
 //***************************************************************************
@@ -2191,7 +2159,10 @@ void Plot_Window::fill_indexVBO(int set)
     // Create an alias to slice
     blitz::Array<unsigned int, 1> tmpArray = indices_selected( set, blitz::Range(0,npoints-1));
     unsigned int *indices = (unsigned int *) (tmpArray.data());
-    glBufferSubDataARB(GL_ELEMENT_ARRAY_BUFFER_ARB, (GLintptrARB) 0, (GLsizeiptrARB)(number_selected(set)*sizeof(GLuint)), indices);
+    glBufferSubDataARB(
+      GL_ELEMENT_ARRAY_BUFFER_ARB, (GLintptrARB) 0, 
+      (GLsizeiptrARB) (number_selected(set)*sizeof(GLuint)), indices);
+
     // make sure we succeeded 
     CHECK_GL_ERROR("");
   }
@@ -2209,4 +2180,79 @@ void Plot_Window::fill_indexVBOs()
   }
 }
 
+//***************************************************************************
+// Define global methods.  NOTE: Is it a good idea to do this here rather 
+// than global_definitions.h?
+
+
+//***************************************************************************
+// moving_average( a, indices, half_width) -- Global method to calculate 
+// moving averages of BLITZ arrays
+void moving_average( 
+  blitz::Array<float,1> a, const blitz::Array<int,1> indices, 
+  const int half_width)
+{
+  blitz::Array<float,1> tmp(npoints), a2(npoints);
+  tmp = 0;
+
+  // Loop: ermute a into a2 using the order specified by the indices array
+  for( int i=0; i<npoints; i++) a2(i) = a(indices(i));
+
+  // Loop: form moving average (inefficiently)
+  for( int i=half_width; i<npoints-half_width; i++)
+    for( int j=-half_width; j<=half_width; j++)
+      tmp(i) += a2(i+j);
+
+  // Loop: lean up elements near left and right edges
+  for( int i=0; i<half_width; i++) {
+    tmp(i) = tmp(half_width);
+    tmp(npoints-(i+1)) = tmp(npoints-(half_width+1));
+  }
+  
+  // Loop: unpermute and return moving average in a()
+  for( int i=0; i<npoints; i++)
+    a(indices(i)) = tmp(i)/(float)(2*half_width+1);
+}
+
+//***************************************************************************
+// cummulative_conditional( a, indices, half_width) -- Global method to
+// approximate the cummulative conditional probability of one array using 
+// the (rank of) another array as the conditioning variable.  Input array a 
+// is over-written.
+// Note: Too slow.  There is obviously a clever, incremental way of doing 
+// this more efficiently, such as by storing the elements in the current 
+// window in an STL sorted container, and incrementally updating it as the 
+// window slides.  (or doing the whole thing on the GPU?).
+void cummulative_conditional(
+  blitz::Array<float,1> a, const blitz::Array<int,1> indices, 
+  const int half_width)
+{
+  // If parameters are bogus then quit
+  if (half_width < 1 || half_width > (npoints-1)/2) return;
+
+  // Loop: se sliding window in rank-ordered conditioning variable, window 
+  // centered on index i. 
+  blitz::Array<float,1> tmp(npoints);
+  tmp = 0;
+  for (int i=0; i<npoints; i++) {
+    // find leftmost and rightmost index elements of conditioning variable
+    int left =max(i-half_width,0);
+    int right=min(i+half_width,npoints-1);
+    
+    // loop from leftmost to rightmost element in sliding window and determine 
+    // conditional cummulative probablility (e.g. rank within the window) of 
+    // the appropriate element from a(), which lies at the center of the 
+    // window.
+    float rank = 0;
+    for (int j=left; j<=right; j++) {
+      if (a(indices(i)) > a(indices(j)))
+        rank++;
+    }
+    tmp(i) = rank/(float)(right-left);
+    // cout << "i, left, right indices(i) rank = " << i << " " << left << " " << right << " " << rank << " " << indices(i) << endl;
+  }
+
+  // Loop: Unpermute and return in a
+  for (int i=0; i<npoints; i++) a(indices(i)) = tmp(i);
+}
 

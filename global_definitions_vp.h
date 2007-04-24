@@ -19,7 +19,7 @@
 //   3) Consider putting these variables into a NAMESPACE?
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  10-NOV-2006
+// Modified: P. R. Gazis  23-APR-2007
 //*****************************************************************
 
 #ifndef VP_GLOBAL_DEFINITIONS_VP_H

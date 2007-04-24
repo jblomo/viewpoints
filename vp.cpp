@@ -46,14 +46,17 @@
 //   change_all_axes( *o) -- Change all axes
 //   clearAlphaPlanes() -- Clear alpha planes
 //   npoints_changed( *o) -- Update number of points changed
+//   resize_selection_index_arrays( nplots_old, nplots) -- Resize arrays 
+//   make_confirmation_window( text) -- Make confirmation window
 //   write_data( *o, *user_data) -- Write data widget
-//   reset_all_plots( void) -- Reset all plots
-//   reload_Plot_Window_array( *o) -- Reload plot windows
+//   reset_all_plots() -- Reset all plots
 //   read_data( *o, *user_data) -- Read data widget
+//   load_state( *o) -- Load saved state
+//   save_state( *o) -- Save current state
 //   redraw_if_changing( *dummy) -- Redraw changing plots
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  10-NOV-2006
+// Modified: P. R. Gazis  23-APR-2007
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -129,11 +132,13 @@ Fl_Menu_Bar *main_menu_bar;
 Fl_Window *about_window;
 Fl_Window *help_view_window;
 Fl_Help_View *help_view_widget;
+Fl_Window *confirmation_window;
 
 // Function definitions for the main method
 void usage();
 void make_help_about_window( Fl_Widget *o);
-void create_main_control_panel( int main_x, int main_y, int main_w, int main_h, char* cWindowLabel);
+void create_main_control_panel( 
+  int main_x, int main_y, int main_w, int main_h, char* cWindowLabel);
 void create_broadcast_group();
 void manage_plot_window_array( Fl_Widget *o);
 void make_main_menu_bar();
@@ -144,11 +149,14 @@ void make_global_widgets();
 void choose_color_deselected( Fl_Widget *o);
 void change_all_axes( Fl_Widget *o);
 void clearAlphaPlanes();
-void resize_selection_index_arrays( int nplots_old, int nplots);
 void npoints_changed( Fl_Widget *o);
+void resize_selection_index_arrays( int nplots_old, int nplots);
+int make_confirmation_window( const char* text);
 void write_data( Fl_Widget *o, void* user_data);
-void reset_all_plots( void);
+void reset_all_plots();
 void read_data( Fl_Widget* o, void* user_data);
+int load_state( Fl_Widget* o);
+int save_state( Fl_Widget* o);
 void redraw_if_changing( void *dummy);
 
 //***************************************************************************
@@ -328,7 +336,9 @@ void manage_plot_window_array( Fl_Widget *o)
   operationType thisOperation = INITIALIZE;
   int nplots_old = nplots;
   char widgetTitle[ 80];
+  char userData[ 80];
   strcpy( widgetTitle, "");
+  strcpy( userData, "");
   Fl_Menu_* pMenu_;
   Fl_Button* pButton;
 
@@ -356,10 +366,16 @@ void manage_plot_window_array( Fl_Widget *o)
     else if( strncmp( widgetTitle, "Remove R", 8) == 0 && nrows>1) nrows--;
     else if( strncmp( widgetTitle, "Remove C", 8) == 0 && ncols>1) ncols--;
 
+    // Get any user data that may have been set by calling method, and make
+    // absolutely sure it isn't NULL.
+    strcpy( userData, (char*) o->user_data());
+    if( userData == NULL) strcpy( userData, "");
+
     // When reading new data, invoke Fl_Gl_Window.hide() (instead of the 
     // destructor!) to destroy all plot windows along with their context, 
     // including VBOs
-    if( strncmp( widgetTitle, "Read", 4) == 0) {
+    if( strncmp( widgetTitle, "Read", 4) == 0 ||
+        strncmp( userData, "Read", 4) == 0) {
       thisOperation = NEW_DATA;
       nplots_old = 0;
       for( int i=0; i<nplots; i++) pws[i]->hide();
@@ -383,7 +399,7 @@ void manage_plot_window_array( Fl_Widget *o)
   // Recalculate number of plots
   nplots = nrows * ncols;
 
-  // If this was a resise operation, resize the selection arrays:
+  // If this was a resize operation, resize the selection arrays:
   // 'indices_selected' and 'number_selected'.
   if( thisOperation == RESIZE)
     resize_selection_index_arrays( nplots_old, nplots);
@@ -605,6 +621,12 @@ void make_main_menu_bar()
     "File/Write selected binary data   ", 0, 
     (Fl_Callback *) write_data, (void*) "selected binary", FL_MENU_DIVIDER);
   main_menu_bar->add( 
+    "File/Load configuration   ", 0, 
+    (Fl_Callback *) load_state);
+  main_menu_bar->add( 
+    "File/Save configuration   ", 0, 
+    (Fl_Callback *) save_state, 0, FL_MENU_DIVIDER);
+  main_menu_bar->add( 
     "File/Quit   ", 0, (Fl_Callback *) exit);
 
   // Add View menu items
@@ -772,7 +794,8 @@ void make_global_widgets()
   b->callback( (Fl_Callback*)choose_color_deselected);
 
   // Button(3,2): Randomly change all axes
-  change_all_axes_button = new Fl_Repeat_Button( xpos, ypos+=25, 20, 20, "change axes");
+  change_all_axes_button = 
+    new Fl_Repeat_Button( xpos, ypos+=25, 20, 20, "change axes");
   change_all_axes_button->align( FL_ALIGN_RIGHT); 
   change_all_axes_button->selection_color( FL_BLUE); 
   change_all_axes_button->callback( (Fl_Callback*)change_all_axes);
@@ -872,6 +895,80 @@ void resize_selection_index_arrays( int nplots_old, int nplots)
 }
 
 //***************************************************************************
+// make_confirmation_window( text) -- Make and manage confirmation window.
+// Result of 1,0,-1 => Yes, No, Cancel.
+int make_confirmation_window( const char* text)
+{
+  // Intialize flag and destroy any existing window
+  // MCL XXX rule #2: "Compile cleanly at high warning levels." 
+  if( confirmation_window != NULL) confirmation_window->hide();
+  
+  // Create the confirmation window
+  Fl::scheme( "plastic");  // optional
+  confirmation_window = new Fl_Window( 400, 100, "Confirmation Window");
+  confirmation_window->begin();
+  confirmation_window->selection_color( FL_BLUE);
+  confirmation_window->labelsize( 10);
+  
+  // Compose text. NOTE use of @@ in conjunction with label()
+  string sMessage = "";
+  sMessage.append( text);
+
+  // Write text to box label and align it inside box
+  Fl_Box* output_box = new Fl_Box( 5, 5, 390, 60, sMessage.c_str());
+  // output_box->box( FL_SHADOW_BOX);
+  output_box->box( FL_NO_BOX);
+  output_box->color( 7);
+  output_box->selection_color( 52);
+  output_box->labelfont( FL_HELVETICA);
+  output_box->labelsize( 15);
+  output_box->align( FL_ALIGN_TOP|FL_ALIGN_CENTER|FL_ALIGN_INSIDE);
+
+  // Define buttons and invoke callback functions to handle them
+  Fl_Button* yes_button = new Fl_Button( 90, 70, 60, 25, "&Yes");
+  Fl_Button* no_button = new Fl_Button( 170, 70, 60, 25, "&No");
+  Fl_Button* cancel_button = new Fl_Button( 250, 70, 60, 25, "&Cancel");
+
+  // Done creating the confirmation window
+  confirmation_window->resizable( confirmation_window);
+  confirmation_window->end();
+  confirmation_window->show();
+  
+  // Loop: While the window is open, wait and check the read queue until the 
+  // right widget is activated
+  while( confirmation_window->shown()) {
+    Fl::wait();
+    for( ; ;) {   // Is this loop needed?
+      Fl_Widget* o = Fl::readqueue();
+      if( !o) break;
+
+      // Has the window been closed or a button been pushed?
+      if( o == yes_button) {
+        confirmation_window->hide();
+        return 1;
+      }
+      else if( o == no_button) {
+        confirmation_window->hide();
+        return 0;
+      }
+      else if( o == cancel_button) {
+        confirmation_window->hide();
+        return -1;
+      }
+      else if( o == confirmation_window) {
+
+        // Don't need to hide window because user has already deleted it
+        // confirmation_window->hide();
+        return -1;
+      }
+    }
+  }
+
+  // When in doubt, do nothing
+  return -1;
+}
+
+//***************************************************************************
 // write_data( o) -- Write data widget.  Invoked by main control panel.  
 // Invokes write method to write a binary data file.
 void write_data( Fl_Widget *o, void* user_data)
@@ -952,6 +1049,156 @@ void read_data( Fl_Widget* o, void* user_data)
   // near the end of manage_plot_window_array().
   // pws[ 0]->color_array_from_selection();
   // Plot_Window::redraw_all_plots( 0);  // Probably not needed
+}
+
+//***************************************************************************
+// load_state( o) -- Use BOOST serialization to load a saved state from an
+// XML archive.
+int load_state( Fl_Widget* o)
+{
+  // Initialize filespec for the XML archive.  NOTE: cOutFileSpec is defined 
+  // as const char* for use with New_File_Chooser, which means it could be 
+  // destroyed by the relevant destructors!
+  const char *cInFileSpec = dfm.directory().c_str();
+  // const char *cInFileSpec = strcat( dfm.directory().c_str(), "vp.xml");
+
+  // Instantiate and show an New_File_Chooser widget.  NOTE: The pathname 
+  // must be passed as a variable or the window will begin in some root 
+  // directory.
+  char* title = "Load saved configuration from file";
+  char* pattern = "*.xml\tAll Files (*)";
+  New_File_Chooser* file_chooser =
+    new New_File_Chooser( cInFileSpec, pattern, New_File_Chooser::SINGLE, title);
+
+  // Loop: wait until the file selection is done
+  file_chooser->show();
+  while( file_chooser->shown()) Fl::wait();
+  cInFileSpec = file_chooser->value();   
+
+  // If no file was specified then report, deallocate the New_File_Chooser 
+  // object, and quit.
+  if( cInFileSpec == NULL) {
+    cerr << "Main::load_state: "
+         << "No input file was specified" << endl;
+    delete file_chooser;  // WARNING! Destroys cInFileSpec!
+    return -1;
+  }
+
+  // Create a file stream for input and make sure it exists.  This will
+  // be closed when destructors are called
+  std::ifstream inputFileStream( cInFileSpec, std::ios::binary);
+  assert( inputFileStream.good());
+
+  // Create and open an archive for input.  As before, this will be
+  // closed when destructors are called
+  boost::archive::xml_iarchive inputArchive( inputFileStream);
+
+  // Get data file from archive and read it
+  inputArchive >> BOOST_SERIALIZATION_NVP( dfm);
+  if( dfm.input_filespec().length() <= 0) dfm.create_default_data( 10);
+  else {
+    if( dfm.load_data_file() != 0) dfm.create_default_data( 10);
+    else 
+      cout << "Loaded " << npoints
+           << " samples with " << nvars << " fields" << endl;
+  }
+
+  // Fewer points -> bigger starting pointsize
+  pointsize = max( 1.0, 6.0 - (int) log10f( (float) npoints));
+
+  // Set user_data for this widget to indicate that this is a READ operation, 
+  // then invoke manage_plot_window( o) to clear children of the tab widget 
+  // and reload plot window array.
+  o->user_data( (void*) "Read");
+  manage_plot_window_array( o);
+
+  // Read configuration information from archive
+  inputArchive >> BOOST_SERIALIZATION_NVP( nrows);
+  inputArchive >> BOOST_SERIALIZATION_NVP( ncols);
+
+  // Set user_data for this widget to indicate that this is a RESIZE 
+  // operation, then invoke manage_plot_window( o) to apply configuration.
+  o->user_data( (void*) "Resize");
+  manage_plot_window_array( o);
+
+  // Report success
+  return 1;
+}
+
+//***************************************************************************
+// save_state( o) -- Use BOOST serialization to save the current state to an 
+// XML archive.
+int save_state( Fl_Widget* o)
+{
+  // Initialize filespec for the XML archive.  NOTE: cOutFileSpec is defined 
+  // as const char* for use with New_File_Chooser, which means it could be 
+  // destroyed by the relevant destructors!
+  const char *cOutFileSpec = dfm.directory().c_str();
+  // const char *cOutFileSpec = strcat( dfm.directory().c_str(), "vp.xml");
+
+  // Instantiate and show an New_File_Chooser widget.  NOTE: The pathname 
+  // must be passed as a variable or the window will begin in some root 
+  // directory.
+  char* title = "Save current configuration to file";
+  char* pattern = "*.xml\tAll Files (*)";
+  New_File_Chooser* file_chooser = 
+    new New_File_Chooser( 
+      cOutFileSpec, pattern, New_File_Chooser::CREATE, title);
+
+  // Loop: Select succesive output filespecs until a non-directory is 
+  // obtained and found acceptible to the user
+  while( 1) {
+
+    // Loop: Wait until the file selection is done
+    file_chooser->show();
+    while( file_chooser->shown()) Fl::wait();
+    cOutFileSpec = file_chooser->value();   
+
+    // If no file was specified then quit
+    if( cOutFileSpec == NULL) break;
+
+    // If this is a new file, it can't be opened for read, and we're done
+    FILE* pFile = fopen( cOutFileSpec, "r");
+    if( pFile == NULL) break;
+    
+    // If we got this far, the file must exist and be available to be
+    // overwritten, so close it, then open a confirmation window and wait 
+    // for the button handler to do something.
+    fclose( pFile);
+    int confirmationResult = 
+      make_confirmation_window( "Overwrite existing file?");
+
+    // If this was a 'CANCEL' request, return without doing anything.  If 
+    // this was a 'YES' request, move on.  Otherwise, make sure we're in
+    // the right directory and try again.
+    if( confirmationResult < 0) return -1;
+    if( confirmationResult > 0) break;
+  }
+
+  // If no file was specified then report, deallocate the New_File_Chooser 
+  // object, and quit.
+  if( cOutFileSpec == NULL) {
+    cerr << "Main::load_state: "
+         << "No output file was specified" << endl;
+    delete file_chooser;  // WARNING! Destroys cInFileSpec!
+    return -1;
+  }
+
+  // Create an output file stream for output and make sure it exists
+  std::ofstream outputFileStream( cOutFileSpec);
+  assert( outputFileStream.good());
+
+  // Create archive, which will be closed when destructors are called.
+  assert( outputFileStream.good());
+  boost::archive::xml_oarchive outputArchive( outputFileStream);
+
+  // Write class instance to archive
+  outputArchive << BOOST_SERIALIZATION_NVP( dfm);
+  outputArchive << BOOST_SERIALIZATION_NVP( nrows);
+  outputArchive << BOOST_SERIALIZATION_NVP( ncols);
+
+  // Report success
+  return 1;
 }
 
 //***************************************************************************
@@ -1226,8 +1473,8 @@ int main( int argc, char **argv)
   // Set random seed
   srand( (unsigned int) time(0));
 
-  // Restrict format and restruct and set number of plots.  NOTE: nplots will 
-  // be reset by manage_plot_window_array( NULL) 
+  // Restrict format and restrict and initialize the number of plots.  NOTE: 
+  // nplots will later be reset by manage_plot_window_array( NULL) 
   assert( nrows*ncols <= MAXPLOTS);
   nplots = nrows*ncols;
 
@@ -1236,8 +1483,7 @@ int main( int argc, char **argv)
   if( inFileSpec.length() <= 0) dfm.create_default_data( 10);
   else {
     dfm.input_filespec( inFileSpec);
-    if( dfm.load_data_file() != 0) 
-      dfm.create_default_data( 10);
+    if( dfm.load_data_file() != 0) dfm.create_default_data( 10);
   }
   
   // Fewer points -> bigger starting pointsize

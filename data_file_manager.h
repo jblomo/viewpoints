@@ -32,7 +32,7 @@
 //      vp.cpp could be consolidated.
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  10-NOV-2006
+// Modified: P. R. Gazis  23-APR-2007
 //***************************************************************************
 
 // Protection to make sure this header is not included twice
@@ -59,6 +59,7 @@
 //   Data_File_Manager() -- Constructor
 //   initialize() -- Initializer
 //
+//   serialize( &ar, iFileVersion) -- Perform serialization
 //   remove_trivial_columns() -- Remove identical data
 //   resize_global_arrays() -- Resize global arrays
 //
@@ -95,11 +96,26 @@
 //   column_major( i) -- Set column major flag
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  10-NOV-2006
+// Modified: P. R. Gazis  23-APR-2007
 //***************************************************************************
 class Data_File_Manager
 {
   protected:
+    // Need this to grant the serialization library access to private member 
+    // variables and functions.
+    friend class boost::serialization::access;
+       
+    // When the class Archive corresponds to an output archive, the &
+    // operator is defined similar to <<.  Likewise, when the class Archive 
+    // is a type of input archive the & operator is defined similar to >>.
+    // It is easiest to define this method inline.
+    template<class Archive>
+    void serialize( Archive & ar, const unsigned int /* file_version */)
+    {
+      ar & boost::serialization::make_nvp( "is_ASCII_data", isAsciiInput);
+      ar & boost::serialization::make_nvp( "dataFileSpec", inFileSpec);
+    }
+
     void remove_trivial_columns();
     void resize_global_arrays();
 

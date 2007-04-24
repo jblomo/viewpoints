@@ -20,7 +20,7 @@
 //   modified by Paul Gazis and Creon Levit for use with viewpoints.
 //
 // Author: Bill Spitzak and others   1998-2005
-// Modified: P. R. Gazis  23-MAR-2007
+// Modified: P. R. Gazis  23-APR-2007
 //***************************************************************************
 
 // Include header
