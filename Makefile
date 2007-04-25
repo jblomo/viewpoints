@@ -27,10 +27,10 @@ ifeq ($(platform),Darwin)
 
 # compiling for OSX on intel ?
 ifeq ($(hardware),i386)
-	OPTIM = -O6 -ftree-vectorize -ftree-vectorizer-verbose=0 -Wall -Wconversion -Wno-long-double -fno-exceptions -ffast-math -fsigned-char -gfull 
+	OPTIM = -O6 -ftree-vectorize -ftree-vectorizer-verbose=0 -Wall -Wconversion -Wno-long-double -ffast-math -fsigned-char -gfull 
 # compiling for OSX on powerPC ?
 else
-	OPTIM = -O6 -ftree-vectorize -ftree-vectorizer-verbose=0 -Wall -Wconversion -Wno-long-double -fno-exceptions -ffast-math -fsigned-char -maltivec -mabi=altivec -faltivec -mpowerpc-gfxopt -gfull
+	OPTIM = -O6 -ftree-vectorize -ftree-vectorizer-verbose=0 -Wall -Wconversion -Wno-long-double -ffast-math -fsigned-char -maltivec -mabi=altivec -faltivec -mpowerpc-gfxopt -gfull
 endif
 
 # uncomment for debugging version
@@ -55,9 +55,9 @@ CXXFLAGS	= $(OPTIM) -DGL_GLEXT_PROTOTYPES
 ifeq ($(platform),Darwin)
 
 # uncomment for OSX machines where I CAN install things as root... (don't forget to build all libraries as static only)
-	INCPATH = -I/sw/include -I/usr/local/include
+	INCPATH = -I/sw/include -I/usr/local/include -I/usr/local/include/boost-1_33_1/
 	LIBPATH	= -L/usr/local/lib -L/sw/lib
-	LDLIBS = -framework AGL -framework OpenGL -framework Carbon -framework ApplicationServices -framework vecLib -lm -lmx -lgsl
+	LDLIBS = -framework AGL -framework OpenGL -framework Carbon -framework ApplicationServices -framework vecLib -lm -lmx -lgsl -lboost_serialization-gcc
 
 # uncomment for OSX machines where I can NOT install things as root... (don't forget to build all libraries as static only)
 #	INCPATH = -I/Users/creon/include
@@ -82,7 +82,7 @@ LINKBLITZ	= -lblitz
 # The extension to use for executables...
 EXEEXT		= 
 
-SRCS =	vp.cpp control_panel_window.cpp plot_window.cpp data_file_manager.cpp New_File_Chooser.cpp
+SRCS =	vp.cpp global_definitions_vp.cpp control_panel_window.cpp plot_window.cpp data_file_manager.cpp New_File_Chooser.cpp
 #SRCS =	vp.cpp 
 
 OBJS:=	$(SRCS:.cpp=.o)

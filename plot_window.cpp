@@ -197,6 +197,7 @@ void Plot_Window::initialize()
     global_GLContext = context();
 
     indexVBOsinitialized=0;
+    sprites_initialized=0;
   } 
 
   // all other Plot_Windows share the same GLContext, so we set their contexts 
@@ -637,8 +638,6 @@ void Plot_Window::reset_view()
 void Plot_Window::draw() 
 {
   DEBUG (cout << "in draw: " << xcenter << " " << ycenter << " " << xscale << " " << yscale << " " << wmin[0] << " " << wmax[0] << endl);
-
-  if (!sprites_initialized) initialize_sprites();
 
   // the valid() property can avoid reinitializing matrix for 
   // each redraw:
@@ -2063,6 +2062,8 @@ void Plot_Window::initialize_sprites()
 // Plot_Window::enable_sprites() -- Invoke OpenGL routines to enable sprites
 void Plot_Window::enable_sprites()
 {
+  if (!sprites_initialized)
+    initialize_sprites();
   glEnable( GL_TEXTURE_2D);
   glEnable( GL_POINT_SPRITE_ARB);
   glBindTexture( GL_TEXTURE_2D, spriteTextureID);
