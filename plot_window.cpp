@@ -493,7 +493,7 @@ int Plot_Window::handle( int event)
 
         case 'q':   // exit
         case '\027':  // quit
-          exit( 0);
+          if( make_confirmation_window( "Quit?  Are you sure?") > 0) exit( 0);
 
         // delete selected points from all future processing
         case 'x':
@@ -2125,7 +2125,8 @@ void Plot_Window::fill_VBO()
 }
 
 //***************************************************************************
-// Plot_Window::initialize_indexVBO() -- Initialize the index VBO
+// Plot_Window::initialize_indexVBO() -- Initialize the 'index VBO' that
+// holds indices of selected (or non-selected) points.
 void Plot_Window::initialize_indexVBO(int set)
 {
   // There is one shared set of index VBOs for all plots.

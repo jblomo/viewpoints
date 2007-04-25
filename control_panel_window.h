@@ -35,6 +35,10 @@
 #ifndef CONTROL_PANEL_WINDOW_H
 #define CONTROL_PANEL_WINDOW_H 1
 
+// Include the extra BOOST library required to split SERIALIZE 
+// into SAVE and LOAD
+// #include <boost/serialization/split_member.hpp>
+
 // Include the necessary include libraries
 #include "include_libraries_vp.h"
 
@@ -62,6 +66,8 @@
 //
 // Functions:
 //   Control_Panel_Window( w, h) -- Constructor
+//
+//   serialize( &ar, iFileVersion) -- Perform serialization
 //
 //   maybe_redraw() -- Set redraw flag nicely
 //   make_widgets( *cpw) -- Make widgets for this tab
@@ -131,18 +137,18 @@ class Control_Panel_Window : public Fl_Group
               *z_normalization_style;
 
     enum normalization_style {
-        NORMALIZATION_NONE = 0,
-        NORMALIZATION_MINMAX,
-        NORMALIZATION_ZEROMAX,
-        NORMALIZATION_MAXABS,
-        NORMALIZATION_TRIM_1E2,
-        NORMALIZATION_TRIM_1E3,
-        NORMALIZATION_THREESIGMA,
-        NORMALIZATION_LOG10,
-        NORMALIZATION_SQUASH,
-        NORMALIZATION_RANK,
-        NORMALIZATION_PARTIAL_RANK,
-        NORMALIZATION_GAUSSIANIZE
+      NORMALIZATION_NONE = 0,
+      NORMALIZATION_MINMAX,
+      NORMALIZATION_ZEROMAX,
+      NORMALIZATION_MAXABS,
+      NORMALIZATION_TRIM_1E2,
+      NORMALIZATION_TRIM_1E3,
+      NORMALIZATION_THREESIGMA,
+      NORMALIZATION_LOG10,
+      NORMALIZATION_SQUASH,
+      NORMALIZATION_RANK,
+      NORMALIZATION_PARTIAL_RANK,
+      NORMALIZATION_GAUSSIANIZE
     };
     static Fl_Menu_Item normalization_style_menu_items[];
 
@@ -151,9 +157,9 @@ class Control_Panel_Window : public Fl_Group
     // points, round points, crosses, etc.
     Fl_Choice *symbol_menu;
     enum symbol_type {
-        SQUARE_POINTS = 0,
-        SMOOTH_POINTS,
-        SPRITES
+      SQUARE_POINTS = 0,
+      SMOOTH_POINTS,
+      SPRITES
     };
     static Fl_Menu_Item symbol_menu_items[];
 
@@ -162,7 +168,6 @@ class Control_Panel_Window : public Fl_Group
     // color and index as its associated control panel tab.
     Plot_Window *pw;
     int index;  
-    
 };
 
 #endif   // CONTROL_PANEL_WINDOW_H

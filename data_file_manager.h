@@ -32,7 +32,7 @@
 //      vp.cpp could be consolidated.
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  23-APR-2007
+// Modified: P. R. Gazis  24-APR-2007
 //***************************************************************************
 
 // Protection to make sure this header is not included twice
@@ -62,8 +62,6 @@
 //   serialize( &ar, iFileVersion) -- Perform serialization
 //   remove_trivial_columns() -- Remove identical data
 //   resize_global_arrays() -- Resize global arrays
-//
-//   make_confirm_window() -- Manage confirmation window
 //
 //   findInputFile() -- Query user to find input file
 //   load_data_file( inFileSpec) -- Load and initialize data
@@ -96,7 +94,7 @@
 //   column_major( i) -- Set column major flag
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  23-APR-2007
+// Modified: P. R. Gazis  24-APR-2007
 //***************************************************************************
 class Data_File_Manager
 {
@@ -118,10 +116,6 @@ class Data_File_Manager
 
     void remove_trivial_columns();
     void resize_global_arrays();
-
-    // Create and manage confirmation window
-    void make_confirm_window( const char* output_file_name);
-    enum enumConfirmResult { CANCEL_FILE = 0, NO_FILE, YES_FILE} confirmResult;
 
     // Buffers to hold filespec and pathname
     string sDirectory_, inFileSpec, outFileSpec;
@@ -173,9 +167,6 @@ class Data_File_Manager
     // command line argument.  NOTE: 0 means read to EOF and/or end of line.
     int npoints_cmd_line;
     int nvars_cmd_line;
-
-    // Define pointers to hold file confirmation window
-    Fl_Window *confirm_window;
 
     // Define statics to hold header format
     static const int MAX_HEADER_LENGTH;

@@ -25,7 +25,7 @@
 //   1) Add comments and get this code to run under Windows.
 //
 // Author: Creon Levit     2005-2006
-// Modified: P. R. Gazis  23-APR-2007
+// Modified: P. R. Gazis   23-APR-2007
 //***************************************************************************
 
 // Protection to make sure this header is not included twice

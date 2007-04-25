@@ -38,25 +38,28 @@
 //   make_help_about_window( *o) -- Draw the 'About' window
 //   create_main_control_panel( main_x, main_y, main_w, main_h, cWindowLabel) 
 //     -- Create the main control panel window.
+//   cb_main_control_panel( *o, *u); -- Callback for main control panel
 //   create_broadcast_group() -- Create special panel under tabs
-//   manage_plot_window_array( *o) -- Manage plot window array
+//   manage_plot_window_array( *o, *u) -- Manage plot window array
+//   make_help_view_window( *o) -- Make Help View window
+//   close_help_window( *o, *u -- Help View window callback
 //   make_main_menu_bar() -- Create main menu bar (unused)
+//   step_help_view_widget( *o, *u) -- Step through the 'Help|Help' window.
 //   make_global_widgets() -- Controls for main control panel
 //   choose_color_deselected( *o) -- Color of nonselected points
 //   change_all_axes( *o) -- Change all axes
 //   clearAlphaPlanes() -- Clear alpha planes
 //   npoints_changed( *o) -- Update number of points changed
 //   resize_selection_index_arrays( nplots_old, nplots) -- Resize arrays 
-//   make_confirmation_window( text) -- Make confirmation window
-//   write_data( *o, *user_data) -- Write data widget
+//   write_data( *o, *u) -- Write data widget
 //   reset_all_plots() -- Reset all plots
-//   read_data( *o, *user_data) -- Read data widget
+//   read_data( *o, *u) -- Read data widget
 //   load_state( *o) -- Load saved state
 //   save_state( *o) -- Save current state
 //   redraw_if_changing( *dummy) -- Redraw changing plots
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  23-APR-2007
+// Modified: P. R. Gazis  24-APR-2007
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -132,15 +135,15 @@ Fl_Menu_Bar *main_menu_bar;
 Fl_Window *about_window;
 Fl_Window *help_view_window;
 Fl_Help_View *help_view_widget;
-Fl_Window *confirmation_window;
 
 // Function definitions for the main method
 void usage();
 void make_help_about_window( Fl_Widget *o);
 void create_main_control_panel( 
   int main_x, int main_y, int main_w, int main_h, char* cWindowLabel);
+void cb_main_control_panel( Fl_Widget *o, void* user_data);
 void create_broadcast_group();
-void manage_plot_window_array( Fl_Widget *o);
+void manage_plot_window_array( Fl_Widget *o, void* user_data);
 void make_main_menu_bar();
 void make_help_view_window( Fl_Widget *o);
 void close_help_window( Fl_Widget *o, void* user_data);
@@ -151,7 +154,6 @@ void change_all_axes( Fl_Widget *o);
 void clearAlphaPlanes();
 void npoints_changed( Fl_Widget *o);
 void resize_selection_index_arrays( int nplots_old, int nplots);
-int make_confirmation_window( const char* text);
 void write_data( Fl_Widget *o, void* user_data);
 void reset_all_plots();
 void read_data( Fl_Widget* o, void* user_data);
@@ -254,6 +256,10 @@ void create_main_control_panel(
     new Fl_Window( main_x, main_y, main_w, main_h, cWindowLabel);
   main_control_panel->resizable( main_control_panel);
 
+  // Add callback function to intercept 'Close' operations
+  main_control_panel->callback( 
+    (Fl_Callback*) cb_main_control_panel, main_control_panel);
+
   // Make main menu bar and add the global widgets to control panel
   make_main_menu_bar();
   make_global_widgets ();
@@ -268,6 +274,20 @@ void create_main_control_panel(
   // Done creating main control panel (except for the tabbed 
   // sub-panels created by manage_plot_window_array)
   main_control_panel->end();
+}
+
+
+//***************************************************************************
+// cb_main_control_panel( *o, *user_data) -- Callback (and potentially 
+// close) the main control panel window.  It is assumed that a pointer to
+// the window will be passed as USER_DATA.  WARNING: No error checking is 
+// done on USER_DATA!
+void cb_main_control_panel( Fl_Widget *o, void* user_data)
+{
+  if( make_confirmation_window( "Quit?  Are you sure?") > 0) {
+    ((Fl_Window*) user_data)->hide();
+    exit( 0);
+  }
 }
 
 //***************************************************************************
@@ -310,23 +330,25 @@ void create_broadcast_group ()
 }
 
 //***************************************************************************
-// manage_plot_window_array( o) -- General-purpose method to create, manage, 
-// and reload the plot window array.  It saves any existing axis information, 
-// deletes old tabs, creates new tabs, restores existing axis information, 
-// and loads new data into new plot windows.  There are four possible 
-// behaviors, which all must be recognized, identified, and treated 
-// differently:
+// manage_plot_window_array( *o, *u) -- General-purpose method to create, 
+// manage, and reload the plot window array.  It saves any existing axis 
+// information, deletes old tabs, creates new tabs, restores existing axis 
+// information, and loads new data into new plot windows.  
+//   There are four possible behaviors, which all must be recognized, 
+// identified, and treated differently:
 // 1) Initialization -- NULL argument.  Set nplots_old = 0.  
-// 2) New data -- Called from button or menu.  Set nplots_old = 0.
-// 3) Resize operation -- Called from menu.  Set nplots_old = 
-//    nplots, then calculate a new value of nplots.  
-// 4) Reload operation -- Called from button or menu.  Keep 
-//    nplots = nplots_old.  
+// 2) New data -- Called from a button, a menu, or as part of a 'load saved
+//    state' operation.  Set nplots_old = 0.
+// 3) Resize operation -- Called from a menu or as part of a 'load saved
+//    state' operation.  Set nplots_old = nplots, then calculate a new value 
+//    of nplots.  
+// 4) Reload operation -- Called from a button or menu.  Keep nplots = 
+//    nplots_old.  
 // NOTE: Little attempt has been made to optimize this method for speed.  
-// WARNINGS: 1) Tbis method is delicate, and slight changes in the FLTK calls 
+// WARNINGS: 1) This method is delicate, and slight changes in the FLTK calls 
 // could lead to elusive segmentation faults!  Test any changes carefully!  
 // 2) There is little protection against missing data!
-void manage_plot_window_array( Fl_Widget *o)
+void manage_plot_window_array( Fl_Widget *o, void* user_data)
 {
   // Define an enumeration to hold a list of operation types
   enum operationType { INITIALIZE = 0, NEW_DATA, RESIZE, RELOAD};
@@ -368,8 +390,10 @@ void manage_plot_window_array( Fl_Widget *o)
 
     // Get any user data that may have been set by calling method, and make
     // absolutely sure it isn't NULL.
-    strcpy( userData, (char*) o->user_data());
-    if( userData == NULL) strcpy( userData, "");
+    // if( o->user_data() != NULL) strcpy( userData, (char*) o->user_data());
+    // else strcpy( userData, "");
+    strcpy( userData, "");
+    if( user_data != NULL) strcpy( userData, (char*) user_data);
 
     // When reading new data, invoke Fl_Gl_Window.hide() (instead of the 
     // destructor!) to destroy all plot windows along with their context, 
@@ -529,15 +553,15 @@ void manage_plot_window_array( Fl_Widget *o)
     // normalization styles for the old panels.  Otherwise set new variable 
     // indices for the new panels    
     if( nplots != nplots_old && i<nplots_old) {
-        cps[i]->varindex1->value( ivar_old[i]);  
-        cps[i]->varindex2->value( jvar_old[i]);
-        cps[i]->varindex3->value( kvar_old[i]);
-        cps[i]->x_normalization_style->value( x_normalization_style_old[i]);  
-        cps[i]->y_normalization_style->value( y_normalization_style_old[i]);  
-        cps[i]->z_normalization_style->value( z_normalization_style_old[i]);  
-        cps[i]->lock_axis1_button->value( x_axis_locked[i]);  
-        cps[i]->lock_axis2_button->value( y_axis_locked[i]);  
-        cps[i]->lock_axis3_button->value( z_axis_locked[i]);  
+      cps[i]->varindex1->value( ivar_old[i]);  
+      cps[i]->varindex2->value( jvar_old[i]);
+      cps[i]->varindex3->value( kvar_old[i]);
+      cps[i]->x_normalization_style->value( x_normalization_style_old[i]);  
+      cps[i]->y_normalization_style->value( y_normalization_style_old[i]);  
+      cps[i]->z_normalization_style->value( z_normalization_style_old[i]);  
+      cps[i]->lock_axis1_button->value( x_axis_locked[i]);  
+      cps[i]->lock_axis2_button->value( y_axis_locked[i]);  
+      cps[i]->lock_axis3_button->value( z_axis_locked[i]);  
     } 
     else {
       cps[i]->varindex1->value(ivar);  
@@ -704,10 +728,11 @@ void make_help_view_window( Fl_Widget *o)
 }
 
 //***************************************************************************
-// close_help_window( *o, *user_data) -- Close a Help window
+// close_help_window( *o, *user_data) -- Callback function to close a Help 
+// window.  It is assumed that a pointer to the window will be passed as 
+// USER_DATA.  WARNING: No error checking is done on USER_DATA!
 void close_help_window( Fl_Widget *o, void* user_data)
 {
-  // WARNING: No error checking is done on user_data!
   ((Fl_Window*) user_data)->hide();
 }
 
@@ -895,82 +920,8 @@ void resize_selection_index_arrays( int nplots_old, int nplots)
 }
 
 //***************************************************************************
-// make_confirmation_window( text) -- Make and manage confirmation window.
-// Result of 1,0,-1 => Yes, No, Cancel.
-int make_confirmation_window( const char* text)
-{
-  // Intialize flag and destroy any existing window
-  // MCL XXX rule #2: "Compile cleanly at high warning levels." 
-  if( confirmation_window != NULL) confirmation_window->hide();
-  
-  // Create the confirmation window
-  Fl::scheme( "plastic");  // optional
-  confirmation_window = new Fl_Window( 400, 100, "Confirmation Window");
-  confirmation_window->begin();
-  confirmation_window->selection_color( FL_BLUE);
-  confirmation_window->labelsize( 10);
-  
-  // Compose text. NOTE use of @@ in conjunction with label()
-  string sMessage = "";
-  sMessage.append( text);
-
-  // Write text to box label and align it inside box
-  Fl_Box* output_box = new Fl_Box( 5, 5, 390, 60, sMessage.c_str());
-  // output_box->box( FL_SHADOW_BOX);
-  output_box->box( FL_NO_BOX);
-  output_box->color( 7);
-  output_box->selection_color( 52);
-  output_box->labelfont( FL_HELVETICA);
-  output_box->labelsize( 15);
-  output_box->align( FL_ALIGN_TOP|FL_ALIGN_CENTER|FL_ALIGN_INSIDE);
-
-  // Define buttons and invoke callback functions to handle them
-  Fl_Button* yes_button = new Fl_Button( 90, 70, 60, 25, "&Yes");
-  Fl_Button* no_button = new Fl_Button( 170, 70, 60, 25, "&No");
-  Fl_Button* cancel_button = new Fl_Button( 250, 70, 60, 25, "&Cancel");
-
-  // Done creating the confirmation window
-  confirmation_window->resizable( confirmation_window);
-  confirmation_window->end();
-  confirmation_window->show();
-  
-  // Loop: While the window is open, wait and check the read queue until the 
-  // right widget is activated
-  while( confirmation_window->shown()) {
-    Fl::wait();
-    for( ; ;) {   // Is this loop needed?
-      Fl_Widget* o = Fl::readqueue();
-      if( !o) break;
-
-      // Has the window been closed or a button been pushed?
-      if( o == yes_button) {
-        confirmation_window->hide();
-        return 1;
-      }
-      else if( o == no_button) {
-        confirmation_window->hide();
-        return 0;
-      }
-      else if( o == cancel_button) {
-        confirmation_window->hide();
-        return -1;
-      }
-      else if( o == confirmation_window) {
-
-        // Don't need to hide window because user has already deleted it
-        // confirmation_window->hide();
-        return -1;
-      }
-    }
-  }
-
-  // When in doubt, do nothing
-  return -1;
-}
-
-//***************************************************************************
 // write_data( o) -- Write data widget.  Invoked by main control panel.  
-// Invokes write method to write a binary data file.
+// Invokes the write method of class data_file_manager to write a data file.
 void write_data( Fl_Widget *o, void* user_data)
 {
   // Evaluate user_data to get ASCII or binary file format
@@ -1002,8 +953,8 @@ void reset_all_plots()
 }
 
 //***************************************************************************
-// read_data( o, user_data) -- Widget that invokes the data_file_manager to 
-// open and read data from a binary or ASCII file.
+// read_data( o, user_data) -- Widget that invokes the read method of class
+// data_file_manager to open and read data from a file.
 void read_data( Fl_Widget* o, void* user_data)
 {
   // Evaluate user_data to get file format
@@ -1043,7 +994,7 @@ void read_data( Fl_Widget* o, void* user_data)
   pointsize = max( 1.0, 6.0 - (int) log10f( (float) npoints));
 
   // Clear children of tab widget and reload plot window array.
-  manage_plot_window_array( o);
+  manage_plot_window_array( o, NULL);
 
   // KLUDGE: Make sure points are drawn in plot windows.  This is now handled 
   // near the end of manage_plot_window_array().
@@ -1109,8 +1060,8 @@ int load_state( Fl_Widget* o)
   // Set user_data for this widget to indicate that this is a READ operation, 
   // then invoke manage_plot_window( o) to clear children of the tab widget 
   // and reload plot window array.
-  o->user_data( (void*) "Read");
-  manage_plot_window_array( o);
+  // o->user_data( (void*) "Read");
+  manage_plot_window_array( o, (void*) "Read");
 
   // Read configuration information from archive
   inputArchive >> BOOST_SERIALIZATION_NVP( nrows);
@@ -1118,8 +1069,11 @@ int load_state( Fl_Widget* o)
 
   // Set user_data for this widget to indicate that this is a RESIZE 
   // operation, then invoke manage_plot_window( o) to apply configuration.
-  o->user_data( (void*) "Resize");
-  manage_plot_window_array( o);
+  // o->user_data( (void*) "Resize");
+  manage_plot_window_array( o,  (void*) "Resize");
+
+  // Refresh display
+  manage_plot_window_array( o,  (void*) "Resize");
 
   // Report success
   return 1;
@@ -1189,7 +1143,6 @@ int save_state( Fl_Widget* o)
   assert( outputFileStream.good());
 
   // Create archive, which will be closed when destructors are called.
-  assert( outputFileStream.good());
   boost::archive::xml_oarchive outputArchive( outputFileStream);
 
   // Write class instance to archive
@@ -1515,7 +1468,7 @@ int main( int argc, char **argv)
   // 'globalized' to make them available to manage_plot_window_array.
   global_argc = argc;
   global_argv = argv;
-  manage_plot_window_array( NULL);
+  manage_plot_window_array( NULL, NULL);
 
   // Invoke Plot_Window::initialize_selection to clear the random selection 
   // that can occur when vp is initialized on some Linux systems.  

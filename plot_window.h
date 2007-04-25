@@ -61,10 +61,11 @@
 //   Plot_Window( w, h) -- Constructor
 //   initialize() -- Initialization method
 //
-//   initialize_VBO() --
-//   fill_VBO() --
-//   initialize_indexVBOs() --
-//   fill_indexVBOs() --
+//   initialize_VBO() -- Initialize VBO for this window
+//   fill_VBO() -- Fill the VBO for this window
+//   initialize_indexVBO( int) -- Initialize the 'index VBO'
+//   initialize_indexVBOs() -- Initialize 'index VBOs'
+//   fill_indexVBOs() -- Fill 'index VBO' for this window
 //
 //   draw() -- Draw plot
 //   draw_grid() -- Draw grid
@@ -115,7 +116,6 @@
 class Plot_Window : public Fl_Gl_Window
 {
   protected:
-    
     // If they are available, use vertex buffer objects (VBOs)
     // have we initialized the openGL vertex buffer object?
     int VBOinitialized;
@@ -176,6 +176,10 @@ class Plot_Window : public Fl_Gl_Window
   public:
     Plot_Window( int w, int h, int new_index);   // Constructor
     void initialize();
+
+    // Initialize and fill index VBO for this window
+    void initialize_indexVBO(int);
+    void fill_indexVBO(int);
 
     // min and max for data's bounding box in x, y, and z;
     float amin[3], amax[3];
@@ -277,10 +281,6 @@ class Plot_Window : public Fl_Gl_Window
 
     // The GLContextshared by all Plot_Windows
     static void *global_GLContext; 
-
-    void initialize_indexVBO(int);
-    void fill_indexVBO(int);
-
 };
 
 #endif   // PLOT_WINDOW_H

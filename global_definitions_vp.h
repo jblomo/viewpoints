@@ -1,4 +1,4 @@
-//*****************************************************************
+//***************************************************************************
 // File name: global_definitions_vp.h
 //
 // Class definitions: none
@@ -7,20 +7,19 @@
 // Classes referenced:
 //   Various BLITZ templates
 //
-// Purpose: Global variables used by Creon Levit's viewpoints.
-//   These must be defined before they are used in any class or
-//   function definitions.
+// Purpose: Global variables used by Creon Levit's viewpoints.  These must 
+//   be defined before they are used in any class or function definitions.
 //
 // General design philosophy:
-//   1) Initializers and #define EXTERN are used so that this code
-//      can be used with separate compilation units.
-//   2) Global variables can be evil.  Move as many of these as
-//      possible into specific classes or to the main routine
+//   1) Initializers and #define EXTERN are used so that this code can be 
+//      used with separate compilation units.
+//   2) Global variables can be evil.  Move as many of these as possible 
+//      into specific classes or to the main routine
 //   3) Consider putting these variables into a NAMESPACE?
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  23-APR-2007
-//*****************************************************************
+// Modified: P. R. Gazis  24-APR-2007
+//***************************************************************************
 
 #ifndef VP_GLOBAL_DEFINITIONS_VP_H
 #define VP_GLOBAL_DEFINITIONS_VP_H 1
@@ -158,7 +157,13 @@ EXTERN char delimiter_char INIT(' ');
   #define GL_COORD_REPLACE_ARB 0x8862
 #endif
 
-//*****************************************************************
+// Define pointers to hold confirmation window
+EXTERN Fl_Window *confirmation_window;
+
+// Global function definitions
+EXTERN int make_confirmation_window( const char* text);
+
+//***************************************************************************
 // Class: MyCompare
 //
 // Class definitions:
@@ -166,15 +171,15 @@ EXTERN char delimiter_char INIT(' ');
 //
 // Classes referenced: none
 //
-// Purpose: Member class to maintain a comparison operator for use
-//   by std::stable_sort
+// Purpose: Member class to maintain a comparison operator for use by 
+//   std::stable_sort
 //
 // Functions:
 //   comparison operator
 //
 // Author: Creon Levit     unknown
 // Modified: P. R. Gazis   25-MAR-2006
-//*****************************************************************
+//***************************************************************************
 class MyCompare
 {
 public:

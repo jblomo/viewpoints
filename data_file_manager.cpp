@@ -19,7 +19,7 @@
 // Purpose: Source code for <data_file_manager.h>
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  23-APR-2007
+// Modified: P. R. Gazis  24-APR-2007
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -815,10 +815,11 @@ int Data_File_Manager::findOutputFile()
   New_File_Chooser* file_chooser = 
     new New_File_Chooser( 
       cOutFileSpec, pattern, New_File_Chooser::CREATE, title);
+  file_chooser->directory( sDirectory_.c_str());
 
   // Loop: Select succesive filespecs until a non-directory is obtained
   while( 1) {
-    if( cOutFileSpec != NULL) file_chooser->directory( cOutFileSpec);
+    // if( cOutFileSpec != NULL) file_chooser->directory( cOutFileSpec);
 
     // Loop: wait until the selection is done, then extract the value.  NOTE: 
     // This usage of while and Fl::wait() seems strange.
@@ -837,42 +838,31 @@ int Data_File_Manager::findOutputFile()
     // make sure this file is closed, the try to open this file to see if it 
     // is a directory.  If it is, update pathname and continue.  Otherwise
     // merely update pathname using the directory in the file chooser.
-    if( pFile != NULL) fclose( pFile);
-    pFile = fopen( cOutFileSpec, "w");
-    if( pFile == NULL) {
-      file_chooser->directory( cOutFileSpec);
-      directory( (string) cOutFileSpec);
-      continue;
-    }
-    else {
-      directory( (string) file_chooser->directory());
-    }
-    
+    // if( pFile != NULL) fclose( pFile);
+    // pFile = fopen( cOutFileSpec, "w");
+    // if( pFile == NULL) {
+    //   file_chooser->directory( cOutFileSpec);
+    //   directory( (string) cOutFileSpec);
+    //   continue;
+    // }
+    // else directory( (string) file_chooser->directory());
+
+    // We're done examining the file, so close it
+    fclose( pFile);
+
     // If we got this far, the file must exist and be available to be
     // overwritten, so open a confirmation window and wait for the button 
     // handler to do something.
-    confirmResult = CANCEL_FILE;
-    make_confirm_window( cOutFileSpec);
+    string sConfirmText = "File '";
+    sConfirmText.append( cOutFileSpec);
+    sConfirmText.append( "' already exists.\nOverwrite exisiting file?\n");
+    int iConfirmResult = make_confirmation_window( sConfirmText.c_str());
 
-    // If this was a 'CANCEL' request, make sure file is closed, then return.
-    if( confirmResult == CANCEL_FILE) {
-      fclose( pFile);
-      return -1;
-    }
-    
-    // If this was a 'NO' request, make sure the pathname is correct, then 
-    // continue.
-    if( confirmResult == NO_FILE) {
-      file_chooser->directory( sDirectory_.c_str());
-      fclose( pFile);
-      continue;
-    }
-    
-    // We've verified that this file exists and the user intends to overwrite
-    // it, so close it and move on
-    confirmResult = YES_FILE;
-    fclose( pFile);
-    break;
+    // If this was a 'CANCEL' request, return without doing anything.  If 
+    // this was a 'YES' request, move on.  Otherwise, make sure we're in
+    // the right directory and try again.
+    if( iConfirmResult < 0) return -1;
+    if( iConfirmResult > 0) break;
   } 
 
   // Obtain file name using the FLTK member function.  This code doesn't work, 
@@ -1253,81 +1243,4 @@ string Data_File_Manager::output_filespec()
 void Data_File_Manager::output_filespec( string outFileSpecIn)
 {
   outFileSpec = outFileSpecIn;
-}
-
-//***************************************************************************
-// Data_File_Manager::make_confirm_window( output_file_name) -- Confirmation 
-// window
-void Data_File_Manager::make_confirm_window( const char* output_file_name)
-{
-  // Intialize flag and destroy any existing window
-  // MCL XXX rule #2: "Compile cleanly at high warning levels." 
-  confirmResult = CANCEL_FILE;
-  if( confirm_window != NULL) confirm_window->hide();
-  
-  // Create confirmation window
-  Fl::scheme( "plastic");  // optional
-  confirm_window = new Fl_Window( 400, 100, "Confirm File Overwrite");
-  confirm_window->begin();
-  confirm_window->selection_color( FL_BLUE);
-  confirm_window->labelsize( 10);
-  
-  // Compose text. NOTE use of @@ in conjunction with label()
-  string sConfirm = "File '";
-  sConfirm.append( output_file_name);
-  sConfirm.append( "' already exists.\nOverwrite exisiting file?\n");
-
-  // Write text to box label and align it inside box
-  Fl_Box* output_box = new Fl_Box( 5, 5, 390, 60, sConfirm.c_str());
-  // output_box->box( FL_SHADOW_BOX);
-  output_box->box( FL_NO_BOX);
-  output_box->color( 7);
-  output_box->selection_color( 52);
-  output_box->labelfont( FL_HELVETICA);
-  output_box->labelsize( 15);
-  output_box->align( FL_ALIGN_TOP|FL_ALIGN_CENTER|FL_ALIGN_INSIDE);
-
-  // Define buttons and invoke callback functions to handle them
-  Fl_Button* yes_button = new Fl_Button( 90, 70, 60, 25, "&Yes");
-  Fl_Button* no_button = new Fl_Button( 170, 70, 60, 25, "&No");
-  Fl_Button* cancel_button = new Fl_Button( 250, 70, 60, 25, "&Cancel");
-
-  // Done creating the confirmation window
-  confirm_window->resizable( confirm_window);
-  confirm_window->end();
-  confirm_window->show();
-  
-  // Loop: While the window is open, wait and check the read queue until the 
-  // right widget is activated
-  while( confirm_window->shown()) {
-    Fl::wait();
-    for( ; ;) {   // Is this loop needed?
-      Fl_Widget* o = Fl::readqueue();
-      if( !o) break;
-
-      // Has the window been closed or a button been pushed?
-      if( o == yes_button) {
-        confirmResult = YES_FILE;
-        confirm_window->hide();
-        return;
-      }
-      else if( o == no_button) {
-        confirmResult = NO_FILE;
-        confirm_window->hide();
-        return;
-      }
-      else if( o == cancel_button) {
-        confirmResult = CANCEL_FILE;
-        confirm_window->hide();
-        return;
-      }
-      else if( o == confirm_window) {
-        confirmResult = CANCEL_FILE;
-
-        // Don't need to hide window because user has already deleted it
-        // confirm_window->hide();
-        return;
-      }
-    }
-  }
 }

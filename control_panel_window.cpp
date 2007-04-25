@@ -1,6 +1,6 @@
 // viewpoints - interactive linked scatterplots and more.
 // copyright 2005 Creon Levit, all rights reserved.
-//*****************************************************************
+//***************************************************************************
 // File name: control_panel_window.cpp
 //
 // Class definitions:
@@ -23,7 +23,7 @@
 //
 // Author: Creon Levit    2005-2006
 // Modified: P. R. Gazis  23-APR-2007
-//*****************************************************************
+//***************************************************************************
 
 // Include the necessary include libraries
 #include "include_libraries_vp.h"
@@ -62,7 +62,6 @@ Fl_Menu_Item Control_Panel_Window::normalization_style_menu_items[] = {
   { 0,              0, 0, (void *) 0,                          0, 0, 0, 0, 0}
 };
 
-
 // array to hold menu items for symbol menu
 Fl_Menu_Item Control_Panel_Window::symbol_menu_items[] = {
   { "points",        0, 0, (void *) SQUARE_POINTS, 0, 0, 0, 0, 0},
@@ -71,18 +70,17 @@ Fl_Menu_Item Control_Panel_Window::symbol_menu_items[] = {
   { 0,               0, 0, (void *) 0,             0, 0, 0, 0, 0}
 };
 
-//*****************************************************************
-// Control_Panel_Window::Control_Panel_Window( x, y, w, h) -- 
-// Default constructor.  Do nothing except call the constructor 
-// for the parent class, Fl_Group.
+//***************************************************************************
+// Control_Panel_Window::Control_Panel_Window( x, y, w, h) --  Default 
+// constructor.  Do nothing except call the constructor for the parent 
+// class, Fl_Group.
 Control_Panel_Window::Control_Panel_Window(
   int x, int y, int w, int h) : Fl_Group( x, y, w, h)
 {}
 
-//*****************************************************************
-// Control_Panel_Window::broadcast_change (*master_widget) -- 
-// broadcast an interaction from the master panel to all (unlocked) 
-// panels.
+//***************************************************************************
+// Control_Panel_Window::broadcast_change (*master_widget) -- Broadcast an 
+// interaction from the master panel to all (unlocked) panels.
 // MCL XXX "locked" panels are not yet implemented.
 void Control_Panel_Window::broadcast_change (Fl_Widget *master_widget)
 {
@@ -154,9 +152,9 @@ void Control_Panel_Window::broadcast_change (Fl_Widget *master_widget)
   }
 }
 
-//*****************************************************************
-// Control_Panel_Window::maybe_draw() -- Check plot window to see
-// if they need to be redrawn.
+//***************************************************************************
+// Control_Panel_Window::maybe_draw() -- Check plot window to see if they 
+// need to be redrawn.
 void Control_Panel_Window::maybe_redraw() 
 {
   // kludge.  Avoid double redraw when setting "don't clear".
@@ -166,9 +164,9 @@ void Control_Panel_Window::maybe_redraw()
   pw->needs_redraw = 1;
 }
 
-//*****************************************************************
-// Plot_Window::extract_and_redraw() -- Extract data for these 
-// (new?) axes and redraw plot.  For one local control panel only.
+//***************************************************************************
+// Plot_Window::extract_and_redraw() -- Extract data for these (new?) axes 
+// and redraw plot.  For one local control panel only.
 void Control_Panel_Window::extract_and_redraw ()
 {
   if( pw->extract_data_points()) {
@@ -176,13 +174,13 @@ void Control_Panel_Window::extract_and_redraw ()
   }
 }
 
-//*****************************************************************
+//***************************************************************************
 // Control_Panel_Window::make_widgets( cpw) -- Make widgets
 void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
 {
-  // Since these (virtual) control panels are really groups inside 
-  // a tab inside a window, set their child widget's coordinates 
-  // relative to their enclosing window's position. 
+  // Since these (virtual) control panels are really groups inside a tab 
+  // inside a window, set their child widget's coordinates relative to 
+  // their enclosing window's position. 
   int xpos = this->x()+50;
   int ypos = this->y()+20;
 
