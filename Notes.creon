@@ -1052,3 +1052,8 @@ IDEA: have points / glyphs that scale with zoom.
 17:35:01 24 Apr 07
 
 Keep track of when last window is hidden, and reinitialize sprites.  When last window is destroyed, re-initialize context.
+
+09:57:24 05 May 07
+
+vp should read CDF files
+

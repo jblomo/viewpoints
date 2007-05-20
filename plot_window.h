@@ -41,7 +41,7 @@
 #include "global_definitions_vp.h"
 
 // Declare class control_panel_window here so it can be referenced
-// class control_panel_window;
+class Control_Panel_Window;
 
 //***************************************************************************
 // Class: Plot_Window
@@ -139,7 +139,9 @@ class Plot_Window : public Fl_Gl_Window
     void draw_data_points();
     void draw_center_glyph();
     void update_linked_transforms();
-    void enable_sprites();
+    void enable_sprites(symbol_type);
+    void enable_regular_points();
+    void enable_antialiased_points();
     void disable_sprites();
 
     // Event handlers
@@ -271,13 +273,18 @@ class Plot_Window : public Fl_Gl_Window
     static blitz::Array<GLfloat,2> colors_hide_deselected;
     static GLfloat pointscolor[ 4];
 
-    // flags and openGL IDs for use with sprites
-    static GLuint spriteTextureID;
+    // point sprites-specific data
     static int sprites_initialized;
 
-	// Buffers to hold sprite (image) data
+    // number of distinct sprites available for plotting symbols
+    static const int Nsprites=5;
+
+    // openGL "texture names" to bind with sprites
+    static GLuint spriteTextureID[Nsprites];
+
+	// Buffers to hold sprite (texture image) data
     static const GLsizei spriteWidth = 8, spriteHeight = 8, spriteDepth  = 2;
-    static GLubyte spriteData [spriteWidth*spriteHeight*spriteDepth];
+    static const GLsizei spriteSize = spriteWidth*spriteHeight*spriteDepth;
 
     // The GLContextshared by all Plot_Windows
     static void *global_GLContext; 

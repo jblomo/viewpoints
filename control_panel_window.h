@@ -156,11 +156,6 @@ class Control_Panel_Window : public Fl_Group
 
     // points, round points, crosses, etc.
     Fl_Choice *symbol_menu;
-    enum symbol_type {
-      SQUARE_POINTS = 0,
-      SMOOTH_POINTS,
-      SPRITES
-    };
     static Fl_Menu_Item symbol_menu_items[];
 
     // Pointer to and index of the plot window associated with 

@@ -64,10 +64,14 @@ Fl_Menu_Item Control_Panel_Window::normalization_style_menu_items[] = {
 
 // array to hold menu items for symbol menu
 Fl_Menu_Item Control_Panel_Window::symbol_menu_items[] = {
-  { "points",        0, 0, (void *) SQUARE_POINTS, 0, 0, 0, 0, 0},
-  { "smooth points", 0, 0, (void *) SMOOTH_POINTS, 0, 0, 0, 0, 0},
-  { "crosses",       0, 0, (void *) SPRITES,       0, 0, 0, 0, 0},
-  { 0,               0, 0, (void *) 0,             0, 0, 0, 0, 0}
+  { "squares",        0, 0, (void *) FILLED_SQUARES,   0, 0, 0, 0, 0},
+  { "disks",          0, 0, (void *) FILLED_CIRCLES,   0, 0, 0, 0, 0},
+  { "crosses (+)",   	0, 0, (void *) CROSSES,          0, 0, 0, 0, 0},
+  { "hollow squares",	0, 0, (void *) HOLLOW_SQUARES,   0, 0, 0, 0, 0},
+  { "hollow circles",	0, 0, (void *) HOLLOW_CIRCLES,   0, 0, 0, 0, 0},
+  { "crosses (x)",    0, 0, (void *) DIAGONAL_CROSSES, 0, 0, 0, 0, 0},
+  { "smooth points",  0, 0, (void *) SMOOTH_POINTS,    0, 0, 0, 0, 0},
+  { 0,                0, 0, (void *) 0,             	 0, 0, 0, 0, 0}
 };
 
 //***************************************************************************
@@ -353,7 +357,7 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   symbol_menu = new Fl_Choice(xpos+pointsize_slider->w()+5, ypos, 60, 20);
   symbol_menu->textsize(12);
   symbol_menu->menu(symbol_menu_items);
-  symbol_menu->value(SQUARE_POINTS);
+  symbol_menu->value(0);
   symbol_menu->callback( (Fl_Callback*)replot, this);
 
   // size for selected point size

@@ -157,6 +157,16 @@ EXTERN char delimiter_char INIT(' ');
   #define GL_COORD_REPLACE_ARB 0x8862
 #endif
 
+enum symbol_type {
+    FILLED_SQUARES = 0,
+    FILLED_CIRCLES,
+    CROSSES,
+    HOLLOW_SQUARES,
+    HOLLOW_CIRCLES,
+    DIAGONAL_CROSSES,
+    SMOOTH_POINTS,
+};
+
 // Define pointers to hold confirmation window
 EXTERN Fl_Window *confirmation_window;
 

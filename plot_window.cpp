@@ -74,59 +74,78 @@ blitz::Array<unsigned int,1> Plot_Window::number_selected(MAXPLOTS+1);
 blitz::Array<unsigned int,2> Plot_Window::indices_selected(MAXPLOTS+1,1); 
 
 //GLfloat Plot_Window::texenvcolor[ 4] = { 1, 1, 1, 1};
-//GLuint Plot_Window::texnames[ 2] = { };
+GLuint Plot_Window::spriteTextureID[Nsprites] = {};
 int Plot_Window::sprites_initialized = 0;
+
 void *Plot_Window::global_GLContext = NULL;
 int Plot_Window::indexVBOsinitialized = 0;
 int Plot_Window::indexVBOsfilled = 0;
 #define BUFFER_OFFSET(vbo_offset) ((char *)NULL + (vbo_offset))
 
-// Define variables and methods for use with sprites.  NOTE: As of now, many
-// of these are globals and should be made static members of Plot_Window
-const GLsizei spriteWidth = 8, spriteHeight = 8, spriteDepth  = 2;
-// + shaped "plus"
-GLubyte Plot_Window::spriteData[spriteWidth*spriteHeight*spriteDepth] = {
-	255,0,    255,0,    255,0,    255,255,  255,255,  255,0,    255,0,    255,0,
-	255,0,    255,0,    255,0,    255,255,  255,255,  255,0,    255,0,    255,0,
-	255,0,    255,0,    255,0,    255,255,  255,255,  255,0,    255,0,    255,0,
-	255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,
-	255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,
-	255,0,    255,0,    255,0,    255,255,  255,255,  255,0,    255,0,    255,0,
-	255,0,    255,0,    255,0,    255,255,  255,255,  255,0,    255,0,    255,0,
-	255,0,    255,0,    255,0,    255,255,  255,255,  255,0,    255,0,    255,0
+// MCL XXX these should probably be at least 32x32, if not larger.
+
+GLubyte spriteData[Plot_Window::Nsprites][Plot_Window::spriteSize] = {
+// a "+" sign.
+  {
+    255,0,    255,0,    255,0,    255,255,  255,255,  255,0,    255,0,    255,0,
+    255,0,    255,0,    255,0,    255,255,  255,255,  255,0,    255,0,    255,0,
+    255,0,    255,0,    255,0,    255,255,  255,255,  255,0,    255,0,    255,0,
+    255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,
+    255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,
+    255,0,    255,0,    255,0,    255,255,  255,255,  255,0,    255,0,    255,0,
+    255,0,    255,0,    255,0,    255,255,  255,255,  255,0,    255,0,    255,0,
+    255,0,    255,0,    255,0,    255,255,  255,255,  255,0,    255,0,    255,0
+  },
+  
+// an "x" shape 
+  {
+    255,127,  255,127,  255,0,    255,0,    255,0,    255,0,    255,127,  255,127,
+    255,127,  255,255,  255,127,  255,0,    255,0,    255,127,  255,255,  255,127,
+    255,0,    255,127,  255,255,  255,127,  255,127,  255,255,  255,127,  255,0,
+    255,0,    255,0,    255,127,  255,255,  255,255,  255,127,  255,0,    255,0,
+    255,0,    255,0,    255,127,  255,255,  255,255,  255,127,  255,0,    255,0,
+    255,0,    255,127,  255,255,  255,127,  255,127,  255,255,  255,127,  255,0,
+    255,127,  255,255,  255,127,  255,0,    255,0,    255,127,  255,255,  255,127,
+    255,127,  255,127,  255,0,    255,0,    255,0,    255,0,    255,127,  255,127
+  },
+  
+// an "x" shape (2nd try)
+  {
+    255,255,  255,255,  255,0,    255,0,    255,0,    255,0,    255,255,  255,255,
+    255,255,  255,255,  255,255,  255,0,    255,0,    255,255,  255,255,  255,255,
+    255,0,    255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,0,
+    255,0,    255,0,    255,255,  255,255,  255,255,  255,255,  255,0,    255,0,
+    255,0,    255,0,    255,255,  255,255,  255,255,  255,255,  255,0,    255,0,
+    255,0,    255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,0,
+    255,255,  255,255,  255,255,  255,0,    255,0,    255,255,  255,255,  255,255,
+    255,255,  255,255,  255,0,    255,0,    255,0,    255,0,    255,255,  255,255
+  },
+  
+// an unfilled square
+  {
+    255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,
+    255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,
+    255,255,  255,255,  255,0,    255,0,    255,0,    255,0,    255,255,  255,255,
+    255,255,  255,255,  255,0,    255,0,    255,0,    255,0,    255,255,  255,255,
+    255,255,  255,255,  255,0,    255,0,    255,0,    255,0,    255,255,  255,255,
+    255,255,  255,255,  255,0,    255,0,    255,0,    255,0,    255,255,  255,255,
+    255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,
+    255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255
+  },
+  
+// a filled square
+  {
+    255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,
+    255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,
+    255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,
+    255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,
+    255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,
+    255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,
+    255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,
+    255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255
+  }
 };
-
-#if 0
-const GLsizei spriteWidth = 8, spriteHeight = 8, spriteDepth  = 2;
-// x-shaped "cross"
-GLubyte Plot_Window::spriteData[spriteWidth*spriteHeight*spriteDepth] = {
-	255,127,  255,127,  255,0,    255,0,    255,0,    255,0,    255,127,  255,127,
-	255,127,  255,255,  255,127,  255,0,    255,0,    255,127,  255,255,  255,127,
-	255,0,    255,127,  255,255,  255,127,  255,127,  255,255,  255,127,  255,0,
-	255,0,    255,0,    255,127,  255,255,  255,255,  255,127,  255,0,    255,0,
-	255,0,    255,0,    255,127,  255,255,  255,255,  255,127,  255,0,    255,0,
-	255,0,    255,127,  255,255,  255,127,  255,127,  255,255,  255,127,  255,0,
-	255,127,  255,255,  255,127,  255,0,    255,0,    255,127,  255,255,  255,127,
-	255,127,  255,127,  255,0,    255,0,    255,0,    255,0,    255,127,  255,127
-};
-
-// Load buffer to define a "square" (unfilled) sprite
-GLubyte Plot_Window::spriteData[ spriteWidth*spriteHeight*spriteDepth] = {
-  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,
-  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,
-  255,255,  255,255,  255,0,    255,0,    255,0,    255,0,    255,255,  255,255,
-  255,255,  255,255,  255,0,    255,0,    255,0,    255,0,    255,255,  255,255,
-  255,255,  255,255,  255,0,    255,0,    255,0,    255,0,    255,255,  255,255,
-  255,255,  255,255,  255,0,    255,0,    255,0,    255,0,    255,255,  255,255,
-  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,
-  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255
-};
-#endif // 0
-
-// This should be made static
-// GLuint spriteTextureID;
-GLuint Plot_Window::spriteTextureID;
-
+  
 // Declarations for global methods defined and used by class Plot_Window.
 // NOTE: Is it a good idea to do this here rather than global_definitions.h?
 void moving_average( 
@@ -1122,20 +1141,21 @@ void Plot_Window::draw_data_points()
 
   glBlendFunc(GL_SRC_ALPHA, GL_DST_ALPHA);
 
-  Control_Panel_Window::symbol_type sym;
-  sym = (Control_Panel_Window::symbol_type) cp->symbol_menu->value();
-  switch (sym) {
-    case Control_Panel_Window::SQUARE_POINTS:
-      disable_sprites();
+  symbol_type draw_using_symbol = (symbol_type) cp->symbol_menu->value();
+  switch (draw_using_symbol) {
+    case FILLED_SQUARES:
+      enable_regular_points();
+      break;
+    case FILLED_CIRCLES:
+      enable_antialiased_points();
+      break;
+    case CROSSES:
+    case HOLLOW_SQUARES:
+    case HOLLOW_CIRCLES:
+    case DIAGONAL_CROSSES:
+    case SMOOTH_POINTS:
+      enable_sprites(draw_using_symbol);
       glDisable( GL_POINT_SMOOTH);
-      break;
-    case Control_Panel_Window::SMOOTH_POINTS:
-      disable_sprites();
-      glEnable( GL_POINT_SMOOTH);
-      glHint( GL_POINT_SMOOTH_HINT,GL_NICEST);
-      break;
-    case Control_Panel_Window::SPRITES:
-      enable_sprites();
       break;
     default:
       assert( !"invalid symbol type");
@@ -1646,16 +1666,15 @@ void Plot_Window::compute_rank(int var_index)
     // So this next statement just creates a new view of the rhs.
     blitz::Array<int,1> a_ranked_indices = ranked_points(var_index, NPTS); 
     
-    // initialize the ranked indices to be sequential.  The sort (following) will
+    // initializealize the ranked indices to be sequential.  The sort (following) will
     // permute them into the correct order.
     blitz::firstIndex ident;    // MCL XXX don't we have a global holding this?
     a_ranked_indices = ident;
 
     // the sort method myCompare() needs a global alias (tmp_points) to the 
-    // data being used as the sort key.  We can't use the copy contructor this 
-    // time because we aren't contructing tmp_points - it was already 
-    // constructed at startup.  Lucky for us, blitz provides the reference() 
-    // method for this purpose.
+    // array data holding the sort key.  We can't use the copy contructor here 
+    // since tmp_points was constructed in pre-main.
+    // Lucky for us, blitz provides the reference() method for this purpose.
     tmp_points.reference(points(var_index, NPTS));
     int *lo = a_ranked_indices.data(), *hi = lo + npoints;
     std::stable_sort(lo, hi, MyCompare());
@@ -2037,6 +2056,22 @@ void Plot_Window::clear_selection( Fl_Widget *o)
 }
 
 
+// Methods to enable drawing with points (as opposed to point sprites)
+
+void Plot_Window::enable_regular_points ()
+{
+  disable_sprites();
+  glDisable( GL_POINT_SMOOTH);
+}
+
+void Plot_Window::enable_antialiased_points ()
+{
+  disable_sprites();
+  glEnable( GL_POINT_SMOOTH);
+  glHint( GL_POINT_SMOOTH_HINT,GL_NICEST);
+}
+
+
 //***************************************************************************
 // Define variables and methods for use with sprites
 
@@ -2047,30 +2082,33 @@ void Plot_Window::initialize_sprites()
 {
   glEnable( GL_TEXTURE_2D);
   glEnable( GL_POINT_SPRITE_ARB);
-  glGenTextures( 1, &spriteTextureID);
-  glBindTexture( GL_TEXTURE_2D, spriteTextureID);
-  gluBuild2DMipmaps(
-    GL_TEXTURE_2D, GL_LUMINANCE_ALPHA, spriteWidth, spriteHeight, 
-    GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, spriteData);
-  CHECK_GL_ERROR( "");
-
+  glGenTextures( Nsprites, spriteTextureID);
+  for (int i=0; i<Nsprites; i++) {
+    glBindTexture( GL_TEXTURE_2D, spriteTextureID[i]);
+    gluBuild2DMipmaps( GL_TEXTURE_2D, GL_LUMINANCE_ALPHA, spriteWidth, spriteHeight, 
+                       GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, spriteData[i]);
+    CHECK_GL_ERROR( "initializing sprite texture mipmaps");
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    CHECK_GL_ERROR( "initializing sprite texture parameters");
+  }
   sprites_initialized = 1;
   cout << "Textures initialized!" << endl;
 }
     
 //***************************************************************************
 // Plot_Window::enable_sprites() -- Invoke OpenGL routines to enable sprites
-void Plot_Window::enable_sprites()
+void Plot_Window::enable_sprites(symbol_type draw_using_symbol)
 {
   if (!sprites_initialized)
     initialize_sprites();
   glEnable( GL_TEXTURE_2D);
   glEnable( GL_POINT_SPRITE_ARB);
-  glBindTexture( GL_TEXTURE_2D, spriteTextureID);
-  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-  glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+  int texture_index = draw_using_symbol - 2;
+  assert ((texture_index >= 0) && (texture_index < Nsprites));
+  glBindTexture( GL_TEXTURE_2D, spriteTextureID[texture_index]);
   glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
   glTexEnvf( GL_POINT_SPRITE_ARB, GL_COORD_REPLACE_ARB, GL_TRUE );
 }
@@ -2083,7 +2121,6 @@ void Plot_Window::disable_sprites()
   glDisable( GL_POINT_SPRITE_ARB);
 }
 
-
 //***************************************************************************
 // Defne methods to use vertex buffer objects (VBOs)
 
@@ -2094,17 +2131,15 @@ void Plot_Window::initialize_VBO()
   // Create a VBO. Index 0 is reserved.
   if (!VBOinitialized) {
     glBindBufferARB(GL_ARRAY_BUFFER_ARB, index+1);  
-	CHECK_GL_ERROR ("");
+    CHECK_GL_ERROR ("creating VBO");
 
     // Reserve enough space in openGL server memory VBO to hold all the 
     // vertices, but do not initilize it.
-    glBufferDataARB(
-      GL_ARRAY_BUFFER_ARB, 
-      (GLsizeiptrARB) npoints*3*sizeof(GLfloat), 
-      (void *)NULL, GL_STATIC_DRAW_ARB);
-
+    glBufferDataARB( GL_ARRAY_BUFFER_ARB, 
+                     (GLsizeiptrARB) npoints*3*sizeof(GLfloat), 
+                     (void *)NULL, GL_STATIC_DRAW_ARB);
     // make sure we succeeded 
-    CHECK_GL_ERROR ("");
+    CHECK_GL_ERROR ("initializing VBO");
     cerr << " initialized VBO for plot window " << index << endl;
     VBOinitialized = 1;
   }
@@ -2117,10 +2152,9 @@ void Plot_Window::fill_VBO()
   if (!VBOfilled) {
     glBindBufferARB(GL_ARRAY_BUFFER_ARB, index+1);  
     void *vertexp = (void *)vertices.data();
-    glBufferSubDataARB(
-      GL_ARRAY_BUFFER, (GLintptrARB) 0, 
-      (GLsizeiptrARB) (npoints*3*sizeof(GLfloat)), vertexp);
-    CHECK_GL_ERROR("");
+    glBufferSubDataARB( GL_ARRAY_BUFFER, (GLintptrARB) 0, 
+                        (GLsizeiptrARB) (npoints*3*sizeof(GLfloat)), vertexp);
+    CHECK_GL_ERROR("filling VBO");
     VBOfilled = true;
   }
 }
@@ -2166,7 +2200,7 @@ void Plot_Window::fill_indexVBO(int set)
       (GLsizeiptrARB) (number_selected(set)*sizeof(GLuint)), indices);
 
     // make sure we succeeded 
-    CHECK_GL_ERROR("");
+    CHECK_GL_ERROR("filling index VBO");
   }
 }
 
