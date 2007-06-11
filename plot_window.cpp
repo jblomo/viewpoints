@@ -74,7 +74,8 @@ blitz::Array<unsigned int,1> Plot_Window::number_selected(MAXPLOTS+1);
 blitz::Array<unsigned int,2> Plot_Window::indices_selected(MAXPLOTS+1,1); 
 
 //GLfloat Plot_Window::texenvcolor[ 4] = { 1, 1, 1, 1};
-GLuint Plot_Window::spriteTextureID[Nsprites] = {};
+GLuint Plot_Window::spriteTextureID[NSYMBOLS];
+GLubyte* Plot_Window::spriteData[NSYMBOLS];
 int Plot_Window::sprites_initialized = 0;
 
 void *Plot_Window::global_GLContext = NULL;
@@ -82,70 +83,6 @@ int Plot_Window::indexVBOsinitialized = 0;
 int Plot_Window::indexVBOsfilled = 0;
 #define BUFFER_OFFSET(vbo_offset) ((char *)NULL + (vbo_offset))
 
-// MCL XXX these should probably be at least 32x32, if not larger.
-
-GLubyte spriteData[Plot_Window::Nsprites][Plot_Window::spriteSize] = {
-// a "+" sign.
-  {
-    255,0,    255,0,    255,0,    255,255,  255,255,  255,0,    255,0,    255,0,
-    255,0,    255,0,    255,0,    255,255,  255,255,  255,0,    255,0,    255,0,
-    255,0,    255,0,    255,0,    255,255,  255,255,  255,0,    255,0,    255,0,
-    255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,
-    255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,
-    255,0,    255,0,    255,0,    255,255,  255,255,  255,0,    255,0,    255,0,
-    255,0,    255,0,    255,0,    255,255,  255,255,  255,0,    255,0,    255,0,
-    255,0,    255,0,    255,0,    255,255,  255,255,  255,0,    255,0,    255,0
-  },
-  
-// an "x" shape 
-  {
-    255,127,  255,127,  255,0,    255,0,    255,0,    255,0,    255,127,  255,127,
-    255,127,  255,255,  255,127,  255,0,    255,0,    255,127,  255,255,  255,127,
-    255,0,    255,127,  255,255,  255,127,  255,127,  255,255,  255,127,  255,0,
-    255,0,    255,0,    255,127,  255,255,  255,255,  255,127,  255,0,    255,0,
-    255,0,    255,0,    255,127,  255,255,  255,255,  255,127,  255,0,    255,0,
-    255,0,    255,127,  255,255,  255,127,  255,127,  255,255,  255,127,  255,0,
-    255,127,  255,255,  255,127,  255,0,    255,0,    255,127,  255,255,  255,127,
-    255,127,  255,127,  255,0,    255,0,    255,0,    255,0,    255,127,  255,127
-  },
-  
-// an "x" shape (2nd try)
-  {
-    255,255,  255,255,  255,0,    255,0,    255,0,    255,0,    255,255,  255,255,
-    255,255,  255,255,  255,255,  255,0,    255,0,    255,255,  255,255,  255,255,
-    255,0,    255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,0,
-    255,0,    255,0,    255,255,  255,255,  255,255,  255,255,  255,0,    255,0,
-    255,0,    255,0,    255,255,  255,255,  255,255,  255,255,  255,0,    255,0,
-    255,0,    255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,0,
-    255,255,  255,255,  255,255,  255,0,    255,0,    255,255,  255,255,  255,255,
-    255,255,  255,255,  255,0,    255,0,    255,0,    255,0,    255,255,  255,255
-  },
-  
-// an unfilled square
-  {
-    255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,
-    255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,
-    255,255,  255,255,  255,0,    255,0,    255,0,    255,0,    255,255,  255,255,
-    255,255,  255,255,  255,0,    255,0,    255,0,    255,0,    255,255,  255,255,
-    255,255,  255,255,  255,0,    255,0,    255,0,    255,0,    255,255,  255,255,
-    255,255,  255,255,  255,0,    255,0,    255,0,    255,0,    255,255,  255,255,
-    255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,
-    255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255
-  },
-  
-// a filled square
-  {
-    255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,
-    255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,
-    255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,
-    255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,
-    255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,
-    255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,
-    255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,
-    255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255,  255,255
-  }
-};
-  
 // Declarations for global methods defined and used by class Plot_Window.
 // NOTE: Is it a good idea to do this here rather than global_definitions.h?
 void moving_average( 
@@ -1141,24 +1078,19 @@ void Plot_Window::draw_data_points()
 
   glBlendFunc(GL_SRC_ALPHA, GL_DST_ALPHA);
 
-  symbol_type draw_using_symbol = (symbol_type) cp->symbol_menu->value();
-  switch (draw_using_symbol) {
-    case FILLED_SQUARES:
+  int sprite = cp->symbol_menu->value();
+  assert ((sprite >= 0) && (sprite < NSYMBOLS));
+  switch (sprite) {
+    case 0:
       enable_regular_points();
       break;
-    case FILLED_CIRCLES:
+#if 0 // this should be executed based on run-time test iff GL_ARB_POINT_SPRITE is absent.
+    case 1:
       enable_antialiased_points();
       break;
-    case CROSSES:
-    case HOLLOW_SQUARES:
-    case HOLLOW_CIRCLES:
-    case DIAGONAL_CROSSES:
-    case SMOOTH_POINTS:
-      enable_sprites(draw_using_symbol);
-      glDisable( GL_POINT_SMOOTH);
-      break;
+#endif
     default:
-      assert( !"invalid symbol type");
+      enable_sprites(sprite);
       break;
     }
 
@@ -1259,9 +1191,11 @@ void Plot_Window::draw_data_points()
     glDisable(GL_ALPHA_TEST);
     alpha_test_enabled = 0;
   }
-  
   if (z_bufferring_enabled) {
     glDisable( GL_DEPTH_TEST);
+  }
+  if (sprite > 0) {
+    disable_sprites();
   }
 }
 
@@ -2073,7 +2007,7 @@ void Plot_Window::enable_antialiased_points ()
 
 
 //***************************************************************************
-// Define variables and methods for use with sprites
+// Initialize variables and state for use with point sprites
 
 //***************************************************************************
 // Plot_Window::initialize_sprites() -- Invoke OpenGL routines to initialize
@@ -2081,12 +2015,13 @@ void Plot_Window::enable_antialiased_points ()
 void Plot_Window::initialize_sprites()
 {
   glEnable( GL_TEXTURE_2D);
-  glEnable( GL_POINT_SPRITE_ARB);
-  glGenTextures( Nsprites, spriteTextureID);
-  for (int i=0; i<Nsprites; i++) {
+  // glEnable( GL_POINT_SPRITE_ARB);
+  glGenTextures( NSYMBOLS, spriteTextureID);
+  make_sprite_textures ();
+  for (int i=0; i<NSYMBOLS; i++) {
     glBindTexture( GL_TEXTURE_2D, spriteTextureID[i]);
-    gluBuild2DMipmaps( GL_TEXTURE_2D, GL_LUMINANCE_ALPHA, spriteWidth, spriteHeight, 
-                       GL_LUMINANCE_ALPHA, GL_UNSIGNED_BYTE, spriteData[i]);
+    gluBuild2DMipmaps( GL_TEXTURE_2D, GL_LUMINANCE, spriteWidth, spriteHeight, 
+                       GL_RGB, GL_UNSIGNED_BYTE, spriteData[i]);
     CHECK_GL_ERROR( "initializing sprite texture mipmaps");
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -2096,19 +2031,20 @@ void Plot_Window::initialize_sprites()
   }
   sprites_initialized = 1;
   cout << "Textures initialized!" << endl;
+  glDisable( GL_TEXTURE_2D);
 }
     
 //***************************************************************************
 // Plot_Window::enable_sprites() -- Invoke OpenGL routines to enable sprites
-void Plot_Window::enable_sprites(symbol_type draw_using_symbol)
+void Plot_Window::enable_sprites(int sprite)
 {
+  glDisable( GL_POINT_SMOOTH);
   if (!sprites_initialized)
     initialize_sprites();
   glEnable( GL_TEXTURE_2D);
   glEnable( GL_POINT_SPRITE_ARB);
-  int texture_index = draw_using_symbol - 2;
-  assert ((texture_index >= 0) && (texture_index < Nsprites));
-  glBindTexture( GL_TEXTURE_2D, spriteTextureID[texture_index]);
+  assert ((sprite >= 0) && (sprite < NSYMBOLS));
+  glBindTexture( GL_TEXTURE_2D, spriteTextureID[sprite]);
   glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
   glTexEnvf( GL_POINT_SPRITE_ARB, GL_COORD_REPLACE_ARB, GL_TRUE );
 }

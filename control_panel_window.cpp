@@ -62,18 +62,6 @@ Fl_Menu_Item Control_Panel_Window::normalization_style_menu_items[] = {
   { 0,              0, 0, (void *) 0,                          0, 0, 0, 0, 0}
 };
 
-// array to hold menu items for symbol menu
-Fl_Menu_Item Control_Panel_Window::symbol_menu_items[] = {
-  { "squares",        0, 0, (void *) FILLED_SQUARES,   0, 0, 0, 0, 0},
-  { "disks",          0, 0, (void *) FILLED_CIRCLES,   0, 0, 0, 0, 0},
-  { "crosses (+)",   	0, 0, (void *) CROSSES,          0, 0, 0, 0, 0},
-  { "hollow squares",	0, 0, (void *) HOLLOW_SQUARES,   0, 0, 0, 0, 0},
-  { "hollow circles",	0, 0, (void *) HOLLOW_CIRCLES,   0, 0, 0, 0, 0},
-  { "crosses (x)",    0, 0, (void *) DIAGONAL_CROSSES, 0, 0, 0, 0, 0},
-  { "smooth points",  0, 0, (void *) SMOOTH_POINTS,    0, 0, 0, 0, 0},
-  { 0,                0, 0, (void *) 0,             	 0, 0, 0, 0, 0}
-};
-
 //***************************************************************************
 // Control_Panel_Window::Control_Panel_Window( x, y, w, h) --  Default 
 // constructor.  Do nothing except call the constructor for the parent 
@@ -346,23 +334,28 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
 
   // Pointsize slider
   pointsize_slider = 
-    new Fl_Hor_Value_Slider_Input( xpos, ypos, cpw->w()-125, 20, "size");
+    new Fl_Hor_Value_Slider_Input( xpos, ypos, cpw->w()-145, 20, "size");
   pointsize_slider->align(FL_ALIGN_LEFT);
   pointsize_slider->value(pointsize);
   pointsize_slider->step(0.25);
   pointsize_slider->bounds(1.0,50.0);
   pointsize_slider->callback((Fl_Callback*)replot, this);
 
-  // symbol types menu
-  symbol_menu = new Fl_Choice(xpos+pointsize_slider->w()+5, ypos, 60, 20);
+  // symbol types menu - calls a method to do the dirty work;
+  symbol_menu = new Fl_Choice(xpos+pointsize_slider->w()+45, ypos, 45, 20);
+  build_symbol_menu ();
   symbol_menu->textsize(12);
+  symbol_menu->down_box(FL_NO_BOX);
+  symbol_menu->clear_visible_focus(); // MCL XXX - I think this should be set for all widgets
+  symbol_menu->color(FL_WHITE);
   symbol_menu->menu(symbol_menu_items);
+  symbol_menu->label("symbl");
   symbol_menu->value(0);
   symbol_menu->callback( (Fl_Callback*)replot, this);
 
   // size for selected point size
   selected_pointsize_slider = 
-    new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, cpw->w()-125, 20, "size2");
+    new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, cpw->w()-145, 20, "size2");
   selected_pointsize_slider->align(FL_ALIGN_LEFT);
   selected_pointsize_slider->value(pointsize);
   selected_pointsize_slider->step(0.25);

@@ -139,7 +139,7 @@ class Plot_Window : public Fl_Gl_Window
     void draw_data_points();
     void draw_center_glyph();
     void update_linked_transforms();
-    void enable_sprites(symbol_type);
+    void enable_sprites(int);
     void enable_regular_points();
     void enable_antialiased_points();
     void disable_sprites();
@@ -276,18 +276,20 @@ class Plot_Window : public Fl_Gl_Window
     // point sprites-specific data
     static int sprites_initialized;
 
-    // number of distinct sprites available for plotting symbols
-    static const int Nsprites=5;
-
     // openGL "texture names" to bind with sprites
-    static GLuint spriteTextureID[Nsprites];
+    static GLuint spriteTextureID[NSYMBOLS];
+
+    // Array of texture images for point sprites
+    static GLubyte* spriteData[NSYMBOLS];
 
 	// Buffers to hold sprite (texture image) data
-    static const GLsizei spriteWidth = 8, spriteHeight = 8, spriteDepth  = 2;
-    static const GLsizei spriteSize = spriteWidth*spriteHeight*spriteDepth;
+    static const GLsizei spriteWidth = 64, spriteHeight = 64, spriteDepth=4;
+    static const GLsizei spriteSize = spriteWidth*spriteHeight;
+    static void make_sprite_textures(void);
 
     // The GLContextshared by all Plot_Windows
     static void *global_GLContext; 
+
 };
 
 #endif   // PLOT_WINDOW_H

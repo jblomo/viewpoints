@@ -51,6 +51,10 @@ EXTERN int ncols INIT(2);   // Default number of columns of plots
 EXTERN int nplots INIT(nrows*ncols);  // Default number of plot windows
 #define MAXPLOTS 256 // maximum number of plot windows, must be a power of 2.
 
+// number of symbols avaliable for plotting (i.e. number of textures available for points sprites)
+// and also the number of symbols in the symbols_menu.
+#define NSYMBOLS 53
+
 // Set the maximum number of columns and rows
 #define MAXVARS 1000  // Maximum number of columns
 #define MAXPOINTS 1500000;  // Maximum number of rows (unless overidded by "--npoints=<int>")
@@ -156,16 +160,6 @@ EXTERN char delimiter_char INIT(' ');
 #ifndef GL_COORD_REPLACE_ARB
   #define GL_COORD_REPLACE_ARB 0x8862
 #endif
-
-enum symbol_type {
-    FILLED_SQUARES = 0,
-    FILLED_CIRCLES,
-    CROSSES,
-    HOLLOW_SQUARES,
-    HOLLOW_CIRCLES,
-    DIAGONAL_CROSSES,
-    SMOOTH_POINTS,
-};
 
 // Define pointers to hold confirmation window
 EXTERN Fl_Window *confirmation_window;

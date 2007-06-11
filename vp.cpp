@@ -1352,9 +1352,14 @@ int main( int argc, char **argv)
 
       // set field delimiter character
       case 'd':
-        if( optarg!=NULL)
-          delimiter_char = optarg[0];
-        else {
+        if( optarg!=NULL) {
+          std::stringstream ss(optarg);
+          std::string buf;
+          ss >> buf;
+          if (buf.size() > 0)
+          delimiter_char = buf[0];
+          cout << "delimiter character is: " << delimiter_char << endl;
+        } else {
           usage();
           exit( -1);
         }

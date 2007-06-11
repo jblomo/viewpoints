@@ -157,6 +157,7 @@ class Control_Panel_Window : public Fl_Group
     // points, round points, crosses, etc.
     Fl_Choice *symbol_menu;
     static Fl_Menu_Item symbol_menu_items[];
+    void build_symbol_menu (void);
 
     // Pointer to and index of the plot window associated with 
     // this control panel tab.  Each plot window has the same 

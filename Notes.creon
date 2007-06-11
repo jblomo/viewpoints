@@ -1057,3 +1057,22 @@ Keep track of when last window is hidden, and reinitialize sprites.  When last w
 
 vp should read CDF files
 
+(well, maybe not)
+
+19:49:01 02 Jun 07
+
+got symbols done.  Now on to brushes.  
+Brushes will affect all windows.  Brushes will have
+  symbol, size, color (HLSA), lum1? lum2?, solo
+Windows will have
+  lum1, lum, solo (or mask buttons), scale poinst with xform button
+Selection action will have:
+  replace selection
+  add to selection
+  subtract from selection
+  complement
+perhaps bushes should have, or be governed by, the window tabs (1,2,3... ALL) like other controls.
+  perhaps choosing the brushes tab should choose the ALL tab, but then the user could change it back
+  when selecting a new data window, there are several modes:
+    new brush (with new default color) for each window
+    same brush unless changed <---

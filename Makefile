@@ -22,22 +22,24 @@ endif
 DEBUG		= -gfull -ggdb -Wall -Wunused -Wconversion -fexceptions 
 
 
-# compiling for darwin (OSX) ?
+# compiling on Apple OSX (darwin)
 ifeq ($(platform),Darwin)
 
-# compiling for OSX on intel ?
-ifeq ($(hardware),i386)
+  # compiling on intel mac
+  ifeq ($(hardware),i386)
 	OPTIM = -O6 -ftree-vectorize -ftree-vectorizer-verbose=0 -Wall -Wconversion -Wno-long-double -ffast-math -fsigned-char -gfull 
-# compiling for OSX on powerPC ?
-else
+
+  # compiling on PowerPC mac
+  else
 	OPTIM = -O6 -ftree-vectorize -ftree-vectorizer-verbose=0 -Wall -Wconversion -Wno-long-double -ffast-math -fsigned-char -maltivec -mabi=altivec -faltivec -mpowerpc-gfxopt -gfull
-endif
 
-# uncomment for debugging version
-#	OPTIM = $(DEBUG)
+  endif
+
+  # uncomment for debugging version (OSX, intel or ppc)
+  #	OPTIM = $(DEBUG)
 
 else
-# compiling on linux, assume intel.
+# compiling on linux (assume intel HW)
 
 #	OPTIM = -O0 $(DEBUG)
 	OPTIM = -O6 -Wextra -ffast-math -fno-exceptions -g
@@ -54,15 +56,15 @@ CXXFLAGS	= $(OPTIM) -DGL_GLEXT_PROTOTYPES
 # libraries to link with:
 ifeq ($(platform),Darwin)
 
+	LDLIBS = -framework AGL -framework OpenGL -framework Carbon -framework ApplicationServices -framework vecLib -lm -lmx -lgsl -lboost_serialization-d
+
 # uncomment for OSX machines where I CAN install things as root... (don't forget to build all libraries as static only)
-	INCPATH = -I/sw/include -I/usr/local/include -I/usr/local/include/boost-1_33_1/
-	LIBPATH	= -L/usr/local/lib -L/sw/lib
-	LDLIBS = -framework AGL -framework OpenGL -framework Carbon -framework ApplicationServices -framework vecLib -lm -lmx -lgsl -lboost_serialization-gcc
+#	INCPATH = -I/sw/include -I/usr/local/include -I/usr/local/include/boost-1_34/
+#	LIBPATH	= -L/usr/local/lib -L/sw/lib
 
 # uncomment for OSX machines where I can NOT install things as root... (don't forget to build all libraries as static only)
-#	INCPATH = -I/Users/creon/include
-#	LIBPATH	= -L/Users/creon/lib 
-#	LDLIBS = -framework AGL -framework OpenGL -framework Carbon -framework ApplicationServices -framework vecLib -lm -lmx -lgsl
+	INCPATH = -I/Users/creon/include -I/Users/creon/include/boost-1_34/
+	LIBPATH	= -L/Users/creon/lib 
 
 else
 # for NAS linux machines where I can NOT install things as root (don't forget to build all libraries as static only)
@@ -82,7 +84,7 @@ LINKBLITZ	= -lblitz
 # The extension to use for executables...
 EXEEXT		= 
 
-SRCS =	vp.cpp global_definitions_vp.cpp control_panel_window.cpp plot_window.cpp data_file_manager.cpp New_File_Chooser.cpp
+SRCS =	vp.cpp global_definitions_vp.cpp control_panel_window.cpp plot_window.cpp data_file_manager.cpp New_File_Chooser.cpp symbol_menu.cpp sprite_textures.cpp
 #SRCS =	vp.cpp 
 
 OBJS:=	$(SRCS:.cpp=.o)
