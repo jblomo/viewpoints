@@ -1076,3 +1076,93 @@ perhaps bushes should have, or be governed by, the window tabs (1,2,3... ALL) li
   when selecting a new data window, there are several modes:
     new brush (with new default color) for each window
     same brush unless changed <---
+
+21:58:19 04 Jul 07
+
+Ideas:
+
+(simple)
+
+add "dominates" functional - replaces y with fraction_dominated(x,y)
+prepend axis transform ("log", "rank", etc) to vairbale name for axis label
+
+15:01:29 10 Jul 07
+
+For vp to work correctly on a machine, it must be built with some
+libraries linked statically, and others dynamically. The "right" way
+to do this is with explicit commands to the linker, but I don't know
+how to do this yet.  (g++ -l static does not give fine enough control
+for what we need to do, and it seems like g++ does not directly use ld
+for linking, but instead usses collect2, which I do not understand
+yet).  Anyway, here are the libraries that must be statically linked,
+since we cannot assume the user has dynamic versions on their machine:
+
+ libblitz
+ libfltk
+ libfltk_gl
+ libflews
+ libgsl
+ libboost*
+ libm (OSX?, Linux?)???
+
+The safest think to do with the above is to make sure they only exist
+as static libraries (.a files) and not as dynamic libraries (.so or
+.dylib files on linux and OSX respectively).
+
+The following libraries must be linked dynamically, since they are
+machine-specific and/or are required to be dynamic for programs to run
+at all:
+
+  libstdc++
+  libgcc
+  libSystem
+  libmx (OSX, Linux?)
+  libGL (Linux)
+  libGLU (Linux)
+  libXext (Linux)
+  AGL (OSX)
+  OpenGL (OSX)
+  Carbon (OSX)
+  ApplicationServices (OSX)
+  vecLib (OSX)
+
+After a vp executable is built, but before it is released, it is
+important to check and make sure that none it is not accidentally
+linked against any dynamic libraries where static libraries are
+required, and vice versa, since either condition will cause it to
+abort or misbehave on a user's machine while not exhibiting such
+misbahvior on the build machine.
+
+To check this on OSX, run the following commands from the src/vp
+directory:
+
+ % make clean
+ % make
+ % make release
+ % otool -L viewpoints.app/Contents/MacOS/viewpoints
+
+The output from the otool command (on OSX) shows the dynamic libraries
+required by the vp executable.  The output should look very much like:
+
+viewpoints.app/Contents/MacOS/viewpoints:
+	/System/Library/Frameworks/AGL.framework/Versions/A/AGL (compatibility version 1.0.0, current version 1.0.0)
+	/System/Library/Frameworks/OpenGL.framework/Versions/A/OpenGL (compatibility version 1.0.0, current version 1.0.0)
+	/System/Library/Frameworks/Carbon.framework/Versions/A/Carbon (compatibility version 2.0.0, current version 128.0.0)
+	/System/Library/Frameworks/ApplicationServices.framework/Versions/A/ApplicationServices (compatibility version 1.0.0, current version 22.0.0)
+	/System/Library/Frameworks/vecLib.framework/Versions/A/vecLib (compatibility version 1.0.0, current version 192.15.0)
+	/usr/lib/libSystem.B.dylib (compatibility version 1.0.0, current version 88.3.9)
+	/usr/lib/libmx.A.dylib (compatibility version 1.0.0, current version 220.0.0)
+	/usr/lib/libstdc++.6.dylib (compatibility version 7.0.0, current version 7.4.0)
+	/usr/lib/libgcc_s.1.dylib (compatibility version 1.0.0, current version 1.0.0)
+
+(with perhaps higher version numbers, but NO ADDITIONAL dynamic
+libraries.  Be especally way that it does not show any lines with
+libgsl*.dylib, libblitz*.dylib, or libboost*.dylib and if it does,
+delete all dynamic versions of those libraries, and run all the make
+commands and the otool command again.
+
+To perform the check on linux, run the following commands:
+
+  ....
+
+--------

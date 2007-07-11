@@ -75,6 +75,7 @@
 #include "data_file_manager.h"
 #include "plot_window.h"
 #include "control_panel_window.h"
+#include "unescape.h"
 
 // Define and initialize number of screens
 static int number_of_screens = 0;
@@ -1353,10 +1354,7 @@ int main( int argc, char **argv)
       // set field delimiter character
       case 'd':
         if( optarg!=NULL) {
-          std::stringstream ss(optarg);
-          std::string buf;
-          ss >> buf;
-          if (buf.size() > 0)
+          std::string buf(unescape(optarg));
           delimiter_char = buf[0];
           cout << "delimiter character is: " << delimiter_char << endl;
         } else {
