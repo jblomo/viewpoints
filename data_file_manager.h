@@ -32,7 +32,7 @@
 //      vp.cpp could be consolidated.
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  24-APR-2007
+// Modified: P. R. Gazis  12-JUL-2007
 //***************************************************************************
 
 // Protection to make sure this header is not included twice
@@ -94,7 +94,7 @@
 //   column_major( i) -- Set column major flag
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  24-APR-2007
+// Modified: P. R. Gazis  12-JUL-2007
 //***************************************************************************
 class Data_File_Manager
 {
@@ -120,6 +120,14 @@ class Data_File_Manager
     // Buffers to hold filespec and pathname
     string sDirectory_, inFileSpec, outFileSpec;
     
+    // Delimiter for files, e.g. ',' for CSV.  Default is whitespace.  Note 
+    // that missing values can be specified in asci input file as long as the 
+    // delimiter is not whitespace, e.g. 1,2,3,,5,,,8,9,10
+    char delimiter_char_;
+
+    // Value assigned to unreadable/nonnumeric/empty/missing values:
+    float bad_value_proxy_;
+
     // State variables
     int nSkipHeaderLines;
     int isAsciiInput, isAsciiOutput;
@@ -154,6 +162,10 @@ class Data_File_Manager
     string output_filespec();
     void output_filespec( string outFileSpecIn);
 
+    float bad_value_proxy() { return bad_value_proxy_;}
+    void bad_value_proxy( float f) { bad_value_proxy_ = f;}
+    char delimiter_char() { return delimiter_char_;}
+    void delimiter_char( char c) { delimiter_char_ = c;}
     int ascii_input() { return isAsciiInput;}
     void ascii_input( int i) { isAsciiInput = (i==1);}
     int ascii_output() { return isAsciiOutput;}

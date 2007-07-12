@@ -287,7 +287,7 @@ int Plot_Window::handle( int event)
       DEBUG(cout << "FL_PUSH at " << xprev << ", " << yprev << endl);
 
       // Show the control panel associated with this plot window.
-      cpt->value(cps[this->index]);	
+      cpt->value(cps[this->index]);  
       xprev = Fl::event_x();
       yprev = Fl::event_y();
 
@@ -330,7 +330,7 @@ int Plot_Window::handle( int event)
           xdown = + (2.0*(xdown/(float)w()) -1.0) ; // window -> [-1,1]
           xdown = xdown / xscale;
           xdown = xdown + xcenter;
-			
+      
           ydown = (float)yprev;
           ydown = - (2.0*(ydown/(float)h()) -1.0) ; // window -> [-1,1]
           ydown = ydown/yscale;
@@ -412,7 +412,7 @@ int Plot_Window::handle( int event)
           xtracked = + (2.0*(xcur/(float)w()) -1.0) ; // window -> [-1,1]
           xtracked = xtracked / xscale;
           xtracked = xtracked + xcenter;
-				
+        
           ytracked = - (2.0*(ycur/(float)h()) -1.0) ; // window -> [-1,1]
           ytracked = ytracked/yscale;
           ytracked = ytracked + ycenter;
@@ -550,7 +550,7 @@ void Plot_Window::reset_view()
   yscale = 2.0 / (wmax[1]-wmin[1]);
   if (axis2 != nvars) zscale = 2.0 / (wmax[2]-wmin[2]);
   else zscale = 1.0;
-	
+  
   // Initiallly, datapoints only span 0.8 of the window dimensions, which 
   // allows room around the edges for labels, tickmarks, histograms....
   xscale *= initial_pscale; 
@@ -614,7 +614,7 @@ void Plot_Window::draw()
     // this next idiom is necessary, per window, to map texture coordinate 
     // values to [0..1] for texturing.
     // glMatrixMode(GL_TEXTURE);
-    // glLoadIdentity();	
+    // glLoadIdentity();  
     // glScalef( 1.0/(float)MAXPLOTS, 1.0/(float)MAXPLOTS, 1.0/(float)MAXPLOTS); 
     // glMatrixMode(GL_MODELVIEW);
   }
@@ -778,7 +778,7 @@ void Plot_Window::draw_axes()
     char buf[ 1024];
     float b = 1.5;
 
-    // If requested, draw tic marks to show scale	
+    // If requested, draw tic marks to show scale  
     if( cp->show_scale->value()) {
 
       glBegin( GL_LINES);
@@ -851,7 +851,7 @@ void Plot_Window::draw_axes()
 
       gl_font( FL_HELVETICA_BOLD, 11);
       float wid = gl_width(xlabel.c_str())/(float)(w());
-      gl_draw( (const char *)(xlabel.c_str()), -wid, -(1+b*a));	
+      gl_draw( (const char *)(xlabel.c_str()), -wid, -(1+b*a));  
 
       b = 1.5;
       gl_draw( (const char *)(ylabel.c_str()), -(1+b*a), 1+b*a);
@@ -871,7 +871,7 @@ void Plot_Window::draw_center_glyph()
   glDisable( GL_DEPTH_TEST);
   glEnable( GL_COLOR_LOGIC_OP);
   glLogicOp( GL_INVERT);
-	
+  
   glPushMatrix ();
   glLoadIdentity();
   glBlendFunc( GL_ONE, GL_ZERO);
@@ -951,7 +951,7 @@ void Plot_Window::handle_selection ()
 {
   // if (selection_is_inverted) invert_selection();
 
-  blitz::Range NPTS( 0, npoints-1);	
+  blitz::Range NPTS( 0, npoints-1);  
 
   // Identify newly-selected points
   newly_selected( NPTS) = where( 
@@ -1295,7 +1295,7 @@ void Plot_Window::draw_histograms()
     for( int bin=0; bin<nbins; bin++, x+=xwidth) {
       glVertex2f( x, 0.0);  // lower left corner
       glVertex2f( x, counts(bin,0));   // left edge
-      glVertex2f( x+xwidth, counts(bin,0));	  // Top edge
+      glVertex2f( x+xwidth, counts(bin,0));    // Top edge
       glVertex2f( x+xwidth, 0.0);   // Right edge
     }
     glEnd();
@@ -1332,7 +1332,7 @@ void Plot_Window::draw_histograms()
     glColor4f( 0.0, 0.5, 0.5, 1.0);
     glBegin( GL_LINE_STRIP);
     for( int bin=0; bin<nbins; bin++) {
-      glVertex2f( 0.0, y);					
+      glVertex2f( 0.0, y);          
       glVertex2f(counts(bin,1),y);   // bottom
       glVertex2f(counts(bin,1), y+ywidth);   // right edge
       glVertex2f(0.0, y+ywidth);   // top edge 
@@ -1389,7 +1389,7 @@ void Plot_Window::density_1D (blitz::Array<float,1> a, const int axis)
 int Plot_Window::transform_2d()
 {
   if( cp->no_transform->value()) return 1;  // no transform
-	
+  
   blitz::Range NPTS(0,npoints-1);
 
   blitz::Array <float,1> tmp1(npoints), tmp2(npoints);
@@ -1892,14 +1892,14 @@ void Plot_Window::delete_selection( Fl_Widget *o)
   // If some point(s) got deleted, everyone's ranking needs to 
   // be recomputed
   if( ipoint != npoints)  {
-    ranked = 0;	
+    ranked = 0;  
 
     npoints = ipoint;
     // npoints_slider->bounds(1,npoints);
     // npoints_slider->value(npoints);
 
     clear_selection( (Fl_Widget *) NULL);
-	
+  
     for( int j=0; j<nplots; j++) {
       cps[j]->extract_and_redraw();
     }

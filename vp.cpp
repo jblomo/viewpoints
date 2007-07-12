@@ -107,11 +107,11 @@ static int help_topline;
 // virtual control panel positions.  Consolidated here for reasons of clarity.
 
 // Increase this when the main panel needs to get wider:
-static const int main_w = 365; 			
+static const int main_w = 365;       
 
 // Increase this when the main panel needs to get taller, including situations
 // when cp_widget_h increases:
-static const int main_h = 760;			
+static const int main_h = 760;      
 
 // Increase this when the controls for individual windows need more height to 
 // fit in their subpanel
@@ -668,7 +668,7 @@ void make_main_menu_bar()
     "View/Remove Column   ", 0, 
     (Fl_Callback *) manage_plot_window_array, 0, FL_MENU_DIVIDER);
   main_menu_bar->add( 
-    "View/Reload Plots   ", 0, 
+    "View/Restore Panels  ", 0, 
     (Fl_Callback *) manage_plot_window_array);
 
   // Add Help menu items
@@ -834,12 +834,14 @@ void make_global_widgets()
   b->type( FL_TOGGLE_BUTTON); 
   b->value( 0);
 
+  // Unlike View|Restore Panels, this code only seems to work under windows.
+  // It is retained for archuval purposes
   // Button(5,2): Reload plot window array
-  reload_plot_window_array_button = b = 
-    new Fl_Button( xpos, ypos+=25, 20, 20, "reload plots");
-  b->align( FL_ALIGN_RIGHT); 
-  b->selection_color( FL_BLUE); 
-  b->callback( manage_plot_window_array);
+  // reload_plot_window_array_button = b = 
+  //   new Fl_Button( xpos, ypos+=25, 20, 20, "reload plots");
+  // b->align( FL_ALIGN_RIGHT); 
+  // b->selection_color( FL_BLUE); 
+  // b->callback( manage_plot_window_array);
 }
 
 //***************************************************************************
@@ -1344,8 +1346,10 @@ int main( int argc, char **argv)
 
       // Missing or unreadable values get set to this number
       case 'M':
-        bad_value_proxy = strtof (optarg, NULL);
-        if( !bad_value_proxy) {
+        // bad_value_proxy = strtof (optarg, NULL);
+        // if( !bad_value_proxy) {
+        dfm.bad_value_proxy( strtof( optarg, NULL));
+        if( !dfm.bad_value_proxy()) {
           usage();
           exit( -1);
         }
@@ -1355,8 +1359,10 @@ int main( int argc, char **argv)
       case 'd':
         if( optarg!=NULL) {
           std::string buf(unescape(optarg));
-          delimiter_char = buf[0];
-          cout << "delimiter character is: " << delimiter_char << endl;
+          // delimiter_char = buf[0];
+          // cout << "delimiter character is: " << delimiter_char << endl;
+          dfm.delimiter_char( buf[0]);
+          cout << "delimiter character is: " << dfm.delimiter_char() << endl;
         } else {
           usage();
           exit( -1);

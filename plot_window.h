@@ -282,14 +282,13 @@ class Plot_Window : public Fl_Gl_Window
     // Array of texture images for point sprites
     static GLubyte* spriteData[NSYMBOLS];
 
-	// Buffers to hold sprite (texture image) data
+    // Buffers to hold sprite (texture image) data
     static const GLsizei spriteWidth = 64, spriteHeight = 64, spriteDepth=4;
     static const GLsizei spriteSize = spriteWidth*spriteHeight;
     static void make_sprite_textures(void);
 
     // The GLContextshared by all Plot_Windows
     static void *global_GLContext; 
-
 };
 
 #endif   // PLOT_WINDOW_H

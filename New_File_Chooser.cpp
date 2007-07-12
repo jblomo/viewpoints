@@ -1284,7 +1284,7 @@ void New_File_Chooser::fileBrowserCB()
         }
         if( i <= fileBrowser->size()) {
           i = fileBrowser->value();
-	      fileBrowser->deselect();
+        fileBrowser->deselect();
           fileBrowser->select( i);
         }
       }
@@ -1334,14 +1334,14 @@ void New_File_Chooser::cb_fileName_i( Fl_File_Input*, void*)
 void New_File_Chooser::fileNameCB()
 {
   char *slash; // Pointer to trailing slash
-  char pathname[ 1024];	// Full pathname to file
-  char matchname[ 256];	// Matching filename
+  char pathname[ 1024];  // Full pathname to file
+  char matchname[ 256];  // Matching filename
   
   int min_match;   // Minimum number of matching chars
   int max_match;   // Maximum number of matching chars
   int num_files;   // Number of files in directory
   int first_line;   // First matching line
-  // const char *file;	 // File from directory
+  // const char *file;   // File from directory
 
   // Diagnostic
   // cout << "fileNameCB()";
@@ -1479,7 +1479,7 @@ void New_File_Chooser::fileNameCB()
           // Strip trailing /, if any...
           if( matchname[ max_match - 1] == '/') {
             max_match --;
-	        matchname[max_match] = '\0';
+          matchname[max_match] = '\0';
           }
 
           // And then make sure that the item is visible
@@ -1494,7 +1494,7 @@ void New_File_Chooser::fileNameCB()
             #if (defined(WIN32) && ! defined(__CYGWIN__)) || defined(__EMX__)
             if( strncasecmp( file, matchname, max_match) == 0)
             #else
-	        if( strncmp(file, matchname, max_match) == 0)
+          if( strncmp(file, matchname, max_match) == 0)
             #endif   // WIN32 || __EMX__
               break;
             else max_match --;
@@ -2001,9 +2001,9 @@ static int new_filename_isdir( const char* pathname)
   int length = strlen( pathname);
   if( length < (int)(sizeof( temp) - 1)) {
 
-	// If the pathname is shorter than four characters and begins with a 
-	// letter and colon (example, "D:"), assume it's merely a drive letter
-	// and modify it to terminate with a slash (example, "D:/")...
+    // If the pathname is shorter than four characters and begins with a 
+    // letter and colon (example, "D:"), assume it's merely a drive letter
+    // and modify it to terminate with a slash (example, "D:/")...
     if( length < 4 && isalpha( pathname[ 0]) && pathname[ 1] == ':' &&
         ( isdirsep( pathname[ 2]) || !pathname[ 2])) {
       temp[ 0] = pathname[ 0];

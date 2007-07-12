@@ -19,7 +19,7 @@
 // Purpose: Source code for <data_file_manager.h>
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  24-APR-2007
+// Modified: P. R. Gazis  12-JUL-2007
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -48,8 +48,9 @@ const bool include_line_number = false; // MCL XXX This should be an option
 //***************************************************************************
 // Data_File_Manager::Data_File_Manager() -- Default constructor, calls the
 // initializer.
-Data_File_Manager::Data_File_Manager() : isAsciiInput( 1), 
-  isAsciiOutput( 0), useSelectedData( 0), isColumnMajor( 0)
+Data_File_Manager::Data_File_Manager() : delimiter_char_( ' '), 
+  bad_value_proxy_( 0.0), isAsciiInput( 1), isAsciiOutput( 0), 
+  useSelectedData( 0), isColumnMajor( 0)
 {
   sDirectory_ = ".";  // Default pathname
   initialize();
@@ -60,6 +61,8 @@ Data_File_Manager::Data_File_Manager() : isAsciiInput( 1),
 void Data_File_Manager::initialize()
 {
   // Set default values for file reads.
+  delimiter_char_ = ' ';
+  bad_value_proxy_ = 0.0;
   isAsciiInput = 1;
   isAsciiOutput = 0;
   useSelectedData = 0;
@@ -186,8 +189,7 @@ int Data_File_Manager::load_data_file( string inFileSpec)
 
 //***************************************************************************
 // Data_File_Manager::load_data_file( inFileSpec) -- Read an ASCII or binary 
-// data file, resize arrays to allocate meomory.
-// Returns 0 if successful.
+// data file, resize arrays to allocate meomory.  Returns 0 if successful.
 // int Data_File_Manager::load_data_file( string inFileSpecIn) 
 int Data_File_Manager::load_data_file() 
 {
@@ -321,7 +323,7 @@ int Data_File_Manager::read_ascii_file_with_headers()
   column_labels.erase( column_labels.begin(), column_labels.end());
 
   // DIAGNOSTIC
-  // delimiter_char = ',';
+  // delimiter_char_ = ',';
   
   // If no header lines were found or the LASTHEADERLINE buffer is empty, 
   // examine the first line of the data block to determine the number of 
@@ -331,8 +333,8 @@ int Data_File_Manager::read_ascii_file_with_headers()
     // Invoke the REPLACE method from <algorithm> to replace tabs and/or a
     // user-specified delimiter character so that operator>> will work.
     replace( line.begin(), line.end(), '\t', ' ');
-    if( delimiter_char != ' ') {
-      replace( line.begin(), line.end(), delimiter_char, ' ');
+    if( delimiter_char_ != ' ') {
+      replace( line.begin(), line.end(), delimiter_char_, ' ');
     }
 
     // Loop: Insert the input string into a stream, define a buffer, read 
@@ -365,8 +367,8 @@ int Data_File_Manager::read_ascii_file_with_headers()
     // Invoke the REPLACE method from <algorithm> to replace tabs and/or a
     // user-specified delimiter character so that operator>> will work.
     replace( lastHeaderLine.begin(), lastHeaderLine.end(), '\t', ' ');
-    if( delimiter_char != ' ') {
-      replace (lastHeaderLine.begin(), lastHeaderLine.end(), delimiter_char, ' ');
+    if( delimiter_char_ != ' ') {
+      replace( lastHeaderLine.begin(), lastHeaderLine.end(), delimiter_char_, ' ');
     }
 
     // Loop: Insert the input string into a stream, define a buffer, read 
@@ -466,7 +468,7 @@ int Data_File_Manager::read_ascii_file_with_headers()
       // this will recognize certain types of non-numeric data.
       // float xTrial;
       // if( !( ss >> xTrial)) {
-      //   x = bad_value_proxy;
+      //   x = bad_value_proxy_;
       //   ss.clear();
       // }
       // else x = xTrial;
@@ -485,7 +487,7 @@ int Data_File_Manager::read_ascii_file_with_headers()
       // default value, and clear error flags.  NOTE: for whitespace delimited 
       // files, simply skip lines with missing values.
       if( !ss) {
-        points(j,i) = bad_value_proxy;
+        points(j,i) = bad_value_proxy_;
         ss.clear();
       }
       else {
@@ -494,7 +496,7 @@ int Data_File_Manager::read_ascii_file_with_headers()
       
       // Advance past the next field delimiter character, or to the end of the 
       // line, whichever comes first.
-      ss.ignore( line.length(), delimiter_char);
+      ss.ignore( line.length(), delimiter_char_);
 
       // Check for unreadable data and flag this line to be skipped.  NOTE:
       // This should never happen, because error flags were cleared above.

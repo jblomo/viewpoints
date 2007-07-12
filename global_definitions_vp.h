@@ -18,7 +18,7 @@
 //   3) Consider putting these variables into a NAMESPACE?
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  24-APR-2007
+// Modified: P. R. Gazis  12-JUL-2007
 //***************************************************************************
 
 #ifndef VP_GLOBAL_DEFINITIONS_VP_H
@@ -51,8 +51,8 @@ EXTERN int ncols INIT(2);   // Default number of columns of plots
 EXTERN int nplots INIT(nrows*ncols);  // Default number of plot windows
 #define MAXPLOTS 256 // maximum number of plot windows, must be a power of 2.
 
-// number of symbols avaliable for plotting (i.e. number of textures available for points sprites)
-// and also the number of symbols in the symbols_menu.
+// number of symbols avaliable for plotting (i.e. number of textures available 
+// for points sprites) and also the number of symbols in the symbols_menu.
 #define NSYMBOLS 53
 
 // Set the maximum number of columns and rows
@@ -62,7 +62,7 @@ EXTERN int nplots INIT(nrows*ncols);  // Default number of plot windows
 // Initialize the actual number of rows (points or values) in the data file 
 // and the actual number of columns (fields) in each record.
 EXTERN int npoints INIT(MAXPOINTS);   // number of rows in data file
-EXTERN int nvars INIT(MAXVARS);		// number of columns in data file
+EXTERN int nvars INIT(MAXVARS);    // number of columns in data file
 
 // use openGL vertex buffer objects (VBOs).  
 EXTERN bool use_VBOs INIT(true);
@@ -72,7 +72,7 @@ EXTERN bool use_VBOs INIT(true);
 // these are left global
 EXTERN blitz::Array<float,2> points;  // main data array
 EXTERN blitz::Array<int,2> ranked_points;   // data, ranked, as needed.
-EXTERN blitz::Array<int,1> ranked;	  // flag: 1->column is ranked, 0->not
+EXTERN blitz::Array<int,1> ranked;    // flag: 1->column is ranked, 0->not
 
 // Define blitz::Arrays to flag selected points.  As with the raw data, these 
 // are left global for simplicity and clarity.
@@ -85,7 +85,7 @@ EXTERN blitz::Array<int,1> newly_selected;
 EXTERN blitz::Array<int,1> selected;
 EXTERN blitz::Array<int,1> previously_selected;
 EXTERN blitz::Array<int,1> saved_selection;
-EXTERN int nselected;	
+EXTERN int nselected;  
 EXTERN bool selection_is_inverted INIT(false);
 
 // Temporary array (reference) for use with qsort
@@ -136,17 +136,6 @@ EXTERN Plot_Window *pws[ MAXPLOTS];
 // There is one extra Control_Panel_Window, with index=MAXPLOTS.  It has no 
 // associated plot window - it affects all (unlocked) plots.
 EXTERN Control_Panel_Window *cps[ MAXPLOTS+1]; 
-
-// MCL XXX Paul probably knows a better place to put these next two....
-
-// Assigned to unreadable/nonnumeric/empty/missing values:
-EXTERN float bad_value_proxy INIT(0.0);
-
-// Delimiter for files, e.g. ',' for CSV.  Default is whitespace.
-// Note that missing values can be specified in asci input file as long as
-// the delimiter is not whitespace.  E.g.
-//   1,2,3,,5,,,8,9,10
-EXTERN char delimiter_char INIT(' ');
 
 // Make absolutely certain variables for point sprites are defined
 //#ifndef GL_ARB_point_sprite
