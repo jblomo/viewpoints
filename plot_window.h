@@ -1,5 +1,5 @@
 // viewpoints - interactive linked scatterplots and more.
-// copyright 2005 Creon Levit, all rights reserved.
+// copyright 2005 Creon Levit and Paul Gazis, all rights reserved.
 //***************************************************************************
 // File name: Plot_window.h
 //
@@ -111,7 +111,7 @@ class Control_Panel_Window;
 //     and deselected points when rendered as openGL point sprites.
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  23-APR-2007
+// Modified: P. R. Gazis  13-JUL-2007
 //***************************************************************************
 class Plot_Window : public Fl_Gl_Window
 {

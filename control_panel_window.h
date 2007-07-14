@@ -1,5 +1,5 @@
 // viewpoints - interactive linked scatterplots and more.
-// copyright 2005 Creon Levit, all rights reserved.
+// copyright 2005 Creon Levit and Paul Gazis, all rights reserved.
 //*****************************************************************
 // File name: control_panel_window.h
 //
@@ -28,7 +28,7 @@
 //      normalization schemes used here and by class Plot_Windows.
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  23-APR-2007
+// Modified: P. R. Gazis  13-JUL-2007
 //*****************************************************************
 
 // Protection to make sure this header is not included twice

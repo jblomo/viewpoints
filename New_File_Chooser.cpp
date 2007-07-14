@@ -1,5 +1,5 @@
 // viewpoints - interactive linked scatterplots and more.
-// copyright 2005 Creon Levit, all rights reserved.
+// copyright 2005 Creon Levit and Paul Gazis, all rights reserved.
 //***************************************************************************
 // File name: New_File_Chooser.cpp
 //
@@ -20,7 +20,7 @@
 //   modified by Paul Gazis and Creon Levit for use with viewpoints.
 //
 // Author: Bill Spitzak and others   1998-2005
-// Modified: P. R. Gazis  23-APR-2007
+// Modified: P. R. Gazis  13-JUL-2007
 //***************************************************************************
 
 // Include header

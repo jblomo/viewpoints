@@ -1,5 +1,5 @@
 // viewpoints - interactive linked scatterplots and more.
-// copyright 2005 Creon Levit, all rights reserved.
+// copyright 2005 Creon Levit and Paul Gazis, all rights reserved.
 //***************************************************************************
 // File name: symbol_menu.cpp.cpp
 //
@@ -17,7 +17,7 @@
 //   Interface Designer (fluid) version 1.0108
 //
 // Author: Creon Levit    2007
-// Modified: P. R. Gazis  12-JUL-2007
+// Modified: P. R. Gazis  13-JUL-2007
 //***************************************************************************
 
 // NOTE that these definitions of 16x16 bitmaps correspond 1 to 1 with the 

@@ -1,6 +1,6 @@
 // viewpoints - interactive linked scatterplots and more.
-// copyright 2005 Creon Levit, all rights reserved.
-//*****************************************************************
+// copyright 2005 Creon Levit and Paul Gazis, all rights reserved.
+//***************************************************************************
 // File name: Plot_window.cpp
 //
 // Class definitions:
@@ -22,7 +22,7 @@
 // Purpose: Source code for <Plot_Window.h>
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  23-APR-2007
+// Modified: P. R. Gazis  13-JUL-2007
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -2074,7 +2074,8 @@ void Plot_Window::initialize_VBO()
     glBufferDataARB( GL_ARRAY_BUFFER_ARB, 
                      (GLsizeiptrARB) npoints*3*sizeof(GLfloat), 
                      (void *)NULL, GL_STATIC_DRAW_ARB);
-    // make sure we succeeded 
+    
+    // Make sure we succeeded 
     CHECK_GL_ERROR ("initializing VBO");
     cerr << " initialized VBO for plot window " << index << endl;
     VBOinitialized = 1;

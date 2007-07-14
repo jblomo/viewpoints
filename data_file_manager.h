@@ -1,5 +1,5 @@
 // viewpoints - interactive linked scatterplots and more.
-// copyright 2005 Creon Levit, all rights reserved.
+// copyright 2005 Creon Levit and Paul Gazis, all rights reserved.
 //***************************************************************************
 // File name: data_file_manager.h
 //
@@ -32,7 +32,7 @@
 //      vp.cpp could be consolidated.
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  12-JUL-2007
+// Modified: P. R. Gazis  13-JUL-2007
 //***************************************************************************
 
 // Protection to make sure this header is not included twice
@@ -83,11 +83,19 @@
 //   output_filespec() -- Get output filespec
 //   output_filespec( outFileSpecIn) -- Set output filespec
 //
+//   bad_value_proxy() -- Get bad value proxy
+//   bad_value_proxy( f) -- Set bad value proxy
+//   delimiter_char() -- Get delimiter character
+//   delimiter_char( c) -- Set delimiter character
 //   inFileSpec() -- Get input filespec
 //   ascii_input() -- Get ASCII input flag
 //   ascii_input( i) -- Set ASCII input flag
 //   ascii_output() -- Get ASCII output flag
 //   ascii_output( i) -- Set ASCII output flag
+//   do_append() -- Get append flag
+//   do_append( i) -- Set append flag
+//   do_merge() -- Get append flag
+//   do_merge( i) -- Set merge flag
 //   selected_data() -- Get 'use selected data' flag
 //   selected_data( i)-- Set 'use selected data' flag
 //   column_major() -- Get column major flag
@@ -131,7 +139,7 @@ class Data_File_Manager
     // State variables
     int nSkipHeaderLines;
     int isAsciiInput, isAsciiOutput;
-    int useSelectedData;
+    int doAppend, doMerge, useSelectedData;
     int isColumnMajor;
 
   public:
@@ -170,6 +178,10 @@ class Data_File_Manager
     void ascii_input( int i) { isAsciiInput = (i==1);}
     int ascii_output() { return isAsciiOutput;}
     void ascii_output( int i) { isAsciiOutput = (i==1);}
+    int do_append() { return doAppend;}
+    void do_append( int i) { doAppend = (i==1);}
+    int do_merge() { return doMerge;}
+    void do_merge( int i) { doMerge = (i==1);}
     int selected_data() { return useSelectedData;}
     void selected_data( int i) { useSelectedData = (i==1);}
     int column_major() { return isColumnMajor;}

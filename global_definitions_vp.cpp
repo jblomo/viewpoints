@@ -1,3 +1,5 @@
+// viewpoints - interactive linked scatterplots and more.
+// copyright 2005 Creon Levit and Paul Gazis, all rights reserved.
 //***************************************************************************
 // File name: global_definitions_vp.cpp
 //
@@ -21,7 +23,7 @@
 //   make_confirmation_window( text) -- Make confirmation window
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  24-APR-2007
+// Modified: P. R. Gazis  13-JUL-2007
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -31,9 +33,9 @@
 #include "global_definitions_vp.h"
 
 //***************************************************************************
-// make_confirmation_window( text) -- Make and manage the confirmation 
+// make_confirmation_window( text, mode) -- Make and manage the confirmation 
 // window.  Result of 1,0,-1 => Yes, No, Cancel.
-int make_confirmation_window( const char* text)
+int make_confirmation_window( const char* text, int nButtons)
 {
   // Destroy any existing window
   // MCL XXX rule #2: "Compile cleanly at high warning levels." 
@@ -64,6 +66,13 @@ int make_confirmation_window( const char* text)
   Fl_Button* yes_button = new Fl_Button( 90, 70, 60, 25, "&Yes");
   Fl_Button* no_button = new Fl_Button( 170, 70, 60, 25, "&No");
   Fl_Button* cancel_button = new Fl_Button( 250, 70, 60, 25, "&Cancel");
+
+  // Revise format if this is not the three-button mode
+  if( nButtons == 1) {
+    yes_button->hide();
+    no_button->label( "&OK");
+    cancel_button->hide();
+  }
 
   // Finish creating and show the confirmation window.  Make sure it is 
   // 'modal' to prevent events from being delivered to the other windows.

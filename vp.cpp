@@ -1,5 +1,5 @@
 // viewpoints - interactive linked scatterplots and more.
-// copyright 2005 Creon Levit, all rights reserved.
+// copyright 2005 Creon Levit and Paul Gazis, all rights reserved.
 //***************************************************************************
 // File name: vp.cpp
 //
@@ -26,8 +26,8 @@
 // Purpose: viewpoints - interactive linked scatterplots and more.
 //
 // General design philosophy:
-//   1) This code is represents a battle between Creon Levit's passion for 
-//      speed and efficiency and Paul Gazis's obsession with organization and 
+//   1) This code represents a battle between Creon Levit's passion for speed
+//      and efficiency and Paul Gazis's obsession with organization and 
 //      clarity, unified by a shared desire to produce a powerful and easy to 
 //      use tool for exploratory data analysis.  Creon's code reflects a 
 //      strong 'C' heritage.  Paul's code is written in C++ using the 'if 
@@ -59,7 +59,7 @@
 //   redraw_if_changing( *dummy) -- Redraw changing plots
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  24-APR-2007
+// Modified: P. R. Gazis  13-JUL-2007
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -400,6 +400,8 @@ void manage_plot_window_array( Fl_Widget *o, void* user_data)
     // destructor!) to destroy all plot windows along with their context, 
     // including VBOs
     if( strncmp( widgetTitle, "Read", 4) == 0 ||
+        strncmp( widgetTitle, "Append", 6) == 0 ||
+        strncmp( widgetTitle, "Merge", 6) == 0 ||
         strncmp( userData, "Read", 4) == 0) {
       thisOperation = NEW_DATA;
       nplots_old = 0;
@@ -420,7 +422,19 @@ void manage_plot_window_array( Fl_Widget *o, void* user_data)
     thisOperation = RELOAD;
     nplots_old = nplots;
   }
-  
+
+  // DIAGNOSTIC
+  // std::vector<std::string> diag_stuff;
+  // diag_stuff.push_back( "INITIALIZE");
+  // diag_stuff.push_back( "NEW_DATA");
+  // diag_stuff.push_back( "RESIZE");
+  // diag_stuff.push_back( "RELOAD");
+  // cout << "DIAGNOSTIC, manage_plot_window_array: widgetTitle(" << widgetTitle  
+  //      << ") userData(" << userData << ")" << endl;
+  // cout << "DIAGNOSTIC, manage_plot_window_array: thisOperation " 
+  //      << thisOperation << " (" << diag_stuff[ thisOperation].c_str() 
+  //      << ")" << endl;
+    
   // Recalculate number of plots
   nplots = nrows * ncols;
 
@@ -633,6 +647,18 @@ void make_main_menu_bar()
   main_menu_bar->add( 
     "File/Read binary file   ", 0, 
     (Fl_Callback *) read_data, (void*) "binary", FL_MENU_DIVIDER);
+  main_menu_bar->add( 
+    "File/Append ASCII file   ", 0, 
+    (Fl_Callback *) read_data, (void*) "append ASCII");
+  main_menu_bar->add( 
+    "File/Append binary file   ", 0, 
+    (Fl_Callback *) read_data, (void*) "append binary");
+  main_menu_bar->add( 
+    "File/Merge ASCII file   ", 0, 
+    (Fl_Callback *) read_data, (void*) "merge ASCII");
+  main_menu_bar->add( 
+    "File/Merge binary file   ", 0, 
+    (Fl_Callback *) read_data, (void*) "merge binary", FL_MENU_DIVIDER);
   main_menu_bar->add( 
     "File/Write ASCII file   ", 0, 
     (Fl_Callback *) write_data, (void*) "ASCII");
@@ -964,6 +990,12 @@ void read_data( Fl_Widget* o, void* user_data)
   if( strstr( (char *) user_data, "binary") != NULL) dfm.ascii_input( 0);
   else dfm.ascii_input( 1);
 
+  // Evaluate user_data to get operation type
+  if( strstr( (char *) user_data, "append") != NULL) dfm.do_append( 1);
+  else dfm.do_append( 0);
+  if( strstr( (char *) user_data, "merge") != NULL) dfm.do_merge( 1);
+  else dfm.do_merge( 0);
+
   // Query user to find name of the input file.  If no file was specified, 
   // return immediately and hope the calling routine can handle this.
   int iQueryStatus = 0;
@@ -996,6 +1028,11 @@ void read_data( Fl_Widget* o, void* user_data)
   // Fewer points -> bigger starting pointsize
   pointsize = max( 1.0, 6.0 - (int) log10f( (float) npoints));
 
+  // DIAGNOSTIC
+  // cout << "Finished dfm.load_data_file and about to refresh plots" << endl;
+  // char ans;
+  // cin >> ans;
+  
   // Clear children of tab widget and reload plot window array.
   manage_plot_window_array( o, NULL);
 
@@ -1217,7 +1254,7 @@ void redraw_if_changing( void *dummy)
 // Main -- Driver routine
 int main( int argc, char **argv)
 {
-  cout << "vp: Creon Levit's viewpoints" << endl;
+  cout << "vp: Creon Levit and Paul Gazis's viewpoints" << endl;
   cout << "$Rev$" << endl;
 
   // STEP 1: Parse the command line

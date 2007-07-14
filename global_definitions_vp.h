@@ -1,3 +1,5 @@
+// viewpoints - interactive linked scatterplots and more.
+// copyright 2005 Creon Levit and Paul Gazis, all rights reserved.
 //***************************************************************************
 // File name: global_definitions_vp.h
 //
@@ -18,7 +20,7 @@
 //   3) Consider putting these variables into a NAMESPACE?
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  12-JUL-2007
+// Modified: P. R. Gazis  13-JUL-2007
 //***************************************************************************
 
 #ifndef VP_GLOBAL_DEFINITIONS_VP_H
@@ -154,7 +156,7 @@ EXTERN Control_Panel_Window *cps[ MAXPLOTS+1];
 EXTERN Fl_Window *confirmation_window;
 
 // Global function definitions
-EXTERN int make_confirmation_window( const char* text);
+EXTERN int make_confirmation_window( const char* text, int nButtons = 3);
 
 //***************************************************************************
 // Class: MyCompare

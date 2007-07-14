@@ -1,5 +1,5 @@
 // viewpoints - interactive linked scatterplots and more.
-// copyright 2005 Creon Levit, all rights reserved.
+// copyright 2005 Creon Levit and Paul Gazis, all rights reserved.
 //***************************************************************************
 // File name: data_file_manager.cpp
 //
@@ -19,7 +19,7 @@
 // Purpose: Source code for <data_file_manager.h>
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  12-JUL-2007
+// Modified: P. R. Gazis  13-JUL-2007
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -50,7 +50,7 @@ const bool include_line_number = false; // MCL XXX This should be an option
 // initializer.
 Data_File_Manager::Data_File_Manager() : delimiter_char_( ' '), 
   bad_value_proxy_( 0.0), isAsciiInput( 1), isAsciiOutput( 0), 
-  useSelectedData( 0), isColumnMajor( 0)
+  doAppend( 0), doMerge( 0), useSelectedData( 0), isColumnMajor( 0)
 {
   sDirectory_ = ".";  // Default pathname
   initialize();
@@ -65,6 +65,8 @@ void Data_File_Manager::initialize()
   bad_value_proxy_ = 0.0;
   isAsciiInput = 1;
   isAsciiOutput = 0;
+  doAppend = 0;
+  doMerge = 0;
   useSelectedData = 0;
 
   isColumnMajor = 1;
@@ -201,13 +203,24 @@ int Data_File_Manager::load_data_file()
     return -1;
   }
   
+  // If this is an append or merge operation, save the existing data and 
+  // column labels in temporary buffers
+  int old_npoints, old_nvars;
+  blitz::Array<float,2> old_points;
+  std::vector<std::string> old_column_labels; 
+  if( doAppend > 0 || doMerge > 0) {
+    old_nvars = points.rows();
+    old_npoints = points.columns();
+    old_points.resize( points.shape());
+    old_points = points;
+    old_column_labels = column_labels;
+  }
+  
   // Read data file and report results
   cout << "Reading input data from <" << inFileSpec.c_str() << ">" << endl;
   int iReadStatus = 0;
-  if( isAsciiInput == 0)
-    iReadStatus = read_binary_file_with_headers();
-  else
-    iReadStatus = read_ascii_file_with_headers();
+  if( isAsciiInput == 0) iReadStatus = read_binary_file_with_headers();
+  else iReadStatus = read_ascii_file_with_headers();
 
   if( iReadStatus != 0) {
     cout << "Data_File_Manager::load_data_file: "
@@ -237,8 +250,207 @@ int Data_File_Manager::load_data_file()
   
   // MCL XXX Now that we're done reading, we can update nvars to count possible
   // additional program-generated variables (presently only the line number).
-  if (include_line_number) {
+  if( include_line_number) {
     nvars = nvars+1;
+  }
+
+  // Compare array sizes and finish the append or merge operation
+  if( doAppend > 0 | doMerge > 0) {
+
+    // If array sizes aren't consistent, restore the old data and column 
+    // labels.  Otherwise, reverse old and new arrays along the relevant
+    // dimensions, copy the old data to the new array, reverse the new array
+    // again, and copy new column labels if this was a merge operation.
+    if( ( doAppend > 0 && nvars != old_nvars) ||
+        ( doMerge > 0 && npoints != old_npoints)) {
+      make_confirmation_window( "Array sizes don't match.\nRestore old data", 1);
+
+      points.resize( old_points.shape());
+      points = old_points;
+      nvars = points.rows();
+      npoints = points.columns();
+      column_labels = old_column_labels;
+
+      // DIAGNOSTIC
+      // cout << "PLOIT_04a: Restored old array during append ("
+      //      << points.rows() << "/" << nvars << ", "
+      //      << points.columns() << "/" << npoints << ")" << endl;
+      // cout << " Old Row( " << setw( 3) << 0 << "):";
+      // for( int ivar=0; ivar<nvars; ivar++) 
+      //   cout << " " << setw( 8) << points( ivar, 0);
+      // cout << endl;
+      // cout << " Old Row( " << setw( 3) << npoints-1 << "):";
+      // for( int ivar=0; ivar<nvars; ivar++) 
+      //   cout << " " << setw( 8) << points( ivar, npoints-1);
+      // cout << endl;
+    }
+    else if( doAppend > 0) {
+      int all_npoints = npoints + old_npoints;
+      points.resizeAndPreserve( nvars, npoints);
+      old_points.resizeAndPreserve( nvars, all_npoints);
+
+      // DIAGNOSTIC
+      // cout << "PLOIT_02b: About to combine arrays for append ("
+      //      << old_nvars << "/" << old_points.rows() << ", "
+      //      << old_npoints << "/" << old_points.columns() << ")" << endl;
+      // cout << " Old Row( " << setw( 3) << 0 << "):";
+      // for( int ivar=0; ivar<nvars; ivar++) 
+      //   cout << " " << setw( 8) << old_points( ivar, 0);
+      // cout << endl;
+      // cout << " Old Row( " << setw( 3) << old_npoints-1 << "):";
+      // for( int ivar=0; ivar<nvars; ivar++) 
+      //   cout << " " << setw( 8) << old_points( ivar, old_npoints-1);
+      // cout << endl;
+      // cout << " Old Row( " << setw( 3) << old_npoints << "):";
+      // for( int ivar=0; ivar<nvars; ivar++) 
+      //   cout << " " << setw( 8) << old_points( ivar, old_npoints);
+      // cout << endl;
+      // cout << " Old Row( " << setw( 3) << old_points.columns()-1 << "):";
+      // for( int ivar=0; ivar<nvars; ivar++) 
+      //   cout << " " << setw( 8) << old_points( ivar, old_points.columns()-1);
+      // cout << endl;
+      // cout << " New Row( " << setw( 3) << 0 << "):";
+      // for( int ivar=0; ivar<nvars; ivar++) 
+      //   cout << " " << setw( 8) << points( ivar, 0);
+      // cout << endl;
+      // cout << "New Row( " << setw( 3) << npoints-1 << "):";
+      // for( int ivar=0; ivar<nvars; ivar++) 
+      //   cout << " " << setw( 8) << points( ivar, npoints-1);
+      // cout << endl;
+
+      old_points( blitz::Range( 0, nvars), blitz::Range( old_npoints, all_npoints-1)) = points;
+      points.resize( old_points.shape());
+
+      // DIAGNOSTIC
+      // cout << "PLOIT_03b: About to combine arrays for append ("
+      //      << nvars << "/" << old_points.rows() << ", "
+      //      << npoints << "/" << old_points.columns() << ")" << endl;
+      // cout << " Old Row( " << setw( 3) << 0 << "):";
+      // for( int ivar=0; ivar<nvars; ivar++) 
+      //   cout << " " << setw( 8) << old_points( ivar, 0);
+      // cout << endl;
+      // cout << " Old Row( " << setw( 3) << old_npoints-1 << "):";
+      // for( int ivar=0; ivar<nvars; ivar++) 
+      //   cout << " " << setw( 8) << old_points( ivar, old_npoints-1);
+      // cout << endl;
+      // cout << " Old Row( " << setw( 3) << old_npoints << "):";
+      // for( int ivar=0; ivar<nvars; ivar++) 
+      //   cout << " " << setw( 8) << old_points( ivar, old_npoints);
+      // cout << endl;
+      // cout << " Old Row( " << setw( 3) << old_points.columns()-1 << "):";
+      // for( int ivar=0; ivar<nvars; ivar++) 
+      //   cout << " " << setw( 8) << old_points( ivar, old_points.columns()-1);
+      // cout << endl;
+      // cout << " New Row( " << setw( 3) << 0 << "):";
+      // for( int ivar=0; ivar<nvars; ivar++) 
+      //   cout << " " << setw( 8) << points( ivar, 0);
+      // cout << endl;
+      // cout << "New Row( " << setw( 3) << npoints-1 << "):";
+      // for( int ivar=0; ivar<nvars; ivar++) 
+      //   cout << " " << setw( 8) << points( ivar, npoints-1);
+      // cout << endl;
+
+      points = old_points;
+      npoints = all_npoints;
+
+      // DIAGNOSTIC
+      // cout << "PLOIT_04b: Finished combining arrays for append ("
+      //      << old_nvars << "/" << points.rows() << ", "
+      //      << old_npoints << "/" << points.columns() << ")" << endl;
+      // cout << " New Row( " << setw( 3) << 0 << "):";
+      // for( int ivar=0; ivar<nvars; ivar++) 
+      //   cout << " " << setw( 8) << points( ivar, 0);
+      // cout << endl;
+      // cout << " New Row( " << setw( 3) << old_npoints-1 << "):";
+      // for( int ivar=0; ivar<nvars; ivar++) 
+      //   cout << " " << setw( 8) << points( ivar, old_npoints-1);
+      // cout << endl;
+      // cout << " New Row( " << setw( 3) << npoints << "):";
+      // for( int ivar=0; ivar<nvars; ivar++) 
+      //   cout << " " << setw( 8) << points( ivar, old_npoints);
+      // cout << endl;
+      // cout << " New Row( " << setw( 3) << points.columns()-1 << "):";
+      // for( int ivar=0; ivar<nvars; ivar++) 
+      //   cout << " " << setw( 8) << points( ivar, points.columns()-1);
+      // cout << endl;
+    }
+    else {
+      int all_nvars = nvars + old_nvars;
+
+      // DIAGNOSTIC
+      // cout << "PLOIT_02c: About to combine arrays for merge ("
+      //      << points.rows() << "/" << nvars << ", "
+      //      << points.columns() << "/" << npoints << ")" << endl;
+      // cout << " Old Row( " << setw( 3) << 0 << "):";
+      // for( int ivar=0; ivar<old_nvars; ivar++) 
+      //   cout << " " << setw( 8) << old_points( ivar, 0);
+      // cout << endl;
+      // cout << " Old Row( " << setw( 3) << old_npoints-1 << "):";
+      // for( int ivar=0; ivar<old_nvars; ivar++) 
+      //   cout << " " << setw( 8) << old_points( ivar, old_npoints-1);
+      // cout << endl;
+      // cout << " New Row( " << setw( 3) << 0 << "):";
+      // for( int ivar=0; ivar<points.rows(); ivar++) 
+      //   cout << " " << setw( 8) << points( ivar, 0);
+      // cout << endl;
+      // cout << " New Row( " << setw( 3) << npoints-1 << "):";
+      // for( int ivar=0; ivar<points.rows(); ivar++) 
+      //   cout << " " << setw( 8) << points( ivar, npoints-1);
+      // cout << endl;
+
+      points.reverseSelf( blitz::firstDim);
+      old_points.reverseSelf( blitz::firstDim);
+      points.resizeAndPreserve( all_nvars, npoints);
+
+      // DIAGNOSTIC
+      // cout << "PLOIT_03c: About to combine arrays for merge ("
+      //      << points.rows() << "/" << nvars << ", "
+      //      << points.columns() << "/" << npoints << ")" << endl;
+      // cout << " Old Row( " << setw( 3) << 0 << "):";
+      // for( int ivar=0; ivar<old_nvars; ivar++) 
+      //   cout << " " << setw( 8) << old_points( ivar, 0);
+      // cout << endl;
+      // cout << " Old Row( " << setw( 3) << old_npoints-1 << "):";
+      // for( int ivar=0; ivar<old_nvars; ivar++) 
+      //   cout << " " << setw( 8) << old_points( ivar, old_npoints-1);
+      // cout << endl;
+      // cout << " New Row( " << setw( 3) << 0 << "):";
+      // for( int ivar=0; ivar<points.rows(); ivar++) 
+      //   cout << " " << setw( 8) << points( ivar, 0);
+      // cout << endl;
+      // cout << " New Row( " << setw( 3) << npoints-1 << "):";
+      // for( int ivar=0; ivar<points.rows(); ivar++) 
+      //   cout << " " << setw( 8) << points( ivar, npoints-1);
+      // cout << endl;
+
+      points( blitz::Range( nvars, all_nvars-1), blitz::Range( 0, npoints-1)) = old_points;
+      points.reverseSelf( blitz::firstDim);
+      nvars = all_nvars;
+
+      // Add to list of column labels
+      old_column_labels.pop_back();
+      for( int i=0; i<column_labels.size(); i++) {
+        old_column_labels.push_back( column_labels[ i]);
+      }
+      column_labels = old_column_labels;
+
+      // DIAGNOSTIC
+      // cout << "PLOIT_04c: Finished combining arrays for merge ("
+      //      << points.rows() << "/" << nvars << ", "
+      //      << points.columns() << "/" << npoints << ")" << endl;
+      // cout << " New Row( " << setw( 3) << 0 << "):";
+      // for( int ivar=0; ivar<nvars; ivar++) 
+      //   cout << " " << setw( 8) << points( ivar, 0);
+      // cout << endl;
+      // cout << " New Row( " << setw( 3) << npoints-1 << "):";
+      // for( int ivar=0; ivar<nvars; ivar++) 
+      //   cout << " " << setw( 8) << points( ivar, npoints-1);
+      // cout << endl;
+    }
+
+    // Free memory in case this isn't handled by the compiler.
+    old_points.free();
+    old_column_labels.erase( old_column_labels.begin(), old_column_labels.end());
   }
   
   // If we read a different number of points then we anticipated, we resize 
@@ -250,14 +462,13 @@ int Data_File_Manager::load_data_file()
 
   // Now that we know the number of variables and the number of points
   // that we've read, we can allocate/reallocateResize the other global arrays.
-  resize_global_arrays ();
+  resize_global_arrays();
 
   // Set the 'selected' flag to initialize the selections to zero.  NOTE: 
   // Since everyone starts of as "non-selected", it is no longer correct to 
   // initialize the selection index array explicitly.
   // for( int i=0; i<npoints; i++) indices_selected(0,i)=i;
   selected = 0;
-
   return 0;
 }
 
@@ -429,7 +640,7 @@ int Data_File_Manager::read_ascii_file_with_headers()
   // once and for all, and not waste memory.
   if( npoints_cmd_line > 0) npoints = npoints_cmd_line;
   else npoints = MAXPOINTS;
-  if (include_line_number) points.resize( nvars+1, npoints);
+  if( include_line_number) points.resize( nvars+1, npoints);
   else points.resize( nvars, npoints);
   
   // Loop: Read successive lines from the file
@@ -549,7 +760,8 @@ int Data_File_Manager::read_ascii_file_with_headers()
     }
   }
   
-  // Update NPOINTS and report results
+  // STEP 5: Update NPOINTS, report results of file read operation to the 
+  // console, close input file, and report success
   npoints = i;
   cout << " -Finished reading data block with " << npoints
        << " records." << endl;
@@ -557,9 +769,6 @@ int Data_File_Manager::read_ascii_file_with_headers()
        << " header + " << i 
        << " good data + " << nSkip 
        << " skipped lines = " << nRead << " total." << endl;
-
-  // STEP 5: Close input file, report results of file read operation to the 
-  // console, and return success
   inFile.close();
   return 0;
 }
