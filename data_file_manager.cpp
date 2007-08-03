@@ -205,7 +205,7 @@ int Data_File_Manager::load_data_file()
   
   // If this is an append or merge operation, save the existing data and 
   // column labels in temporary buffers
-  int old_npoints, old_nvars;
+  int old_npoints=0, old_nvars=0;
   blitz::Array<float,2> old_points;
   std::vector<std::string> old_column_labels; 
   if( doAppend > 0 || doMerge > 0) {
@@ -429,7 +429,7 @@ int Data_File_Manager::load_data_file()
 
       // Add to list of column labels
       old_column_labels.pop_back();
-      for( int i=0; i<column_labels.size(); i++) {
+      for(unsigned int i=0; i<column_labels.size(); i++) {
         old_column_labels.push_back( column_labels[ i]);
       }
       column_labels = old_column_labels;
@@ -1167,9 +1167,13 @@ int Data_File_Manager::write_ascii_file_with_headers()
     }
     os << endl;
     
-    // Loop: Write successive ASCII records to the data block in 8-digit 
-    // scientific notation.
-    os << setiosflags( ios::scientific) << setw( 8);
+    // Loop: Write successive ASCII records to the data block using the
+    // "default" floatfield format.  This causes integers to be written
+    // as integers, floating point as floating point, and numbers with
+    // large or small magnitude as scientific. 
+    // floats.
+    os.precision(8); 
+    os.unsetf (ios::scientific); // force floatfield to default
     int rows_written = 0;
     for( int irow = 0; irow < npoints; irow++) {
       if( useSelectedData == 0 || selected( irow) > 0) {

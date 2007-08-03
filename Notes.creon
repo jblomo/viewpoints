@@ -1166,3 +1166,9 @@ To perform the check on linux, run the following commands:
   ....
 
 --------
+18:09:06 31 Jul 07
+
+Idea: Just addd lines rendering.  end each line when brush ends.
+Add a "group id" column (intger) *sort of like "brush id / selection id" as a column.  break line strips when group changes.  Could use alpha values=0 at boundaries between lines, then just render all lines with one line strip.Alpha test (or stencil test....) could handle  this.  noo... i guess not.
+Q: how does this interact with brushes/selection?
+Groups could be a range (or set) of columns, instead.  Groups could render as, e.g. lines.  Each line could be offset by another column (e.g. class, line number....)

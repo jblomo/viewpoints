@@ -1078,24 +1078,9 @@ void Plot_Window::draw_data_points()
 
   glBlendFunc(GL_SRC_ALPHA, GL_DST_ALPHA);
 
-  int sprite = cp->symbol_menu->value();
-  assert ((sprite >= 0) && (sprite < NSYMBOLS));
-  switch (sprite) {
-    case 0:
-      enable_regular_points();
-      break;
-#if 0 // this should be executed based on run-time test iff GL_ARB_POINT_SPRITE is absent.
-    case 1:
-      enable_antialiased_points();
-      break;
-#endif
-    default:
-      enable_sprites(sprite);
-      break;
-    }
-
   int alpha_test_enabled = 0;
   int z_bufferring_enabled = 0;
+  int current_sprite = 0;
 
   // XXX need to resolve local/global controls issue
   //  - partially done.  can now get rid of show_deselected_button.
@@ -1148,13 +1133,30 @@ void Plot_Window::draw_data_points()
     if( count > 0) {
 
       // Set the pointsize for this set of points (hard limit from 1.0 to 50.0)
-      // to avoid GL errors.
+      // to avoid GL errors.  Also set the current_sprite (or not, if rendering with regular points).
       if (set==0) {
         glPointSize(min(max(cp->pointsize_slider->value(), 1.0),50.0));
+        current_sprite = cp->symbol_menu->value();
       }
       else {
         glPointSize(min(max(cp->selected_pointsize_slider->value(), 1.0),50.0));
+        current_sprite = cp->selected_symbol_menu->value();
       }
+      assert ((current_sprite >= 0) && (current_sprite < NSYMBOLS));
+      switch (current_sprite) {
+      case 0:
+        enable_regular_points();
+        break;
+#if 0 // this should be executed based on run-time test iff GL_ARB_POINT_SPRITE is absent.
+      case 1:
+        enable_antialiased_points();
+        break;
+#endif
+      default:
+        enable_sprites(current_sprite);
+        break;
+      }
+
       // set the color for this set of points
       float lum = cp->Lum->value(), lum2 = cp->Lum2->value(), alpha=1.0;
       if( !(show_deselected_button->value() && cp->show_deselected_points->value())) {
@@ -1194,7 +1196,7 @@ void Plot_Window::draw_data_points()
   if (z_bufferring_enabled) {
     glDisable( GL_DEPTH_TEST);
   }
-  if (sprite > 0) {
+  if (current_sprite > 0) {
     disable_sprites();
   }
 }

@@ -332,35 +332,46 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   //
   ypos += 60;
 
-  // Pointsize slider
-  pointsize_slider = 
-    new Fl_Hor_Value_Slider_Input( xpos, ypos, cpw->w()-145, 20, "size");
+  // point size slider for nonselected points
+  pointsize_slider = new Fl_Hor_Value_Slider_Input( xpos, ypos, cpw->w()-145, 20, "size1");
   pointsize_slider->align(FL_ALIGN_LEFT);
   pointsize_slider->value(pointsize);
   pointsize_slider->step(0.25);
   pointsize_slider->bounds(1.0,50.0);
   pointsize_slider->callback((Fl_Callback*)replot, this);
 
-  // symbol types menu - calls a method to do the dirty work;
+  // symbol types menu for nonselected points
   symbol_menu = new Fl_Choice(xpos+pointsize_slider->w()+45, ypos, 45, 20);
+  // call a method to do the dirty work of setting up all the glyphs for the symbols menu.
   build_symbol_menu ();
   symbol_menu->textsize(12);
   symbol_menu->down_box(FL_NO_BOX);
   symbol_menu->clear_visible_focus(); // MCL XXX - I think this should be set for all widgets
   symbol_menu->color(FL_WHITE);
   symbol_menu->menu(symbol_menu_items);
-  symbol_menu->label("symbl");
+  symbol_menu->label("sym1");
   symbol_menu->value(0);
   symbol_menu->callback( (Fl_Callback*)replot, this);
 
-  // size for selected point size
-  selected_pointsize_slider = 
-    new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, cpw->w()-145, 20, "size2");
+  // point size slider for selected points.
+  selected_pointsize_slider = new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, cpw->w()-145, 20, "size2");
   selected_pointsize_slider->align(FL_ALIGN_LEFT);
   selected_pointsize_slider->value(pointsize);
   selected_pointsize_slider->step(0.25);
   selected_pointsize_slider->bounds(1.0,50.0);
   selected_pointsize_slider->callback((Fl_Callback*)replot, this);
+
+  // symbol types menu for selected points
+  selected_symbol_menu = new Fl_Choice(xpos+selected_pointsize_slider->w()+45, ypos, 45, 20);
+  // build_symbol_menu (); // already done, above.  
+  selected_symbol_menu->textsize(12);
+  selected_symbol_menu->down_box(FL_NO_BOX);
+  selected_symbol_menu->clear_visible_focus(); 
+  selected_symbol_menu->color(FL_WHITE);
+  selected_symbol_menu->menu(symbol_menu_items);
+  selected_symbol_menu->label("sym2");
+  selected_symbol_menu->value(0);
+  selected_symbol_menu->callback( (Fl_Callback*)replot, this);
 
   // Background color slider
   Bkg = new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, cpw->w()-60, 20, "Bkg");

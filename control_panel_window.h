@@ -155,7 +155,7 @@ class Control_Panel_Window : public Fl_Group
     static Fl_Menu_Item varindex_menu_items[]; 
 
     // points, round points, crosses, etc.
-    Fl_Choice *symbol_menu;
+    Fl_Choice *symbol_menu, *selected_symbol_menu;
     static Fl_Menu_Item symbol_menu_items[];
     void build_symbol_menu (void);
 
