@@ -2026,11 +2026,12 @@ void Plot_Window::fill_VBO()
 //***************************************************************************
 // Plot_Window::initialize_indexVBO() -- Initialize the 'index VBO' that
 // holds indices of selected (or non-selected) points.
+// MCL XXX index VBOs hould probably be handled by the Brush class.
 void Plot_Window::initialize_indexVBO(int set)
 {
   // There is one shared set of index VBOs for all plots.
-  //   indexVBO bound to MAXPLOTS holds indices of nonselected points
-  //   indexVBO bound to MAXPLOTS+1 holds indices of points selected in set 1, etc.
+  //   indexVBO bound to MAXPLOTS holds indices of nonselected (brushes[0]) points
+  //   indexVBO bound to MAXPLOTS+1 holds indices of points selected by brushes[1], etc.
   glBindBufferARB( GL_ELEMENT_ARRAY_BUFFER, MAXPLOTS+set);  // a safe place....
   glBufferDataARB( 
     GL_ELEMENT_ARRAY_BUFFER, 
@@ -2043,7 +2044,7 @@ void Plot_Window::initialize_indexVBO(int set)
 void Plot_Window::initialize_indexVBOs() 
 {
   if (!indexVBOsinitialized) {
-    for (int set=0; set<nplots+1; set++) {
+    for (int set=0; set<NBRUSHES; set++) {
       initialize_indexVBO(set);
     }
     indexVBOsinitialized = 1;
@@ -2073,7 +2074,7 @@ void Plot_Window::fill_indexVBO(int set)
 void Plot_Window::fill_indexVBOs() 
 {
   if (!indexVBOsfilled) {
-    for (int set=0; set<nplots+1; set++) {
+    for (int set=0; set<NBRUSHES; set++) {
       fill_indexVBO(set);
     }
     indexVBOsfilled = 1;

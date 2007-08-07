@@ -1285,4 +1285,11 @@ IDEA: use fltk::add_handler() to handle global shortcut keys, that
 work in plot windows or control panels, like "clear selection" and
 "reset view", etc.
 
+00:44:26 07 Aug 07
+
+IDEA
+
+each brsuh has "clear my selection" ('c') (except, of course, brush 0, where it is disabled?)
+there is also "clear all selections" ('C')
+in general, shift-cmd should broadcast to all brushes or plot-windows, respectively.
 

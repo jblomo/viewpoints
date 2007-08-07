@@ -8,8 +8,18 @@
 #include "plot_window.h"
 #include "brush.h"
 
-// Set static data members for class Brush::
-//
+// default RGBA starting colors for brushes
+const GLdouble Brush::initial_colors[NBRUSHES][4] = {
+  {1,0,0,1},
+  {0,1,0,1},
+  {0,0,1,1},
+  {0,1,1,1},
+  {1,0,1,1},
+  {1,1,0,1},
+  {0.5,0.5,0.5,1},
+  {0,0,0,0}
+};
+  
 
 // Array of menu items for fixed color selection.  There are 7 fixed
 // colors (R, G, B, C, M, Y, Grey).
@@ -47,7 +57,7 @@ void Brush::make_widgets(Brush *bw)
   Fl_Button *b;
 
   // point size slider for this brush
-  pointsize = new Fl_Hor_Value_Slider_Input( xpos, ypos, bw->w()-145, 20, "size1");
+  pointsize = new Fl_Hor_Value_Slider_Input( xpos, ypos, bw->w()-145, 20, "size");
   pointsize->align(FL_ALIGN_LEFT);
   pointsize->value(default_pointsize);
   pointsize->step(0.25);
@@ -63,12 +73,12 @@ void Brush::make_widgets(Brush *bw)
   symbol_menu->clear_visible_focus(); // MCL XXX - I think this should be set for all widgets
   symbol_menu->color(FL_WHITE);
   symbol_menu->menu(symbol_menu_items);
-  symbol_menu->label("sym1");
+  symbol_menu->label("sym");
   symbol_menu->value(0);
   symbol_menu->callback( (Fl_Callback*)static_brush_changed, this);
 
   // Initial luminosity slider
-  lum = new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, bw->w()-60, 20, "Lum");
+  lum = new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, bw->w()-60, 20, "lum1");
   lum->align(FL_ALIGN_LEFT);
   lum->callback((Fl_Callback*)static_brush_changed, this);
   lum->step(0.0001);
@@ -76,7 +86,7 @@ void Brush::make_widgets(Brush *bw)
   lum->value(0.04);  // !!!
 
   // Luminosity accumulation factor slider
-  lum2 = new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, bw->w()-60, 20, "Lum2");
+  lum2 = new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, bw->w()-60, 20, "lum2");
   lum2->align(FL_ALIGN_LEFT);
   lum2->callback((Fl_Callback*)static_brush_changed, this);
   lum2->step(0.0001);

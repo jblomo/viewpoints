@@ -249,6 +249,7 @@ void make_help_about_window( Fl_Widget *o)
 }
 
 
+// a lot of this should be moved to methods of class Brush.
 void create_brushes(int w_x, int w_y, int w_w, int w_h)
 {
   // Fl_Group::current(0);  // not a subwindow
@@ -270,6 +271,9 @@ void create_brushes(int w_x, int w_y, int w_w, int w_h)
     // create a brush (Fl_Group) corresponding to the tab
     brushes[i] = new Brush(w_x, w_y+20, w_w-6, w_h-(20+6));
     brushes[i]->index = i;
+    for (int ci=0; ci<3; ci++) {
+      brushes[i]->color[ci] = Brush::initial_colors[i][ci];
+    }
     brushes[i]->copy_label( labstr.c_str());
     brushes[i]->labelsize( 10);
     brushes[i]->make_widgets( brushes[i]);

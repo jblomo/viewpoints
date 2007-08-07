@@ -19,6 +19,7 @@ class Brush : public Fl_Group
     // color used to render this brush's points.
     // MCL XXX it would be good to change these to GLfloat
     GLdouble color[4];
+    static const GLdouble initial_colors[NBRUSHES][4];
 
     // the rest of the brush's attributes (pointsize, luminance, symbol, etc...)
     // are stored in the value() fields of the appropriate widget
