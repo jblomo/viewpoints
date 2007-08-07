@@ -931,13 +931,16 @@ void Plot_Window::handle_selection ()
 
   blitz::Range NPTS( 0, npoints-1);  
 
-  // Identify newly-selected points
+  // Identify newly-selected points and "paint" them with the appropriate value
+  Brush *bp = dynamic_cast <Brush*> (brushes_tab->value());
+  assert (bp);
+  int value = bp->index;
   newly_selected( NPTS) = where( 
     ( vertices( NPTS, 0)>fmaxf( xdown, xtracked) || 
       vertices( NPTS, 0)<fminf( xdown, xtracked) ||
       vertices( NPTS, 1)>fmaxf( ydown, ytracked) || 
       vertices( NPTS, 1)<fminf( ydown, ytracked)),
-    0, index+1);
+    0, value);
 
   // Add newly-selected points to existing or previous selection
   if( add_to_selection_button->value()) {

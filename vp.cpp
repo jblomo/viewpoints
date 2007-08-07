@@ -112,18 +112,21 @@ static const int main_w = 365;
 
 // Increase this when the main panel needs to get taller, including situations
 // when cp_widget_h increases:
-static const int main_h = 760;      
+static const int main_h = 1060;      
 
 // Increase this when the controls for individual windows need more height to 
 // fit in their subpanel
 // static const int cp_widget_h = 505; 
 static const int cp_widget_h = 565; 
 
+static const int brushes_h = 150;
+
 // The rest of these should not have to change
 static const int tabs_widget_h = cp_widget_h+20;
-static const int global_widgets_y = tabs_widget_h+20;
+static const int global_widgets_y = tabs_widget_h + brushes_h + 20;
 static const int tabs_widget_x = 3, tabs_widget_y = 30;
 static const int cp_widget_x = 3, cp_widget_y = tabs_widget_y+20;
+static const int brushes_x = 3, brushes_y = tabs_widget_y+tabs_widget_h;
 static const int global_widgets_x = 10;
 
 // Define class to hold data file manager
@@ -137,7 +140,6 @@ Fl_Menu_Bar *main_menu_bar;
 Fl_Window *about_window;
 Fl_Window *help_view_window;
 Fl_Help_View *help_view_widget;
-Fl_Group *brushes_panel;
 
 // Function definitions for the main method
 void usage();
@@ -247,16 +249,15 @@ void make_help_about_window( Fl_Widget *o)
 }
 
 
-void create_brushes(int main_x, int main_y, int main_w, int main_h)
+void create_brushes(int w_x, int w_y, int w_w, int w_h)
 {
   // Fl_Group::current(0);  // not a subwindow
-  // brushes_panel = new Fl_Group( main_x, main_y, main_w, main_h, "brushes");
-  // brushes_panel->visible(1);
-  // brushes_panel->resizable(brushes_panel);
+  // brushes_window = new Fl_Window( w_x, w_y, w_w, w_h, "brushes");
+  // brushes_window->resizable(brushes_window);
 
-  // Inside the main control panel, there is a tab widget, bt, 
-  // that contains the sub-panels (groups), one per brush.
-  Fl_Tabs *brushes_tab = new Fl_Tabs( main_x, main_y, main_w, main_h);
+  // Inside the main control panel, there is a Tabs widget
+  // that contains all the indidual brush's sub-panels.
+  brushes_tab = new Fl_Tabs( w_x, w_y, w_w, w_h);
   brushes_tab->selection_color( FL_BLUE);
   brushes_tab->labelsize( 10);
   Fl_Group::current(brushes_tab);
@@ -267,16 +268,21 @@ void create_brushes(int main_x, int main_y, int main_w, int main_h)
     oss << "" << i;
     string labstr = oss.str();
     // create a brush (Fl_Group) corresponding to the tab
-    brushes[i] = new Brush(3, 3, main_w - 6, main_h-6);
+    brushes[i] = new Brush(w_x, w_y+20, w_w-6, w_h-(20+6));
     brushes[i]->index = i;
     brushes[i]->copy_label( labstr.c_str());
     brushes[i]->labelsize( 10);
     brushes[i]->make_widgets( brushes[i]);
     brushes[i]->end();
   }
-//  brushes_tab->end();
-//  brushes_panel->end();
-//  brushes_panel->show();
+  brushes_tab->end();
+
+  // we have to start with some brush active, and since
+  // brushes[0] is for "unselected" points, we start with brushes[1]
+  brushes_tab->value(brushes[1]);
+
+//  brushes_window->end();
+//  brushes_window->show();
 }
 
 
@@ -290,11 +296,13 @@ void create_main_control_panel(int main_x, int main_y, int main_w, int main_h, c
   Fl::scheme( "plastic");  // optional
   main_control_panel = new Fl_Window( main_x, main_y, main_w, main_h, cWindowLabel);
   main_control_panel->resizable( main_control_panel);
-
   // Add callback function to intercept 'Close' operations
   main_control_panel->callback((Fl_Callback*) cb_main_control_panel, main_control_panel);
 
-  create_brushes (tabs_widget_x, tabs_widget_y, main_w-6, tabs_widget_h);
+  // MCL XXX
+  // if I move this call to create_brushes() to the end of this routine, to just before
+  // the call to main_control_panel->end(), I get a core dump.  That's' too bad......
+  create_brushes (brushes_x, brushes_y, main_w-6, brushes_h);
 
   // Make main menu bar and add the global widgets to control panel
   make_main_menu_bar();
@@ -302,7 +310,7 @@ void create_main_control_panel(int main_x, int main_y, int main_w, int main_h, c
 
   // Inside the main control panel, there is a tab widget, cpt, 
   // that contains the sub-panels (groups), one per plot.
-  cpt = new Fl_Tabs( tabs_widget_x, tabs_widget_y/2, main_w-6, tabs_widget_h/2);
+  cpt = new Fl_Tabs( tabs_widget_x, tabs_widget_y, main_w-6, tabs_widget_h);
   cpt->selection_color( FL_BLUE);
   cpt->labelsize( 10);
 

@@ -111,6 +111,7 @@ EXTERN float default_pointsize INIT(1.0);
 // npoints_slider -- maximum number of points to display in all 
 // plots.  Various buttons -- as suggested by their names.
 EXTERN Fl_Tabs *cpt;  
+EXTERN Fl_Tabs *brushes_tab;
 EXTERN Fl_Button *add_to_selection_button,
           *clear_selection_button, 
           *delete_selection_button;
@@ -142,6 +143,7 @@ EXTERN Control_Panel_Window *cps[ MAXPLOTS+1];
 
 #define NBRUSHES 8
 EXTERN Brush *brushes[NBRUSHES];
+EXTERN Brush *active_brush;
 
 // Make absolutely certain variables for point sprites are defined
 #ifndef GL_POINT_SPRITE_ARB

@@ -27,7 +27,9 @@ class Brush : public Fl_Group
     // Static functions for access by Fl Widget callbacks
     void brush_changed();
     static void static_brush_changed( Fl_Widget *w, Brush *brush)
-    { brush->brush_changed();}
+    {
+        brush->brush_changed();
+    }
 
     void change_color();
     static void static_change_color( Fl_Widget *w, Brush *brush)
