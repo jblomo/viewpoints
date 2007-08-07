@@ -34,6 +34,7 @@
 // Include associated headers and source code
 #include "plot_window.h"
 #include "control_panel_window.h"
+#include "brush.h"
 
 #define CHECK_GL_ERROR(msg)                    \
     {                                          \
@@ -56,24 +57,13 @@ int Plot_Window::count = 0;
 float const Plot_Window::initial_pscale = 0.8; 
 
 // color for points (modified per point by texture rgba)
-GLfloat Plot_Window::pointscolor[4] = { 1, 1, 1, 1};
-
-// Initialize color for deselected points
-double Plot_Window::r_deselected=1.0;
-double Plot_Window::g_deselected=0.0;
-double Plot_Window::b_deselected=0.0;
-
-// "color tables" used for coloring points based on which plot (if any) they
-// are selected in.  See Plot_Window::color_array_from_selection()
-// colors_show_deselected --  used when deselected points are shown
-// colors_hide_deselected --  used when deselected points are not shown
-blitz::Array<GLfloat,2> Plot_Window::colors_show_deselected(MAXPLOTS+1,4);
-blitz::Array<GLfloat,2> Plot_Window::colors_hide_deselected(MAXPLOTS+1,4);
-
-blitz::Array<unsigned int,1> Plot_Window::number_selected(MAXPLOTS+1);
-blitz::Array<unsigned int,2> Plot_Window::indices_selected(MAXPLOTS+1,1); 
+//GLfloat Plot_Window::pointscolor[4] = { 1, 1, 1, 1};
 
 //GLfloat Plot_Window::texenvcolor[ 4] = { 1, 1, 1, 1};
+
+// 2D array that holds indices of vertices for each brush
+blitz::Array<unsigned int,2> Plot_Window::indices_selected(NBRUSHES,1); 
+
 GLuint Plot_Window::spriteTextureID[NSYMBOLS];
 GLubyte* Plot_Window::spriteData[NSYMBOLS];
 int Plot_Window::sprites_initialized = 0;
@@ -113,7 +103,6 @@ void Plot_Window::initialize()
   do_reset_view_with_show = 0;
   show_center_glyph = 0;
   selection_changed = 0;
-  r_selected=0.0, g_selected=0.0, b_selected=1.0;
 
   VBOinitialized = 0;
   VBOfilled = false;
@@ -162,14 +151,6 @@ void Plot_Window::initialize()
   else {
     context( global_GLContext, false);
   }
-}
-
-//***************************************************************************
-// Plot_Window::choose_color_selected() -- Choose color of selected points.  
-void Plot_Window::choose_color_selected()
-{
-  (void) fl_color_chooser( "selected", r_selected, g_selected, b_selected);
-  update_selection_color_table();
 }
 
 //***************************************************************************
@@ -575,9 +556,6 @@ void Plot_Window::reset_view()
 
   // Reset selection box and flag window as needing redraw
   reset_selection_box ();
-  if( count ==1) {
-    color_array_from_selection ();
-  }
   needs_redraw = 1;
 
   // Make sure the window is visible and resizable.  NOTE: For some reason, it
@@ -971,7 +949,7 @@ void Plot_Window::handle_selection ()
       where( newly_selected( NPTS), newly_selected( NPTS), previously_selected( NPTS));
   }
 
-  color_array_from_new_selection ();
+  color_array_from_selection ();
 }
 
 //***************************************************************************
@@ -1003,31 +981,6 @@ void Plot_Window::draw_selection_information()
 }
 
 //***************************************************************************
-// Plot_Window::update_selection_color_table() -- Update the "color tables" 
-// used for coloring selected and de-selected points.  NOTE: These are *not* 
-// OpenGL color tables. 
-void Plot_Window::update_selection_color_table ()
-{
-  // New color for selected points (selection in this window only)
-  colors_show_deselected(index+1,0) = colors_hide_deselected(index+1,0) = r_selected;
-  colors_show_deselected(index+1,1) = colors_hide_deselected(index+1,1) = g_selected;
-  colors_show_deselected(index+1,2) = colors_hide_deselected(index+1,2) = b_selected;
-  colors_show_deselected(index+1,3) = colors_hide_deselected(index+1,3) = 1.0;
-
-  // color for de-selected points when they are displayed
-  colors_show_deselected(0,0) = r_deselected;
-  colors_show_deselected(0,1) = g_deselected;
-  colors_show_deselected(0,2) = b_deselected;
-  colors_show_deselected(0,3) = 1.0;
-
-  // color for de-selected points when they are not displayed
-  colors_hide_deselected(0,0) = 0.0;
-  colors_hide_deselected(0,1) = 0.0;
-  colors_hide_deselected(0,2) = 0.0;
-  colors_hide_deselected(0,3) = 0.0;
-}
-
-//***************************************************************************
 // Plot_Window::color_array_from_selection() -- Fill the index arrays and 
 // their associated counts.  Each array of indices will be rendered later 
 // preceded by its own single call to glColor().
@@ -1037,30 +990,20 @@ void Plot_Window::update_selection_color_table ()
 //
 void Plot_Window::color_array_from_selection()
 {
-  // Update "color tables" if the user requested a color change
-  update_selection_color_table();
-
+  for (int i=0; i<NBRUSHES; i++) {
+    brushes[i]->count = 0;
+  }
   // Loop: Examine sucesive points to fill the index arrays and their
   // associated counts
-  number_selected = 0;
   int set, count=0;
   for( int i=0; i<npoints; i++) {
     set = selected(i);
-    count = number_selected( set)++;
+    count = brushes[set]->count++;
     indices_selected( set, count) = i;
   }
-  nselected = npoints - number_selected(0);
-  assert(sum(number_selected(blitz::Range(0,nplots))) == (unsigned int)npoints);
+  nselected = npoints - brushes[0]->count;
+  // assert(sum(number_selected(blitz::Range(0,nplots))) == (unsigned int)npoints);
   indexVBOsfilled = 0;
-}
-
-//***************************************************************************
-// Plot_Window::color_array_from_new_selection() -- Invoke
-// color_array_from_selection to fill the index arrays and their associated 
-// counts for a new selection.
-void Plot_Window::color_array_from_new_selection()
-{
-  color_array_from_selection ();
 }
 
 //***************************************************************************
@@ -1072,7 +1015,7 @@ void Plot_Window::draw_data_points()
 
   float const_color[4];
 
-  const_color[0] = const_color[1] = const_color[2] = cp->Lum->value(); 
+  const_color[0] = const_color[1] = const_color[2] = cp->lum->value(); 
   const_color[3] = 1.0;
   glBlendColor( const_color[0], const_color[1], const_color[2], const_color[3]);  // MCL XXX removed for sprites
 
@@ -1116,32 +1059,26 @@ void Plot_Window::draw_data_points()
     glVertexPointer (3, GL_FLOAT, 0, (GLfloat *)vertices.data()); 
   }
 
-  // Loop: Draw points in successive sets.  Each plot window brushes using its
-  // own selection color, and there is a single non-selected color.  This 
-  // means there are nplots+1 "sets" of vertices (vertex indices, actually), 
-  // and that each set has a count of between 0 and npoints.  Each set is 
-  // rendered using a different color.  The total of all the counts must equal 
-  // npoints;
+  // Loop: Draw points for each brush, using that brush's properties.
 
-  for( int set=0; set<nplots+1; set++) {
-    unsigned int count = number_selected( set);
+  for( int brush_index=0; brush_index<NBRUSHES; brush_index++) {
 
-    // If some points were selected in this set, set their size and color and
-    // render them
-    // MCL XXX - these sizes, colors modifiers (lum, lum2), etc, could be from 
-    // other windows based on the set.  Like selection colors are already.
-    if( count > 0) {
+    // don't draw nonselected points (brush[0]) if we are hiding nonselected points in this plot
+    if (brush_index == 0 && (!show_deselected_button->value() || !cp->show_deselected_points->value())) {
+        continue;
+    }
 
-      // Set the pointsize for this set of points (hard limit from 1.0 to 50.0)
-      // to avoid GL errors.  Also set the current_sprite (or not, if rendering with regular points).
-      if (set==0) {
-        glPointSize(min(max(cp->pointsize_slider->value(), 1.0),50.0));
-        current_sprite = cp->symbol_menu->value();
-      }
-      else {
-        glPointSize(min(max(cp->selected_pointsize_slider->value(), 1.0),50.0));
-        current_sprite = cp->selected_symbol_menu->value();
-      }
+    Brush *brush = brushes[brush_index];
+    unsigned int count = brush->count;
+    
+    // If some points were selected in this set, set their size, etc. and render
+    if(count > 0) {
+
+      // Set the pointsize for this brush (hard limit from 1.0 to 50.0)
+      glPointSize(min(max(brush->pointsize->value(), 1.0),50.0));
+      
+      // Set the sprite for this brush - the symbol used for plotting points.
+      current_sprite = brush->symbol_menu->value();
       assert ((current_sprite >= 0) && (current_sprite < NSYMBOLS));
       switch (current_sprite) {
       case 0:
@@ -1158,23 +1095,15 @@ void Plot_Window::draw_data_points()
       }
 
       // set the color for this set of points
-      float lum = cp->Lum->value(), lum2 = cp->Lum2->value(), alpha=1.0;
-      if( !(show_deselected_button->value() && cp->show_deselected_points->value())) {
-        glColor4f(lum2*(colors_hide_deselected(set,0)+lum),
-                  lum2*(colors_hide_deselected(set,1)+lum),
-                  lum2*(colors_hide_deselected(set,2)+lum),
-                  colors_hide_deselected(set,3)*alpha);
-      }
-      else {
-        glColor4f(lum2*(colors_show_deselected(set,0)+lum),
-                  lum2*(colors_show_deselected(set,1)+lum),
-                  lum2*(colors_show_deselected(set,2)+lum),
-                  colors_show_deselected(set,3)*alpha);
-      }
+      float lum = brush->lum->value(), lum2 = brush->lum2->value(), alpha=1.0;
+      glColor4d(lum2*brush->color[0]+lum,
+                lum2*brush->color[1]+lum,
+                lum2*brush->color[2]+lum,
+                alpha*(lum2*brush->color[3]+lum));
       // then render the points
       if (use_VBOs) {
         assert (VBOinitialized && VBOfilled && indexVBOsinitialized && indexVBOsfilled) ;
-        glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, MAXPLOTS+set); 
+        glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, MAXPLOTS+brush_index); 
         // glDrawElements( GL_POINTS, (GLsizei)count, GL_UNSIGNED_INT, BUFFER_OFFSET(0));
         glDrawRangeElements( GL_POINTS, 0, npoints, count, GL_UNSIGNED_INT, BUFFER_OFFSET(0));
         // make sure we succeeded 
@@ -1182,7 +1111,7 @@ void Plot_Window::draw_data_points()
       }
       else {
         // Create an alias to slice
-        blitz::Array<unsigned int, 1> tmpArray = indices_selected( set, blitz::Range(0,npoints-1));
+        blitz::Array<unsigned int, 1> tmpArray = indices_selected(brush_index, blitz::Range(0,npoints-1));
         unsigned int *indices = (unsigned int *) (tmpArray.data());
         // glDrawElements( GL_POINTS, count, GL_UNSIGNED_INT, indices);
         glDrawRangeElements( GL_POINTS, 0, npoints, count, GL_UNSIGNED_INT, indices);
@@ -1964,20 +1893,13 @@ void Plot_Window::initialize_selection()
   for( int i=0; i<nplots; i++) {
     pws[i]->reset_selection_box();
   }
-  number_selected = 0; 
-  number_selected(0) = npoints; // all points initially in nonselected set
-  indices_selected = 0;
-  for( int i=0; i<npoints; i++) {
-    indices_selected(0,i) = i;
+  // all points start out unselected (i.e. rendered using brush[0]);
+  brushes[0]->count = npoints; 
+  // no other brushes render anything to start out.
+  for (int i=1; i<NBRUSHES; i++) {
+    brushes[i]->count = 0;
   }
-
-  // Initialize selection arrays
-  newly_selected = 0;
-  selected = 0;
-  previously_selected = 0;
-  saved_selection = 0;
-  nselected = 0;
-  selection_is_inverted = false;
+  reset_selection_arrays ();
 }
 
 //***************************************************************************
@@ -2129,14 +2051,14 @@ void Plot_Window::initialize_indexVBOs()
 // Plot_Window::fill_indexVBO() -- Fill the index VBO
 void Plot_Window::fill_indexVBO(int set)
 {
-  if (number_selected(set) > 0) {
+  if (brushes[set]->count > 0) {
     glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, MAXPLOTS+set);
     // Create an alias to slice
     blitz::Array<unsigned int, 1> tmpArray = indices_selected( set, blitz::Range(0,npoints-1));
     unsigned int *indices = (unsigned int *) (tmpArray.data());
     glBufferSubDataARB(
       GL_ELEMENT_ARRAY_BUFFER_ARB, (GLintptrARB) 0, 
-      (GLsizeiptrARB) (number_selected(set)*sizeof(GLuint)), indices);
+      (GLsizeiptrARB) (brushes[set]->count*sizeof(GLuint)), indices);
 
     // make sure we succeeded 
     CHECK_GL_ERROR("filling index VBO");

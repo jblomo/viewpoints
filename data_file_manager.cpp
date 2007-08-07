@@ -464,11 +464,6 @@ int Data_File_Manager::load_data_file()
   // that we've read, we can allocate/reallocateResize the other global arrays.
   resize_global_arrays();
 
-  // Set the 'selected' flag to initialize the selections to zero.  NOTE: 
-  // Since everyone starts of as "non-selected", it is no longer correct to 
-  // initialize the selection index array explicitly.
-  // for( int i=0; i<npoints; i++) indices_selected(0,i)=i;
-  selected = 0;
   return 0;
 }
 
@@ -541,7 +536,7 @@ int Data_File_Manager::read_ascii_file_with_headers()
   // columns and generate a set of column labels.
   if( nHeaderLines == 0 || lastHeaderLine.length() == 0) {
     
-    // Invoke the REPLACE method from <algorithm> to replace tabs and/or a
+    // Invoke the replace() method from <algorithm> to replace tabs and/or a
     // user-specified delimiter character so that operator>> will work.
     replace( line.begin(), line.end(), '\t', ' ');
     if( delimiter_char_ != ' ') {
@@ -1337,23 +1332,13 @@ void Data_File_Manager::resize_global_arrays()
   ranked.resize( nvars);
   ranked = 0;
   
-  // Resize selection arrays
+  // Resize and reinitialize selection related arrays and flags.
   newly_selected.resize( npoints);
   selected.resize( npoints);
   previously_selected.resize( npoints);
   saved_selection.resize(npoints);
-  Plot_Window::indices_selected.resize(nplots+1,npoints);
-  Plot_Window::number_selected.resize(nplots+1);
-
-  // Initialize selection arrays
-  Plot_Window::number_selected = 0; 
-  Plot_Window::indices_selected = 0;
-  newly_selected = 0;
-  selected = 0;
-  previously_selected = 0;
-  saved_selection = 0;
-  nselected = 0;
-  selection_is_inverted = false;
+  Plot_Window::indices_selected.resize(NBRUSHES,npoints);
+  reset_selection_arrays();
 
 }
 

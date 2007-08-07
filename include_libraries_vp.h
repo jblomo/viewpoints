@@ -106,6 +106,7 @@
 #include <vector>
 #include <string>
 #include <algorithm>
+#include <typeinfo>
 
 // FLTK.  These includes should be handled by the relevant Dev-C++
 // 'dev-pak'.

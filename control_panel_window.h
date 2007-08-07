@@ -98,8 +98,6 @@ class Control_Panel_Window : public Fl_Group
 
     // Static functions for access by Fl Widget callbacks
     static void broadcast_change( Fl_Widget *global_widget);
-    static void choose_color_selected( Fl_Widget *w, Control_Panel_Window *cpw)
-    { cpw->pw->choose_color_selected() ;}
     static void static_extract_and_redraw( Fl_Widget *w, Control_Panel_Window *cpw)
     { cpw->extract_and_redraw(); }
     static void static_maybe_redraw( Fl_Widget *w, Control_Panel_Window *cpw)
@@ -112,8 +110,8 @@ class Control_Panel_Window : public Fl_Group
     { cpw->pw->redraw_one_plot();}
 
     // Pointers to sliders & menus
-    Fl_Hor_Value_Slider_Input *pointsize_slider, *selected_pointsize_slider;
-    Fl_Hor_Value_Slider_Input *Bkg, *Lum, *Lum2;
+    // Fl_Hor_Value_Slider_Input *pointsize_slider, *selected_pointsize_slider;
+    Fl_Hor_Value_Slider_Input *Bkg, *lum;
     Fl_Hor_Value_Slider_Input *rot_slider;
     Fl_Hor_Value_Slider_Input *nbins_slider[3], *hscale_slider[3];
     Fl_Choice *varindex1, *varindex2, *varindex3;
@@ -153,11 +151,6 @@ class Control_Panel_Window : public Fl_Group
     static Fl_Menu_Item normalization_style_menu_items[];
 
     static Fl_Menu_Item varindex_menu_items[]; 
-
-    // points, round points, crosses, etc.
-    Fl_Choice *symbol_menu, *selected_symbol_menu;
-    static Fl_Menu_Item symbol_menu_items[];
-    void build_symbol_menu (void);
 
     // Pointer to and index of the plot window associated with 
     // this control panel tab.  Each plot window has the same 

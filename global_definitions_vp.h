@@ -102,7 +102,7 @@ EXTERN int scale_histogram INIT(0);
 
 // Define variable to hold pointsize.  Used in main routine and classes 
 // Control_Panel_Window and Plot_Window.  (Move to class plot_window?)
-EXTERN float pointsize INIT(1.0);
+EXTERN float default_pointsize INIT(1.0);
 
 // Define main control panel's top level (global) widgets.  Many of these must 
 // also be accessible to class plot_window and possibly Control_Panel_Window 
@@ -128,6 +128,7 @@ EXTERN Fl_Button *read_data_button;
 // referenced
 class Control_Panel_Window;
 class Plot_Window;
+class Brush; 
 
 // Define pointer arrays of plot windows and control panel windows.  This 
 // can't be done until after the relevant class definitions.  NOTE: In the 
@@ -139,12 +140,10 @@ EXTERN Plot_Window *pws[ MAXPLOTS];
 // associated plot window - it affects all (unlocked) plots.
 EXTERN Control_Panel_Window *cps[ MAXPLOTS+1]; 
 
+#define NBRUSHES 8
+EXTERN Brush *brushes[NBRUSHES];
+
 // Make absolutely certain variables for point sprites are defined
-//#ifndef GL_ARB_point_sprite
-//  #define GL_ARB_point_sprite 1
-//  #define GL_POINT_SPRITE_ARB               0x8861
-//  #define GL_COORD_REPLACE_ARB              0x8862
-//#endif
 #ifndef GL_POINT_SPRITE_ARB
   #define GL_POINT_SPRITE_ARB 0x8861
 #endif
@@ -157,6 +156,7 @@ EXTERN Fl_Window *confirmation_window;
 
 // Global function definitions
 EXTERN int make_confirmation_window( const char* text, int nButtons = 3);
+EXTERN void reset_selection_arrays();
 
 //***************************************************************************
 // Class: MyCompare

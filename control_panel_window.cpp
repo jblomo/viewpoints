@@ -28,8 +28,6 @@
 // Include the necessary include libraries
 #include "include_libraries_vp.h"
 
-#include <typeinfo>
-
 // Include globals
 #include "global_definitions_vp.h"
 
@@ -328,50 +326,15 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   b->selection_color(FL_BLUE);
   b->value(0);
 
-  // next portion of the panel deals with point qualities
-  //
   ypos += 60;
 
-  // point size slider for nonselected points
-  pointsize_slider = new Fl_Hor_Value_Slider_Input( xpos, ypos, cpw->w()-145, 20, "size1");
-  pointsize_slider->align(FL_ALIGN_LEFT);
-  pointsize_slider->value(pointsize);
-  pointsize_slider->step(0.25);
-  pointsize_slider->bounds(1.0,50.0);
-  pointsize_slider->callback((Fl_Callback*)replot, this);
-
-  // symbol types menu for nonselected points
-  symbol_menu = new Fl_Choice(xpos+pointsize_slider->w()+45, ypos, 45, 20);
-  // call a method to do the dirty work of setting up all the glyphs for the symbols menu.
-  build_symbol_menu ();
-  symbol_menu->textsize(12);
-  symbol_menu->down_box(FL_NO_BOX);
-  symbol_menu->clear_visible_focus(); // MCL XXX - I think this should be set for all widgets
-  symbol_menu->color(FL_WHITE);
-  symbol_menu->menu(symbol_menu_items);
-  symbol_menu->label("sym1");
-  symbol_menu->value(0);
-  symbol_menu->callback( (Fl_Callback*)replot, this);
-
-  // point size slider for selected points.
-  selected_pointsize_slider = new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, cpw->w()-145, 20, "size2");
-  selected_pointsize_slider->align(FL_ALIGN_LEFT);
-  selected_pointsize_slider->value(pointsize);
-  selected_pointsize_slider->step(0.25);
-  selected_pointsize_slider->bounds(1.0,50.0);
-  selected_pointsize_slider->callback((Fl_Callback*)replot, this);
-
-  // symbol types menu for selected points
-  selected_symbol_menu = new Fl_Choice(xpos+selected_pointsize_slider->w()+45, ypos, 45, 20);
-  // build_symbol_menu (); // already done, above.  
-  selected_symbol_menu->textsize(12);
-  selected_symbol_menu->down_box(FL_NO_BOX);
-  selected_symbol_menu->clear_visible_focus(); 
-  selected_symbol_menu->color(FL_WHITE);
-  selected_symbol_menu->menu(symbol_menu_items);
-  selected_symbol_menu->label("sym2");
-  selected_symbol_menu->value(0);
-  selected_symbol_menu->callback( (Fl_Callback*)replot, this);
+  // Luminance for this plot
+  lum = new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, cpw->w()-60, 20, "lum");
+  lum->align(FL_ALIGN_LEFT);
+  lum->step(0.0001);
+  lum->bounds(0.0,1.0);
+  lum->callback((Fl_Callback*)replot, this);
+  lum->value(0.5);
 
   // Background color slider
   Bkg = new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, cpw->w()-60, 20, "Bkg");
@@ -380,22 +343,6 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   Bkg->bounds(0.0,1.0);
   Bkg->callback((Fl_Callback*)replot, this);
   Bkg->value(0.0);
-
-  // Luminosity slider
-  Lum = new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, cpw->w()-60, 20, "Lum");
-  Lum->align(FL_ALIGN_LEFT);
-  Lum->callback((Fl_Callback*)replot, this);
-  Lum->step(0.0001);
-  Lum->bounds(0.0,1.0);
-  Lum->value(0.04);  // !!!
-
-  // Luminosity slider
-  Lum2 = new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, cpw->w()-60, 20, "Lum2");
-  Lum2->align(FL_ALIGN_LEFT);
-  Lum2->callback((Fl_Callback*)replot, this);
-  Lum2->step(0.0001);
-  Lum2->bounds(0.0,5.0);
-  Lum2->value(1.0);
 
   // Rotation (and spin) slider
   rot_slider = new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, cpw->w()-60, 20, "rot");
@@ -502,7 +449,7 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   b->selection_color(FL_BLUE);  
   b->value(1);
 
-  // Button (5,2): Show grid (currently broken)
+  // Button (5,2): Show grid (needs work)
   show_grid = b = new Fl_Button(xpos, ypos+=25, 20, 20, "grid");
   b->callback((Fl_Callback*)static_maybe_redraw, this);
   b->align(FL_ALIGN_RIGHT); 
@@ -513,16 +460,8 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   ypos=ypos2;
   xpos=xpos2+200;
 
-  // Button (1,3): Choose selection color
-  choose_selection_color_button = b = 
-    new Fl_Button(xpos, ypos+=25, 20, 20, "selection color");
-  b->align(FL_ALIGN_RIGHT); 
-  b->selection_color(FL_BLUE); 
-  b->callback((Fl_Callback*)choose_color_selected, this);
-
   // Button (2,3): z-buffering control
-  z_bufferring_button = b = 
-    new Fl_Button(xpos, ypos+=25, 20, 20, "z-bufferring");
+  z_bufferring_button = b = new Fl_Button(xpos, ypos+=25, 20, 20, "z-bufferring");
   b->callback((Fl_Callback*)redraw_one_plot, this);
   b->align(FL_ALIGN_RIGHT); 
   b->type(FL_TOGGLE_BUTTON); 

@@ -1,4 +1,4 @@
-// viewpoints - interactive linked scatterplots and more.
+    // viewpoints - interactive linked scatterplots and more.
 // copyright 2005 Creon Levit and Paul Gazis, all rights reserved.
 //***************************************************************************
 // File name: vp.cpp
@@ -75,6 +75,7 @@
 #include "data_file_manager.h"
 #include "plot_window.h"
 #include "control_panel_window.h"
+#include "brush.h"
 #include "unescape.h"
 
 // Define and initialize number of screens
@@ -136,12 +137,12 @@ Fl_Menu_Bar *main_menu_bar;
 Fl_Window *about_window;
 Fl_Window *help_view_window;
 Fl_Help_View *help_view_widget;
+Fl_Group *brushes_panel;
 
 // Function definitions for the main method
 void usage();
 void make_help_about_window( Fl_Widget *o);
-void create_main_control_panel( 
-  int main_x, int main_y, int main_w, int main_h, char* cWindowLabel);
+void create_main_control_panel(int main_x, int main_y, int main_w, int main_h, char* cWindowLabel);
 void cb_main_control_panel( Fl_Widget *o, void* user_data);
 void create_broadcast_group();
 void manage_plot_window_array( Fl_Widget *o, void* user_data);
@@ -219,7 +220,7 @@ void make_help_about_window( Fl_Widget *o)
   about_window->labelsize( 10);
   
   string sAbout = "viewpoints\n";
-  sAbout += "$Rev$\n";
+  sAbout += "$Id$\n";
   sAbout += "(c) 2006 C. Levit and P. R. Gazis\n\n";
   sAbout += "contact information:\n";
   sAbout += " Creon Levit creon.levit@@nasa.gov\n";
@@ -245,21 +246,55 @@ void make_help_about_window( Fl_Widget *o)
   about_window->show();
 }
 
+
+void create_brushes(int main_x, int main_y, int main_w, int main_h)
+{
+  // Fl_Group::current(0);  // not a subwindow
+  // brushes_panel = new Fl_Group( main_x, main_y, main_w, main_h, "brushes");
+  // brushes_panel->visible(1);
+  // brushes_panel->resizable(brushes_panel);
+
+  // Inside the main control panel, there is a tab widget, bt, 
+  // that contains the sub-panels (groups), one per brush.
+  Fl_Tabs *brushes_tab = new Fl_Tabs( main_x, main_y, main_w, main_h);
+  brushes_tab->selection_color( FL_BLUE);
+  brushes_tab->labelsize( 10);
+  Fl_Group::current(brushes_tab);
+ 
+  for (int i=0; i<NBRUSHES; i++) {
+    // Create a label for this tab
+    ostringstream oss;
+    oss << "" << i;
+    string labstr = oss.str();
+    // create a brush (Fl_Group) corresponding to the tab
+    brushes[i] = new Brush(3, 3, main_w - 6, main_h-6);
+    brushes[i]->index = i;
+    brushes[i]->copy_label( labstr.c_str());
+    brushes[i]->labelsize( 10);
+    brushes[i]->make_widgets( brushes[i]);
+    brushes[i]->end();
+  }
+//  brushes_tab->end();
+//  brushes_panel->end();
+//  brushes_panel->show();
+}
+
+
 //***************************************************************************
 // create_main_control_panel( main_x, main_y, main_w, main_h, cWindowLabel) 
 // -- Create the main control panel window.
-void create_main_control_panel( 
-  int main_x, int main_y, int main_w, int main_h, char* cWindowLabel)
+void create_main_control_panel(int main_x, int main_y, int main_w, int main_h, char* cWindowLabel)
 {
   // Create main control panel window
+  Fl_Group::current(0);
   Fl::scheme( "plastic");  // optional
-  main_control_panel = 
-    new Fl_Window( main_x, main_y, main_w, main_h, cWindowLabel);
+  main_control_panel = new Fl_Window( main_x, main_y, main_w, main_h, cWindowLabel);
   main_control_panel->resizable( main_control_panel);
 
   // Add callback function to intercept 'Close' operations
-  main_control_panel->callback( 
-    (Fl_Callback*) cb_main_control_panel, main_control_panel);
+  main_control_panel->callback((Fl_Callback*) cb_main_control_panel, main_control_panel);
+
+  create_brushes (tabs_widget_x, tabs_widget_y, main_w-6, tabs_widget_h);
 
   // Make main menu bar and add the global widgets to control panel
   make_main_menu_bar();
@@ -267,14 +302,14 @@ void create_main_control_panel(
 
   // Inside the main control panel, there is a tab widget, cpt, 
   // that contains the sub-panels (groups), one per plot.
-  cpt = 
-    new Fl_Tabs( tabs_widget_x, tabs_widget_y, main_w-6, tabs_widget_h);
+  cpt = new Fl_Tabs( tabs_widget_x, tabs_widget_y/2, main_w-6, tabs_widget_h/2);
   cpt->selection_color( FL_BLUE);
   cpt->labelsize( 10);
 
   // Done creating main control panel (except for the tabbed 
   // sub-panels created by manage_plot_window_array)
   main_control_panel->end();
+  Fl_Group::current(0);  
 }
 
 
@@ -319,7 +354,6 @@ void create_broadcast_group ()
 
   // MCL XXX these widgets cause crashes or misbehaviors in the global 
   // panel, so skip them for now.
-  cp->choose_selection_color_button->deactivate();
   cp->sum_vs_difference->deactivate();
   cp->cond_prop->deactivate();
   cp->no_transform->deactivate();
@@ -438,11 +472,6 @@ void manage_plot_window_array( Fl_Widget *o, void* user_data)
   // Recalculate number of plots
   nplots = nrows * ncols;
 
-  // If this was a resize operation, resize the selection arrays:
-  // 'indices_selected' and 'number_selected'.
-  if( thisOperation == RESIZE)
-    resize_selection_index_arrays( nplots_old, nplots);
-
   // Always save old variable indices and normalization styles, if any.  
   // QUESTION: are these array declarations safe on all compilers when 
   // nplots_old = 0?
@@ -505,8 +534,7 @@ void manage_plot_window_array( Fl_Widget *o, void* user_data)
     // create_control_panel and add a new virtual control panel under this
     // tab widget
     Fl_Group::current( cpt);  
-    cps[i] = new Control_Panel_Window( 
-      cp_widget_x, cp_widget_y, main_w - 6, cp_widget_h);
+    cps[i] = new Control_Panel_Window(cp_widget_x, cp_widget_y, main_w - 6, cp_widget_h);
     cps[i]->index = i;
     cps[i]->copy_label( labstr.c_str());
     cps[i]->labelsize( 10);
@@ -526,6 +554,7 @@ void manage_plot_window_array( Fl_Widget *o, void* user_data)
         thisOperation == RESIZE || 
         thisOperation == NEW_DATA) {
       if( i >= nplots_old) {
+        cout << "DEBUG creating new plot window " << i << endl;
         pws[i] = new Plot_Window( pw_w, pw_h, i);
         cps[i]->pw = pws[i];
         pws[i]->cp = cps[i];
@@ -600,7 +629,6 @@ void manage_plot_window_array( Fl_Widget *o, void* user_data)
     }
     else {
       pws[i]->initialize();
-      // pws[i]->color_array_from_selection();  // Not needed here
       pws[i]->extract_data_points();
     }
 
@@ -610,7 +638,10 @@ void manage_plot_window_array( Fl_Widget *o, void* user_data)
     // Make sure the window has been shown and check again to make absolutely 
     // sure it is resizable.  NOTE: pws[i]->show() with no arguments is not 
     // sufficient when windows are created.
-    if( !pws[i]->shown()) pws[i]->show( global_argc, global_argv);
+    if( !pws[i]->shown()) {
+        cout << "DEBUG showing plot window " << i << endl;
+        pws[i]->show( global_argc, global_argv);
+    }
     pws[i]->resizable( pws[i]);
 
     // Turn on the 'show' capability of Plot_Window::reset_view();
@@ -778,21 +809,6 @@ void step_help_view_widget( Fl_Widget *o, void* user_data)
 void make_global_widgets()
 {
   int xpos = global_widgets_x, ypos = global_widgets_y;
-#if 0
-  // Draw 'npoints' horizontal slider at top of subpanel
-  // XXX MCL the new point coloring scheme broke the npoints slider :-(
-  // the good news is that I'm not sure anyone uses it.
-  // the better news is that I think it is only broken for FAST_APPLE_VERTEX_EXTENSIONS
-  // but it needs to be fixed anyway, so I've disabled it.
-  npoints_slider = 
-    new Fl_Hor_Value_Slider_Input( xpos+30, ypos+=25, 300-30, 20, "npts");
-  npoints_slider->align( FL_ALIGN_LEFT);
-  npoints_slider->callback( npoints_changed);
-  npoints_slider->value( npoints);
-  npoints_slider->step( 1.0);
-  npoints_slider->bounds( 1, npoints);
-#endif
-
   // Define a pointer and initialize positions for buttons
   Fl_Button *b;
   int xpos1 = xpos, ypos1 = ypos;
@@ -838,13 +854,6 @@ void make_global_widgets()
   // Advance to column 2
   xpos = xpos1 + 150; ypos = ypos1;
 
-  // Button(1,2): Chose color of non-selcted points
-  choose_color_deselected_button = b = 
-    new Fl_Button( xpos, ypos+=25, 20, 20, "unselected color");
-  b->align( FL_ALIGN_RIGHT); 
-  b->selection_color( FL_BLUE); 
-  b->callback( (Fl_Callback*)choose_color_deselected);
-
   // Button(3,2): Randomly change all axes
   change_all_axes_button = 
     new Fl_Repeat_Button( xpos, ypos+=25, 20, 20, "change axes");
@@ -860,31 +869,6 @@ void make_global_widgets()
   b->type( FL_TOGGLE_BUTTON); 
   b->value( 0);
 
-  // Unlike View|Restore Panels, this code only seems to work under windows.
-  // It is retained for archuval purposes
-  // Button(5,2): Reload plot window array
-  // reload_plot_window_array_button = b = 
-  //   new Fl_Button( xpos, ypos+=25, 20, 20, "reload plots");
-  // b->align( FL_ALIGN_RIGHT); 
-  // b->selection_color( FL_BLUE); 
-  // b->callback( manage_plot_window_array);
-}
-
-//***************************************************************************
-// choose_color_deselected( *o) -- Choose color of deselected points, update 
-// the selection color table and redraw all plots.  NOTE: Could this become a 
-// static member function of class Plot_Window?
-void choose_color_deselected( Fl_Widget *o)
-{
-  (void) fl_color_chooser( 
-    "deselected", 
-    Plot_Window::r_deselected, 
-    Plot_Window::g_deselected, 
-    Plot_Window::b_deselected);
-
-  // Update selection color table and redraw all plots
-  pws[ 0]->update_selection_color_table ();
-  Plot_Window::redraw_all_plots (0);
 }
 
 //***************************************************************************
@@ -921,31 +905,6 @@ void npoints_changed( Fl_Widget *o)
 {
   npoints = int( ( (Fl_Slider *)o)->value());
   Plot_Window::redraw_all_plots( 0);
-}
-
-//***************************************************************************
-// resize_selection_index_arrays( nplots_old, nplots) -- Resize the arrays 
-// that depend on the value of nplots and initialize any new values of the 
-// selection arrays.  This should be called whenever nplots is changed
-//
-// MCL XXX - this whole function and the globals and public functions it 
-// references could go away if we made the globals and public functions 
-// into members of class Plot_Window.  However, this requires some way of 
-// handling the extra "non-selected" selection, which does not really 
-// belong to any one plot window.
-void resize_selection_index_arrays( int nplots_old, int nplots)
-{
-  blitz::Range NPTS( 0, npoints-1);
-  pws[0]->indices_selected.resizeAndPreserve(nplots+1,npoints);
-  pws[0]->number_selected.resizeAndPreserve(nplots+1);
-  for( int i=nplots_old+1; i<nplots+1; i++) {
-    pws[0]->indices_selected(i,NPTS) = 0;
-    pws[0]->number_selected(i) = 0;
-    if (use_VBOs) {
-      pws[i]->initialize_indexVBO(i);
-      pws[i]->fill_indexVBO(i);
-    }
-  }
 }
 
 //***************************************************************************
@@ -1025,8 +984,9 @@ void read_data( Fl_Widget* o, void* user_data)
   // npoints_slider->bounds(1,npoints);
   // npoints_slider->value(npoints);
 
-  // Fewer points -> bigger starting pointsize
-  pointsize = max( 1.0, 6.0 - (int) log10f( (float) npoints));
+  // MCL XXX why is the following code repeated three times in this file?
+  // Fewer points -> bigger starting default_pointsize
+  default_pointsize = max( 1.0, 6.0 - (int) log10f( (float) npoints));
 
   // DIAGNOSTIC
   // cout << "Finished dfm.load_data_file and about to refresh plots" << endl;
@@ -1036,10 +996,6 @@ void read_data( Fl_Widget* o, void* user_data)
   // Clear children of tab widget and reload plot window array.
   manage_plot_window_array( o, NULL);
 
-  // KLUDGE: Make sure points are drawn in plot windows.  This is now handled 
-  // near the end of manage_plot_window_array().
-  // pws[ 0]->color_array_from_selection();
-  // Plot_Window::redraw_all_plots( 0);  // Probably not needed
 }
 
 //***************************************************************************
@@ -1094,8 +1050,8 @@ int load_state( Fl_Widget* o)
            << " samples with " << nvars << " fields" << endl;
   }
 
-  // Fewer points -> bigger starting pointsize
-  pointsize = max( 1.0, 6.0 - (int) log10f( (float) npoints));
+  // Fewer points -> bigger starting default_pointsize
+  default_pointsize = max( 1.0, 6.0 - (int) log10f( (float) npoints));
 
   // Set user_data for this widget to indicate that this is a READ operation, 
   // then invoke manage_plot_window( o) to clear children of the tab widget 
@@ -1208,32 +1164,22 @@ void redraw_if_changing( void *dummy)
       pws[i]->needs_redraw = 0;
     }
   }
-#if 0
-  float fps_max = 300.0;
-  struct timeval tp;
-  static long useconds=0;
-  static long seconds=0;
-
-  // has at least 1/fps_max seconds elapsed? (sort of)
-  busy:
-
-  (void) gettimeofday(&tp, (struct timezone *)0);
-  if( (tp.tv_sec > seconds) || 
-      (((float)(tp.tv_usec - useconds)/1000000.0) > 1.0/fps_max)) {
-    seconds = tp.tv_sec;
-    useconds = tp.tv_usec;
-    return;
-  }
-  else {
-       
-    // DANGER: Don't monkey with syntax in the call to usleep!
-    usleep (1000000/(5*(int)fps_max));
-    goto busy;
-  }
-#else // 0
-    Fl::repeat_timeout(0.001, redraw_if_changing);
-#endif // 0
+  Fl::repeat_timeout(0.01, redraw_if_changing);
   return;
+}
+
+void reset_selection_arrays () {
+  newly_selected = 0;
+  selected = 0;
+  previously_selected = 0;
+  saved_selection = 0;
+  nselected = 0;
+  selection_is_inverted = false;
+
+  Plot_Window::indices_selected = 0;
+  for( int i=0; i<npoints; i++) {
+    Plot_Window::indices_selected(0,i) = i;
+  }
 }
 
 //***************************************************************************
@@ -1255,7 +1201,7 @@ void redraw_if_changing( void *dummy)
 int main( int argc, char **argv)
 {
   cout << "vp: Creon Levit and Paul Gazis's viewpoints" << endl;
-  cout << "$Rev$" << endl;
+  cout << "$Id$" << endl;
 
   // STEP 1: Parse the command line
   //cout << "argc<" << argc << ">" << endl;
@@ -1280,7 +1226,8 @@ int main( int argc, char **argv)
     { "no_vbo", no_argument, 0, 'B'},
     { "help", no_argument, 0, 'h'},
     { "version", no_argument, 0, 'V'},
-    { "psn_", required_argument, 0, 'p'}, // OSX junk passed in when invoked from icon
+		// Apple OS X "provides" this next argument when any program invoked by clicking on its icon
+    { "psn_", required_argument, 0, 'p'}, 
     { 0, 0, 0, 0}
   };
 
@@ -1448,19 +1395,6 @@ int main( int argc, char **argv)
     }
   }
 
-  // If the command line was used with no path information in WIN32, Linux,
-  // or MacOS, and no arguments were specified, provide usage information, 
-  // then quit.  If the icon was clicked, path information should exist and
-  // the GUI should be invoked.  NOTE: This test may not always work, and
-  // has been abandoned.
-  // if( argc == 1 && 
-  //     ( strcmp( argv[ 0], "vp") == 0 || 
-  //       strcmp( argv[ 0], "./vp") == 0 || 
-  //       strcmp( argv[ 0], ".\\vp") == 0)) {
-  //   usage();
-  //   exit( 0);
-  // }
-
   // If no data file was specified, but there was at least one argument 
   // in the command line, assume the last argument is the filespec.
   if( inFileSpec.length() <= 0 && argc > 1) inFileSpec.append( argv[ argc-1]);
@@ -1485,8 +1419,8 @@ int main( int argc, char **argv)
     if( dfm.load_data_file() != 0) dfm.create_default_data( 10);
   }
   
-  // Fewer points -> bigger starting pointsize
-  pointsize = max( 1.0, 6.0 - (int) log10f( (float) npoints));
+  // Fewer points -> bigger starting default_pointsize
+  default_pointsize = max( 1.0, 6.0 - (int) log10f( (float) npoints));
 
   // STEP 3: Create main control panel.
   // Determine the number of screens.  NOTE screen_count requires OpenGL 1.7, 
@@ -1506,8 +1440,7 @@ int main( int argc, char **argv)
   const int main_y = top_frame+top_safe;
 
   // Create the main control panel window
-  create_main_control_panel( 
-    main_x, main_y, main_w, main_h, "viewpoints -> creon.levit@nasa.gov");
+  create_main_control_panel(main_x, main_y, main_w, main_h, "viewpoints -> creon.levit@nasa.gov");
 
   // Step 4: Call manage_plot_window_array with a NULL argument to
   // initialize the plot window array.  KLUDGE ALERT: argc and argv are
@@ -1526,7 +1459,7 @@ int main( int argc, char **argv)
   // Step 5: Set pointer to the function to call when the window is idle and 
   // enter the main event loop
   // Fl::add_idle( redraw_if_changing);
-  Fl::add_timeout(0.001, redraw_if_changing);
+  Fl::add_timeout(0.01, redraw_if_changing);
 
   // Enter the main event loop
   int result = Fl::run();

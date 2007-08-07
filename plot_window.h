@@ -63,38 +63,34 @@ class Control_Panel_Window;
 //
 //   initialize_VBO() -- Initialize VBO for this window
 //   fill_VBO() -- Fill the VBO for this window
-//   initialize_indexVBO( int) -- Initialize the 'index VBO'
-//   initialize_indexVBOs() -- Initialize 'index VBOs'
-//   fill_indexVBOs() -- Fill 'index VBO' for this window
+//   initialize_indexVBO( int) -- Initialize one brush's index VBO
+//   initialize_indexVBOs() -- Initialize all index VBOs
+//   fill_indexVBOs() -- Fill all index VBOs with the indices of the vertices they should plot.
 //
 //   draw() -- Draw plot
 //   draw_grid() -- Draw grid
 //   void draw_axes() -- Draw axes
 //   draw_data_points() -- Draw data points
-//   void draw_center_glyph() -- ???
-//   void update_linked_transforms() -- ???
+//   void draw_center_glyph() -- Draw a cross at the center of a zoom.  Stolen from flashearth.com
+//   void update_linked_transforms() -- Replicate scale and translatation for linked axes
 //
 //   handle( event) -- Main event handler
-//   handle_selection() -- Handle this selection?
+//   handle_selection() -- update or change selection based on mouse position
 //
-//   void screen_to_world( xs, ys, x, y) -- Screen to word coords?
-//   void print_selection_stats() -- ???
+//   void screen_to_world( xs, ys, x, y) -- Screen to word coords (only works for 2D)
+//   void print_selection_stats() -- print number of points and % of points currently selected
 //
-//   compute_histogram( int) -- Compute a histogram
+//   compute_histogram( int) -- Compute histogram bin counts for one variable
+//   compute_histograms () -- Compute both histograms for marginals of 2D plot
 //   draw_histograms() -- Draw histograms
 //
-//   compute_rank(int var_index);
-//   compute_histograms () -- Compute histograms
-//   normalize() -- Normalize data
+//   compute_rank(int var_index) create an array of indices that rank order a variable (basically a sort).
+//   normalize() -- Normalize data based on user-selected normalization scheme
 //
 //   extract_data_points() -- Extract data for these axes
-//   transform_2d() -- Transofmr to 2D coords
+//   transform_2d() -- Transform all (x,y) to (f(x,y), g(x,y))
 //   reset_selection_box() -- Reset selection box
-//   color_array_from_new_selection() -- ???
-//   color_array_from_selection() -- Fill index arrays
-//   update_selection_color_table() -- change the rgba tables used for
-//     selected and/or deselected points
-//   choose_color_selected() -- Choose color of selcted data
+//   color_array_from_selection() -- Fill index arrays 
 //   reset_view() -- Reset plot
 //   redraw_one_plot() -- Redraw one plot
 //   change_axes() -- Change axes of this plot
@@ -174,7 +170,6 @@ class Plot_Window : public Fl_Gl_Window
 
     // Number of plot windows
     static int count; // MCL XXX isn't this the same as nplots?  is it consistent?
-
   public:
     Plot_Window( int w, int h, int new_index);   // Constructor
     void initialize();
@@ -223,7 +218,6 @@ class Plot_Window : public Fl_Gl_Window
 
     // Routines and variables to handle point colors and selection
     void reset_selection_box();
-    void color_array_from_new_selection();
     void color_array_from_selection();
     void update_selection_color_table ();
     void choose_color_selected ();
@@ -257,21 +251,8 @@ class Plot_Window : public Fl_Gl_Window
     static int sfactor;
     static int dfactor;
 
-    // Count of points in each plot's selected set, index zero reserved for 
-    // nonselected.
-    // number_selected[1] = count of points selected in 1st plot (i.e, pws[0])....
-    // number_selected[n+1] = count of points selected in nth plot (pws[n])
-    // number_selected[0] = count of nonselected points
-    // sum(number_selected)==npoints;
-    static blitz::Array<unsigned int,1> number_selected; 
-
     // Indices of points for rendering, packed acording to selection state;
     static blitz::Array<unsigned int,2> indices_selected; 
-
-    // Colors to use deselected points are visible or invisible
-    static blitz::Array<GLfloat,2> colors_show_deselected;
-    static blitz::Array<GLfloat,2> colors_hide_deselected;
-    static GLfloat pointscolor[ 4];
 
     // point sprites-specific data
     static int sprites_initialized;

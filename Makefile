@@ -7,7 +7,7 @@ hardware := $(shell uname -m)
 # compiler names:
 CXX		= g++
 CC		= cc
-MAKEDEPEND	= $(CXX) -E -M
+MAKEDEPEND	= $(CXX) -E -MM
 
 ifeq ($(platform),Darwin)
 	POSTBUILD = make-OSX-application.csh vp viewpoints
@@ -35,9 +35,6 @@ ifeq ($(platform),Darwin)
 
   endif
 
-  # uncomment for debugging version (OSX, intel or ppc)
-  #	OPTIM = $(DEBUG)
-
 else
 # compiling on linux (assume intel HW)
 
@@ -46,12 +43,12 @@ else
 
 endif
 
-CFLAGS		= $(OPTIM)
-CXXFLAGS	= $(OPTIM) -DGL_GLEXT_PROTOTYPES
+#CFLAGS		= $(OPTIM)
+#CXXFLAGS	= $(OPTIM) -DGL_GLEXT_PROTOTYPES
 
 
-#CFLAGS		= $(DEBUG)
-#CXXFLAGS	= $(DEBUG) 
+CFLAGS		= $(DEBUG)
+CXXFLAGS	= $(DEBUG) 
 
 # libraries to link with:
 ifeq ($(platform),Darwin)
@@ -84,8 +81,8 @@ LINKBLITZ	= -lblitz
 # The extension to use for executables...
 EXEEXT		= 
 
-SRCS =	vp.cpp global_definitions_vp.cpp control_panel_window.cpp plot_window.cpp data_file_manager.cpp New_File_Chooser.cpp symbol_menu.cpp sprite_textures.cpp unescape.cpp
-#SRCS =	vp.cpp 
+SRCS =	vp.cpp global_definitions_vp.cpp control_panel_window.cpp plot_window.cpp data_file_manager.cpp New_File_Chooser.cpp \
+	symbol_menu.cpp sprite_textures.cpp unescape.cpp brush.cpp
 
 OBJS:=	$(SRCS:.cpp=.o)
 
