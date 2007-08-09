@@ -56,9 +56,6 @@ int Plot_Window::count = 0;
 // Initial fraction of the window to be used for showing (normalized) data
 float const Plot_Window::initial_pscale = 0.8; 
 
-// color for points (modified per point by texture rgba)
-//GLfloat Plot_Window::pointscolor[4] = { 1, 1, 1, 1};
-
 //GLfloat Plot_Window::texenvcolor[ 4] = { 1, 1, 1, 1};
 
 // 2D array that holds indices of vertices for each brush
@@ -97,7 +94,7 @@ Plot_Window::Plot_Window( int w, int h, int new_index) :
 
 //***************************************************************************
 // Plot_Window::initialize -- Initialize window parameters.  Set flags, set 
-// colors, resize arrays, and set mode.
+// set framebufer modes, up openGL context.
 void Plot_Window::initialize()
 {
   do_reset_view_with_show = 0;
@@ -611,7 +608,7 @@ void Plot_Window::draw()
 
   if( cp->dont_clear->value() == 0) {
     // glClearColor(0.0,0.0,0.0,0.0);
-    glClearColor( cp->Bkg->value(), cp->Bkg->value(), cp->Bkg->value(), 0.0);
+    glClearColor( cp->Bkg->value(), cp->Bkg->value(), cp->Bkg->value(), 1.0-cp->Bkg->value()); // a=1 good for black background
     glClearDepth (0.0);
     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     draw_grid();
@@ -1016,8 +1013,8 @@ void Plot_Window::draw_data_points()
   // cout << "pw[" << index << "]: draw_data_points() " << endl;
   if ( !cp->show_points->value())return;
 
+  // XXX do we need this at all - does it do anything?
   float const_color[4];
-
   const_color[0] = const_color[1] = const_color[2] = cp->lum->value(); 
   const_color[3] = 1.0;
   glBlendColor( const_color[0], const_color[1], const_color[2], const_color[3]);  // MCL XXX removed for sprites
@@ -1028,6 +1025,7 @@ void Plot_Window::draw_data_points()
   int z_bufferring_enabled = 0;
   int current_sprite = 0;
 
+  // XXX I don't think we need this block at all any more.
   // XXX need to resolve local/global controls issue
   //  - partially done.  can now get rid of show_deselected_button.
   if( !(show_deselected_button->value() && cp->show_deselected_points->value())) {
@@ -1057,8 +1055,7 @@ void Plot_Window::draw_data_points()
     if (!VBOfilled) fill_VBO();
 
     glVertexPointer (3, GL_FLOAT, 0, BUFFER_OFFSET(0));
-  }
-  else {
+  } else {
     glVertexPointer (3, GL_FLOAT, 0, (GLfloat *)vertices.data()); 
   }
 
@@ -1098,11 +1095,16 @@ void Plot_Window::draw_data_points()
       }
 
       // set the color for this set of points
-      float lum = brush->lum->value(), lum2 = brush->lum2->value(), alpha=1.0;
-      glColor4d(lum2*brush->color[0]+lum,
-                lum2*brush->color[1]+lum,
-                lum2*brush->color[2]+lum,
-                alpha*(lum2*brush->color[3]+lum));
+      float lum = pow2(brush->lum->value()), lum2 = pow2(brush->lum2->value());
+      float alpha = brush->alpha->value();
+      float alpha0 = brush->alpha0->value();
+      double r = lum2*(brush->color_chooser->r()+lum);
+      double g = lum2*(brush->color_chooser->g()+lum);
+      double b = lum2*(brush->color_chooser->b()+lum);
+      double a = alpha;
+      // cout << "plot " << index << ", brush " << brush->index << ", (r,g,b,a) = (" << r << ", " << g << ", " << b << ", " << a << ")" << endl;
+      glColor4d(r,g,b,a);
+
       // then render the points
       if (use_VBOs) {
         assert (VBOinitialized && VBOfilled && indexVBOsinitialized && indexVBOsfilled) ;

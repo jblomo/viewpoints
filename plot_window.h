@@ -220,9 +220,6 @@ class Plot_Window : public Fl_Gl_Window
     void reset_selection_box();
     void color_array_from_selection();
     void update_selection_color_table ();
-    void choose_color_selected ();
-    double r_selected, g_selected, b_selected;
-    static double r_deselected, g_deselected, b_deselected;
 
     // Routines to redraw plots
     void reset_view();

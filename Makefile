@@ -6,7 +6,6 @@ hardware := $(shell uname -m)
 
 # compiler names:
 CXX		= g++
-CC		= cc
 MAKEDEPEND	= $(CXX) -E -MM
 
 ifeq ($(platform),Darwin)
@@ -43,11 +42,7 @@ else
 
 endif
 
-#CFLAGS		= $(OPTIM)
 #CXXFLAGS	= $(OPTIM) -DGL_GLEXT_PROTOTYPES
-
-
-CFLAGS		= $(DEBUG)
 CXXFLAGS	= $(DEBUG) 
 
 # libraries to link with:

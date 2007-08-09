@@ -46,7 +46,6 @@
 //   make_main_menu_bar() -- Create main menu bar (unused)
 //   step_help_view_widget( *o, *u) -- Step through the 'Help|Help' window.
 //   make_global_widgets() -- Controls for main control panel
-//   choose_color_deselected( *o) -- Color of nonselected points
 //   change_all_axes( *o) -- Change all axes
 //   clearAlphaPlanes() -- Clear alpha planes
 //   npoints_changed( *o) -- Update number of points changed
@@ -119,7 +118,7 @@ static const int main_h = 1060;
 // static const int cp_widget_h = 505; 
 static const int cp_widget_h = 565; 
 
-static const int brushes_h = 150;
+static const int brushes_h = 250;
 
 // The rest of these should not have to change
 static const int tabs_widget_h = cp_widget_h+20;
@@ -153,7 +152,6 @@ void make_help_view_window( Fl_Widget *o);
 void close_help_window( Fl_Widget *o, void* user_data);
 void step_help_view_widget( Fl_Widget *o, void* user_data);
 void make_global_widgets();
-void choose_color_deselected( Fl_Widget *o);
 void change_all_axes( Fl_Widget *o);
 void clearAlphaPlanes();
 void npoints_changed( Fl_Widget *o);
@@ -221,13 +219,6 @@ void make_help_about_window( Fl_Widget *o)
   about_window->selection_color( FL_BLUE);
   about_window->labelsize( 10);
   
-  string sAbout = "viewpoints\n";
-  sAbout += "$Id$\n";
-  sAbout += "(c) 2006 C. Levit and P. R. Gazis\n\n";
-  sAbout += "contact information:\n";
-  sAbout += " Creon Levit creon.levit@@nasa.gov\n";
-  sAbout += " Paul R Gazis pgazis@@mail.arc.nasa.gov\n\n";
-
   // Write text to box label and align it inside box
   Fl_Box* output_box = new Fl_Box( 5, 5, 290, 160);
   output_box->box(FL_SHADOW_BOX);
@@ -236,7 +227,7 @@ void make_help_about_window( Fl_Widget *o)
   output_box->labelfont(FL_HELVETICA);
   output_box->labelsize(15);
   output_box->align(FL_ALIGN_TOP|FL_ALIGN_CENTER|FL_ALIGN_INSIDE);
-  output_box->copy_label(sAbout.c_str());
+  output_box->copy_label(about_string.c_str());
 
   // Invoke universal callback function to close window
   Fl_Button* close = new Fl_Button( 200, 170, 60, 25, "&Close");
@@ -271,13 +262,11 @@ void create_brushes(int w_x, int w_y, int w_w, int w_h)
     // create a brush (Fl_Group) corresponding to the tab
     brushes[i] = new Brush(w_x, w_y+20, w_w-6, w_h-(20+6));
     brushes[i]->index = i;
-    for (int ci=0; ci<3; ci++) {
-      brushes[i]->color[ci] = Brush::initial_colors[i][ci];
-    }
     brushes[i]->copy_label( labstr.c_str());
     brushes[i]->labelsize( 10);
     brushes[i]->make_widgets( brushes[i]);
     brushes[i]->end();
+    brushes[i]->color_chooser->rgb(Brush::initial_colors[i][0],Brush::initial_colors[i][1],Brush::initial_colors[i][2]);
   }
   brushes_tab->end();
 
@@ -566,7 +555,7 @@ void manage_plot_window_array( Fl_Widget *o, void* user_data)
         thisOperation == RESIZE || 
         thisOperation == NEW_DATA) {
       if( i >= nplots_old) {
-        cout << "DEBUG creating new plot window " << i << endl;
+        DEBUG(cout << "Creating new plot window " << i << endl);
         pws[i] = new Plot_Window( pw_w, pw_h, i);
         cps[i]->pw = pws[i];
         pws[i]->cp = cps[i];
@@ -651,7 +640,7 @@ void manage_plot_window_array( Fl_Widget *o, void* user_data)
     // sure it is resizable.  NOTE: pws[i]->show() with no arguments is not 
     // sufficient when windows are created.
     if( !pws[i]->shown()) {
-        cout << "DEBUG showing plot window " << i << endl;
+      DEBUG(cout << "showing plot window " << i << endl);
         pws[i]->show( global_argc, global_argv);
     }
     pws[i]->resizable( pws[i]);
@@ -1212,8 +1201,17 @@ void reset_selection_arrays () {
 // Main -- Driver routine
 int main( int argc, char **argv)
 {
-  cout << "vp: Creon Levit and Paul Gazis's viewpoints" << endl;
-  cout << "$Id$" << endl;
+
+  about_string = "\n\
+    viewpoints \n\
+    $Id$ \n\
+    \n\
+    \n\
+    (c) 2006 M. Creon Levit and Paul R. Gazis \n\
+      creon.levit@@nasa.gov \n\
+      pgazis@@mail.arc.nasa.gov \n\
+    \n\
+    ";
 
   // STEP 1: Parse the command line
   //cout << "argc<" << argc << ">" << endl;
@@ -1382,8 +1380,9 @@ int main( int argc, char **argv)
 
      // show version information (managed by svn), and exit
       case 'V':
-        cout << "$Id$" << endl;
-        exit (-1);
+        cout << about_string;
+        cout << "linked against FLTK " << FL_VERSION << endl;
+        exit (0);
         break;
 
      // Apple OSX gratuitously adds a command line argument -psn_xxx

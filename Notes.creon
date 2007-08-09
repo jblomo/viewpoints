@@ -1293,3 +1293,8 @@ each brsuh has "clear my selection" ('c') (except, of course, brush 0, where it 
 there is also "clear all selections" ('C')
 in general, shift-cmd should broadcast to all brushes or plot-windows, respectively.
 
+IDEA (tweaked)
+
+Give each brush a "connector" as well as a symbol.  Connectors are GL_POINTS, GL_LINES, GL_LINE_LOOP, GL_QUAD_MESH, etc...
+Use a column as a "sub-brush", which groups the GL_LINES, etc, for drawing - i.e. it breaks them when the subbrush changes.
+

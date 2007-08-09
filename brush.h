@@ -38,13 +38,15 @@ class Brush : public Fl_Group
 
     // Pointers to sliders & menus
     Fl_Hor_Value_Slider_Input *pointsize;
-    Fl_Hor_Value_Slider_Input *lum, *lum2;
-    Fl_Button *change_color_button;
+    Fl_Hor_Value_Slider_Input *lum, *lum2, *alpha, *alpha0;
+	// Fl_Button *change_color_button;
+    Fl_Color_Chooser *color_chooser;
 
     // points, round points, crosses, etc.
     Fl_Choice *symbol_menu;
     static Fl_Menu_Item symbol_menu_items[];
     void build_symbol_menu (void);
+    int previous_symbol;
 };
 
 #endif   // BRUSH_H

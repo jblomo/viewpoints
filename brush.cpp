@@ -32,12 +32,19 @@ const GLdouble Brush::initial_colors[NBRUSHES][4] = {
 Brush::Brush(int x, int y, int w, int h) : Fl_Group( x, y, w, h)
 {
   count = 0;
-	// XXX color should be initialized differently for each brush
-  color[0] = 1.0; color[1] = 0.0; color[2] = 0.0; color[3] = 0.5; 
+	// XXX color is initialized in vp.cpp:create_brushes()
+  // color[0] = 1.0; color[1] = 0.0; color[2] = 0.0; color[3] = 0.5; 
+  previous_symbol = 0;
 }
 
-// could this be replaced by redraw_all_plots() ?
 void Brush::brush_changed() {
+  // pointsize of 1 is too small to see symbols, though it works for plain points
+  if (previous_symbol == 0 && symbol_menu->value() != 0) {
+    if (pointsize->value() < 3) {
+      pointsize->value(3);
+    }
+  }
+  previous_symbol = symbol_menu->value();
   Plot_Window::redraw_all_plots(0);
 }
 
@@ -54,7 +61,7 @@ void Brush::make_widgets(Brush *bw)
   int xpos = this->x()+50;
   int ypos = this->y()+20;
 
-  Fl_Button *b;
+  // Fl_Button *b;
 
   // point size slider for this brush
   pointsize = new Fl_Hor_Value_Slider_Input( xpos, ypos, bw->w()-145, 20, "size");
@@ -77,25 +84,42 @@ void Brush::make_widgets(Brush *bw)
   symbol_menu->value(0);
   symbol_menu->callback( (Fl_Callback*)static_brush_changed, this);
 
+  // Alpha slider
+  alpha = new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, bw->w()-60, 20, "alpha");
+  alpha->align(FL_ALIGN_LEFT);
+  alpha->callback((Fl_Callback*)static_brush_changed, this);
+  alpha->step(0.0001);
+  alpha->bounds(0.0,1.0);
+  alpha->value(1.0);
+
+  // Alpha0 slider
+  alpha0 = new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, bw->w()-60, 20, "alpha0");
+  alpha0->align(FL_ALIGN_LEFT);
+  alpha0->callback((Fl_Callback*)static_brush_changed, this);
+  alpha0->step(0.0001);
+  alpha0->bounds(0.0,5.0);
+  alpha0->value(5.0);  // !!!
+  // we don't need this control, for now.
+  alpha0->hide(); ypos-=alpha0->h();
+  
+
   // Initial luminosity slider
   lum = new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, bw->w()-60, 20, "lum1");
   lum->align(FL_ALIGN_LEFT);
   lum->callback((Fl_Callback*)static_brush_changed, this);
   lum->step(0.0001);
   lum->bounds(0.0,1.0);
-  lum->value(0.04);  // !!!
+  lum->value(0.2);  // !!!
 
   // Luminosity accumulation factor slider
   lum2 = new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, bw->w()-60, 20, "lum2");
   lum2->align(FL_ALIGN_LEFT);
   lum2->callback((Fl_Callback*)static_brush_changed, this);
   lum2->step(0.0001);
-  lum2->bounds(0.0,5.0);
+  lum2->bounds(0.0,2.0); 
   lum2->value(1.0);
 
-  // Button (1,3): Pop up color a chooser for this brush
-  change_color_button = b = new Fl_Button(xpos, ypos+=25, 20, 20, "change color");
-  b->align(FL_ALIGN_RIGHT); 
-  b->selection_color(FL_BLUE); 
-  b->callback((Fl_Callback*)static_change_color, this);
+  color_chooser = new Fl_Color_Chooser(xpos, ypos+25, 150, 75, ""); // XXX do not remove the "".
+  color_chooser->callback((Fl_Callback*)static_brush_changed, this);
+
 }

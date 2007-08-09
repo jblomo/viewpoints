@@ -114,3 +114,8 @@ int make_confirmation_window( const char* text, int nButtons)
   // When in doubt, do nothing
   return -1;
 }
+
+float pow2(float x)
+{
+    return(x*x);
+}

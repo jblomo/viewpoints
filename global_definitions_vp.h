@@ -41,6 +41,8 @@ EXTERN int debugging INIT(0);
 
 #define DEBUG(x) do {if (debugging) x;} while (0)
 
+EXTERN string about_string INIT ("");
+
 // Set parameters to hold error messages and flags.  These MUST be global
 // because they will be set and used throughout the system
 EXTERN string sErrorMessage INIT("");  // Default error message is empty
@@ -142,8 +144,7 @@ EXTERN Plot_Window *pws[ MAXPLOTS];
 EXTERN Control_Panel_Window *cps[ MAXPLOTS+1]; 
 
 #define NBRUSHES 8
-EXTERN Brush *brushes[NBRUSHES];
-EXTERN Brush *active_brush;
+EXTERN Brush *brushes[NBRUSHES];  // MCL XXX this should be a static c++ vector handled in brush.cpp
 
 // Make absolutely certain variables for point sprites are defined
 #ifndef GL_POINT_SPRITE_ARB
@@ -186,4 +187,8 @@ public:
   }
 };
 
+float pow2(float x);
+
 #endif   // VP_GLOBAL_DEFINITIONS_VP_H
+
+
