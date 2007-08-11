@@ -203,6 +203,7 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   varindex1->textsize(12);
   varindex1->copy( varindex_menu_items);
   varindex1->mode( nvars, FL_MENU_INACTIVE);  // disable "--nothing--" as a choice for axis1
+  varindex1->clear_visible_focus();
   varindex1->callback( (Fl_Callback*)static_extract_and_redraw, this);
 
   // Y-axis variable selection menu
@@ -211,6 +212,7 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   varindex2->textsize(12);
   varindex2->copy( varindex_menu_items);
   varindex2->mode( nvars, FL_MENU_INACTIVE);  // disable "--nothing--" as a choice for axis2
+  varindex2->clear_visible_focus();
   varindex2->callback( (Fl_Callback*)static_extract_and_redraw, this);
 
   // Z-axis variable selection menu
@@ -219,6 +221,7 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   varindex3->textsize(12);
   varindex3->copy( varindex_menu_items);
   varindex3->value(nvars);  // initially, axis3 == "-nothing-"
+  varindex3->clear_visible_focus();
   varindex3->callback( (Fl_Callback*)static_extract_and_redraw, this);
 
   // label for row of normalization menus
@@ -232,6 +235,7 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   x_normalization_style->textsize( 12);
   x_normalization_style->menu( normalization_style_menu_items);
   x_normalization_style->value( NORMALIZATION_MINMAX);
+  x_normalization_style->clear_visible_focus();
   x_normalization_style->callback( (Fl_Callback*)static_extract_and_redraw, this);
  
   // Y-axis normalization and scaling menu
@@ -239,6 +243,7 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   y_normalization_style->textsize(12);
   y_normalization_style->menu(normalization_style_menu_items);
   y_normalization_style->value(NORMALIZATION_MINMAX); 
+  y_normalization_style->clear_visible_focus();
   y_normalization_style->callback( (Fl_Callback*)static_extract_and_redraw, this);
  
   // Z-axis normalization and scaling menu
@@ -246,6 +251,7 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   z_normalization_style->textsize(12);
   z_normalization_style->menu(normalization_style_menu_items);
   z_normalization_style->value(NORMALIZATION_MINMAX); 
+  z_normalization_style->clear_visible_focus();
   z_normalization_style->callback( (Fl_Callback*)static_extract_and_redraw, this);
  
   // one label for row of histogram buttons

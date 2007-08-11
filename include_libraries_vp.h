@@ -121,7 +121,6 @@
 #include <FL/Fl_Choice.H>
 #include <FL/Fl_Gl_Window.H>
 #include <FL/Fl_File_Chooser.H>
-#include <FL/Fl_Color_Chooser.H>
 #include <FL/Fl_Repeat_Button.H>
 
 // XXX: for main menu bar

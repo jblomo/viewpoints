@@ -240,6 +240,12 @@ void make_help_about_window( Fl_Widget *o)
 }
 
 
+// callback to keep tab's colored labels drawn in the right color when they're selected.
+void brushes_tab_cb () {
+  brushes_tab->labelcolor(brushes_tab->value()->labelcolor());
+  brushes_tab->redraw_label();
+}
+
 // a lot of this should be moved to methods of class Brush.
 void create_brushes(int w_x, int w_y, int w_w, int w_h)
 {
@@ -252,27 +258,20 @@ void create_brushes(int w_x, int w_y, int w_w, int w_h)
   brushes_tab = new Fl_Tabs( w_x, w_y, w_w, w_h);
   brushes_tab->selection_color( FL_BLUE);
   brushes_tab->labelsize( 10);
+  brushes_tab->callback((Fl_Callback*)brushes_tab_cb);
+  // brushes_tab->clear_visible_focus(); // disbaled for future soloing...
+
   Fl_Group::current(brushes_tab);
- 
   for (int i=0; i<NBRUSHES; i++) {
-    // Create a label for this tab
-    ostringstream oss;
-    oss << "" << i;
-    string labstr = oss.str();
     // create a brush (Fl_Group) corresponding to the tab
     brushes[i] = new Brush(w_x, w_y+20, w_w-6, w_h-(20+6));
-    brushes[i]->index = i;
-    brushes[i]->copy_label( labstr.c_str());
-    brushes[i]->labelsize( 10);
-    brushes[i]->make_widgets( brushes[i]);
-    brushes[i]->end();
-    brushes[i]->color_chooser->rgb(Brush::initial_colors[i][0],Brush::initial_colors[i][1],Brush::initial_colors[i][2]);
   }
   brushes_tab->end();
 
   // we have to start with some brush active, and since
   // brushes[0] is for "unselected" points, we start with brushes[1]
   brushes_tab->value(brushes[1]);
+  brushes_tab_cb();
 
 //  brushes_window->end();
 //  brushes_window->show();

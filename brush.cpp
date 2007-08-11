@@ -6,24 +6,23 @@
 #include "global_definitions_vp.h"
 
 #include "plot_window.h"
+#include "Vp_Color_Chooser.h"
 #include "brush.h"
+#include <FL/Fl_Pixmap.H>
 
 // default RGBA starting colors for brushes
 const GLdouble Brush::initial_colors[NBRUSHES][4] = {
   {1,0,0,1},
-  {0,1,0,1},
-  {0,0,1,1},
-  {0,1,1,1},
-  {1,0,1,1},
   {1,1,0,1},
+  {0,1,0,1},
+  {0,1,1,1},
+  {0,0,1,1},
+  {1,0,1,1},
   {0.5,0.5,0.5,1},
-  {0,0,0,0}
 };
   
-
-// Array of menu items for fixed color selection.  There are 7 fixed
-// colors (R, G, B, C, M, Y, Grey).
-//Fl_Menu_Item Brush::fixed_colors[7+1] = { Fl_Menu_Item()};
+// number of brushes created
+int Brush::nbrushes = 0;
 
 //***************************************************************************
 // Brush::Brush( x, y, w, h) --  Default 
@@ -31,14 +30,31 @@ const GLdouble Brush::initial_colors[NBRUSHES][4] = {
 // class, Fl_Group.
 Brush::Brush(int x, int y, int w, int h) : Fl_Group( x, y, w, h)
 {
+  index = nbrushes++;
   count = 0;
-	// XXX color is initialized in vp.cpp:create_brushes()
-  // color[0] = 1.0; color[1] = 0.0; color[2] = 0.0; color[3] = 0.5; 
   previous_symbol = 0;
+
+
+  ostringstream oss;
+  oss << "" << index;
+  label("@square");
+
+  //  labelsize( 12);
+  make_widgets(this);
+  end();
+
+  double c[3] = {Brush::initial_colors[index][0],Brush::initial_colors[index][1],Brush::initial_colors[index][2]};
+  color_chooser->rgb(c[0], c[1], c[2]);
+  labelcolor(fl_rgb_color((uchar)(c[0]*255), (uchar)(c[1]*255), (uchar)(c[2]*255)));
+  //parent()->labelcolor(fl_rgb_color((uchar)(c[0]*255), (uchar)(c[1]*255), (uchar)(c[2]*255)));
+  clear_visible_focus();
+  // color(fl_rgb_color((uchar)(c[0]*255), (uchar)(c[1]*255), (uchar)(c[2]*255)), fl_rgb_color((uchar)(c[0]*255), (uchar)(c[1]*255), (uchar)(c[2]*255)));
+  // image(symbol_images[0]);
+  // int fl_draw_pixmap(char **data, int X, int Y, Fl_Color = FL_GRAY)
 }
 
 void Brush::brush_changed() {
-  // pointsize of 1 is too small to see symbols, though it works for plain points
+  // pointsize of 1 is too small to see symbols, but OK for standard GL points
   if (previous_symbol == 0 && symbol_menu->value() != 0) {
     if (pointsize->value() < 3) {
       pointsize->value(3);
@@ -49,7 +65,12 @@ void Brush::brush_changed() {
 }
 
 void Brush::change_color () {
-  (void) fl_color_chooser( "brush color", color[0], color[1], color[2]);
+  double c[3] = {color_chooser->r(), color_chooser->g(), color_chooser->b()};
+  labelcolor(fl_rgb_color((uchar)(c[0]*255), (uchar)(c[1]*255), (uchar)(c[2]*255)));
+  redraw_label();
+	// keep tab's (parent's) colored labels updated while the brush color changes and the tab is selected
+  brushes_tab->labelcolor(labelcolor());
+  brushes_tab->redraw_label();
   brush_changed();
 }
 
@@ -72,12 +93,12 @@ void Brush::make_widgets(Brush *bw)
   pointsize->callback((Fl_Callback*)static_brush_changed, this);
 
   // symbol types menu for this brush
-  symbol_menu = new Fl_Choice(xpos+pointsize->w()+45, ypos, 45, 20);
+  symbol_menu = new Fl_Choice(xpos+pointsize->w()+35, ypos, 45, 20);
   // call a method to do the dirty work of setting up all the glyphs for the symbols menu.
   build_symbol_menu ();
   symbol_menu->textsize(12);
   symbol_menu->down_box(FL_NO_BOX);
-  symbol_menu->clear_visible_focus(); // MCL XXX - I think this should be set for all widgets
+  symbol_menu->clear_visible_focus(); // MCL XXX - I think this should be set for all Fl_Choice widgets and perhaps more.
   symbol_menu->color(FL_WHITE);
   symbol_menu->menu(symbol_menu_items);
   symbol_menu->label("sym");
@@ -119,7 +140,10 @@ void Brush::make_widgets(Brush *bw)
   lum2->bounds(0.0,2.0); 
   lum2->value(1.0);
 
-  color_chooser = new Fl_Color_Chooser(xpos, ypos+25, 150, 75, ""); // XXX do not remove the "".
-  color_chooser->callback((Fl_Callback*)static_brush_changed, this);
+  color_chooser = new Vp_Color_Chooser(xpos, ypos+25, 150, 75, ""); // XXX do not remove the "".
+  color_chooser->callback((Fl_Callback*)static_change_color, this);
+  color_chooser->labelfont(FL_HELVETICA);
+  color_chooser->labelsize(10);
 
 }
+

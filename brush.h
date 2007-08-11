@@ -2,13 +2,19 @@
 #ifndef BRUSH_H
 #define BRUSH_H 1
 
+#include <FL/Fl_Pixmap.H>
+
 #include "include_libraries_vp.h"
 #include "global_definitions_vp.h"
+#include "Vp_Color_Chooser.h"
 
 class Brush : public Fl_Group
 {
   public:
     Brush( int x, int y, int w, int h);
+
+	// number of brushes created
+    static int nbrushes;
 
     // index of this brush in brushes[] array.
     int index;
@@ -18,7 +24,6 @@ class Brush : public Fl_Group
 
     // color used to render this brush's points.
     // MCL XXX it would be good to change these to GLfloat
-    GLdouble color[4];
     static const GLdouble initial_colors[NBRUSHES][4];
 
     // the rest of the brush's attributes (pointsize, luminance, symbol, etc...)
@@ -34,17 +39,20 @@ class Brush : public Fl_Group
 
     void change_color();
     static void static_change_color( Fl_Widget *w, Brush *brush)
-    { brush->change_color();}
+    {
+        brush->change_color();
+    }
 
     // Pointers to sliders & menus
     Fl_Hor_Value_Slider_Input *pointsize;
     Fl_Hor_Value_Slider_Input *lum, *lum2, *alpha, *alpha0;
 	// Fl_Button *change_color_button;
-    Fl_Color_Chooser *color_chooser;
+    Vp_Color_Chooser *color_chooser;
 
     // points, round points, crosses, etc.
     Fl_Choice *symbol_menu;
     static Fl_Menu_Item symbol_menu_items[];
+    static Fl_Pixmap* symbol_images[];
     void build_symbol_menu (void);
     int previous_symbol;
 };

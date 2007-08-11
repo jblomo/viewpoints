@@ -30,5 +30,4 @@
 #include <FL/Fl_Double_Window.H>
 #include <FL/Fl_Choice.H>
 Fl_Double_Window* make_window();
-extern Fl_Menu_Item menu_symbol[];
 #endif

@@ -143,7 +143,7 @@ EXTERN Plot_Window *pws[ MAXPLOTS];
 // associated plot window - it affects all (unlocked) plots.
 EXTERN Control_Panel_Window *cps[ MAXPLOTS+1]; 
 
-#define NBRUSHES 8
+#define NBRUSHES 7
 EXTERN Brush *brushes[NBRUSHES];  // MCL XXX this should be a static c++ vector handled in brush.cpp
 
 // Make absolutely certain variables for point sprites are defined

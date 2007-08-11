@@ -608,7 +608,7 @@ void Plot_Window::draw()
 
   if( cp->dont_clear->value() == 0) {
     // glClearColor(0.0,0.0,0.0,0.0);
-    glClearColor( cp->Bkg->value(), cp->Bkg->value(), cp->Bkg->value(), 1.0-cp->Bkg->value()); // a=1 good for black background
+    glClearColor( cp->Bkg->value(), cp->Bkg->value(), cp->Bkg->value(), 1.0-pow2(cp->Bkg->value())); // a=1 good for black background
     glClearDepth (0.0);
     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     draw_grid();
@@ -1097,7 +1097,7 @@ void Plot_Window::draw_data_points()
       // set the color for this set of points
       float lum = pow2(brush->lum->value()), lum2 = pow2(brush->lum2->value());
       float alpha = brush->alpha->value();
-      float alpha0 = brush->alpha0->value();
+      // float alpha0 = brush->alpha0->value();
       double r = lum2*(brush->color_chooser->r()+lum);
       double g = lum2*(brush->color_chooser->g()+lum);
       double b = lum2*(brush->color_chooser->b()+lum);
@@ -1944,13 +1944,23 @@ void Plot_Window::enable_antialiased_points ()
 void Plot_Window::initialize_sprites()
 {
   glEnable( GL_TEXTURE_2D);
-  // glEnable( GL_POINT_SPRITE_ARB);
   glGenTextures( NSYMBOLS, spriteTextureID);
   make_sprite_textures ();
   for (int i=0; i<NSYMBOLS; i++) {
+    #if 0
+    GLfloat rgb2rgba[16] = {
+      1, 0, 0, 1,
+      0, 1, 0, 1,
+      0, 0, 1, 1,
+      0, 0, 0, 0
+    };
+    glMatrixMode(GL_COLOR);
+    glLoadMatrixf(rgb2rgba);
+    glMatrixMode(GL_MODELVIEW);
+    #endif 0
     glBindTexture( GL_TEXTURE_2D, spriteTextureID[i]);
-    gluBuild2DMipmaps( GL_TEXTURE_2D, GL_LUMINANCE, spriteWidth, spriteHeight, 
-                       GL_RGB, GL_UNSIGNED_BYTE, spriteData[i]);
+    gluBuild2DMipmaps( GL_TEXTURE_2D, GL_LUMINANCE_ALPHA, spriteWidth, spriteHeight, GL_RGB, GL_UNSIGNED_BYTE, spriteData[i]);
+    //gluBuild2DMipmaps( GL_TEXTURE_2D, GL_ALPHA, spriteWidth, spriteHeight, GL_RGB, GL_UNSIGNED_BYTE, spriteData[i]);
     CHECK_GL_ERROR( "initializing sprite texture mipmaps");
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
