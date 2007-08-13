@@ -18,7 +18,7 @@ endif
 # PROFILE		= -pg
 #DEBUG		= -O0 -ggdb -g3 -Wall -Wunused -DBZ_DEBUG -fexceptions
 #DEBUG		= -g -ggdb -g3 -Wall -Wunused -fexceptions
-DEBUG		= -gfull -ggdb -Wall -Wunused -Wconversion -fexceptions 
+DEBUG		= -gfull -ggdb -Wall -Wextra -Wunused -Wconversion -fexceptions
 
 
 # compiling on Apple OSX (darwin)
@@ -37,8 +37,8 @@ ifeq ($(platform),Darwin)
 else
 # compiling on linux (assume intel HW)
 
-#	OPTIM = -O0 $(DEBUG)
-	OPTIM = -O6 -Wextra -ffast-math -fno-exceptions -g
+#	OPTIM = -O0 $(DEBUG) -DGL_GLEXT_PROTOTYPES
+	OPTIM = -O6 -ffast-math -g -DGL_GLEXT_PROTOTYPES
 
 endif
 
@@ -60,9 +60,9 @@ ifeq ($(platform),Darwin)
 
 else
 # for NAS linux machines where I can NOT install things as root (don't forget to build all libraries as static only)
-	INCPATH = -I/u/wk/creon/include
-	LIBPATH	= -L/u/wk/creon/lib -L/usr/X11R6/lib 
-	LDLIBS = -lGLU -lGL -lXext -lm -lgsl
+	INCPATH = -I$$HOME/include -I$$HOME/include/boost-1_34
+	LIBPATH	= -L$$HOME/lib -L/usr/X11R6/lib
+	LDLIBS = -lGL -lGLU -lXext -lm -lgsl -lboost_serialization-gcc34
 # for debugging
 #	LDLIBS = -lGLU -lGL -lXext -lm -lgsl -lefence -lpthread  
 endif
@@ -72,6 +72,8 @@ INCFLEWS	= -I../flews-0.3
 LINKFLEWS	= -L../flews-0.3 -lflews
 LINKFLTK	= -lfltk -lfltk_gl
 LINKBLITZ	= -lblitz
+
+LDFLAGS		= $(LIBPATH) $(LINKFLEWS) $(LINKFLTK) $(LINKBLITZ) $(LDLIBS)
 
 # The extension to use for executables...
 EXEEXT		= 
@@ -99,7 +101,7 @@ all: depend tags $(TARGET)
 
 $(TARGET):	$(OBJS)
 	echo Linking $@...
-	$(CXX) $(CXXFLAGS) $(OBJS) $(LIBPATH) $(LINKFLEWS) $(LINKFLTK) $(LINKBLITZ) $(LDLIBS) -o $@
+	$(CXX) -v $(CXXFLAGS) $(OBJS) $(LDFLAGS) -o $@
 	$(POSTBUILD)
 
 clean:
@@ -117,7 +119,7 @@ release: $(TARGET)
 ifeq ($(platform),Darwin)
 	cp -r viewpoints.app /tmp/vp
 else
-	cp -r $TARGET /tmp/vp
+	cp -r $(TARGET) /tmp/vp
 endif
 	tar -cvzf vp.tar --directory /tmp vp
 
