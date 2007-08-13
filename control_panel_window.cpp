@@ -224,6 +224,30 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   varindex3->clear_visible_focus();
   varindex3->callback( (Fl_Callback*)static_extract_and_redraw, this);
 
+  // one label for row of lock axis buttons
+  b = new Fl_Button (xpos, ypos+=25, 65, 25, "locked");
+  b->labelsize(14);
+  b->align(FL_ALIGN_LEFT);
+  b->box(FL_NO_BOX);
+
+  // Lock x-axis button
+  lock_axis1_button = b = new Fl_Button(xpos+0*subwidth, ypos, 20, 20);
+  b->type(FL_TOGGLE_BUTTON); 
+  b->selection_color(FL_BLUE);
+  b->value(0);
+
+  // Lock y-axis button
+  lock_axis2_button = b = new Fl_Button(xpos+1*subwidth, ypos, 20, 20);
+  b->type(FL_TOGGLE_BUTTON); 
+  b->selection_color(FL_BLUE);
+  b->value(0);
+
+  // Lock z-axis button
+  lock_axis3_button = b = new Fl_Button(xpos+2*subwidth, ypos, 20, 20);
+  b->type(FL_TOGGLE_BUTTON); 
+  b->selection_color(FL_BLUE);
+  b->value(0);
+
   // label for row of normalization menus
   b = new Fl_Button (xpos, ypos+=35, 45, 25, "scale");
   b->labelsize(14);
@@ -308,39 +332,15 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   // no Z-axis histograms (yet)
   hscale_slider[2]->deactivate();
     
-  // one label for row of lock axis buttons
-  b = new Fl_Button (xpos, ypos+=25, 65, 25, "lock");
-  b->labelsize(14);
-  b->align(FL_ALIGN_LEFT);
-  b->box(FL_NO_BOX);
-
-  // Lock x-axis button
-  lock_axis1_button = b = new Fl_Button(xpos+0*subwidth, ypos, 20, 20);
-  b->type(FL_TOGGLE_BUTTON); 
-  b->selection_color(FL_BLUE);
-  b->value(0);
-
-  // Lock y-axis button
-  lock_axis2_button = b = new Fl_Button(xpos+1*subwidth, ypos, 20, 20);
-  b->type(FL_TOGGLE_BUTTON); 
-  b->selection_color(FL_BLUE);
-  b->value(0);
-
-  // Lock z-axis button
-  lock_axis3_button = b = new Fl_Button(xpos+2*subwidth, ypos, 20, 20);
-  b->type(FL_TOGGLE_BUTTON); 
-  b->selection_color(FL_BLUE);
-  b->value(0);
-
   ypos += 60;
 
   // Luminance for this plot
   lum = new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, cpw->w()-60, 20, "lum");
   lum->align(FL_ALIGN_LEFT);
   lum->step(0.0001);
-  lum->bounds(0.0,1.0);
+  lum->bounds(0.0,2.0);
   lum->callback((Fl_Callback*)replot, this);
-  lum->value(0.5);
+  lum->value(1.0);
 
   // Background color slider
   Bkg = new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, cpw->w()-60, 20, "Bkg");
@@ -351,69 +351,53 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   Bkg->value(0.0);
 
   // Rotation (and spin) slider
-  rot_slider = new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, cpw->w()-60, 20, "rot");
+  rot_slider = new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, cpw->w()-115, 20, "rot");
   rot_slider->align(FL_ALIGN_LEFT);
   rot_slider->callback((Fl_Callback*)replot, this);
   rot_slider->value(0.0);
   rot_slider->step(0.001);
   rot_slider->bounds(-180.0, 180.0);
 
+  spin = b = new Fl_Button(xpos+rot_slider->w()+5, ypos, 20, 20, "spin");
+  b->align(FL_ALIGN_RIGHT); b->selection_color(FL_BLUE);
+  b->type(FL_TOGGLE_BUTTON);
+
   // Next portion of the panel is miscellanious stuff, per plot
   // needs to be more organized.
   ypos+=30;
 
   // Initialize positions for buttons
-  int xpos2 = 25;
+  int xpos2 = 50;
   int ypos2 = ypos;
 
   // Button (1,1) Reset view in this plot
   reset_view_button = b = new Fl_Button(xpos2, ypos+=25, 20, 20, "reset view ");
   b->align(FL_ALIGN_RIGHT); b->selection_color(FL_BLUE);
-  b->callback((Fl_Callback*) reset_view, this);
+  b->callback((Fl_Callback*) static_extract_and_redraw, this);
 
-  // Button (2,1): FOX News (spin) button
-  spin = b= new Fl_Button(xpos2, ypos+=25, 20, 20, "spin");
-  b->align(FL_ALIGN_RIGHT); b->selection_color(FL_BLUE);
-  b->type(FL_TOGGLE_BUTTON);
+  scale_points = new Fl_Button(xpos2, ypos+=25, 20, 20, "scale points");
+  scale_points->align(FL_ALIGN_RIGHT);
+  scale_points->type(FL_TOGGLE_BUTTON);
+  scale_points->selection_color(FL_BLUE);
+  scale_points->value(1);
+  scale_points->callback((Fl_Callback*)static_maybe_redraw, this);
 
-  // Button (3,1): Don't clear button - psychedelic fun!
+  // Button (1,2): z-buffering control
+  z_bufferring_button = b = new Fl_Button(xpos2, ypos+=25, 20, 20, "z-bufferring");
+  b->callback((Fl_Callback*)redraw_one_plot, this);
+  b->align(FL_ALIGN_RIGHT); 
+  b->type(FL_TOGGLE_BUTTON); 
+  b->selection_color(FL_BLUE); 
+
+  // Button (1,3): Don't clear button - psychedelic fun!
   dont_clear = new Fl_Button(xpos2, ypos+=25, 20, 20, "don't clear");
   dont_clear->align(FL_ALIGN_RIGHT);
   dont_clear->type(FL_TOGGLE_BUTTON);
   dont_clear->selection_color(FL_BLUE);
   dont_clear->callback((Fl_Callback*)static_maybe_redraw, this);
 
-  // Define Fl_Group to hold plot transform styles
-  // XXX - this group should probably be a menu, or at least have a box around it
-  // to show that they are radio buttons.
-  transform_style = new Fl_Group (xpos2-1, ypos+25-1, 20+2, 4*25+2);
-
-  // Button (4,1): No transform
-  no_transform = b = new Fl_Button(xpos2, ypos+=25, 20, 20, "identity");
-  b->callback((Fl_Callback*)static_extract_and_redraw, this);
-  b->align(FL_ALIGN_RIGHT); 
-  b->type(FL_RADIO_BUTTON); 
-  b->selection_color(FL_BLUE);
-
-  // Button (5,1): Sum vs difference transform
-  sum_vs_difference = b = new Fl_Button(xpos2, ypos+=25, 20, 20, "sum vs. diff.");
-  b->callback((Fl_Callback*)static_extract_and_redraw, this);
-  b->align(FL_ALIGN_RIGHT); 
-  b->type(FL_RADIO_BUTTON); 
-  b->selection_color(FL_BLUE);
-  
-  // Button (6,1): cummulative conditional probability P(Y<y|X=x)
-  cond_prop = b = new Fl_Button(xpos2, ypos+=25, 20, 20, "P(Y<y|X=x)");
-  b->callback((Fl_Callback*)static_extract_and_redraw, this);
-  b->align(FL_ALIGN_RIGHT); 
-  b->type(FL_RADIO_BUTTON); 
-  b->selection_color(FL_BLUE);
-  
-  transform_style->end();
-  no_transform->setonly();
-
   ypos=ypos2;
-  xpos=xpos2+100;
+  xpos=xpos2+105;
 
   // Button (1,2): Show points
   show_points = b = new Fl_Button(xpos, ypos+=25, 20, 20, "points");
@@ -464,12 +448,42 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   b->value(0);
   
   ypos=ypos2;
-  xpos=xpos2+200;
+  xpos=xpos2+210;
 
-  // Button (2,3): z-buffering control
-  z_bufferring_button = b = new Fl_Button(xpos, ypos+=25, 20, 20, "z-bufferring");
-  b->callback((Fl_Callback*)redraw_one_plot, this);
+  // Define Fl_Group to hold plot transform styles
+  // XXX - this group should probably be a menu, or at least have a box around it
+  // to show that they are radio buttons.
+  transform_style = new Fl_Group (xpos-1, ypos+25-1, 20+2, 4*25+2);
+
+  // Button (4,1): No transform
+  no_transform = b = new Fl_Button(xpos, ypos+=25, 20, 20, "identity");
+  b->callback((Fl_Callback*)static_extract_and_redraw, this);
   b->align(FL_ALIGN_RIGHT); 
-  b->type(FL_TOGGLE_BUTTON); 
-  b->selection_color(FL_BLUE); 
+  b->type(FL_RADIO_BUTTON); 
+  b->selection_color(FL_BLUE);
+
+  // Button (5,1): Sum vs difference transform
+  sum_vs_difference = b = new Fl_Button(xpos, ypos+=25, 20, 20, "sum vs. diff.");
+  b->callback((Fl_Callback*)static_extract_and_redraw, this);
+  b->align(FL_ALIGN_RIGHT); 
+  b->type(FL_RADIO_BUTTON); 
+  b->selection_color(FL_BLUE);
+  
+  // Button (6,1): cummulative conditional probability or rank of y given x
+  cond_prop = b = new Fl_Button(xpos, ypos+=25, 20, 20, "rank(y|x)");
+  b->callback((Fl_Callback*)static_extract_and_redraw, this);
+  b->align(FL_ALIGN_RIGHT); 
+  b->type(FL_RADIO_BUTTON); 
+  b->selection_color(FL_BLUE);
+  
+  // Button (7,1): fluctuation of y given x
+  fluctuation = b = new Fl_Button(xpos, ypos+=25, 20, 20, "fluct(y|x)");
+  b->callback((Fl_Callback*)static_extract_and_redraw, this);
+  b->align(FL_ALIGN_RIGHT); 
+  b->type(FL_RADIO_BUTTON); 
+  b->selection_color(FL_BLUE);
+  
+  transform_style->end();
+  no_transform->setonly();
+
 }

@@ -42,8 +42,8 @@ else
 
 endif
 
-#CXXFLAGS	= $(OPTIM) -DGL_GLEXT_PROTOTYPES
-CXXFLAGS	= $(DEBUG) 
+CXXFLAGS	= $(OPTIM) 
+#CXXFLAGS	= $(DEBUG) 
 
 # libraries to link with:
 ifeq ($(platform),Darwin)

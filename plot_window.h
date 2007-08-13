@@ -153,6 +153,9 @@ class Plot_Window : public Fl_Gl_Window
     float xdragged, ydragged;
     float xcenter, ycenter, zcenter;
     float xscale, yscale, zscale;
+    float initial_scale;
+	// approximately how much we've scaled this plot since it was first displayed
+    float magnification;
     float xzoomcenter, yzoomcenter, zzoomcenter;
     float xdown, ydown, xtracked, ytracked;
     int extend_selection;
@@ -173,6 +176,7 @@ class Plot_Window : public Fl_Gl_Window
   public:
     Plot_Window( int w, int h, int new_index);   // Constructor
     void initialize();
+    static int active_plot;
 
     // Initialize and fill index VBO for this window
     void initialize_indexVBO(int);
@@ -236,7 +240,7 @@ class Plot_Window : public Fl_Gl_Window
     static void invert_selection();
     static void toggle_display_deselected( Fl_Widget *o);
     static void initialize_selection();
-    static void clear_selection( Fl_Widget *o);
+    static void clear_selections( Fl_Widget *o);
     static void initialize_sprites();
     
     // Static variable to hold he initial fraction of the window to be used 

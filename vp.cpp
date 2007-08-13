@@ -352,11 +352,12 @@ void create_broadcast_group ()
     wp->callback( (Fl_Callback *)(Control_Panel_Window::broadcast_change), cp);
   }
 
-  // MCL XXX these widgets cause crashes or misbehaviors in the global 
-  // panel, so skip them for now.
+  // MCL XXX these widgets cause crashes or misbehaviors in the broadcast
+  // panel, so disable them for now.
   cp->sum_vs_difference->deactivate();
-  cp->cond_prop->deactivate();
   cp->no_transform->deactivate();
+  cp->cond_prop->deactivate();
+  cp->fluctuation->deactivate();
 
   // Initially, this group has no axes (XXX or anything else, for that matter)
   cp->varindex1->value(nvars);  // initially == "-nothing-"
@@ -822,13 +823,14 @@ void make_global_widgets()
   b->value( 1);
   b->callback( (Fl_Callback*) Plot_Window::toggle_display_deselected);
 
+#if 0
   // Button(2,1): Add to the selection
-  add_to_selection_button = b = 
-    new Fl_Button( xpos, ypos+=25, 20, 20, "add to selection");
+  add_to_selection_button = b = new Fl_Button( xpos, ypos+=25, 20, 20, "add to selection");
   b->align( FL_ALIGN_RIGHT); 
   b->selection_color( FL_BLUE); 
   b->type( FL_TOGGLE_BUTTON);
   b->value( 0);  
+#endif 0
 
   // Button(3,1): Invert selected and nonselected data
   invert_selection_button = b = 
@@ -837,12 +839,11 @@ void make_global_widgets()
   b->selection_color( FL_BLUE); 
   b->callback( (Fl_Callback*) Plot_Window::invert_selection);
 
-  // Button(4,1): Clear selection
-  clear_selection_button = b = 
-    new Fl_Button(xpos, ypos+=25, 20, 20, "clear selection");
+  // Button(4,1): Clear all selections
+  clear_selection_button = b = new Fl_Button(xpos, ypos+=25, 20, 20, "clear selections");
   b->align( FL_ALIGN_RIGHT); 
   b->selection_color( FL_BLUE); 
-  b->callback( Plot_Window::clear_selection);
+  b->callback( Plot_Window::clear_selections);
 
   // Button(5,1): Delete selected data
   delete_selection_button = b = 
@@ -854,9 +855,8 @@ void make_global_widgets()
   // Advance to column 2
   xpos = xpos1 + 150; ypos = ypos1;
 
-  // Button(3,2): Randomly change all axes
-  change_all_axes_button = 
-    new Fl_Repeat_Button( xpos, ypos+=25, 20, 20, "change axes");
+  // Button(3,2): permute all unlocked axes
+  change_all_axes_button = new Fl_Repeat_Button( xpos, ypos+=25, 20, 20, "change axes");
   change_all_axes_button->align( FL_ALIGN_RIGHT); 
   change_all_axes_button->selection_color( FL_BLUE); 
   change_all_axes_button->callback( (Fl_Callback*)change_all_axes);

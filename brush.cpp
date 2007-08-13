@@ -12,43 +12,35 @@
 
 // default RGBA starting colors for brushes
 const GLdouble Brush::initial_colors[NBRUSHES][4] = {
-  {1,0,0,1},
-  {1,1,0,1},
-  {0,1,0,1},
-  {0,1,1,1},
-  {0,0,1,1},
-  {1,0,1,1},
-  {0.5,0.5,0.5,1},
+  {1,0,0,1}, // red
+  {0,0,1,1}, // blue
+  {0,1,0,1}, // green
+  {1,0,1,1}, // magenta
+  {0,1,1,1}, // cyan
+  {1,1,0,1}, // yellow
+  {0.5,0.5,0.5,1}, // grey
 };
   
 // number of brushes created
 int Brush::nbrushes = 0;
 
-//***************************************************************************
-// Brush::Brush( x, y, w, h) --  Default 
-// constructor.  Do nothing except call the constructor for the parent 
-// class, Fl_Group.
 Brush::Brush(int x, int y, int w, int h) : Fl_Group( x, y, w, h)
 {
   index = nbrushes++;
   count = 0;
   previous_symbol = 0;
 
-
-  ostringstream oss;
-  oss << "" << index;
   label("@square");
 
-  //  labelsize( 12);
   make_widgets(this);
   end();
 
   double c[3] = {Brush::initial_colors[index][0],Brush::initial_colors[index][1],Brush::initial_colors[index][2]};
   color_chooser->rgb(c[0], c[1], c[2]);
   labelcolor(fl_rgb_color((uchar)(c[0]*255), (uchar)(c[1]*255), (uchar)(c[2]*255)));
-  //parent()->labelcolor(fl_rgb_color((uchar)(c[0]*255), (uchar)(c[1]*255), (uchar)(c[2]*255)));
   clear_visible_focus();
-  // color(fl_rgb_color((uchar)(c[0]*255), (uchar)(c[1]*255), (uchar)(c[2]*255)), fl_rgb_color((uchar)(c[0]*255), (uchar)(c[1]*255), (uchar)(c[2]*255)));
+  // XXX someday a brush's tab's label will show a colored image of the brush's current symbol...
+  // XXX (probably after we switch to FLTK 2)
   // image(symbol_images[0]);
   // int fl_draw_pixmap(char **data, int X, int Y, Fl_Color = FL_GRAY)
 }
@@ -72,6 +64,29 @@ void Brush::change_color () {
   brushes_tab->labelcolor(labelcolor());
   brushes_tab->redraw_label();
   brush_changed();
+}
+
+void Brush::reset () 
+{
+  double c[3] = {Brush::initial_colors[index][0],Brush::initial_colors[index][1],Brush::initial_colors[index][2]};
+  color_chooser->rgb(c[0], c[1], c[2]);
+  change_color ();
+  symbol_menu->value(0);
+  pointsize->value(default_pointsize);
+  alpha->value(1.0);
+  lum1->value(0.2);  // !!! 
+  lum2->value(1.0);
+}
+
+// clear all points that are currently selected using this brush
+// leave all other brush's selections alone.
+void Brush::clear_now () {
+  // (selected - index) == 0 iff currently selected by this brush:
+  selected = where(selected-index,selected,0);
+  previously_selected = selected;
+  // redraw based on changed selection.  Candidate for "pull out method(s)" refactoring?
+  pws[1]->color_array_from_selection();
+  pws[1]->redraw_all_plots(0);
 }
 
 void Brush::make_widgets(Brush *bw)
@@ -125,12 +140,12 @@ void Brush::make_widgets(Brush *bw)
   
 
   // Initial luminosity slider
-  lum = new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, bw->w()-60, 20, "lum1");
-  lum->align(FL_ALIGN_LEFT);
-  lum->callback((Fl_Callback*)static_brush_changed, this);
-  lum->step(0.0001);
-  lum->bounds(0.0,1.0);
-  lum->value(0.2);  // !!!
+  lum1 = new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, bw->w()-60, 20, "lum1");
+  lum1->align(FL_ALIGN_LEFT);
+  lum1->callback((Fl_Callback*)static_brush_changed, this);
+  lum1->step(0.0001);
+  lum1->bounds(0.0,1.0);
+  lum1->value(0.2);  // !!!
 
   // Luminosity accumulation factor slider
   lum2 = new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, bw->w()-60, 20, "lum2");
@@ -140,10 +155,29 @@ void Brush::make_widgets(Brush *bw)
   lum2->bounds(0.0,2.0); 
   lum2->value(1.0);
 
-  color_chooser = new Vp_Color_Chooser(xpos, ypos+25, 150, 75, ""); // XXX do not remove the "".
+  color_chooser = new Vp_Color_Chooser(xpos-25, ypos+=25, 150, 75, ""); // XXX do not remove the "".
   color_chooser->callback((Fl_Callback*)static_change_color, this);
   color_chooser->labelfont(FL_HELVETICA);
   color_chooser->labelsize(10);
 
+  add_to_selection = new Fl_Button( xpos+=150, ypos, 20, 20, "clear later");
+  add_to_selection->align( FL_ALIGN_RIGHT); 
+  add_to_selection->selection_color( FL_BLUE); 
+  add_to_selection->type( FL_TOGGLE_BUTTON);
+  add_to_selection->value( index?0:1);  // all brushes default this to off, except brush 0.
+
+  clear_now_button = new Fl_Button( xpos, ypos+=25, 20, 20, "clear now");
+  clear_now_button->align( FL_ALIGN_RIGHT); 
+  clear_now_button->selection_color( FL_BLUE); 
+  clear_now_button->callback((Fl_Callback*)static_clear_now, this);
+  clear_now_button->value( 0);  
+
+  reset_button = new Fl_Button( xpos, ypos+=25, 20, 20, "reset brush");
+  reset_button->align( FL_ALIGN_RIGHT); 
+  reset_button->selection_color( FL_BLUE); 
+  reset_button->callback((Fl_Callback*)static_reset, this);
+  reset_button->value( 0);  
+
 }
+
 

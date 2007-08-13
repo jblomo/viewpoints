@@ -119,6 +119,7 @@ class Control_Panel_Window : public Fl_Group
   
     // Pointers to buttons
     Fl_Button *reset_view_button;
+    Fl_Button *scale_points;
     Fl_Button *spin, *dont_clear, *show_points, 
               *show_deselected_points, 
               *show_axes, *show_grid, *show_labels, 
@@ -128,7 +129,7 @@ class Control_Panel_Window : public Fl_Group
     Fl_Button *z_bufferring_button;
     // Fl_Button *x_equals_delta_x, *y_equals_delta_x;
     Fl_Group *transform_style;
-    Fl_Button *sum_vs_difference, *cond_prop, *no_transform;
+    Fl_Button *sum_vs_difference, *cond_prop, *fluctuation, *no_transform;
 
     Fl_Choice *x_normalization_style, 
               *y_normalization_style, 

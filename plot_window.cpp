@@ -78,6 +78,9 @@ void moving_average(
 void cummulative_conditional(
   blitz::Array<float,1> a, const blitz::Array<int,1> indices, 
   const int half_width);
+void fluctuation(
+  blitz::Array<float,1> a, const blitz::Array<int,1> indices, 
+  const int half_width);
 
 //***************************************************************************
 // Plot_Window::Plot_Window( w, h) -- Constructor.  Increment count of plot 
@@ -260,6 +263,8 @@ int Plot_Window::handle( int event)
   // before others so that selections get colored correctly.  Ugh.
   switch(event) {
 
+    active_plot = index;
+
     // Mouse button push
     case FL_PUSH:
       DEBUG(cout << "FL_PUSH at " << xprev << ", " << yprev << endl);
@@ -293,13 +298,19 @@ int Plot_Window::handle( int event)
       // left button pushed => start new selection, or extend or move the 
       // old selection
       else if( Fl::event_state() == FL_BUTTON1) {
-        static int previous_window, current_window = -1;
-        previous_window = current_window;
-        current_window = index;
-        if( current_window != previous_window)
-          previously_selected( blitz::Range(0,npoints-1)) = 
-            selected( blitz::Range( 0, npoints-1));
-        
+
+        static Brush *previous_brush, *current_brush = (Brush *)NULL;
+
+        // find currently active brush
+        previous_brush = current_brush;
+        current_brush =  dynamic_cast <Brush*> (brushes_tab->value());
+        assert (current_brush);
+
+        // don't clear the previous selection under these following circumstances
+        if (current_brush->add_to_selection->value() || current_brush != previous_brush) {
+          previously_selected( blitz::Range(0,npoints-1)) = selected( blitz::Range( 0, npoints-1));
+        }
+
         // no shift key => new selection
         if(! (Fl::event_key(FL_Shift_L) || Fl::event_key(FL_Shift_R))) {
           extend_selection = 0;
@@ -443,7 +454,7 @@ int Plot_Window::handle( int event)
 
         // Clear selection
         case 'c':
-          clear_selection( (Fl_Widget *) NULL);
+          clear_selections( (Fl_Widget *) NULL);
           return 1;
           
         // Don't display / display deselected dots
@@ -534,6 +545,8 @@ void Plot_Window::reset_view()
   xscale *= initial_pscale; 
   yscale *= initial_pscale; 
   zscale *= initial_pscale; 
+  initial_scale = (xscale+yscale)/2.0;
+  magnification = 1.0;
 
   // Get axis centers
   xcenter = (wmin[0]+wmax[0]) / 2.0;
@@ -603,6 +616,7 @@ void Plot_Window::draw()
     angle = cp->rot_slider->value();
   glRotatef(angle, 0.0, 1.0, 0.1);
   glScalef (xscale, yscale, zscale);
+  magnification = ((xscale+yscale)/2.0) / initial_scale;
   glTranslatef (-xcenter, -ycenter, -zcenter);
   glTranslatef (-xzoomcenter, -yzoomcenter, -zzoomcenter);
 
@@ -924,33 +938,56 @@ void Plot_Window::print_selection_stats ()
 // selection by calling draw_selection_information().
 void Plot_Window::handle_selection ()
 {
-  // if (selection_is_inverted) invert_selection();
 
   blitz::Range NPTS( 0, npoints-1);  
 
-  // Identify newly-selected points and "paint" them with the appropriate value
-  Brush *bp = dynamic_cast <Brush*> (brushes_tab->value());
-  assert (bp);
-  int value = bp->index;
+  // Identify newly-selected points.
+  // XXX could be a bool array?  faster?
+  // XXX could use binary search on sorted values.  Much faster?
   newly_selected( NPTS) = where( 
     ( vertices( NPTS, 0)>fmaxf( xdown, xtracked) || 
       vertices( NPTS, 0)<fminf( xdown, xtracked) ||
       vertices( NPTS, 1)>fmaxf( ydown, ytracked) || 
       vertices( NPTS, 1)<fminf( ydown, ytracked)),
-    0, value);
+    0, 1);
 
-  // Add newly-selected points to existing or previous selection
-  if( add_to_selection_button->value()) {
-    selected( NPTS) = 
-      where( newly_selected( NPTS), newly_selected( NPTS), selected( NPTS));
-  } 
-  else {
-    selected( NPTS) = 
-      where( newly_selected( NPTS), newly_selected( NPTS), previously_selected( NPTS));
-  }
+  // then "paint" them with the appropriate integer (index of current brush) 
+  Brush *bp = dynamic_cast <Brush*> (brushes_tab->value());
+  assert (bp);
+  int value = bp->index; 
+  selected( NPTS) = where( newly_selected( NPTS), value, previously_selected( NPTS));
 
+  // pack (gather) the new index arrays for later rendering
   color_array_from_selection ();
 }
+
+
+//***************************************************************************
+// Plot_Window::color_array_from_selection() -- Fill the index arrays and 
+// their associated counts.  Each array of indices will be rendered later 
+// preceded by its own single call to glColor().
+// 
+// MCL XXX note this could be redone so that it all lives in handle_selection, 
+// conceptually.  The updating can be done in one pass, I think.
+//
+void Plot_Window::color_array_from_selection()
+{
+  for (int i=0; i<NBRUSHES; i++) {
+    brushes[i]->count = 0;
+  }
+  // Loop: Examine successive points to fill the index arrays and their
+  // associated counts
+  int set, count=0;
+  for( int i=0; i<npoints; i++) {
+    set = selected(i);
+    count = brushes[set]->count++;
+    indices_selected( set, count) = i;
+  }
+  nselected = npoints - brushes[0]->count;
+  // assert(sum(number_selected(blitz::Range(0,nplots))) == (unsigned int)npoints);
+  indexVBOsfilled = 0;
+}
+
 
 //***************************************************************************
 // Plot_Window::draw_selection_information() -- Draw decorations for the 
@@ -978,32 +1015,6 @@ void Plot_Window::draw_selection_information()
 
   // done flagging selection for this plot
   selection_changed = 0;
-}
-
-//***************************************************************************
-// Plot_Window::color_array_from_selection() -- Fill the index arrays and 
-// their associated counts.  Each array of indices will be rendered later 
-// preceded by its own single call to glColor().
-// 
-// MCL XXX note this could be redone so that it all lives in handle_selection, 
-// conceptually.  The updating can be done in one pass, I think.
-//
-void Plot_Window::color_array_from_selection()
-{
-  for (int i=0; i<NBRUSHES; i++) {
-    brushes[i]->count = 0;
-  }
-  // Loop: Examine sucesive points to fill the index arrays and their
-  // associated counts
-  int set, count=0;
-  for( int i=0; i<npoints; i++) {
-    set = selected(i);
-    count = brushes[set]->count++;
-    indices_selected( set, count) = i;
-  }
-  nselected = npoints - brushes[0]->count;
-  // assert(sum(number_selected(blitz::Range(0,nplots))) == (unsigned int)npoints);
-  indexVBOsfilled = 0;
 }
 
 //***************************************************************************
@@ -1074,8 +1085,12 @@ void Plot_Window::draw_data_points()
     // If some points were selected in this set, set their size, etc. and render
     if(count > 0) {
 
-      // Set the pointsize for this brush (hard limit from 1.0 to 50.0)
-      glPointSize(min(max(brush->pointsize->value(), 1.0),50.0));
+      // Set the pointsize for this brush (hard limit from 1 to 50 or 100)
+      float size = min(max(brush->pointsize->value(), 1.0),50.0);
+      if (cp->scale_points->value()) {
+        size = min(sqrt(magnification)*size, 100.0f);
+      }
+      glPointSize(size);
       
       // Set the sprite for this brush - the symbol used for plotting points.
       current_sprite = brush->symbol_menu->value();
@@ -1095,12 +1110,13 @@ void Plot_Window::draw_data_points()
       }
 
       // set the color for this set of points
-      float lum = pow2(brush->lum->value()), lum2 = pow2(brush->lum2->value());
+      float lum0 = cp->lum->value();
+      float lum1 = pow2(brush->lum1->value()), lum2 = pow2(brush->lum2->value());
       float alpha = brush->alpha->value();
       // float alpha0 = brush->alpha0->value();
-      double r = lum2*(brush->color_chooser->r()+lum);
-      double g = lum2*(brush->color_chooser->g()+lum);
-      double b = lum2*(brush->color_chooser->b()+lum);
+      double r = lum0*lum2*(brush->color_chooser->r()+lum1);
+      double g = lum0*lum2*(brush->color_chooser->g()+lum1);
+      double b = lum0*lum2*(brush->color_chooser->b()+lum1);
       double a = alpha;
       // cout << "plot " << index << ", brush " << brush->index << ", (r,g,b,a) = (" << r << ", " << g << ", " << b << ", " << a << ")" << endl;
       glColor4d(r,g,b,a);
@@ -1307,7 +1323,7 @@ void Plot_Window::density_1D (blitz::Array<float,1> a, const int axis)
   int nbins = (int)(exp2(cp->nbins_slider[axis]->value()));
 
   // Loop: For each point, find which bin its in (since that isn't saved in 
-  // compute_histogram) and set the density estimate equal for the point 
+  // compute_histogram) and set the density estimate for the point 
   // equal to the bin count
   // range is tweaked by (n+1)/n to get the "last" point into the correct bin.
   float range = (amax[axis] - amin[axis]) * ((float)(npoints+1)/(float)npoints); 
@@ -1328,43 +1344,26 @@ int Plot_Window::transform_2d()
   
   blitz::Range NPTS(0,npoints-1);
 
-  blitz::Array <float,1> tmp1(npoints), tmp2(npoints);
-  tmp1 = vertices(NPTS,0);
-  tmp2 = vertices(NPTS,1);
   if( cp->sum_vs_difference->value()) {
+    blitz::Array <float,1> tmp1(npoints), tmp2(npoints);
+    tmp1 = vertices(NPTS,0);
+    tmp2 = vertices(NPTS,1);
     vertices(NPTS,0) = (sqrt(2.0)/2.0) * (tmp1 + tmp2);
     vertices(NPTS,1) = (sqrt(2.0)/2.0) * (tmp1 - tmp2);
   }
   else if( cp->cond_prop->value()) {
-
-#define CCOND
-#ifdef CCOND
-    blitz::Array <float,1> tmpa(npoints);
-    tmpa = vertices(NPTS,1);
+    blitz::Array <float,1> tmp1(npoints);
+    tmp1 = vertices(NPTS,1);
     int nbins = (int)(exp2(cp->nbins_slider[0]->value()));
-    cummulative_conditional (tmpa, x_rank, (npoints-1)/(nbins*2));
-    vertices(NPTS,1) = tmpa;
-#endif // CCOND
-//#define DENS_1D
-#ifdef DENS_1D
-    blitz::Array <float,1> tmpa(npoints);
-    tmpa = vertices(NPTS,1);
-    int axis=0;
-    density_1D (tmpa, axis);
-    vertices(NPTS,1) = tmpa;
-#endif // DENS_1D
-//#define MAVG
-#ifdef MAVG
-    blitz::Array <float,1> tmpa(npoints);
-    tmpa = vertices(NPTS,1);
-    moving_average (tmpa, x_rank, 100);
-    vertices(NPTS,1) = vertices(NPTS,1) / tmpa;
-#endif // MAVG
-//#define POLAR
-#ifdef POLAR
-    vertices(NPTS,0) = atan2(tmp1, tmp2);
-    vertices(NPTS,1) = sqrt(pow2(tmp1)+pow2(tmp2));
-#endif // POLAR
+    cummulative_conditional (tmp1, x_rank, (npoints-1)/(nbins*2));
+    vertices(NPTS,1) = tmp1;
+  }
+  else if( cp->fluctuation->value()) {
+    blitz::Array <float,1> tmp1(npoints);
+    tmp1 = vertices(NPTS,1);
+    int nbins = (int)(exp2(cp->nbins_slider[0]->value()));
+    fluctuation (tmp1, x_rank, (npoints-1)/(nbins*2));
+    vertices(NPTS,1) = tmp1;
   }
   for (int i=0; i<2; i++) {
     wmin[i] = amin[i] = min(vertices(NPTS,i));
@@ -1834,7 +1833,7 @@ void Plot_Window::delete_selection( Fl_Widget *o)
     // npoints_slider->bounds(1,npoints);
     // npoints_slider->value(npoints);
 
-    clear_selection( (Fl_Widget *) NULL);
+    clear_selections( (Fl_Widget *) NULL);
   
     for( int j=0; j<nplots; j++) {
       cps[j]->extract_and_redraw();
@@ -1888,10 +1887,10 @@ void Plot_Window::toggle_display_deselected( Fl_Widget *o)
 }
 
 //***************************************************************************
-// Plot_Window::initialize_selection() -- STATIC method to clear selection 
+// Plot_Window::initialize_selection() -- STATIC method to clear all selections
 // without doing anything else that might lose the context.  This is a static 
 // method used from main() during intialization and by 
-// Plot_Window::clear_selection.
+// Plot_Window::clear_selections.
 void Plot_Window::initialize_selection()
 {
   // Loop: Reset selection box for successive plots.
@@ -1908,10 +1907,10 @@ void Plot_Window::initialize_selection()
 }
 
 //***************************************************************************
-// Plot_Window::clear_selection( *o) -- STATIC method to clear selection, 
-// reset color array, and redraw all plots.  This is a static method used 
+// Plot_Window::clear_selections( *o) -- STATIC method to clear all selections, 
+// resetall selected sets, and redraw all plots.  This is a static method used 
 // only by class Plot_Window.
-void Plot_Window::clear_selection( Fl_Widget *o)
+void Plot_Window::clear_selections( Fl_Widget *o)
 {
   initialize_selection();
   pws[0]->color_array_from_selection(); // So, I'm lazy.
@@ -2108,7 +2107,7 @@ void moving_average(
   blitz::Array<float,1> tmp(npoints), a2(npoints);
   tmp = 0;
 
-  // Loop: ermute a into a2 using the order specified by the indices array
+  // Loop: permute a into a2 using the order specified by the indices array
   for( int i=0; i<npoints; i++) a2(i) = a(indices(i));
 
   // Loop: form moving average (inefficiently)
@@ -2116,7 +2115,7 @@ void moving_average(
     for( int j=-half_width; j<=half_width; j++)
       tmp(i) += a2(i+j);
 
-  // Loop: lean up elements near left and right edges
+  // Loop: clean up elements near left and right edges
   for( int i=0; i<half_width; i++) {
     tmp(i) = tmp(half_width);
     tmp(npoints-(i+1)) = tmp(npoints-(half_width+1));
@@ -2126,6 +2125,8 @@ void moving_average(
   for( int i=0; i<npoints; i++)
     a(indices(i)) = tmp(i)/(float)(2*half_width+1);
 }
+
+
 
 //***************************************************************************
 // cummulative_conditional( a, indices, half_width) -- Global method to
@@ -2143,7 +2144,7 @@ void cummulative_conditional(
   // If parameters are bogus then quit
   if (half_width < 1 || half_width > (npoints-1)/2) return;
 
-  // Loop: se sliding window in rank-ordered conditioning variable, window 
+  // Loop: use sliding window in rank-ordered conditioning variable, window 
   // centered on index i. 
   blitz::Array<float,1> tmp(npoints);
   tmp = 0;
@@ -2162,6 +2163,38 @@ void cummulative_conditional(
         rank++;
     }
     tmp(i) = rank/(float)(right-left);
+    // cout << "i, left, right indices(i) rank = " << i << " " << left << " " << right << " " << rank << " " << indices(i) << endl;
+  }
+
+  // Loop: Unpermute and return in a
+  for (int i=0; i<npoints; i++) a(indices(i)) = tmp(i);
+}
+
+// fluctuation: relative difference between a(i) and local average of a.
+// "local" is defined by rank passed in in indices.
+void fluctuation(
+  blitz::Array<float,1> a, const blitz::Array<int,1> indices, 
+  const int half_width)
+{
+  // If parameters are bogus then quit
+  if (half_width < 1 || half_width > (npoints-1)/2) return;
+
+  // Loop: use sliding window in rank-ordered conditioning variable, window 
+  // centered on index i. 
+  blitz::Array<float,1> tmp(npoints);
+  tmp = 0;
+  for (int i=0; i<npoints; i++) {
+    // find leftmost and rightmost index elements of conditioning variable
+    int left =max(i-half_width,0);
+    int right=min(i+half_width,npoints-1);
+    
+    // could do fast incremental update instead of nested loop here.
+    float mean = 0;
+    for (int j=left; j<=right; j++) {
+      mean += a(indices(j));
+    }
+    mean /= (float)(right-left);
+    tmp(i) = (a(indices(i))-mean)/mean;
     // cout << "i, left, right indices(i) rank = " << i << " " << left << " " << right << " " << rank << " " << indices(i) << endl;
   }
 

@@ -33,21 +33,28 @@ class Brush : public Fl_Group
     // Static functions for access by Fl Widget callbacks
     void brush_changed();
     static void static_brush_changed( Fl_Widget *w, Brush *brush)
-    {
-        brush->brush_changed();
-    }
+    { brush->brush_changed(); }
 
     void change_color();
     static void static_change_color( Fl_Widget *w, Brush *brush)
-    {
-        brush->change_color();
-    }
+    { brush->change_color(); }
 
     // Pointers to sliders & menus
     Fl_Hor_Value_Slider_Input *pointsize;
-    Fl_Hor_Value_Slider_Input *lum, *lum2, *alpha, *alpha0;
-	// Fl_Button *change_color_button;
+    Fl_Hor_Value_Slider_Input *lum1, *lum2, *alpha, *alpha0;
     Vp_Color_Chooser *color_chooser;
+
+    Fl_Button *add_to_selection;
+
+    Fl_Button *clear_now_button;
+    void clear_now ();
+    static void static_clear_now( Fl_Widget *w, Brush *brush)
+    { brush->clear_now(); }
+
+    Fl_Button *reset_button;
+    void reset ();
+    static void static_reset( Fl_Widget *w, Brush *brush)
+    { brush->reset(); }
 
     // points, round points, crosses, etc.
     Fl_Choice *symbol_menu;

@@ -1298,3 +1298,11 @@ IDEA (tweaked)
 Give each brush a "connector" as well as a symbol.  Connectors are GL_POINTS, GL_LINES, GL_LINE_LOOP, GL_QUAD_MESH, etc...
 Use a column as a "sub-brush", which groups the GL_LINES, etc, for drawing - i.e. it breaks them when the subbrush changes.
 
+01:26:35 11 Aug 07
+
+BUG why does the 'r' key in a plot window work (reset view) but the
+button in the control panel only stops spinning but doesn't reset the
+rest of the view (scale, etc.) ?
+
+IDEA: tootltips
+
