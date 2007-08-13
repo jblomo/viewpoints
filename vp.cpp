@@ -111,12 +111,12 @@ static const int main_w = 365;
 
 // Increase this when the main panel needs to get taller, including situations
 // when cp_widget_h increases:
-static const int main_h = 1060;      
+static const int main_h = 950;      
 
 // Increase this when the controls for individual windows need more height to 
 // fit in their subpanel
 // static const int cp_widget_h = 505; 
-static const int cp_widget_h = 565; 
+static const int cp_widget_h = 505; 
 
 static const int brushes_h = 250;
 

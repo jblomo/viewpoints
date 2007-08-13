@@ -279,7 +279,7 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   z_normalization_style->callback( (Fl_Callback*)static_extract_and_redraw, this);
  
   // one label for row of histogram buttons
-  b = new Fl_Button (xpos, ypos+=30, 85, 25, "histo");
+  b = new Fl_Button (xpos, ypos+=35, 85, 25, "histo");
   b->labelsize(14);
   b->align(FL_ALIGN_LEFT);
   b->box(FL_NO_BOX);
@@ -332,7 +332,7 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   // no Z-axis histograms (yet)
   hscale_slider[2]->deactivate();
     
-  ypos += 60;
+  ypos += 30;
 
   // Luminance for this plot
   lum = new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, cpw->w()-60, 20, "lum");
