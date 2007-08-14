@@ -47,7 +47,6 @@
 //   step_help_view_widget( *o, *u) -- Step through the 'Help|Help' window.
 //   make_global_widgets() -- Controls for main control panel
 //   change_all_axes( *o) -- Change all axes
-//   clearAlphaPlanes() -- Clear alpha planes
 //   npoints_changed( *o) -- Update number of points changed
 //   resize_selection_index_arrays( nplots_old, nplots) -- Resize arrays 
 //   write_data( *o, *u) -- Write data widget
@@ -153,7 +152,6 @@ void close_help_window( Fl_Widget *o, void* user_data);
 void step_help_view_widget( Fl_Widget *o, void* user_data);
 void make_global_widgets();
 void change_all_axes( Fl_Widget *o);
-void clearAlphaPlanes();
 void npoints_changed( Fl_Widget *o);
 void resize_selection_index_arrays( int nplots_old, int nplots);
 void write_data( Fl_Widget *o, void* user_data);
@@ -823,15 +821,6 @@ void make_global_widgets()
   b->value( 1);
   b->callback( (Fl_Callback*) Plot_Window::toggle_display_deselected);
 
-#if 0
-  // Button(2,1): Add to the selection
-  add_to_selection_button = b = new Fl_Button( xpos, ypos+=25, 20, 20, "add to selection");
-  b->align( FL_ALIGN_RIGHT); 
-  b->selection_color( FL_BLUE); 
-  b->type( FL_TOGGLE_BUTTON);
-  b->value( 0);  
-#endif 0
-
   // Button(3,1): Invert selected and nonselected data
   invert_selection_button = b = 
     new Fl_Button( xpos, ypos+=25, 20, 20, "invert selection");
@@ -884,17 +873,6 @@ void change_all_axes( Fl_Widget *o)
       pws[i]->change_axes( 0);
   }
   Plot_Window::redraw_all_plots(0);
-}
-
-//***************************************************************************
-// clearAlphaPlanes() -- Those filthy alpha planes!  It seems that no matter 
-// how hard you try, you just can't keep them clean!
-void clearAlphaPlanes()
-{
-  glColorMask( GL_FALSE, GL_FALSE, GL_FALSE, GL_TRUE);
-  glClearColor( 0.0, 0.0, 0.0, 0.0);
-  glClear( GL_COLOR_BUFFER_BIT);
-  glColorMask( GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 }
 
 //***************************************************************************

@@ -139,6 +139,7 @@ class Plot_Window : public Fl_Gl_Window
     void enable_regular_points();
     void enable_antialiased_points();
     void disable_sprites();
+    void clear_alpha_planes();
 
     // Event handlers
     int handle( int event);

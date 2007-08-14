@@ -62,7 +62,7 @@ else
 # for NAS linux machines where I can NOT install things as root (don't forget to build all libraries as static only)
 	INCPATH = -I$$HOME/include -I$$HOME/include/boost-1_34
 	LIBPATH	= -L$$HOME/lib -L/usr/X11R6/lib
-	LDLIBS = -lGL -lGLU -lXext -lm -lgsl -lboost_serialization-gcc34
+	LDLIBS = -lGL -lGLU -lXft -lXext -lm -lgsl -lboost_serialization-gcc34
 # for debugging
 #	LDLIBS = -lGLU -lGL -lXext -lm -lgsl -lefence -lpthread  
 endif

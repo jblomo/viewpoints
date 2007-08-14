@@ -621,8 +621,8 @@ void Plot_Window::draw()
   glTranslatef (-xzoomcenter, -yzoomcenter, -zzoomcenter);
 
   if( cp->dont_clear->value() == 0) {
-    // glClearColor(0.0,0.0,0.0,0.0);
-    glClearColor( cp->Bkg->value(), cp->Bkg->value(), cp->Bkg->value(), 1.0-pow2(cp->Bkg->value())); // a=1 good for black background
+    // glClearColor( cp->Bkg->value(), cp->Bkg->value(), cp->Bkg->value(), 1.0-pow2(cp->Bkg->value())); // a=1 good for black background
+    glClearColor( cp->Bkg->value(), cp->Bkg->value(), cp->Bkg->value(), 0.0); // a=1 good for black background
     glClearDepth (0.0);
     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     draw_grid();
@@ -1027,7 +1027,7 @@ void Plot_Window::draw_data_points()
   // XXX do we need this at all - does it do anything?
   float const_color[4];
   const_color[0] = const_color[1] = const_color[2] = cp->lum->value(); 
-  const_color[3] = 1.0;
+  const_color[3] = 0.0;
   glBlendColor( const_color[0], const_color[1], const_color[2], const_color[3]);  // MCL XXX removed for sprites
 
   glBlendFunc(GL_SRC_ALPHA, GL_DST_ALPHA);
@@ -1035,16 +1035,6 @@ void Plot_Window::draw_data_points()
   int alpha_test_enabled = 0;
   int z_bufferring_enabled = 0;
   int current_sprite = 0;
-
-  // XXX I don't think we need this block at all any more.
-  // XXX need to resolve local/global controls issue
-  //  - partially done.  can now get rid of show_deselected_button.
-  if( !(show_deselected_button->value() && cp->show_deselected_points->value())) {
-    // Cull any deselected points (alpha==0.0), whatever the blendfunc:
-    glEnable( GL_ALPHA_TEST);
-    glAlphaFunc( GL_GREATER, 0.0);  
-    alpha_test_enabled = 1;
-  }
 
   // Are we plotting in two dimensions or three?
   if( cp->varindex3->value() != nvars) {
@@ -1084,6 +1074,8 @@ void Plot_Window::draw_data_points()
     
     // If some points were selected in this set, set their size, etc. and render
     if(count > 0) {
+
+      clear_alpha_planes();
 
       // Set the pointsize for this brush (hard limit from 1 to 50 or 100)
       float size = min(max(brush->pointsize->value(), 1.0),50.0);
@@ -1956,7 +1948,7 @@ void Plot_Window::initialize_sprites()
     glMatrixMode(GL_COLOR);
     glLoadMatrixf(rgb2rgba);
     glMatrixMode(GL_MODELVIEW);
-    #endif 0
+    #endif // 0
     glBindTexture( GL_TEXTURE_2D, spriteTextureID[i]);
     gluBuild2DMipmaps( GL_TEXTURE_2D, GL_LUMINANCE_ALPHA, spriteWidth, spriteHeight, GL_RGB, GL_UNSIGNED_BYTE, spriteData[i]);
     //gluBuild2DMipmaps( GL_TEXTURE_2D, GL_ALPHA, spriteWidth, spriteHeight, GL_RGB, GL_UNSIGNED_BYTE, spriteData[i]);
@@ -2200,5 +2192,16 @@ void fluctuation(
 
   // Loop: Unpermute and return in a
   for (int i=0; i<npoints; i++) a(indices(i)) = tmp(i);
+}
+
+//***************************************************************************
+// clear_alpha_planes() -- Those filthy alpha planes!  It seems that no matter 
+// how hard you try, you just can't keep them clean!
+void Plot_Window::clear_alpha_planes()
+{
+  glColorMask( GL_FALSE, GL_FALSE, GL_FALSE, GL_TRUE);
+  glClearColor( 0.0, 0.0, 0.0, 0.0);
+  glClear( GL_COLOR_BUFFER_BIT);
+  glColorMask( GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 }
 
