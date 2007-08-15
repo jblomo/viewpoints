@@ -106,7 +106,7 @@ using namespace std;
 #include <FL/Fl_Shared_Image.H>
 
 //***************************************************************************
-// File name: New_File_Chooser.h
+// Class: New_File_Chooser.h
 //
 // Class definitions:
 //   New_File_Chooser -- File chooser window for Creon Levit's viewpoints

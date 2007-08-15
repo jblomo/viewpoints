@@ -1,3 +1,27 @@
+// viewpoints - interactive linked scatterplots and more.
+// copyright 2005 Creon Levit and Paul Gazis, all rights reserved.
+//***************************************************************************
+// File name: Vp_Color_Chooser.cpp
+//
+// Class definitions:
+//   Flcc_HueBox  --
+//   Flcc_ValueBox --
+//   Flcc_Value_Input --
+//   Vp_Color_Chooser -- Color chooser window for Creon Levit's viewpoints
+//
+// Classes referenced:
+//   Various FLTK classes
+//
+// Required packages: none
+//
+// Compiler directives:
+//   Requires WIN32 to be defined
+//
+// Purpose: Source code for <Vp_Color_Chooser.h>
+//
+// Author: Bill Spitzak and others   1998-2005
+// Modified: Creon Levitt  14-Aug-2007
+//***************************************************************************
 // modified version of Fl_Color_Chooser by creon
 
 #include <FL/Fl.H>
@@ -14,11 +38,15 @@
 // you get this by defining this:
 #define UPDATE_HUE_BOX 1
 
+//*****************************************************************************
+// Vp_Color_Chooser::hsv2rgb( H, S, V, R, G, B) -- Convert HSV to RGB
 void Vp_Color_Chooser::hsv2rgb(
-	double H, double S, double V, double& R, double& G, double& B) {
+	double H, double S, double V, double& R, double& G, double& B)
+{
   if (S < 5.0e-6) {
     R = G = B = V;
-  } else {
+  }
+  else {
     int i = (int)H;  
     double f = H - (float)i;
     double p1 = V*(1.0-S);
@@ -35,8 +63,11 @@ void Vp_Color_Chooser::hsv2rgb(
   }
 }
 
+//*****************************************************************************
+// Vp_Color_Chooser::hsv2rgb( H, S, V, R, G, B) -- Convert RGB to HSV
 void Vp_Color_Chooser::rgb2hsv(
-	double R, double G, double B, double& H, double& S, double& V) {
+	double R, double G, double B, double& H, double& S, double& V)
+{
   double maxv = R > G ? R : G; if (B > maxv) maxv = B;
   V = maxv;
   if (maxv>0) {
@@ -50,6 +81,7 @@ void Vp_Color_Chooser::rgb2hsv(
   }
 }
 
+// Enumeration and static variable to hold SV and RGB mosed
 enum {M_HSV, M_RGB}; // modes
 static Fl_Menu_Item mode_menu[] = {
   {"HSV"},
@@ -57,11 +89,16 @@ static Fl_Menu_Item mode_menu[] = {
   {0}
 };
 
+//*****************************************************************************
+// Flcc_Value_Input::format -- Pass format to Fl_Valuator
 int Flcc_Value_Input::format(char* buf) {
   return Fl_Valuator::format(buf);
 }
 
-void Vp_Color_Chooser::set_valuators() {
+//*****************************************************************************
+// Vp_Color_Chooser::set_valuators() -- Set valuators for HSV or RGB modes
+void Vp_Color_Chooser::set_valuators()
+{
   switch (mode()) {
   case M_RGB:
     rvalue.range(0,1); rvalue.step(1,1000); rvalue.value(r_);
@@ -76,7 +113,10 @@ void Vp_Color_Chooser::set_valuators() {
   }
 }
 
-int Vp_Color_Chooser::rgb(double R, double G, double B) {
+//*****************************************************************************
+// Vp_Color_Chooser::rgb( R, G, B) -- Set RGB values
+int Vp_Color_Chooser::rgb(double R, double G, double B)
+{
   if (R == r_ && G == g_ && B == b_) return 0;
   r_ = R; g_ = G; b_ = B;
   double ph = hue_;
@@ -97,7 +137,10 @@ int Vp_Color_Chooser::rgb(double R, double G, double B) {
   return 1;
 }
 
-int Vp_Color_Chooser::hsv(double H, double S, double V) {
+//*****************************************************************************
+// Vp_Color_Chooser::hsv( R, G, B) -- Set HSV values
+int Vp_Color_Chooser::hsv(double H, double S, double V)
+{
   H = fmod(H,6.0); if (H < 0.0) H += 6.0;
   if (S < 0.0) S = 0.0; else if (S > 1.0) S = 1.0;
   if (V < 0.0) V = 0.0; else if (V > 1.0) V = 1.0;
@@ -123,6 +166,8 @@ int Vp_Color_Chooser::hsv(double H, double S, double V) {
 
 ////////////////////////////////////////////////////////////////
 
+//*****************************************************************************
+// tohs( x, y, h, s) -- Global method
 static void tohs(double x, double y, double& h, double& s) {
 #ifdef CIRCLE
   x = 2*x-1;
@@ -136,7 +181,10 @@ static void tohs(double x, double y, double& h, double& s) {
 #endif
 }
 
-int Flcc_HueBox::handle(int e) {
+//*****************************************************************************
+// Flcc_HueBox::handle( e) -- 
+int Flcc_HueBox::handle( int e)
+{
   static double ih, is;
   Vp_Color_Chooser* c = (Vp_Color_Chooser*)parent();
   switch (e) {
@@ -171,7 +219,10 @@ int Flcc_HueBox::handle(int e) {
   }
 }
 
-static void generate_image(void* vv, int X, int Y, int W, uchar* buf) {
+//*****************************************************************************
+// generate_image( void* vv, X, Y, W, buf) -- global static method
+static void generate_image(void* vv, int X, int Y, int W, uchar* buf) 
+{
   Flcc_HueBox* v = (Flcc_HueBox*)vv;
   int iw = v->w()-Fl::box_dw(v->box());
   double Yf = double(Y)/(v->h()-Fl::box_dh(v->box()));
@@ -191,7 +242,10 @@ static void generate_image(void* vv, int X, int Y, int W, uchar* buf) {
   }
 }
 
-int Flcc_HueBox::handle_key(int key) {
+//*****************************************************************************
+// Flcc_HueBox::handle_key( key) -- 
+int Flcc_HueBox::handle_key(int key)
+{
   int w1 = w()-Fl::box_dw(box())-6;
   int h1 = h()-Fl::box_dh(box())-6;
   Vp_Color_Chooser* c = (Vp_Color_Chooser*)parent();
@@ -230,7 +284,10 @@ int Flcc_HueBox::handle_key(int key) {
   return 1;
 }
 
-void Flcc_HueBox::draw() {
+//*****************************************************************************
+// Flcc_HueBox::draw() -- 
+void Flcc_HueBox::draw()
+{
   if (damage()&FL_DAMAGE_ALL) draw_box();
   int x1 = x()+Fl::box_dx(box());
   int yy1 = y()+Fl::box_dy(box());
@@ -256,7 +313,10 @@ void Flcc_HueBox::draw() {
 
 ////////////////////////////////////////////////////////////////
 
-int Flcc_ValueBox::handle(int e) {
+//*****************************************************************************
+// Flcc_ValueBox::handle( e) -- 
+int Flcc_ValueBox::handle( int e)
+{
   static double iv;
   Vp_Color_Chooser* c = (Vp_Color_Chooser*)parent();
   switch (e) {
@@ -286,6 +346,8 @@ int Flcc_ValueBox::handle(int e) {
   }
 }
 
+//*****************************************************************************
+// generate_vimage( void* vv, X, Y, W, buf) -- staic global method
 static double tr, tg, tb;
 static void generate_vimage(void* vv, int X, int Y, int W, uchar* buf) {
   Flcc_ValueBox* v = (Flcc_ValueBox*)vv;
@@ -298,6 +360,8 @@ static void generate_vimage(void* vv, int X, int Y, int W, uchar* buf) {
   }
 }
 
+//*****************************************************************************
+// Flcc_ValueBox::draw() -- 
 void Flcc_ValueBox::draw() {
   if (damage()&FL_DAMAGE_ALL) draw_box();
   Vp_Color_Chooser* c = (Vp_Color_Chooser*)parent();
@@ -315,6 +379,8 @@ void Flcc_ValueBox::draw() {
   py = Y;
 }
 
+//*****************************************************************************
+// Flcc_ValueBox::handle_key( key) -- 
 int Flcc_ValueBox::handle_key(int key) {
   int h1 = h()-Fl::box_dh(box())-6;
   Vp_Color_Chooser* c = (Vp_Color_Chooser*)parent();
@@ -342,7 +408,10 @@ int Flcc_ValueBox::handle_key(int key) {
 
 ////////////////////////////////////////////////////////////////
 
-void Vp_Color_Chooser::rgb_cb(Fl_Widget* o, void*) {
+//*****************************************************************************
+// Vp_Color_Chooser::rgb_cb( Fl_Widget* o, void*) -- 
+void Vp_Color_Chooser::rgb_cb(Fl_Widget* o, void*)
+{
   Vp_Color_Chooser* c = (Vp_Color_Chooser*)(o->parent());
   double R = c->rvalue.value();
   double G = c->gvalue.value();
@@ -359,7 +428,10 @@ void Vp_Color_Chooser::rgb_cb(Fl_Widget* o, void*) {
   if (c->rgb(R,G,B)) c->do_callback();
 }
 
-void Vp_Color_Chooser::mode_cb(Fl_Widget* o, void*) {
+//*****************************************************************************
+// Vp_Color_Chooser::mode_cb( Fl_Widget* o, void*) -- 
+void Vp_Color_Chooser::mode_cb(Fl_Widget* o, void*)
+{
   Vp_Color_Chooser* c = (Vp_Color_Chooser*)(o->parent());
   // force them to redraw even if value is the same:
   c->rvalue.value(-1);
@@ -370,6 +442,8 @@ void Vp_Color_Chooser::mode_cb(Fl_Widget* o, void*) {
 
 ////////////////////////////////////////////////////////////////
 
+//*****************************************************************************
+// Vp_Color_Chooser::Vp_Color_Chooser( X, Y, W, H, L) -- Constructor
 Vp_Color_Chooser::Vp_Color_Chooser(int X, int Y, int W, int H, const char* L)
   : Fl_Group(0,0,195,115,L),
     huebox(0,0,115,115),
@@ -411,6 +485,23 @@ Vp_Color_Chooser::Vp_Color_Chooser(int X, int Y, int W, int H, const char* L)
 #include <FL/Fl_Box.H>
 #include <FL/Fl_Return_Button.H>
 
+//*****************************************************************************
+// Class: ColorChip
+//
+// Class definitions:
+//   ColorChip
+//
+// Classes referenced:
+//
+// Purpose: Derived class of Fl_Widget
+//
+// Functions:
+//   ColorChip( X, Y, W, H)
+//   draw()
+//
+// Author: Creon Levit    14-Aug-2007
+// Modified: P. R. Gazis  15-Aug-2007
+//*****************************************************************************
 class ColorChip : public Fl_Widget {
   void draw();
 public:
@@ -419,6 +510,8 @@ public:
     box(FL_ENGRAVED_FRAME);}
 };
 
+//*****************************************************************************
+// ColorChip::draw() -- 
 void ColorChip::draw() {
   if (damage()&FL_DAMAGE_ALL) draw_box();
   fl_rectf(x()+Fl::box_dx(box()),
@@ -427,7 +520,10 @@ void ColorChip::draw() {
 	   h()-Fl::box_dh(box()),r,g,b);
 }
 
-static void chooser_cb(Fl_Object* o, void* vv) {
+//*****************************************************************************
+// chooser_cb( Fl_Object* o, void* vv) -- Global static method
+static void chooser_cb(Fl_Object* o, void* vv)
+{
   Vp_Color_Chooser* c = (Vp_Color_Chooser*)o;
   ColorChip* v = (ColorChip*)vv;
   v->r = uchar(255*c->r()+.5);
@@ -439,7 +535,10 @@ static void chooser_cb(Fl_Object* o, void* vv) {
 extern const char* fl_ok;
 extern const char* fl_cancel;
 
-int vp_color_chooser(const char* name, double& r, double& g, double& b) {
+//*****************************************************************************
+// vp_color_chooser( name, r, g, b) -- Global method
+int vp_color_chooser( const char* name, double& r, double& g, double& b)
+{
   Fl_Window window(215,200,name);
   Vp_Color_Chooser chooser(10, 10, 195, 115);
   ColorChip ok_color(10, 130, 95, 25);
@@ -473,7 +572,10 @@ int vp_color_chooser(const char* name, double& r, double& g, double& b) {
   return 0;
 }
 
-int vp_color_chooser(const char* name, uchar& r, uchar& g, uchar& b) {
+//*****************************************************************************
+// vp_color_chooser( name, r, g, b) -- Global method
+int vp_color_chooser( const char* name, uchar& r, uchar& g, uchar& b)
+{
   double dr = r/255.0;
   double dg = g/255.0;
   double db = b/255.0;
@@ -485,4 +587,3 @@ int vp_color_chooser(const char* name, uchar& r, uchar& g, uchar& b) {
   }
   return 0;
 }
-

@@ -1930,7 +1930,7 @@ void Plot_Window::initialize_sprites()
     glMatrixMode(GL_COLOR);
     glLoadMatrixf(rgb2rgba);
     glMatrixMode(GL_MODELVIEW);
-    #endif 0
+    #endif // 0
     glBindTexture( GL_TEXTURE_2D, spriteTextureID[i]);
     gluBuild2DMipmaps( GL_TEXTURE_2D, GL_LUMINANCE_ALPHA, spriteWidth, spriteHeight, GL_RGB, GL_UNSIGNED_BYTE, spriteData[i]);
 //  gluBuild2DMipmaps( GL_TEXTURE_2D, GL_INTENSITY, spriteWidth, spriteHeight, GL_RGB, GL_UNSIGNED_BYTE, spriteData[i]);

@@ -1120,7 +1120,6 @@ at all:
   libGL (Linux)
   libGLU (Linux)
   libXext (Linux)
-  libXft (Linux)
   AGL (OSX)
   OpenGL (OSX)
   Carbon (OSX)
@@ -1157,187 +1156,13 @@ viewpoints.app/Contents/MacOS/viewpoints:
 	/usr/lib/libgcc_s.1.dylib (compatibility version 1.0.0, current version 1.0.0)
 
 (with perhaps higher version numbers, but NO ADDITIONAL dynamic
-libraries.  Be especally wary that it does not show any lines with
+libraries.  Be especally way that it does not show any lines with
 libgsl*.dylib, libblitz*.dylib, or libboost*.dylib and if it does,
 delete all dynamic versions of those libraries, and run all the make
 commands and the otool command again.
 
-To perform the check on linux, run the following command from src/vp
+To perform the check on linux, run the following commands:
 
-  %ldd vp
-
-It should produce something like this (with different details depending on the
-version of linux and the build machine's graphics card's vendor
-libraries:
-
-    libGL.so.1 => /usr/lib/libGL.so.1 (0x0083e000)
-    libGLU.so.1 => /usr/X11R6/lib/libGLU.so.1 (0x00c21000)
-    libXext.so.6 => /usr/X11R6/lib/libXext.so.6 (0x00ab8000)
-    libstdc++.so.6 => /usr/lib/libstdc++.so.6 (0x0076d000)
-    libm.so.6 => /lib/tls/i686/libm.so.6 (0x00a20000)
-    libgcc_s.so.1 => /lib/libgcc_s.so.1 (0x00605000)
-    libc.so.6 => /lib/tls/i686/libc.so.6 (0x0090b000)
-    libX11.so.6 => /usr/X11R6/lib/libX11.so.6 (0x0023c000)
-    libGLcore.so.1 => /usr/lib/libGLcore.so.1 (0x05412000)
-    libnvidia-tls.so.1 => /usr/lib/tls/libnvidia-tls.so.1 (0x0083a000)
-    libdl.so.2 => /lib/libdl.so.2 (0x00a45000)
-    /lib/ld-linux.so.2 (0x008f4000)
-
-Be especally wary that it does not show any lines with
-libgsl*, libblitz*, libfltk*, or libboost* and if it does,
-delete all dynamic versions of those libraries, and run all the make
-commands and the ldd command again.
-
-Note - you can try and build gsl, fltk, and blitz with
---disable-shared, and you can try and build boost libraries using:
-
-bjam --toolset=gcc --link=static --prefix=$HOME install
-
-But that might not be good enough.  They might still sneak in some
-shared libraries.  It is safest to delete them.
-
-
-
-
+  ....
 
 --------
-18:09:06 31 Jul 07
-
-Idea: Just addd lines rendering.  end each line when brush ends.
-Add a "group id" column (intger) *sort of like "brush id / selection id" as a column.  break line strips when group changes.  Could use alpha values=0 at boundaries between lines, then just render all lines with one line strip.Alpha test (or stencil test....) could handle  this.  noo... i guess not.
-Q: how does this interact with brushes/selection?
-Groups could be a range (or set) of columns, instead.  Groups could render as, e.g. lines.  Each line could be offset by another column (e.g. class, line number....)
-
-09:04:57 03 Aug 07
-
-Mike says "add tooltips".  And creon says "add a way to turn them off".
-
-// the following commented-out line should be conditional on a "scale points with view" button
-// there should also be minimum and maximum bars on the point size slider
-// the maximum size should clamp or at least warn if pointsize > 1 && pointsize^2*npoints > some graphics board dependent constant
-// i.e. pointize=20, npoints=2e6 -> pointsize^2*npoints=800e6 -> 800 million pixels to rasterize if all points are being displayed.
-// glPointSize(min(zscale*max(cp->pointsize_slider->value(), /*min_pointsize_slider->value()* */1.0),50.0));
-
-Preparing for brush object.
-Will have brushes, selectors, selection, blending
-
-We will start with one brush per plot, and two additional brushes:
-"unselected" (not yet brushed) and "overlap" (brushed with more than
-one brush)
-
-1. Brushes paint attributes onto the points that are selected while
-using the brush.  Atributes include:
-      color
-	predefined distinct default color for each brush.
-	set of 7 discrete hues to select from (R,G,B,C,M,Y,G).  Or continuous hue.
-	lightness, saturation, and alpha.
-	also, perhaps, a constant color?
-      size (with min and max and possible max warning, see above).
-      symbol
-
-2. Selections are made using selectors. As a selection is updated, it
-uses the current brush to paint the selection, and restores the
-previous paint to any points that become unselected as its selection
-changes.  Selectors can be:
-	  a rectangle (basic)
-	    draw with the mouse, or
-	    set using xmin, xmax, center & width sliders for each axis, or
-	    set using typins on those sliders
-	      there will be an "all" setting for the sliders.
-	      the sliders _could_ be on the plot's axes themselves.  Direct manipulation.
-	  an ellipse
-	    as above
-	  a rotated rectangle or ellipse
-	    later
-	  polygon, lasso
-
-Selectors also have a combiner function, such as:
-	  replace previous selection
-	  add to previous selection (union)
-	  subtract from previous selection (difference)
-	  select from previous selection (intersection)
-
-	  undo
-	  invert this brush's selection
-	  clear this brush's selection
-	  clear all selections	  
-
-Selectors also have "mouse actions" such as:
-	  create new selector (default)
-	  translate previous selector (shift key)
-          update selection on drag, or only update on release (for huge data)
-  	  these all have interacts with the sliders, above, i.e. one can translate a selection with the center slider.
-
-3. Blending.  Points (splats) are blended or composited under the control of the "mixer".  The controls include:
-   Drawing order
-     Top, bottom, up, down
-   turn individual brushes on/off
-   solo this brush
-     don't show others
-     show others dimly
-     don't composite others
-     highlight this brush
-   solo next brush
-   solo previous brush
-     skip brush 0
-   compositing:
-     brighten
-     darken
-     saturate
-     ...
-     none
-
-Libraries to add:
-
-  http://fltk.org/links.php?V96+Q   table widget for text view.  Up to 2 billion rows!  (may be obsolete)
-  http://www.seriss.com/people/erco/fltk/Fl_Table/screenshots.html  new table. Can it hadle big data?
-  http://www.osc.edu/archive/FLU/ spinner and cancellable progress meter
-  quaternio trackball rotations
-
-Also add:
-  readouts for:
-    box bundaries
-    mouse position
-    snap to nearest point
-
-Grids & Ticks
-  minor and major lines, thickness, brightness
-  ticks in, out, or full gridlines
-  numbers on ticks
-  decimal places (auto)
-
-Axis
-  replace column heading with log(x1), etc.
-
-IDEA: separate transforms from normalizations.
-  Normalizations are monotonic and transform one axis only (e.g. log, rank)
-  Transforms operate on two or more axes (i.e. conditional probability)
-
-IDEA: use Pauls "merge data" idea to read back in new columns that
-have been created by a filter on existing columns.
-
-IDEA: use fltk::add_handler() to handle global shortcut keys, that
-work in plot windows or control panels, like "clear selection" and
-"reset view", etc.
-
-00:44:26 07 Aug 07
-
-IDEA
-
-each brsuh has "clear my selection" ('c') (except, of course, brush 0, where it is disabled?)
-there is also "clear all selections" ('C')
-in general, shift-cmd should broadcast to all brushes or plot-windows, respectively.
-
-IDEA (tweaked)
-
-Give each brush a "connector" as well as a symbol.  Connectors are GL_POINTS, GL_LINES, GL_LINE_LOOP, GL_QUAD_MESH, etc...
-Use a column as a "sub-brush", which groups the GL_LINES, etc, for drawing - i.e. it breaks them when the subbrush changes.
-
-01:26:35 11 Aug 07
-
-BUG why does the 'r' key in a plot window work (reset view) but the
-button in the control panel only stops spinning but doesn't reset the
-rest of the view (scale, etc.) ?
-
-IDEA: tootltips
-

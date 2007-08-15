@@ -828,7 +828,7 @@ void make_global_widgets()
   b->selection_color( FL_BLUE); 
   b->type( FL_TOGGLE_BUTTON);
   b->value( 0);  
-#endif 0
+#endif // 0
 
   // Button(3,1): Invert selected and nonselected data
   invert_selection_button = b = 

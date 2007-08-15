@@ -1,6 +1,32 @@
+// viewpoints - interactive linked scatterplots and more.
+// copyright 2005 Creon Levit and Paul Gazis, all rights reserved.
+//***************************************************************************
+// File name: brush.cpp
+//
+// Class definitions:
+//   brush -- brush class
+//
+// Classes referenced:
+//   Plot_Window -- Plot window
+//
+// Required packages
+//    FLTK 1.1.6 -- Fast Light Toolkit graphics package
+//    FLEWS 0.3 -- Extensions to FLTK 
+//    OGLEXP 1.2.2 -- Access to OpenGL extension under Windows
+//    GSL 1.6 -- Gnu Scientific Library package for Windows
+//    Blitz++ 0.9 -- Various math routines
+//
+// Compiler directives:
+//   May require D__WIN32__ for the C++ compiler
+//
+// Purpose: Source code for <brush.h>
+//
+// Author: Creon Levit    14-Aug-2007
+// Modified: P. R. Gazis  15-Aug-2007
+//***************************************************************************
+
 // Include the necessary system and 3rd party header files
 #include "include_libraries_vp.h"
-
 
 // Include globals
 #include "global_definitions_vp.h"
@@ -24,6 +50,8 @@ const GLdouble Brush::initial_colors[NBRUSHES][4] = {
 // number of brushes created
 int Brush::nbrushes = 0;
 
+//***************************************************************************
+// Brush::Brush( x, y, w, h) --  Default constructor.
 Brush::Brush(int x, int y, int w, int h) : Fl_Group( x, y, w, h)
 {
   index = nbrushes++;
@@ -45,7 +73,10 @@ Brush::Brush(int x, int y, int w, int h) : Fl_Group( x, y, w, h)
   // int fl_draw_pixmap(char **data, int X, int Y, Fl_Color = FL_GRAY)
 }
 
-void Brush::brush_changed() {
+//***************************************************************************
+// Brush::brush_changed() -- If bush was changed, redraw plots
+void Brush::brush_changed()
+{
   // pointsize of 1 is too small to see symbols, but OK for standard GL points
   if (previous_symbol == 0 && symbol_menu->value() != 0) {
     if (pointsize->value() < 3) {
@@ -56,16 +87,23 @@ void Brush::brush_changed() {
   Plot_Window::redraw_all_plots(0);
 }
 
-void Brush::change_color () {
+//***************************************************************************
+// Brush::change_color() -- Change brush color
+void Brush::change_color()
+{
   double c[3] = {color_chooser->r(), color_chooser->g(), color_chooser->b()};
   labelcolor(fl_rgb_color((uchar)(c[0]*255), (uchar)(c[1]*255), (uchar)(c[2]*255)));
   redraw_label();
-	// keep tab's (parent's) colored labels updated while the brush color changes and the tab is selected
+
+	// keep tab's (parent's) colored labels updated while the brush color 
+  // changes and the tab is selected
   brushes_tab->labelcolor(labelcolor());
   brushes_tab->redraw_label();
   brush_changed();
 }
 
+//***************************************************************************
+// Brush::reset() -- Reset brish
 void Brush::reset () 
 {
   double c[3] = {Brush::initial_colors[index][0],Brush::initial_colors[index][1],Brush::initial_colors[index][2]};
@@ -78,17 +116,22 @@ void Brush::reset ()
   lum2->value(1.0);
 }
 
-// clear all points that are currently selected using this brush
-// leave all other brush's selections alone.
-void Brush::clear_now () {
+//***************************************************************************
+// Brush::clear_now() -- Clear all points that are currently selected using 
+// this brush leaving all other brush's selections alone.
+void Brush::clear_now ()
+{
   // (selected - index) == 0 iff currently selected by this brush:
   selected = where(selected-index,selected,0);
   previously_selected = selected;
+
   // redraw based on changed selection.  Candidate for "pull out method(s)" refactoring?
   pws[1]->color_array_from_selection();
   pws[1]->redraw_all_plots(0);
 }
 
+//***************************************************************************
+// Brush::make_widgets( *bw) -- Make widgets to hold brush control panel
 void Brush::make_widgets(Brush *bw)
 {
   // Since these (virtual) control panels are really groups inside a tab 
@@ -138,7 +181,6 @@ void Brush::make_widgets(Brush *bw)
   // we don't need this control, for now.
   alpha0->hide(); ypos-=alpha0->h();
   
-
   // Initial luminosity slider
   lum1 = new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, bw->w()-60, 20, "lum1");
   lum1->align(FL_ALIGN_LEFT);
@@ -178,7 +220,5 @@ void Brush::make_widgets(Brush *bw)
   reset_button->selection_color( FL_BLUE); 
   reset_button->callback((Fl_Callback*)static_reset, this);
   reset_button->value( 0);  
-
 }
-
 
