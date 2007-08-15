@@ -821,6 +821,15 @@ void make_global_widgets()
   b->value( 1);
   b->callback( (Fl_Callback*) Plot_Window::toggle_display_deselected);
 
+#if 0
+  // Button(2,1): Add to the selection
+  add_to_selection_button = b = new Fl_Button( xpos, ypos+=25, 20, 20, "add to selection");
+  b->align( FL_ALIGN_RIGHT); 
+  b->selection_color( FL_BLUE); 
+  b->type( FL_TOGGLE_BUTTON);
+  b->value( 0);  
+#endif 0
+
   // Button(3,1): Invert selected and nonselected data
   invert_selection_button = b = 
     new Fl_Button( xpos, ypos+=25, 20, 20, "invert selection");

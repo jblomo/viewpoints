@@ -159,7 +159,6 @@ class Plot_Window : public Fl_Gl_Window
     float magnification;
     float xzoomcenter, yzoomcenter, zzoomcenter;
     float xdown, ydown, xtracked, ytracked;
-    int extend_selection;
 
     // Arrays and routines for histograms
     int nbins[3];

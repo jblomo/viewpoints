@@ -290,50 +290,47 @@ int Plot_Window::handle( int event)
       else if( Fl::event_state(FL_BUTTON3) || 
                (Fl::event_state() == (FL_BUTTON1 | FL_ALT)) ) {
         show_center_glyph = 1;
-
-
         needs_redraw = 1;
       }
 
-      // left button pushed => start new selection, or extend or move the 
+      // left button pushed => start new selection, or start translating the 
       // old selection
       else if( Fl::event_state() == FL_BUTTON1) {
 
-        static Brush *previous_brush, *current_brush = (Brush *)NULL;
+        // determine current and previous active plot windows
+        static Plot_Window *previous_plot, *current_plot = (Plot_Window *)NULL;
+        previous_plot = current_plot;
+        current_plot = this;
 
-        // find currently active brush
+        // determine current and previous active brushes
+        static Brush *previous_brush, *current_brush = (Brush *)NULL;
         previous_brush = current_brush;
         current_brush =  dynamic_cast <Brush*> (brushes_tab->value());
         assert (current_brush);
 
-        // don't clear the previous selection under these following circumstances
-        if (current_brush->add_to_selection->value() || current_brush != previous_brush) {
+        // extend the selection under the following circumstances, otherwise replace.
+        if (current_brush->add_to_selection->value() ||
+            current_brush != previous_brush ||
+            current_plot != previous_plot) {
           previously_selected( blitz::Range(0,npoints-1)) = selected( blitz::Range( 0, npoints-1));
         }
 
-        // no shift key => new selection
-        if(! (Fl::event_key(FL_Shift_L) || Fl::event_key(FL_Shift_R))) {
-          extend_selection = 0;
-
-          xdown = (float)xprev;
-          xdown = + (2.0*(xdown/(float)w()) -1.0) ; // window -> [-1,1]
-          xdown = xdown / xscale;
-          xdown = xdown + xcenter;
+        xdown = (float)xprev;
+        xdown = + (2.0*(xdown/(float)w()) -1.0) ; // window -> [-1,1]
+        xdown = xdown / xscale;
+        xdown = xdown + xcenter;
       
-          ydown = (float)yprev;
-          ydown = - (2.0*(ydown/(float)h()) -1.0) ; // window -> [-1,1]
-          ydown = ydown/yscale;
-          ydown = ydown + ycenter;
+        ydown = (float)yprev;
+        ydown = - (2.0*(ydown/(float)h()) -1.0) ; // window -> [-1,1]
+        ydown = ydown/yscale;
+        ydown = ydown + ycenter;
 
-          xtracked = xdown;
-          ytracked = ydown;
-          selection_changed = 1;
-          handle_selection ();
-          redraw_all_plots (index);
+        xtracked = xdown;
+        ytracked = ydown;
+        selection_changed = 1;
+        handle_selection ();
+        redraw_all_plots (index);
 
-        } else {
-          // previously_selected( blitz::Range( 0, npoints-1)) = 0;
-        }
       }
 
       return 1;
@@ -349,7 +346,7 @@ int Plot_Window::handle( int event)
       xprev = xcur;
       yprev = ycur;
 
-      // translate => drag with right mouse (or alt-left-mouse)
+      // drag with right mouse (or alt-left-mouse) => translate the view
       if( Fl::event_state(FL_BUTTON3) || 
           (Fl::event_state(FL_BUTTON1) && Fl::event_state(FL_ALT))) {
         float xmove = xdragged*(1/xscale)*(2.0/w());
@@ -363,7 +360,7 @@ int Plot_Window::handle( int event)
         update_linked_transforms ();
       }
 
-      // scale => drag with middle-mouse (or c-left-mouse)
+      // drag with middle-mouse (or c-left-mouse) => scale the view
       else if( Fl::event_state(FL_BUTTON2) || 
                (Fl::event_state(FL_BUTTON1) && Fl::event_state(FL_CTRL))) {
         if( scale_histogram) {
@@ -381,22 +378,16 @@ int Plot_Window::handle( int event)
         update_linked_transforms ();
       }
 
-      // continue selection => drag with left mouse
+      // drag with left mouse => continue selecting
       else if( Fl::event_state(FL_BUTTON1)) {
-        // right key down = move selection
-        // left shift down = extend selection (bug on OSX - no left key events)
+        // shift key down => move entire selection
         if( Fl::event_key(FL_Shift_L) || Fl::event_key(FL_Shift_R)) {
           xdown += xdragged*(1/xscale)*(2.0/w());
           ydown += ydragged*(1/yscale)*(2.0/h());
           xtracked += xdragged*(1/xscale)*(2.0/w());
           ytracked += ydragged*(1/yscale)*(2.0/h());
-          if (Fl::event_key(FL_Shift_R)) {
-            extend_selection = 0;
-          }
-          else {
-            extend_selection = 1;
-          }
         }
+        // no shift key => move corner of selection
         else {
           xtracked = + (2.0*(xcur/(float)w()) -1.0) ; // window -> [-1,1]
           xtracked = xtracked / xscale;
@@ -421,7 +412,6 @@ int Plot_Window::handle( int event)
     // Mouse button up
     case FL_RELEASE:   
       DEBUG (cout << "FL_RELEASE at " << Fl::event_x() << ", " << Fl::event_y() << endl);
-      // selection_changed = 0;
       if( show_center_glyph) {
         show_center_glyph = 0;
       }
@@ -437,9 +427,12 @@ int Plot_Window::handle( int event)
       // control panels... later
       switch( Fl::event_key()) {
 
-        case 'q':   // exit
-        case '\027':  // quit
-          if( make_confirmation_window( "Quit?  Are you sure?") > 0) exit( 0);
+				// exit
+        case 'q':  
+          if( make_confirmation_window( "Quit?  Are you sure?") > 0)
+            exit( 0);
+          else
+            return 1;
 
         // delete selected points from all future processing
         case 'x':
@@ -456,7 +449,7 @@ int Plot_Window::handle( int event)
         case 'c':
           clear_selections( (Fl_Widget *) NULL);
           return 1;
-          
+
         // Don't display / display deselected dots
         case 'd':
           toggle_display_deselected( (Fl_Widget *) NULL);
@@ -465,7 +458,6 @@ int Plot_Window::handle( int event)
         // Extract data for these axes and redraw plot
         case 'r':
           extract_data_points();
-          //redraw();
           return 1;
 
         // hold down 'h' and middle mouse drag to scale histogram bin height.
@@ -474,8 +466,8 @@ int Plot_Window::handle( int event)
           scale_histogram=1;
           return 1;
 
-        // run a timing test, for tuning purposes.
-      case '9':
+        // run a timing test, for performancw tuning & profiling 
+        case '9':
           run_timing_test();
           return 1;
 
@@ -540,7 +532,7 @@ void Plot_Window::reset_view()
   if (axis2 != nvars) zscale = 2.0 / (wmax[2]-wmin[2]);
   else zscale = 1.0;
   
-  // Initiallly, datapoints only span 0.8 of the window dimensions, which 
+  // Initially, datapoints only span 0.8 of the window dimensions, which 
   // allows room around the edges for labels, tickmarks, histograms....
   xscale *= initial_pscale; 
   yscale *= initial_pscale; 
@@ -621,8 +613,7 @@ void Plot_Window::draw()
   glTranslatef (-xzoomcenter, -yzoomcenter, -zzoomcenter);
 
   if( cp->dont_clear->value() == 0) {
-    // glClearColor( cp->Bkg->value(), cp->Bkg->value(), cp->Bkg->value(), 1.0-pow2(cp->Bkg->value())); // a=1 good for black background
-    glClearColor( cp->Bkg->value(), cp->Bkg->value(), cp->Bkg->value(), 0.0); // a=1 good for black background
+    glClearColor( cp->Bkg->value(), cp->Bkg->value(), cp->Bkg->value(), 0.0);
     glClearDepth (0.0);
     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     draw_grid();
@@ -1024,15 +1015,9 @@ void Plot_Window::draw_data_points()
   // cout << "pw[" << index << "]: draw_data_points() " << endl;
   if ( !cp->show_points->value())return;
 
-  // XXX do we need this at all - does it do anything?
-  float const_color[4];
-  const_color[0] = const_color[1] = const_color[2] = cp->lum->value(); 
-  const_color[3] = 0.0;
-  glBlendColor( const_color[0], const_color[1], const_color[2], const_color[3]);  // MCL XXX removed for sprites
-
   glBlendFunc(GL_SRC_ALPHA, GL_DST_ALPHA);
+//  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-  int alpha_test_enabled = 0;
   int z_bufferring_enabled = 0;
   int current_sprite = 0;
 
@@ -1066,7 +1051,7 @@ void Plot_Window::draw_data_points()
 
     // don't draw nonselected points (brush[0]) if we are hiding nonselected points in this plot
     if (brush_index == 0 && (!show_deselected_button->value() || !cp->show_deselected_points->value())) {
-        continue;
+      continue;
     }
 
     Brush *brush = brushes[brush_index];
@@ -1075,7 +1060,7 @@ void Plot_Window::draw_data_points()
     // If some points were selected in this set, set their size, etc. and render
     if(count > 0) {
 
-      clear_alpha_planes();
+      // clear_alpha_planes();  // MCL XXX this needs a per-brush toggle button
 
       // Set the pointsize for this brush (hard limit from 1 to 50 or 100)
       float size = min(max(brush->pointsize->value(), 1.0),50.0);
@@ -1131,16 +1116,13 @@ void Plot_Window::draw_data_points()
       }
     }
   }
-  if( alpha_test_enabled ) {
-    glDisable(GL_ALPHA_TEST);
-    alpha_test_enabled = 0;
-  }
   if (z_bufferring_enabled) {
     glDisable( GL_DEPTH_TEST);
   }
   if (current_sprite > 0) {
     disable_sprites();
   }
+  glDisable(GL_ALPHA_TEST);
 }
 
 //***************************************************************************
@@ -1940,18 +1922,18 @@ void Plot_Window::initialize_sprites()
   for (int i=0; i<NSYMBOLS; i++) {
     #if 0
     GLfloat rgb2rgba[16] = {
-      1, 0, 0, 1,
-      0, 1, 0, 1,
-      0, 0, 1, 1,
+      1, 0, 0, 1/3.0,
+      0, 1, 0, 1/3.0,
+      0, 0, 1, 1/3.0,
       0, 0, 0, 0
     };
     glMatrixMode(GL_COLOR);
     glLoadMatrixf(rgb2rgba);
     glMatrixMode(GL_MODELVIEW);
-    #endif // 0
+    #endif 0
     glBindTexture( GL_TEXTURE_2D, spriteTextureID[i]);
     gluBuild2DMipmaps( GL_TEXTURE_2D, GL_LUMINANCE_ALPHA, spriteWidth, spriteHeight, GL_RGB, GL_UNSIGNED_BYTE, spriteData[i]);
-    //gluBuild2DMipmaps( GL_TEXTURE_2D, GL_ALPHA, spriteWidth, spriteHeight, GL_RGB, GL_UNSIGNED_BYTE, spriteData[i]);
+//  gluBuild2DMipmaps( GL_TEXTURE_2D, GL_INTENSITY, spriteWidth, spriteHeight, GL_RGB, GL_UNSIGNED_BYTE, spriteData[i]);
     CHECK_GL_ERROR( "initializing sprite texture mipmaps");
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -1977,6 +1959,17 @@ void Plot_Window::enable_sprites(int sprite)
   glBindTexture( GL_TEXTURE_2D, spriteTextureID[sprite]);
   glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
   glTexEnvf( GL_POINT_SPRITE_ARB, GL_COORD_REPLACE_ARB, GL_TRUE );
+}
+
+//***************************************************************************
+// clear_alpha_planes() -- Those filthy alpha planes!  It seems that no matter 
+// how hard you try, you just can't keep them clean!
+void Plot_Window::clear_alpha_planes()
+{
+  glColorMask( GL_FALSE, GL_FALSE, GL_FALSE, GL_TRUE);
+  glClearColor( 0.0, 0.0, 0.0, 0.0);
+  glClear( GL_COLOR_BUFFER_BIT);
+  glColorMask( GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 }
 
 //***************************************************************************
@@ -2192,16 +2185,5 @@ void fluctuation(
 
   // Loop: Unpermute and return in a
   for (int i=0; i<npoints; i++) a(indices(i)) = tmp(i);
-}
-
-//***************************************************************************
-// clear_alpha_planes() -- Those filthy alpha planes!  It seems that no matter 
-// how hard you try, you just can't keep them clean!
-void Plot_Window::clear_alpha_planes()
-{
-  glColorMask( GL_FALSE, GL_FALSE, GL_FALSE, GL_TRUE);
-  glClearColor( 0.0, 0.0, 0.0, 0.0);
-  glClear( GL_COLOR_BUFFER_BIT);
-  glColorMask( GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 }
 

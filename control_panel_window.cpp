@@ -175,6 +175,7 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   int ypos = this->y()+20;
 
   Fl_Button *b;
+  Fl_Round_Button *rb;
 
   // the following portion of the panel deals with axes and their properties
 
@@ -456,32 +457,32 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   transform_style = new Fl_Group (xpos-1, ypos+25-1, 20+2, 4*25+2);
 
   // Button (4,1): No transform
-  no_transform = b = new Fl_Button(xpos, ypos+=25, 20, 20, "identity");
-  b->callback((Fl_Callback*)static_extract_and_redraw, this);
-  b->align(FL_ALIGN_RIGHT); 
-  b->type(FL_RADIO_BUTTON); 
-  b->selection_color(FL_BLUE);
+  no_transform = rb = new Fl_Round_Button(xpos, ypos+=25, 20, 20, "identity");
+  rb->callback((Fl_Callback*)static_extract_and_redraw, this);
+  rb->align(FL_ALIGN_RIGHT); 
+  rb->type(FL_RADIO_BUTTON); 
+  rb->selection_color(FL_BLUE);
 
   // Button (5,1): Sum vs difference transform
-  sum_vs_difference = b = new Fl_Button(xpos, ypos+=25, 20, 20, "sum vs. diff.");
-  b->callback((Fl_Callback*)static_extract_and_redraw, this);
-  b->align(FL_ALIGN_RIGHT); 
-  b->type(FL_RADIO_BUTTON); 
-  b->selection_color(FL_BLUE);
+  sum_vs_difference = rb = new Fl_Round_Button(xpos, ypos+=25, 20, 20, "sum vs. diff.");
+  rb->callback((Fl_Callback*)static_extract_and_redraw, this);
+  rb->align(FL_ALIGN_RIGHT); 
+  rb->type(FL_RADIO_BUTTON); 
+  rb->selection_color(FL_BLUE);
   
   // Button (6,1): cummulative conditional probability or rank of y given x
-  cond_prop = b = new Fl_Button(xpos, ypos+=25, 20, 20, "rank(y|x)");
-  b->callback((Fl_Callback*)static_extract_and_redraw, this);
-  b->align(FL_ALIGN_RIGHT); 
-  b->type(FL_RADIO_BUTTON); 
-  b->selection_color(FL_BLUE);
+  cond_prop = rb = new Fl_Round_Button(xpos, ypos+=25, 20, 20, "rank(y|x)");
+  rb->callback((Fl_Callback*)static_extract_and_redraw, this);
+  rb->align(FL_ALIGN_RIGHT); 
+  rb->type(FL_RADIO_BUTTON); 
+  rb->selection_color(FL_BLUE);
   
   // Button (7,1): fluctuation of y given x
-  fluctuation = b = new Fl_Button(xpos, ypos+=25, 20, 20, "fluct(y|x)");
-  b->callback((Fl_Callback*)static_extract_and_redraw, this);
-  b->align(FL_ALIGN_RIGHT); 
-  b->type(FL_RADIO_BUTTON); 
-  b->selection_color(FL_BLUE);
+  fluctuation = rb = new Fl_Round_Button(xpos, ypos+=25, 20, 20, "fluct(y|x)");
+  rb->callback((Fl_Callback*)static_extract_and_redraw, this);
+  rb->align(FL_ALIGN_RIGHT); 
+  rb->type(FL_RADIO_BUTTON); 
+  rb->selection_color(FL_BLUE);
   
   transform_style->end();
   no_transform->setonly();

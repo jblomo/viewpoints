@@ -1120,6 +1120,7 @@ at all:
   libGL (Linux)
   libGLU (Linux)
   libXext (Linux)
+  libXft (Linux)
   AGL (OSX)
   OpenGL (OSX)
   Carbon (OSX)
@@ -1156,14 +1157,48 @@ viewpoints.app/Contents/MacOS/viewpoints:
 	/usr/lib/libgcc_s.1.dylib (compatibility version 1.0.0, current version 1.0.0)
 
 (with perhaps higher version numbers, but NO ADDITIONAL dynamic
-libraries.  Be especally way that it does not show any lines with
+libraries.  Be especally wary that it does not show any lines with
 libgsl*.dylib, libblitz*.dylib, or libboost*.dylib and if it does,
 delete all dynamic versions of those libraries, and run all the make
 commands and the otool command again.
 
-To perform the check on linux, run the following commands:
+To perform the check on linux, run the following command from src/vp
 
-  ....
+  %ldd vp
+
+It should produce something like this (with different details depending on the
+version of linux and the build machine's graphics card's vendor
+libraries:
+
+    libGL.so.1 => /usr/lib/libGL.so.1 (0x0083e000)
+    libGLU.so.1 => /usr/X11R6/lib/libGLU.so.1 (0x00c21000)
+    libXext.so.6 => /usr/X11R6/lib/libXext.so.6 (0x00ab8000)
+    libstdc++.so.6 => /usr/lib/libstdc++.so.6 (0x0076d000)
+    libm.so.6 => /lib/tls/i686/libm.so.6 (0x00a20000)
+    libgcc_s.so.1 => /lib/libgcc_s.so.1 (0x00605000)
+    libc.so.6 => /lib/tls/i686/libc.so.6 (0x0090b000)
+    libX11.so.6 => /usr/X11R6/lib/libX11.so.6 (0x0023c000)
+    libGLcore.so.1 => /usr/lib/libGLcore.so.1 (0x05412000)
+    libnvidia-tls.so.1 => /usr/lib/tls/libnvidia-tls.so.1 (0x0083a000)
+    libdl.so.2 => /lib/libdl.so.2 (0x00a45000)
+    /lib/ld-linux.so.2 (0x008f4000)
+
+Be especally wary that it does not show any lines with
+libgsl*, libblitz*, libfltk*, or libboost* and if it does,
+delete all dynamic versions of those libraries, and run all the make
+commands and the ldd command again.
+
+Note - you can try and build gsl, fltk, and blitz with
+--disable-shared, and you can try and build boost libraries using:
+
+bjam --toolset=gcc --link=static --prefix=$HOME install
+
+But that might not be good enough.  They might still sneak in some
+shared libraries.  It is safest to delete them.
+
+
+
+
 
 --------
 18:09:06 31 Jul 07

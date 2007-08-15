@@ -116,6 +116,7 @@
 #include <FL/Fl_Window.H>
 #include <FL/Fl_Hor_Value_Slider.H>
 #include <FL/Fl_Button.H>
+#include <FL/Fl_Round_Button.H>
 #include <FL/Fl_Group.H>
 #include <FL/Fl_Tabs.H>
 #include <FL/Fl_Choice.H>

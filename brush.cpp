@@ -160,13 +160,14 @@ void Brush::make_widgets(Brush *bw)
   color_chooser->labelfont(FL_HELVETICA);
   color_chooser->labelsize(10);
 
-  add_to_selection = new Fl_Button( xpos+=150, ypos, 20, 20, "clear later");
+  // MCL XXX there should be a "selection" menu: extend, subtract, replace, replace always, invert?
+  add_to_selection = new Fl_Button( xpos+=150, ypos, 20, 20, "extend selection");
   add_to_selection->align( FL_ALIGN_RIGHT); 
   add_to_selection->selection_color( FL_BLUE); 
   add_to_selection->type( FL_TOGGLE_BUTTON);
   add_to_selection->value( index?0:1);  // all brushes default this to off, except brush 0.
 
-  clear_now_button = new Fl_Button( xpos, ypos+=25, 20, 20, "clear now");
+  clear_now_button = new Fl_Button( xpos, ypos+=25, 20, 20, "clear selection");
   clear_now_button->align( FL_ALIGN_RIGHT); 
   clear_now_button->selection_color( FL_BLUE); 
   clear_now_button->callback((Fl_Callback*)static_clear_now, this);
