@@ -50,13 +50,13 @@ ifeq ($(platform),Darwin)
 
 	LDLIBS = -framework AGL -framework OpenGL -framework Carbon -framework ApplicationServices -framework vecLib -lm -lmx -lgsl -lboost_serialization-d
 
-# uncomment for OSX machines where I CAN install things as root... (don't forget to build all libraries as static only)
-#	INCPATH = -I/sw/include -I/usr/local/include -I/usr/local/include/boost-1_34/
-#	LIBPATH	= -L/usr/local/lib -L/sw/lib
+uncomment for OSX machines where I CAN install things as root... (don't forget to build all libraries as static only)
+	INCPATH = -I/sw/include -I/usr/local/include -I/usr/local/include/boost-1_34/
+	LIBPATH	= -L/usr/local/lib -L/sw/lib
 
 # uncomment for OSX machines where I can NOT install things as root... (don't forget to build all libraries as static only)
-	INCPATH = -I/Users/creon/include -I/Users/creon/include/boost-1_34/
-	LIBPATH	= -L/Users/creon/lib 
+#	INCPATH = -I/Users/creon/include -I/Users/creon/include/boost-1_34/
+#	LIBPATH	= -L/Users/creon/lib 
 
 else
 # for NAS linux machines where I can NOT install things as root (don't forget to build all libraries as static only)

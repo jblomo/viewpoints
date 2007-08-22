@@ -279,19 +279,34 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   z_normalization_style->clear_visible_focus();
   z_normalization_style->callback( (Fl_Callback*)static_extract_and_redraw, this);
  
-  // one label for row of histogram buttons
-  b = new Fl_Button (xpos, ypos+=35, 85, 25, "histo");
+  // histogram controls
+  ypos += 35;    
+
+  // label for row of histogram menus
+  b = new Fl_Button (xpos, ypos, 45, 25, "histog");
   b->labelsize(14);
   b->align(FL_ALIGN_LEFT);
   b->box(FL_NO_BOX);
 
+  Fl_Menu_Item histogram_pulldown[] = {
+    {"none",        0, 0, (void *)HISTOGRAM_NONE,    		 FL_MENU_TOGGLE},
+    {"marginal",    0, 0, (void *)HISTOGRAM_MARGINAL,    FL_MENU_TOGGLE},
+    {"selection",   0, 0, (void *)HISTOGRAM_SELECTION,   FL_MENU_TOGGLE},
+    {"conditional", 0, 0, (void *)HISTOGRAM_CONDITIONAL, FL_MENU_TOGGLE},
+    {0}
+  };
+  int n_histogram_pulldown_items = (sizeof(histogram_pulldown) / sizeof(histogram_pulldown[0])) - 1;
+
   // create three show histogram buttons, one for each axis.
   for (int i=0; i<3; i++) {
-    show_histogram[i] = new Fl_Button(xpos+i*subwidth, ypos, 20, 20);
+    show_histogram[i] = new Fl_Menu_Button(xpos+i*subwidth, ypos, subwidth-55, 20, "");
+    // copy in the menu items
+    show_histogram[i]->copy(histogram_pulldown); 
+    // normal menu, not popup.
+    show_histogram[i]->type(0); 
     show_histogram[i]->callback((Fl_Callback*)redraw_one_plot, this);
-    show_histogram[i]->type(FL_TOGGLE_BUTTON); 
     show_histogram[i]->selection_color(FL_BLUE);  
-    show_histogram[i]->value(0);
+    show_histogram[i]->clear_visible_focus();
   }
   // no Z-axis histograms (yet)
   show_histogram[2]->deactivate();
@@ -335,6 +350,14 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
     
   ypos += 30;
 
+  // Background color slider
+  Bkg = new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, cpw->w()-60, 20, "Bkg");
+  Bkg->align(FL_ALIGN_LEFT);
+  Bkg->step(0.0001);
+  Bkg->bounds(0.0,1.0);
+  Bkg->callback((Fl_Callback*)replot, this);
+  Bkg->value(0.0);
+
   // Luminance for this plot
   lum = new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, cpw->w()-60, 20, "lum");
   lum->align(FL_ALIGN_LEFT);
@@ -343,13 +366,20 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   lum->callback((Fl_Callback*)replot, this);
   lum->value(1.0);
 
-  // Background color slider
-  Bkg = new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, cpw->w()-60, 20, "Bkg");
-  Bkg->align(FL_ALIGN_LEFT);
-  Bkg->step(0.0001);
-  Bkg->bounds(0.0,1.0);
-  Bkg->callback((Fl_Callback*)replot, this);
-  Bkg->value(0.0);
+  // overall pointsize scale for this plot
+  size = new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, cpw->w()-115, 20, "psize");
+  size->align(FL_ALIGN_LEFT);
+  size->step(0.0001);
+  size->bounds(-4.0,4.0);
+  size->callback((Fl_Callback*)replot, this);
+  size->value(0.0);
+
+  scale_points = new Fl_Button(xpos+size->w()+5, ypos, 20, 20, "scale");
+  scale_points->align(FL_ALIGN_RIGHT);
+  scale_points->type(FL_TOGGLE_BUTTON);
+  scale_points->selection_color(FL_BLUE);
+  scale_points->value(1);
+  scale_points->callback((Fl_Callback*)replot, this);
 
   // Rotation (and spin) slider
   rot_slider = new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, cpw->w()-115, 20, "rot");
@@ -375,13 +405,6 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   reset_view_button = b = new Fl_Button(xpos2, ypos+=25, 20, 20, "reset view ");
   b->align(FL_ALIGN_RIGHT); b->selection_color(FL_BLUE);
   b->callback((Fl_Callback*) static_extract_and_redraw, this);
-
-  scale_points = new Fl_Button(xpos2, ypos+=25, 20, 20, "scale points");
-  scale_points->align(FL_ALIGN_RIGHT);
-  scale_points->type(FL_TOGGLE_BUTTON);
-  scale_points->selection_color(FL_BLUE);
-  scale_points->value(1);
-  scale_points->callback((Fl_Callback*)static_maybe_redraw, this);
 
   // Button (1,2): z-buffering control
   z_bufferring_button = b = new Fl_Button(xpos2, ypos+=25, 20, 20, "z-bufferring");

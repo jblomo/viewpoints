@@ -1063,7 +1063,8 @@ void Plot_Window::draw_data_points()
       // clear_alpha_planes();  // MCL XXX this needs a per-brush toggle button
 
       // Set the pointsize for this brush (hard limit from 1 to 50 or 100)
-      float size = min(max(brush->pointsize->value(), 1.0),50.0);
+      float size_scaling = powf(2.0, cp->size->value());
+      float size = min(max(brush->pointsize->value()*size_scaling, 1.0),50.0);
       if (cp->scale_points->value()) {
         size = min(sqrt(magnification)*size, 100.0f);
       }
@@ -1143,7 +1144,7 @@ void Plot_Window::draw_data_points()
 // into VBOs, then we will have to do something else here.
 void Plot_Window::compute_histogram( int axis)
 {
-  if (!cp->show_histogram[axis]->value()) return;
+  if (cp->show_histogram[axis]->menu()[Control_Panel_Window::HISTOGRAM_NONE].value()) return;
   // Get number of bins, initialize arrays, and set range
   int nbins = (int)(exp2(cp->nbins_slider[axis]->value()));
   if (nbins <= 0) return;

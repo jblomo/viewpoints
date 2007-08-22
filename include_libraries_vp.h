@@ -119,6 +119,8 @@
 #include <FL/Fl_Round_Button.H>
 #include <FL/Fl_Group.H>
 #include <FL/Fl_Tabs.H>
+#include <FL/Fl_Menu_Button.H>
+#include <FL/Fl_Menu_Item.H>
 #include <FL/Fl_Choice.H>
 #include <FL/Fl_Gl_Window.H>
 #include <FL/Fl_File_Chooser.H>

@@ -112,7 +112,7 @@ class Control_Panel_Window : public Fl_Group
     // Pointers to sliders & menus
     // Fl_Hor_Value_Slider_Input *pointsize_slider, *selected_pointsize_slider;
     Fl_Hor_Value_Slider_Input *Bkg, *lum;
-    Fl_Hor_Value_Slider_Input *rot_slider;
+    Fl_Hor_Value_Slider_Input *rot_slider, *size;
     Fl_Hor_Value_Slider_Input *nbins_slider[3], *hscale_slider[3];
     Fl_Choice *varindex1, *varindex2, *varindex3;
     Fl_Button *lock_axis1_button, *lock_axis2_button, *lock_axis3_button;
@@ -122,8 +122,16 @@ class Control_Panel_Window : public Fl_Group
     Fl_Button *scale_points;
     Fl_Button *spin, *dont_clear, *show_points, 
               *show_deselected_points, 
-              *show_axes, *show_grid, *show_labels, 
-              *show_histogram[2];
+        *show_axes, *show_grid, *show_labels;
+
+    Fl_Menu_Button *show_histogram[3];
+    enum histogram_styles {
+        HISTOGRAM_NONE = 0,
+        HISTOGRAM_MARGINAL,
+        HISTOGRAM_SELECTION,   
+        HISTOGRAM_CONDITIONAL
+    };
+
     Fl_Button *show_scale;
     Fl_Button *choose_selection_color_button;
     Fl_Button *z_bufferring_button;
