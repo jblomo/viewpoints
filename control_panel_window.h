@@ -126,8 +126,7 @@ class Control_Panel_Window : public Fl_Group
 
     Fl_Menu_Button *show_histogram[3];
     enum histogram_styles {
-        HISTOGRAM_NONE = 0,
-        HISTOGRAM_MARGINAL,
+        HISTOGRAM_MARGINAL = 0,
         HISTOGRAM_SELECTION,   
         HISTOGRAM_CONDITIONAL
     };

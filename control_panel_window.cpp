@@ -289,7 +289,6 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   b->box(FL_NO_BOX);
 
   Fl_Menu_Item histogram_pulldown[] = {
-    {"none",        0, 0, (void *)HISTOGRAM_NONE,    		 FL_MENU_TOGGLE},
     {"marginal",    0, 0, (void *)HISTOGRAM_MARGINAL,    FL_MENU_TOGGLE},
     {"selection",   0, 0, (void *)HISTOGRAM_SELECTION,   FL_MENU_TOGGLE},
     {"conditional", 0, 0, (void *)HISTOGRAM_CONDITIONAL, FL_MENU_TOGGLE},
@@ -301,7 +300,7 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   for (int i=0; i<3; i++) {
     show_histogram[i] = new Fl_Menu_Button(xpos+i*subwidth, ypos, subwidth-55, 20, "");
     // copy in the menu items
-    show_histogram[i]->copy(histogram_pulldown); 
+    show_histogram[i]->copy(histogram_pulldown);
     // normal menu, not popup.
     show_histogram[i]->type(0); 
     show_histogram[i]->callback((Fl_Callback*)redraw_one_plot, this);

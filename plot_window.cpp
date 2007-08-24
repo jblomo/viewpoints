@@ -1103,8 +1103,8 @@ void Plot_Window::draw_data_points()
       if (use_VBOs) {
         assert (VBOinitialized && VBOfilled && indexVBOsinitialized && indexVBOsfilled) ;
         glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, MAXPLOTS+brush_index); 
-        // glDrawElements( GL_POINTS, (GLsizei)count, GL_UNSIGNED_INT, BUFFER_OFFSET(0));
-        glDrawRangeElements( GL_POINTS, 0, npoints, count, GL_UNSIGNED_INT, BUFFER_OFFSET(0));
+        glDrawElements( GL_POINTS, (GLsizei)count, GL_UNSIGNED_INT, BUFFER_OFFSET(0));
+        // glDrawRangeElements( GL_POINTS, 0, npoints, count, GL_UNSIGNED_INT, BUFFER_OFFSET(0)); // XXX this freezes my new 17" mbp, hard :-(
         // make sure we succeeded 
         CHECK_GL_ERROR("drawing points from VBO");
       }
@@ -1144,7 +1144,13 @@ void Plot_Window::draw_data_points()
 // into VBOs, then we will have to do something else here.
 void Plot_Window::compute_histogram( int axis)
 {
-  if (cp->show_histogram[axis]->menu()[Control_Panel_Window::HISTOGRAM_NONE].value()) return;
+  int marginal    = cp->show_histogram[axis]->menu()[Control_Panel_Window::HISTOGRAM_MARGINAL].value();
+  int selection   = cp->show_histogram[axis]->menu()[Control_Panel_Window::HISTOGRAM_SELECTION].value();
+  int conditional = cp->show_histogram[axis]->menu()[Control_Panel_Window::HISTOGRAM_CONDITIONAL].value();
+  if (!(marginal || selection || conditional)) {
+    return;
+  }
+
   // Get number of bins, initialize arrays, and set range
   int nbins = (int)(exp2(cp->nbins_slider[axis]->value()));
   if (nbins <= 0) return;
@@ -1185,12 +1191,23 @@ void Plot_Window::compute_histograms()
 // Plot_Window::draw_histogram() -- If requested, draw histograms.
 void Plot_Window::draw_histograms()
 {
-  // if no axis has histograms enabled, return immediately
-  if( ! ((cp->show_histogram[0]->value()) || (cp->show_histogram[1]->value())))
-    return;
+  // the various kinds of histograms we might show:
+  int x_marginal    = cp->show_histogram[0]->menu()[Control_Panel_Window::HISTOGRAM_MARGINAL].value();
+  int x_selection   = cp->show_histogram[0]->menu()[Control_Panel_Window::HISTOGRAM_SELECTION].value();
+  int x_conditional = cp->show_histogram[0]->menu()[Control_Panel_Window::HISTOGRAM_CONDITIONAL].value();
+  int y_marginal    = cp->show_histogram[1]->menu()[Control_Panel_Window::HISTOGRAM_MARGINAL].value();
+  int y_selection   = cp->show_histogram[1]->menu()[Control_Panel_Window::HISTOGRAM_SELECTION].value();
+  int y_conditional = cp->show_histogram[1]->menu()[Control_Panel_Window::HISTOGRAM_CONDITIONAL].value();
 
+  // if no axis has any histograms enabled, return immediately
+  if (! (x_marginal || x_selection || x_conditional || y_marginal || y_selection || y_conditional)) {
+    return;
+  }
+
+  // note use of slider to control log_2 bincount
   int xbins = (int)exp2(cp->nbins_slider[0]->value());
   int ybins = (int)exp2(cp->nbins_slider[1]->value());
+
   // if no axes has bin count > zero, return immediately
   if (xbins <= 0 && ybins <= 0)
     return;
@@ -1203,7 +1220,7 @@ void Plot_Window::draw_histograms()
 
   // x-axis histograms
   nbins = xbins;
-  if (nbins > 0 && cp->show_histogram[0]->value()) {
+  if ((x_marginal || x_selection || x_conditional) && nbins > 0) {
     glLoadIdentity();
     // histograms should cover pointclouds
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -1215,21 +1232,22 @@ void Plot_Window::draw_histograms()
     glTranslatef (0.0, 0.0, 0.1);
     float xwidth = (amax[0]-amin[0]) / (float)(nbins);
     
-    // Loop: Draw x-axis histogram (all points)
-    float x = amin[0];
-    glColor4f( 0.0, 0.5, 0.5, 1.0);
-    glBegin( GL_LINE_STRIP);
-    for( int bin=0; bin<nbins; bin++, x+=xwidth) {
-      glVertex2f( x, 0.0);  // lower left corner
-      glVertex2f( x, counts(bin,0));   // left edge
-      glVertex2f( x+xwidth, counts(bin,0));    // Top edge
-      glVertex2f( x+xwidth, 0.0);   // Right edge
+    // Draw x-axis histogram of all points.
+    if (x_marginal) {
+      float x = amin[0];
+      glColor4f( 0.0, 0.5, 0.5, 1.0);
+      glBegin( GL_LINE_STRIP);
+      for( int bin=0; bin<nbins; bin++, x+=xwidth) {
+        glVertex2f( x, 0.0);  // lower left corner
+        glVertex2f( x, counts(bin,0));   // left edge
+        glVertex2f( x+xwidth, counts(bin,0));    // Top edge
+        glVertex2f( x+xwidth, 0.0);   // Right edge
+      }
+      glEnd();
     }
-    glEnd();
     
-    // If points were selected, refactor selected points of the
-    // x-axis histogram?
-    if( nselected > 0) {
+    // Draw x-axis histogram of selected points
+    if( nselected > 0 && x_selection) {
       float x = amin[0];
       glColor4f( 0.25, 1.0, 1.0, 1.0);
       glBegin( GL_LINE_STRIP);
@@ -1241,11 +1259,28 @@ void Plot_Window::draw_histograms()
       }
       glEnd();
     }
+
+    // Draw scaled x-axis histogram of selected points ("conditional");
+    if( nselected > 0 && x_conditional) {
+      float x = amin[0];
+      blitz::Range BINS( 0, nbins-1);
+      float yscale = max(counts(BINS,0))/max(counts_selected(BINS,0));
+      glColor4f( 0.5, 1.0, 1.0, 1.0);
+      glBegin( GL_LINE_STRIP);
+      for( int bin=0; bin<nbins; bin++, x+=xwidth) {
+        glVertex2f( x, 0.0); // lower left corner
+        glVertex2f( x, counts_selected( bin, 0)*yscale);   // left edge
+        glVertex2f( x+xwidth, counts_selected( bin, 0)*yscale);   // top edge
+        glVertex2f( x+xwidth,0.0);   // right edge 
+      }
+      glEnd();
+    }
+
   }
   
   // y-axis histograms
   nbins = ybins;
-  if (nbins > 0 && cp->show_histogram[1]->value()) {
+  if ((y_marginal || y_selection || y_conditional) && nbins > 0) {
     glLoadIdentity();
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glTranslatef( hoffset, yzoomcenter*yscale, 0);
@@ -1254,23 +1289,24 @@ void Plot_Window::draw_histograms()
     glTranslatef( 0.0, -yzoomcenter, 0);
     float ywidth = (amax[1]-amin[1]) / (float)(nbins);
 
-    // Loop: draw y-axis histogram (all points)
-    float y = amin[1];
-    glColor4f( 0.0, 0.5, 0.5, 1.0);
-    glBegin( GL_LINE_STRIP);
-    for( int bin=0; bin<nbins; bin++) {
-      glVertex2f( 0.0, y);          
-      glVertex2f(counts(bin,1),y);   // bottom
-      glVertex2f(counts(bin,1), y+ywidth);   // right edge
-      glVertex2f(0.0, y+ywidth);   // top edge 
-      y+=ywidth;
+    // Draw y-axis histogram of all points.
+    if (y_marginal) {
+      float y = amin[1];
+      glColor4f( 0.0, 0.5, 0.5, 1.0);
+      glBegin( GL_LINE_STRIP);
+      for( int bin=0; bin<nbins; bin++) {
+        glVertex2f( 0.0, y);          
+        glVertex2f(counts(bin,1),y);   // bottom
+        glVertex2f(counts(bin,1), y+ywidth);   // right edge
+        glVertex2f(0.0, y+ywidth);   // top edge 
+        y+=ywidth;
+      }
+      glEnd();
     }
-    glEnd();
 
-    // If points were selected, refactor selected points of the
-    // y-axis histogram?
-    if( nselected > 0) {
-      y = amin[1];
+    // Draw y-axis histogram of selected points
+    if( nselected > 0 && y_selection) {
+      float y = amin[1];
       glColor4f( 0.25, 1.0, 1.0, 1.0);
       glBegin( GL_LINE_STRIP);
       for( int bin=0; bin<nbins; bin++) {
@@ -1282,6 +1318,24 @@ void Plot_Window::draw_histograms()
       }
       glEnd();
     }
+
+    // Draw scaled y-axis histogram of selected points ("conditional");
+    if( nselected > 0 && y_conditional) {
+      float y = amin[1];
+      blitz::Range BINS( 0, nbins-1);
+      float xscale = max(counts(BINS,1))/max(counts_selected(BINS,1));
+      glColor4f( 0.25, 1.0, 1.0, 1.0);
+      glBegin( GL_LINE_STRIP);
+      for( int bin=0; bin<nbins; bin++) {
+        glVertex2f( 0.0, y);
+        glVertex2f(counts_selected( bin, 1)*xscale,y);   // bottom
+        glVertex2f(counts_selected( bin, 1)*xscale,y+ywidth);   // right edge
+        glVertex2f(0.0, y+ywidth);   // top edge 
+        y+=ywidth;
+      }
+      glEnd();
+    }
+
   }
   glPopMatrix();
 }
