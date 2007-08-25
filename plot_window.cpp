@@ -1033,7 +1033,7 @@ void Plot_Window::draw_data_points()
   // Tell the GPU where to find the vertices for this plot.
   if (use_VBOs) {
     // bind VBO for vertex data
-    glBindBufferARB(GL_ARRAY_BUFFER_ARB, index+1);
+    glBindBuffer(GL_ARRAY_BUFFER, index+1);
 
     // If the variables we are plotting were changed, then the vertex VBO must 
     // be updated to contain the correct vertex data, and it has to be done 
@@ -1077,7 +1077,7 @@ void Plot_Window::draw_data_points()
       case 0:
         enable_regular_points();
         break;
-#if 0 // this should be executed based on run-time test iff GL_ARB_POINT_SPRITE is absent.
+#if 0 // this should be executed based on run-time test iff GL_POINT_SPRITE is absent.
       case 1:
         enable_antialiased_points();
         break;
@@ -1102,9 +1102,9 @@ void Plot_Window::draw_data_points()
       // then render the points
       if (use_VBOs) {
         assert (VBOinitialized && VBOfilled && indexVBOsinitialized && indexVBOsfilled) ;
-        glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, MAXPLOTS+brush_index); 
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, MAXPLOTS+1+brush_index); 
         glDrawElements( GL_POINTS, (GLsizei)count, GL_UNSIGNED_INT, BUFFER_OFFSET(0));
-        // glDrawRangeElements( GL_POINTS, 0, npoints, count, GL_UNSIGNED_INT, BUFFER_OFFSET(0)); // XXX this freezes my new 17" mbp, hard :-(
+        // glDrawRangeElements( GL_POINTS, 0, npoints, count, GL_UNSIGNED_INT, BUFFER_OFFSET(0)); // why not use this, instead?
         // make sure we succeeded 
         CHECK_GL_ERROR("drawing points from VBO");
       }
@@ -1123,7 +1123,7 @@ void Plot_Window::draw_data_points()
   if (current_sprite > 0) {
     disable_sprites();
   }
-  glDisable(GL_ALPHA_TEST);
+  // glDisable(GL_ALPHA_TEST);
 }
 
 //***************************************************************************
@@ -1716,8 +1716,9 @@ int Plot_Window::extract_data_points ()
   // functions from within an fltk callback.
   VBOfilled = false;
 
-  // Reset pan, zoom, and view-angle
+  // Apply data transformations, if any are active.
   (void) transform_2d();
+  // Since we're showing new data, make sure none of it gets clipped.
   reset_view();
 
   // XXX need to refactor this.  This is needed to make sure the
@@ -1737,8 +1738,8 @@ int Plot_Window::extract_data_points ()
 // Plot_Window::upper_triangle_incr( i, j, n) -- STATIC method to increment 
 // the row and column indices, (i,j), to traverse an upper triangular matrix 
 // by moving "down and to the right" with wrapping.  A static method used by 
-// Plot_Window::change_axes and in the body of the main routine to select 
-// axis labels.
+// Plot_Window::change_axes and in the body of the main routine to pick
+// new axis automatically (and stupidly) e.g. when the "change axes" button is pressed.
 void Plot_Window::upper_triangle_incr( int &i, int &j, const int n)
 {
   i++;
@@ -2009,11 +2010,11 @@ void Plot_Window::enable_sprites(int sprite)
   if (!sprites_initialized)
     initialize_sprites();
   glEnable( GL_TEXTURE_2D);
-  glEnable( GL_POINT_SPRITE_ARB);
+  glEnable( GL_POINT_SPRITE);
   assert ((sprite >= 0) && (sprite < NSYMBOLS));
   glBindTexture( GL_TEXTURE_2D, spriteTextureID[sprite]);
   glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-  glTexEnvf( GL_POINT_SPRITE_ARB, GL_COORD_REPLACE_ARB, GL_TRUE );
+  glTexEnvf( GL_POINT_SPRITE, GL_COORD_REPLACE, GL_TRUE );
 }
 
 //***************************************************************************
@@ -2032,11 +2033,11 @@ void Plot_Window::clear_alpha_planes()
 void Plot_Window::disable_sprites()
 {
   glDisable( GL_TEXTURE_2D);
-  glDisable( GL_POINT_SPRITE_ARB);
+  glDisable( GL_POINT_SPRITE);
 }
 
 //***************************************************************************
-// Defne methods to use vertex buffer objects (VBOs)
+// Define methods to use vertex buffer objects (VBOs)
 
 //***************************************************************************
 // Plot_Window::initialize_VBO() -- Initialize VBO for this window
@@ -2044,15 +2045,13 @@ void Plot_Window::initialize_VBO()
 {
   // Create a VBO. Index 0 is reserved.
   if (!VBOinitialized) {
-    glBindBufferARB(GL_ARRAY_BUFFER_ARB, index+1);  
+    glBindBuffer(GL_ARRAY_BUFFER, index+1);  
     CHECK_GL_ERROR ("creating VBO");
 
     // Reserve enough space in openGL server memory VBO to hold all the 
     // vertices, but do not initilize it.
-    glBufferDataARB( GL_ARRAY_BUFFER_ARB, 
-                     (GLsizeiptrARB) npoints*3*sizeof(GLfloat), 
-                     (void *)NULL, GL_STATIC_DRAW_ARB);
-    
+    glBufferData( GL_ARRAY_BUFFER, (GLsizeiptr) npoints*3*sizeof(GLfloat), (void *)NULL, GL_DYNAMIC_DRAW);
+
     // Make sure we succeeded 
     CHECK_GL_ERROR ("initializing VBO");
     cerr << " initialized VBO for plot window " << index << endl;
@@ -2065,10 +2064,9 @@ void Plot_Window::initialize_VBO()
 void Plot_Window::fill_VBO()
 {
   if (!VBOfilled) {
-    glBindBufferARB(GL_ARRAY_BUFFER_ARB, index+1);  
+    glBindBuffer(GL_ARRAY_BUFFER, index+1);  
     void *vertexp = (void *)vertices.data();
-    glBufferSubDataARB( GL_ARRAY_BUFFER, (GLintptrARB) 0, 
-                        (GLsizeiptrARB) (npoints*3*sizeof(GLfloat)), vertexp);
+    glBufferSubData( GL_ARRAY_BUFFER, (GLintptr) 0, (GLsizeiptr) (npoints*3*sizeof(GLfloat)), vertexp);
     CHECK_GL_ERROR("filling VBO");
     VBOfilled = true;
   }
@@ -2081,13 +2079,10 @@ void Plot_Window::fill_VBO()
 void Plot_Window::initialize_indexVBO(int set)
 {
   // There is one shared set of index VBOs for all plots.
-  //   indexVBO bound to MAXPLOTS holds indices of nonselected (brushes[0]) points
-  //   indexVBO bound to MAXPLOTS+1 holds indices of points selected by brushes[1], etc.
-  glBindBufferARB( GL_ELEMENT_ARRAY_BUFFER, MAXPLOTS+set);  // a safe place....
-  glBufferDataARB( 
-    GL_ELEMENT_ARRAY_BUFFER, 
-    (GLsizeiptrARB) (npoints*sizeof(GLuint)), 
-    (void*) NULL, GL_DYNAMIC_DRAW_ARB);
+  //  indexVBO bound to MAXPLOTS+1 holds indices of nonselected (brushes[0]) points
+  //  indexVBO bound to MAXPLOTS+2 holds indices of points selected by brushes[1], etc.
+  glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, MAXPLOTS+set+1);  // a safe place....
+  glBufferData( GL_ELEMENT_ARRAY_BUFFER, (GLsizeiptr) (npoints*sizeof(GLuint)), (void*) NULL, GL_DYNAMIC_DRAW);
 }
 
 //***************************************************************************
@@ -2107,21 +2102,18 @@ void Plot_Window::initialize_indexVBOs()
 void Plot_Window::fill_indexVBO(int set)
 {
   if (brushes[set]->count > 0) {
-    glBindBufferARB(GL_ELEMENT_ARRAY_BUFFER_ARB, MAXPLOTS+set);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, MAXPLOTS+set+1);
     // Create an alias to slice
     blitz::Array<unsigned int, 1> tmpArray = indices_selected( set, blitz::Range(0,npoints-1));
     unsigned int *indices = (unsigned int *) (tmpArray.data());
-    glBufferSubDataARB(
-      GL_ELEMENT_ARRAY_BUFFER_ARB, (GLintptrARB) 0, 
-      (GLsizeiptrARB) (brushes[set]->count*sizeof(GLuint)), indices);
-
+    glBufferSubData( GL_ELEMENT_ARRAY_BUFFER, (GLintptr) 0, (GLsizeiptr) (brushes[set]->count*sizeof(GLuint)), indices);
     // make sure we succeeded 
     CHECK_GL_ERROR("filling index VBO");
   }
 }
 
 //***************************************************************************
-// Plot_Window::fill_indexVBO() -- Fill the set of index VBOs
+// Plot_Window::fill_indexVBOs() -- Fill all the index VBOs
 void Plot_Window::fill_indexVBOs() 
 {
   if (!indexVBOsfilled) {

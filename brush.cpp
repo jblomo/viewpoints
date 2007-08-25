@@ -58,8 +58,13 @@ Brush::Brush(int x, int y, int w, int h) : Fl_Group( x, y, w, h)
   count = 0;
   previous_symbol = 0;
 
-  label("@square");
-
+  if (index > 0) {
+    label("@circle");
+    labelsize(15);
+  } else {
+    label("@square");
+  }
+  
   make_widgets(this);
   end();
 

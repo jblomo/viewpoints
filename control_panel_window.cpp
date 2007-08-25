@@ -294,7 +294,7 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
     {"conditional", 0, 0, (void *)HISTOGRAM_CONDITIONAL, FL_MENU_TOGGLE},
     {0}
   };
-  int n_histogram_pulldown_items = (sizeof(histogram_pulldown) / sizeof(histogram_pulldown[0])) - 1;
+  // int n_histogram_pulldown_items = (sizeof(histogram_pulldown) / sizeof(histogram_pulldown[0])) - 1;
 
   // create three show histogram buttons, one for each axis.
   for (int i=0; i<3; i++) {
@@ -377,7 +377,6 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   scale_points->align(FL_ALIGN_RIGHT);
   scale_points->type(FL_TOGGLE_BUTTON);
   scale_points->selection_color(FL_BLUE);
-  scale_points->value(1);
   scale_points->callback((Fl_Callback*)replot, this);
 
   // Rotation (and spin) slider
