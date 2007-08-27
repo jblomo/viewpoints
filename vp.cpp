@@ -973,7 +973,7 @@ void read_data( Fl_Widget* o, void* user_data)
 
   // MCL XXX why is the following code repeated three times in this file?
   // Fewer points -> bigger starting default_pointsize
-  default_pointsize = max( 1.0, 6.0 - (int) log10f( (float) npoints));
+  default_pointsize = max( 1.0, 6.0 - (int) 2*log10f( (float) npoints));
 
   // DIAGNOSTIC
   // cout << "Finished dfm.load_data_file and about to refresh plots" << endl;
@@ -1190,14 +1190,12 @@ int main( int argc, char **argv)
 
   about_string = "\n\
     viewpoints \n\
-    $Id$ \n\
+    " + string(SVN_VERSION) + "\n\
     \n\
-    \n\
-    (c) 2006 M. Creon Levit and Paul R. Gazis \n\
-      creon.levit@@nasa.gov \n\
-      pgazis@@mail.arc.nasa.gov \n\
-    \n\
-    ";
+    (c) 2006 M. Creon Levit and Paul R. Gazis   \n\
+        creon.levit@@nasa.gov \n\
+        pgazis@@mail.arc.nasa.gov \n\
+    \n";
 
   // STEP 1: Parse the command line
   //cout << "argc<" << argc << ">" << endl;
@@ -1367,7 +1365,6 @@ int main( int argc, char **argv)
      // show version information (managed by svn), and exit
       case 'V':
         cout << about_string;
-        cout << "linked against FLTK " << FL_VERSION << endl;
         exit (0);
         break;
 

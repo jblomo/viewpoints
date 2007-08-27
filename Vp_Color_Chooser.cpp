@@ -234,7 +234,7 @@ static void generate_image(void* vv, int X, int Y, int W, uchar* buf)
   for (int x = X; x < X+W; x++) {
     double Xf = double(x)/iw;
     double H,S; tohs(Xf,Yf,H,S);
-    double r,g,b;
+    double r=0,g=0,b=0;
     Vp_Color_Chooser::hsv2rgb(H,S,V,r,g,b);
     *buf++ = uchar(255*r+.5);
     *buf++ = uchar(255*g+.5);

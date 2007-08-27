@@ -42,8 +42,9 @@ else
 
 endif
 
-CXXFLAGS	= $(OPTIM) 
-#CXXFLAGS	= $(DEBUG) 
+# If svnversion causes trouble, use -D SVN_VERSION="\"local\""
+CXXFLAGS	= $(OPTIM) -D SVN_VERSION="\"revision $(shell svnversion -n)\""
+#CXXFLAGS	= $(DEBUG) -D SVN_VERSION="\"revision $(shell svnversion -n)\""
 
 # libraries to link with:
 ifeq ($(platform),Darwin)
@@ -85,7 +86,7 @@ OBJS:=	$(SRCS:.cpp=.o)
 
 TARGET = vp$(EXEEXT)
 
-DOCUMENTATION = README vp_help_manual.htm sampledata.txt sample.desc.txt
+DOCUMENTATION = README vp_help_manual.htm sampledata.txt 
 
 default: $(TARGET)
 
