@@ -129,6 +129,7 @@ class Plot_Window : public Fl_Gl_Window
     
     // Draw routines
     void draw();
+    void draw_background();
     void draw_grid();
     void draw_axes();
     void draw_selection_information();

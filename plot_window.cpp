@@ -36,6 +36,12 @@
 #include "control_panel_window.h"
 #include "brush.h"
 
+// experimental
+#define ALPHA_TEXTURE
+#ifdef ALPHA_TEXTURE
+static const float alpha_threshold = 0.25;
+#endif ALPHA_TEXTURE
+
 #define CHECK_GL_ERROR(msg)                    \
     {                                          \
         GLenum TMerrCode = glGetError();       \
@@ -155,8 +161,7 @@ void Plot_Window::initialize()
 
 //***************************************************************************
 // Plot_Window::change_axes() -- Change axes for a plot to new axes which are 
-// far enough away so they are (probably) not duplicates and (probably) don't 
-// skip any combinations.
+// (probably) not duplicates.
 void Plot_Window::change_axes( int nchange)
 {
   // int nchange = 0;
@@ -455,9 +460,9 @@ int Plot_Window::handle( int event)
           toggle_display_deselected( (Fl_Widget *) NULL);
           return 1;
 
-        // Extract data for these axes and redraw plot
+        // Reset view tranform for this plot
         case 'r':
-          extract_data_points();
+          reset_view();
           return 1;
 
         // hold down 'h' and middle mouse drag to scale histogram bin height.
@@ -523,6 +528,14 @@ void Plot_Window::redraw_one_plot ()
 // Plot_Window::reset_view() -- Reset pan, zoom, and angle.
 void Plot_Window::reset_view()
 {
+  // XXX this, and so much else, needs to be cleaned up, generalized to any & all axes.
+  // every possible c-style array should be replaced in viewpoints with a std::vector or
+  // a boost::array.
+  for (int i=0; i<3; i++) {
+    wmin[i] = amin[i];
+    wmax[i] = amax[i];
+  }
+  
   // Get third axis, if any
   int axis2 = (int)(cp->varindex3->mvalue()->user_data());
 
@@ -613,7 +626,7 @@ void Plot_Window::draw()
   glTranslatef (-xzoomcenter, -yzoomcenter, -zzoomcenter);
 
   if( cp->dont_clear->value() == 0) {
-    glClearColor( cp->Bkg->value(), cp->Bkg->value(), cp->Bkg->value(), 0.0);
+    glClearColor(0.0, 0.0, 0.0, 0.0);
     glClearDepth (0.0);
     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     draw_grid();
@@ -633,7 +646,33 @@ void Plot_Window::draw()
   draw_center_glyph();
   draw_axes();
   draw_histograms ();
+  draw_background ();
 }
+
+// If the background is anything besides black, draw it.  Last.
+// Why last?  Because we always blend against a black background initially so
+// that the overplotting comes out OK.  Other backgrounds would interfere.
+void Plot_Window::draw_background ()
+{
+  if( cp->dont_clear->value() == 0) {
+    float bk = cp->Bkg->value();
+    if (bk > 0.0) {
+      glPushMatrix();
+      glLoadIdentity();
+      glEnable( GL_DEPTH_TEST);
+      glDepthFunc( GL_GEQUAL);
+      glColor4f(bk,bk,bk,1.0);
+      glBegin(GL_QUADS);
+      glVertex3f(-2,-2,-2);
+      glVertex3f(+2,-2,-2);
+      glVertex3f(+2,+2,-2);
+      glVertex3f(-2,+2,-2);
+      glEnd();
+      glPopMatrix();
+    }
+  }
+}
+
 
 //***************************************************************************
 // Plot_Window::draw_grid() -- Draw a grid.
@@ -1015,8 +1054,19 @@ void Plot_Window::draw_data_points()
   // cout << "pw[" << index << "]: draw_data_points() " << endl;
   if ( !cp->show_points->value())return;
 
-  glBlendFunc(GL_SRC_ALPHA, GL_DST_ALPHA);
-//  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+#ifdef ALPHA_TEXTURE
+  glEnable(GL_ALPHA_TEST);
+  glAlphaFunc(GL_GREATER, alpha_threshold);
+#endif //ALPHA_TEXTURE
+
+  // glBlendFunc(GL_SRC_ALPHA, GL_DST_ALPHA); // old default, use with ALPHA_TEXTURE #undefined
+
+  // next is almost right for bending against light backgrounds with ALPHA_TEXTURE #defined
+  // and it is OK (but not as good as the above with ALPHA_TEXTURE #undefined) for black backgrounds.
+  // needs glAlphaFunc(GL_GREATER, 0.5);
+  // glBlendFuncSeparate(GL_SRC_COLOR, GL_DST_ALPHA, GL_SRC_ALPHA, GL_ONE);  
+
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE);	// very good when compositing on black bkg w/ALPHA_TEXTURE #defined
 
   int z_bufferring_enabled = 0;
   int current_sprite = 0;
@@ -1123,7 +1173,9 @@ void Plot_Window::draw_data_points()
   if (current_sprite > 0) {
     disable_sprites();
   }
-  // glDisable(GL_ALPHA_TEST);
+#ifdef ALPHA_TEXTURE
+  glDisable(GL_ALPHA_TEST);
+#endif // ALPHA_TEXTURE
 }
 
 //***************************************************************************
@@ -1976,7 +2028,7 @@ void Plot_Window::initialize_sprites()
   glGenTextures( NSYMBOLS, spriteTextureID);
   make_sprite_textures ();
   for (int i=0; i<NSYMBOLS; i++) {
-    #if 0
+#ifdef ALPHA_TEXTURE
     GLfloat rgb2rgba[16] = {
       1, 0, 0, 1/3.0,
       0, 1, 0, 1/3.0,
@@ -1986,10 +2038,12 @@ void Plot_Window::initialize_sprites()
     glMatrixMode(GL_COLOR);
     glLoadMatrixf(rgb2rgba);
     glMatrixMode(GL_MODELVIEW);
-    #endif // 0
+    glBindTexture( GL_TEXTURE_2D, spriteTextureID[i]);
+    gluBuild2DMipmaps( GL_TEXTURE_2D, GL_INTENSITY, spriteWidth, spriteHeight, GL_RGB, GL_UNSIGNED_BYTE, spriteData[i]);
+#else // ALPHA_TEXTURE
     glBindTexture( GL_TEXTURE_2D, spriteTextureID[i]);
     gluBuild2DMipmaps( GL_TEXTURE_2D, GL_LUMINANCE_ALPHA, spriteWidth, spriteHeight, GL_RGB, GL_UNSIGNED_BYTE, spriteData[i]);
-//  gluBuild2DMipmaps( GL_TEXTURE_2D, GL_INTENSITY, spriteWidth, spriteHeight, GL_RGB, GL_UNSIGNED_BYTE, spriteData[i]);
+#endif // ALPHA_TEXTURE
     CHECK_GL_ERROR( "initializing sprite texture mipmaps");
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
     glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);

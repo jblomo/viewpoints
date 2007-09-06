@@ -149,8 +149,6 @@ void Control_Panel_Window::maybe_redraw()
 {
   // kludge.  Avoid double redraw when setting "don't clear".
   if( dont_clear->value()) return;
-
-  //pw->redraw();
   pw->needs_redraw = 1;
 }
 
@@ -159,9 +157,7 @@ void Control_Panel_Window::maybe_redraw()
 // and redraw plot.  For one local control panel only.
 void Control_Panel_Window::extract_and_redraw ()
 {
-  if( pw->extract_data_points()) {
-    pw->needs_redraw = 1;
-  }
+  pw->extract_data_points();
 }
 
 //***************************************************************************
@@ -176,6 +172,7 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
 
   Fl_Button *b;
   Fl_Round_Button *rb;
+  Fl_Choice *c;
 
   // the following portion of the panel deals with axes and their properties
 
@@ -206,6 +203,7 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   varindex1->mode( nvars, FL_MENU_INACTIVE);  // disable "--nothing--" as a choice for axis1
   varindex1->clear_visible_focus();
   varindex1->callback( (Fl_Callback*)static_extract_and_redraw, this);
+  varindex1->tooltip("select variable for this plot's x-axis");
 
   // Y-axis variable selection menu
   varindex2 = new Fl_Choice (xpos+subwidth, ypos, subwidth-15, 25, "Y axis");
@@ -215,6 +213,7 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   varindex2->mode( nvars, FL_MENU_INACTIVE);  // disable "--nothing--" as a choice for axis2
   varindex2->clear_visible_focus();
   varindex2->callback( (Fl_Callback*)static_extract_and_redraw, this);
+  varindex2->tooltip("select variable for this plot's y-axis");
 
   // Z-axis variable selection menu
   varindex3 = new Fl_Choice (xpos+2*subwidth, ypos, subwidth-15, 25, "Z axis");
@@ -224,6 +223,7 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   varindex3->value(nvars);  // initially, axis3 == "-nothing-"
   varindex3->clear_visible_focus();
   varindex3->callback( (Fl_Callback*)static_extract_and_redraw, this);
+  varindex3->tooltip("select variable for this plot's z-axis");
 
   // one label for row of lock axis buttons
   b = new Fl_Button (xpos, ypos+=25, 65, 25, "locked");
@@ -236,18 +236,21 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   b->type(FL_TOGGLE_BUTTON); 
   b->selection_color(FL_BLUE);
   b->value(0);
+  b->tooltip("make this plot's x axis immune from 'change axis' events'");
 
   // Lock y-axis button
   lock_axis2_button = b = new Fl_Button(xpos+1*subwidth, ypos, 20, 20);
   b->type(FL_TOGGLE_BUTTON); 
   b->selection_color(FL_BLUE);
   b->value(0);
+  b->tooltip("make this plot's y axis immune from 'change axis' events'");
 
   // Lock z-axis button
   lock_axis3_button = b = new Fl_Button(xpos+2*subwidth, ypos, 20, 20);
   b->type(FL_TOGGLE_BUTTON); 
   b->selection_color(FL_BLUE);
   b->value(0);
+  b->tooltip("make this plot's z axis immune from 'change axis' events'");
 
   // label for row of normalization menus
   b = new Fl_Button (xpos, ypos+=35, 45, 25, "scale");
@@ -256,28 +259,32 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   b->box(FL_NO_BOX);
 
   // X-axis normalization and scaling menu
-  x_normalization_style = new Fl_Choice( xpos, ypos, subwidth-15, 25);
-  x_normalization_style->textsize( 12);
-  x_normalization_style->menu( normalization_style_menu_items);
-  x_normalization_style->value( NORMALIZATION_MINMAX);
-  x_normalization_style->clear_visible_focus();
-  x_normalization_style->callback( (Fl_Callback*)static_extract_and_redraw, this);
- 
+  x_normalization_style = c = new Fl_Choice( xpos, ypos, subwidth-15, 25);
+  c->textsize( 12);
+  c->menu( normalization_style_menu_items);
+  c->value( NORMALIZATION_MINMAX);
+  c->clear_visible_focus();
+  c->callback( (Fl_Callback*)static_extract_and_redraw, this);
+  c->tooltip("choose normalization and/or scaling for x-axis");
+
+
   // Y-axis normalization and scaling menu
-  y_normalization_style = new Fl_Choice( xpos+subwidth, ypos, subwidth-15, 25);
-  y_normalization_style->textsize(12);
-  y_normalization_style->menu(normalization_style_menu_items);
-  y_normalization_style->value(NORMALIZATION_MINMAX); 
-  y_normalization_style->clear_visible_focus();
-  y_normalization_style->callback( (Fl_Callback*)static_extract_and_redraw, this);
+  y_normalization_style = c = new Fl_Choice( xpos+subwidth, ypos, subwidth-15, 25);
+  c->textsize(12);
+  c->menu(normalization_style_menu_items);
+  c->value(NORMALIZATION_MINMAX); 
+  c->clear_visible_focus();
+  c->callback( (Fl_Callback*)static_extract_and_redraw, this);
+  c->tooltip("choose normalization and/or scaling for y-axis");
  
   // Z-axis normalization and scaling menu
-  z_normalization_style = new Fl_Choice( xpos+2*subwidth, ypos, subwidth-15, 25);
-  z_normalization_style->textsize(12);
-  z_normalization_style->menu(normalization_style_menu_items);
-  z_normalization_style->value(NORMALIZATION_MINMAX); 
-  z_normalization_style->clear_visible_focus();
-  z_normalization_style->callback( (Fl_Callback*)static_extract_and_redraw, this);
+  z_normalization_style = c = new Fl_Choice( xpos+2*subwidth, ypos, subwidth-15, 25);
+  c->textsize(12);
+  c->menu(normalization_style_menu_items);
+  c->value(NORMALIZATION_MINMAX); 
+  c->clear_visible_focus();
+  c->callback( (Fl_Callback*)static_extract_and_redraw, this);
+  c->tooltip("choose normalization and/or scaling for z-axis");
  
   // histogram controls
   ypos += 35;    
@@ -307,6 +314,8 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
     show_histogram[i]->selection_color(FL_BLUE);  
     show_histogram[i]->clear_visible_focus();
   }
+  show_histogram[0]->tooltip("histogram options for x-axis");
+  show_histogram[1]->tooltip("histogram options for y-axis");
   // no Z-axis histograms (yet)
   show_histogram[2]->deactivate();
 
@@ -325,7 +334,9 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
     // nbins_slider[i]->precision(0);
     nbins_slider[i]->value(log2((double)Plot_Window::nbins_default));
     nbins_slider[i]->set_changed();
-  }    
+  }
+  nbins_slider[0]->tooltip("set base 2 log of number of bins for x-axis hostograms");
+  nbins_slider[1]->tooltip("set base 2 log of number of bins for y-axis hostograms");
   // no Z-axis histograms (yet)
   nbins_slider[2]->deactivate();
     
@@ -344,6 +355,8 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
     hscale_slider[i]->value(1.0);
     hscale_slider[i]->set_changed();
   }    
+  hscale_slider[0]->tooltip("scale bin height for x-axis histograms");
+  hscale_slider[1]->tooltip("scale bin height for y-axis histograms");
   // no Z-axis histograms (yet)
   hscale_slider[2]->deactivate();
     
@@ -356,6 +369,7 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   Bkg->bounds(0.0,1.0);
   Bkg->callback((Fl_Callback*)replot, this);
   Bkg->value(0.0);
+  Bkg->tooltip("change background brightness");
 
   // Luminance for this plot
   lum = new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, cpw->w()-60, 20, "lum");
@@ -364,6 +378,7 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   lum->bounds(0.0,2.0);
   lum->callback((Fl_Callback*)replot, this);
   lum->value(1.0);
+  lum->tooltip("adjust luminance for all points");
 
   // overall pointsize scale for this plot
   size = new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, cpw->w()-115, 20, "psize");
@@ -372,12 +387,14 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   size->bounds(-4.0,4.0);
   size->callback((Fl_Callback*)replot, this);
   size->value(0.0);
+  size->tooltip("adjust size of all points in this plot");
 
   scale_points = new Fl_Button(xpos+size->w()+5, ypos, 20, 20, "scale");
   scale_points->align(FL_ALIGN_RIGHT);
   scale_points->type(FL_TOGGLE_BUTTON);
   scale_points->selection_color(FL_BLUE);
   scale_points->callback((Fl_Callback*)replot, this);
+  scale_points->tooltip("scale all points when zooming");
 
   // Rotation (and spin) slider
   rot_slider = new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, cpw->w()-115, 20, "rot");
@@ -386,10 +403,12 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   rot_slider->value(0.0);
   rot_slider->step(0.001);
   rot_slider->bounds(-180.0, 180.0);
+  rot_slider->tooltip("rotate plot around screen y");
 
   spin = b = new Fl_Button(xpos+rot_slider->w()+5, ypos, 20, 20, "spin");
   b->align(FL_ALIGN_RIGHT); b->selection_color(FL_BLUE);
   b->type(FL_TOGGLE_BUTTON);
+  b->tooltip("toggle continuous rotation around screen y");
 
   // Next portion of the panel is miscellanious stuff, per plot
   // needs to be more organized.
@@ -402,7 +421,8 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   // Button (1,1) Reset view in this plot
   reset_view_button = b = new Fl_Button(xpos2, ypos+=25, 20, 20, "reset view ");
   b->align(FL_ALIGN_RIGHT); b->selection_color(FL_BLUE);
-  b->callback((Fl_Callback*) static_extract_and_redraw, this);
+  b->callback((Fl_Callback*) reset_view, this);
+  b->tooltip("reset translations and scalings for this plot");
 
   // Button (1,2): z-buffering control
   z_bufferring_button = b = new Fl_Button(xpos2, ypos+=25, 20, 20, "z-bufferring");
@@ -410,6 +430,7 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   b->align(FL_ALIGN_RIGHT); 
   b->type(FL_TOGGLE_BUTTON); 
   b->selection_color(FL_BLUE); 
+  b->tooltip("toggle z-buffering for this plot");
 
   // Button (1,3): Don't clear button - psychedelic fun!
   dont_clear = new Fl_Button(xpos2, ypos+=25, 20, 20, "don't clear");
@@ -417,6 +438,7 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   dont_clear->type(FL_TOGGLE_BUTTON);
   dont_clear->selection_color(FL_BLUE);
   dont_clear->callback((Fl_Callback*)static_maybe_redraw, this);
+  dont_clear->tooltip("psychedelic fun");
 
   ypos=ypos2;
   xpos=xpos2+105;
@@ -428,6 +450,7 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   b->type(FL_TOGGLE_BUTTON); 
   b->selection_color(FL_BLUE);  
   b->value(1);
+  b->tooltip("toggle visibility of all points");
 
   // Button (2,2): Show deselected points
   show_deselected_points = b = new Fl_Button(xpos, ypos+=25, 20, 20, " unselected");
@@ -436,6 +459,7 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   b->type(FL_TOGGLE_BUTTON); 
   b->selection_color(FL_BLUE);  
   b->value(1);
+  b->tooltip("toggle visibility of brush[0] (nonseleted) points");
 
   // Button (3,2): Show axes
   show_axes = b = new Fl_Button(xpos, ypos+=25, 20, 20, "axes");
@@ -444,6 +468,7 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   b->type(FL_TOGGLE_BUTTON); 
   b->selection_color(FL_BLUE);  
   b->value(1);
+  b->tooltip("toggle visibility of axis lines");
 
   // Button (4,2): Show axis labels
   show_labels = b = new Fl_Button(xpos, ypos+=25, 20, 20, "labels");
@@ -452,6 +477,7 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   b->type(FL_TOGGLE_BUTTON); 
   b->selection_color(FL_BLUE);  
   b->value(1);
+  b->tooltip("toggle visibility of axis labels");
 
   // Button (4,2): Show axis tickmarks
   show_scale = b = new Fl_Button(xpos, ypos+=25, 20, 20, "ticks");
@@ -460,6 +486,7 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   b->type(FL_TOGGLE_BUTTON); 
   b->selection_color(FL_BLUE);  
   b->value(1);
+  b->tooltip("toggle visibility of axis tickmarks");
 
   // Button (5,2): Show grid (needs work)
   show_grid = b = new Fl_Button(xpos, ypos+=25, 20, 20, "grid");
@@ -468,7 +495,8 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   b->type(FL_TOGGLE_BUTTON); 
   b->selection_color(FL_BLUE);
   b->value(0);
-  
+  b->tooltip("toggle visibility of simple grid");
+
   ypos=ypos2;
   xpos=xpos2+210;
 
@@ -483,6 +511,7 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   rb->align(FL_ALIGN_RIGHT); 
   rb->type(FL_RADIO_BUTTON); 
   rb->selection_color(FL_BLUE);
+  rb->tooltip("plot x and y values without modification");
 
   // Button (5,1): Sum vs difference transform
   sum_vs_difference = rb = new Fl_Round_Button(xpos, ypos+=25, 20, 20, "sum vs. diff.");
@@ -490,6 +519,7 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   rb->align(FL_ALIGN_RIGHT); 
   rb->type(FL_RADIO_BUTTON); 
   rb->selection_color(FL_BLUE);
+  rb->tooltip("plot (x+y) vs. (x-y)");
   
   // Button (6,1): cummulative conditional probability or rank of y given x
   cond_prop = rb = new Fl_Round_Button(xpos, ypos+=25, 20, 20, "rank(y|x)");
@@ -497,6 +527,7 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   rb->align(FL_ALIGN_RIGHT); 
   rb->type(FL_RADIO_BUTTON); 
   rb->selection_color(FL_BLUE);
+  rb->tooltip("plot (x) vs. (rank of y given x). i.e. conditional rank");
   
   // Button (7,1): fluctuation of y given x
   fluctuation = rb = new Fl_Round_Button(xpos, ypos+=25, 20, 20, "fluct(y|x)");
@@ -504,6 +535,7 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   rb->align(FL_ALIGN_RIGHT); 
   rb->type(FL_RADIO_BUTTON); 
   rb->selection_color(FL_BLUE);
+  rb->tooltip("plot (x) vs. (deviation of y given x). i.e. conditional deviation");
   
   transform_style->end();
   no_transform->setonly();

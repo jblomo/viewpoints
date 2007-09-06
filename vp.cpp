@@ -62,6 +62,7 @@
 
 // Include the necessary include libraries
 #include "include_libraries_vp.h"
+#include <FL/Fl_Tooltip.H>
 
 // Include globals, and turn on initializers (using #define EXTERN)
 // initialize globals
@@ -284,6 +285,9 @@ void create_main_control_panel(int main_x, int main_y, int main_w, int main_h, c
   // Create main control panel window
   Fl_Group::current(0);
   Fl::scheme( "plastic");  // optional
+  Fl_Tooltip::delay(1.0);
+  Fl_Tooltip::hoverdelay(1.0);
+  Fl_Tooltip::size(12);
   main_control_panel = new Fl_Window( main_x, main_y, main_w, main_h, cWindowLabel);
   main_control_panel->resizable( main_control_panel);
   // Add callback function to intercept 'Close' operations
@@ -820,15 +824,7 @@ void make_global_widgets()
   b->type( FL_TOGGLE_BUTTON);
   b->value( 1);
   b->callback( (Fl_Callback*) Plot_Window::toggle_display_deselected);
-
-#if 0
-  // Button(2,1): Add to the selection
-  add_to_selection_button = b = new Fl_Button( xpos, ypos+=25, 20, 20, "add to selection");
-  b->align( FL_ALIGN_RIGHT); 
-  b->selection_color( FL_BLUE); 
-  b->type( FL_TOGGLE_BUTTON);
-  b->value( 0);  
-#endif // 0
+  b->tooltip("toggle visibility of nonselected points in all plots");
 
   // Button(3,1): Invert selected and nonselected data
   invert_selection_button = b = 
@@ -836,19 +832,21 @@ void make_global_widgets()
   b->align( FL_ALIGN_RIGHT); 
   b->selection_color( FL_BLUE); 
   b->callback( (Fl_Callback*) Plot_Window::invert_selection);
+  b->tooltip("invert selection status of all points");
 
   // Button(4,1): Clear all selections
   clear_selection_button = b = new Fl_Button(xpos, ypos+=25, 20, 20, "clear selections");
   b->align( FL_ALIGN_RIGHT); 
   b->selection_color( FL_BLUE); 
   b->callback( Plot_Window::clear_selections);
+  b->tooltip("clear all selections");
 
   // Button(5,1): Delete selected data
-  delete_selection_button = b = 
-    new Fl_Button( xpos, ypos+=25, 20, 20, "kill selected");
+  delete_selection_button = b = new Fl_Button( xpos, ypos+=25, 20, 20, "kill selected");
   b->align( FL_ALIGN_RIGHT); 
   b->selection_color( FL_BLUE); 
   b->callback( Plot_Window::delete_selection);
+  b->tooltip("remove selected points completely (does not change data on disk)");
 
   // Advance to column 2
   xpos = xpos1 + 150; ypos = ypos1;
@@ -858,15 +856,15 @@ void make_global_widgets()
   change_all_axes_button->align( FL_ALIGN_RIGHT); 
   change_all_axes_button->selection_color( FL_BLUE); 
   change_all_axes_button->callback( (Fl_Callback*)change_all_axes);
+  change_all_axes_button->tooltip("automatically choose new axes for all plots");
 
   // Button(4,2): Link all axes
-  link_all_axes_button = b = 
-    new Fl_Button( xpos, ypos+=25, 20, 20, "link axes");
+  link_all_axes_button = b = new Fl_Button( xpos, ypos+=25, 20, 20, "link axes");
   b->align( FL_ALIGN_RIGHT); 
   b->selection_color( FL_BLUE); 
   b->type( FL_TOGGLE_BUTTON); 
   b->value( 0);
-
+  b->tooltip("toggle linked viewing transormations");
 }
 
 //***************************************************************************

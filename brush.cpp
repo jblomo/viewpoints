@@ -154,6 +154,7 @@ void Brush::make_widgets(Brush *bw)
   pointsize->step(0.25);
   pointsize->bounds(1.0,50.0);
   pointsize->callback((Fl_Callback*)static_brush_changed, this);
+  pointsize->tooltip("change symbol size for this brush");
 
   // symbol types menu for this brush
   symbol_menu = new Fl_Choice(xpos+pointsize->w()+35, ypos, 45, 20);
@@ -167,6 +168,7 @@ void Brush::make_widgets(Brush *bw)
   symbol_menu->label("sym");
   symbol_menu->value(0);
   symbol_menu->callback( (Fl_Callback*)static_brush_changed, this);
+  symbol_menu->tooltip("select symbol for this brush");
 
   // Alpha slider
   alpha = new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, bw->w()-60, 20, "alpha");
@@ -175,17 +177,8 @@ void Brush::make_widgets(Brush *bw)
   alpha->step(0.0001);
   alpha->bounds(0.0,1.0);
   alpha->value(1.0);
+  alpha->tooltip("change opacity of this brush");
 
-  // Alpha0 slider
-  alpha0 = new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, bw->w()-60, 20, "alpha0");
-  alpha0->align(FL_ALIGN_LEFT);
-  alpha0->callback((Fl_Callback*)static_brush_changed, this);
-  alpha0->step(0.0001);
-  alpha0->bounds(0.0,5.0);
-  alpha0->value(5.0);  // !!!
-  // we don't need this control, for now.
-  alpha0->hide(); ypos-=alpha0->h();
-  
   // Initial luminosity slider
   lum1 = new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, bw->w()-60, 20, "lum1");
   lum1->align(FL_ALIGN_LEFT);
@@ -193,6 +186,7 @@ void Brush::make_widgets(Brush *bw)
   lum1->step(0.0001);
   lum1->bounds(0.0,1.0);
   lum1->value(0.2);  // !!!
+  lum1->tooltip("change initial luminosity for this brush");
 
   // Luminosity accumulation factor slider
   lum2 = new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, bw->w()-60, 20, "lum2");
@@ -201,6 +195,7 @@ void Brush::make_widgets(Brush *bw)
   lum2->step(0.0001);
   lum2->bounds(0.0,2.0); 
   lum2->value(1.0);
+  lum2->tooltip("change accumulated luminosity when overplotting this brush");
 
   color_chooser = new Vp_Color_Chooser(xpos-25, ypos+=25, 150, 75, ""); // XXX do not remove the "".
   color_chooser->callback((Fl_Callback*)static_change_color, this);
@@ -213,17 +208,20 @@ void Brush::make_widgets(Brush *bw)
   add_to_selection->selection_color( FL_BLUE); 
   add_to_selection->type( FL_TOGGLE_BUTTON);
   add_to_selection->value( index?0:1);  // all brushes default this to off, except brush 0.
+  add_to_selection->tooltip("toggle clear selection on mouse down");
 
   clear_now_button = new Fl_Button( xpos, ypos+=25, 20, 20, "clear selection");
   clear_now_button->align( FL_ALIGN_RIGHT); 
   clear_now_button->selection_color( FL_BLUE); 
   clear_now_button->callback((Fl_Callback*)static_clear_now, this);
-  clear_now_button->value( 0);  
+  clear_now_button->value( 0);
+  clear_now_button->tooltip("de-select all points currently selected by this brush");
 
   reset_button = new Fl_Button( xpos, ypos+=25, 20, 20, "reset brush");
   reset_button->align( FL_ALIGN_RIGHT); 
   reset_button->selection_color( FL_BLUE); 
   reset_button->callback((Fl_Callback*)static_reset, this);
-  reset_button->value( 0);  
+  reset_button->value( 0);
+  reset_button->tooltip("restore default parameters for this brush");
 }
 

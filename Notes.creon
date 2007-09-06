@@ -1316,3 +1316,28 @@ A:If you want to, you can of course use realloc(). However, realloc() is only gu
 
 In C++, a better way of dealing with reallocation is to use a standard library container, such as vector, and let it grow naturally. 
 
+13:13:45 30 Aug 07
+
+Add "do not draw" to (upcoming) "drawing & blending" brush menu:  
+  intensity blending
+  saturation blending (?)
+  overwrite (no blending)
+  low intensity
+  draw first
+  draw last
+  do not draw 
+
+This sould help implement "solo" feature
+
+Add "copy plot parameters" and "paste plot parameters" to allow easy setup of "duplicate" plots.
+
+15:20:00 05 Sep 07
+
+idea: get rid of all c-style IO and then:
+
+   std::ios::sync_with_stdio(false);
+
+should speed things up?
+
+idea: use boost::multi_index to hold conditioning varaible window for quick updates.
+
