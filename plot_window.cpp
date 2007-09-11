@@ -434,7 +434,7 @@ int Plot_Window::handle( int event)
 
 				// exit
         case 'q':  
-          if( make_confirmation_window( "Quit?  Are you sure?") > 0)
+          if( expert_mode || make_confirmation_window( "Quit?  Are you sure?") > 0)
             exit( 0);
           else
             return 1;
@@ -531,10 +531,10 @@ void Plot_Window::reset_view()
   // XXX this, and so much else, needs to be cleaned up, generalized to any & all axes.
   // every possible c-style array should be replaced in viewpoints with a std::vector or
   // a boost::array.
-  for (int i=0; i<3; i++) {
-    wmin[i] = amin[i];
-    wmax[i] = amax[i];
-  }
+   for (int i=0; i<3; i++) {
+     wmin[i] = amin[i];
+     wmax[i] = amax[i];
+   }
   
   // Get third axis, if any
   int axis2 = (int)(cp->varindex3->mvalue()->user_data());
@@ -1421,11 +1421,11 @@ void Plot_Window::density_1D (blitz::Array<float,1> a, const int axis)
 // sum-vs-difference or polar coordinates.
 int Plot_Window::transform_2d()
 {
-  if( cp->no_transform->value()) return 1;  // no transform
-  
   blitz::Range NPTS(0,npoints-1);
 
-  if( cp->sum_vs_difference->value()) {
+  if( cp->no_transform->value()) return 1;
+
+  else if( cp->sum_vs_difference->value()) {
     blitz::Array <float,1> tmp1(npoints), tmp2(npoints);
     tmp1 = vertices(NPTS,0);
     tmp2 = vertices(NPTS,1);
@@ -1478,27 +1478,27 @@ int Plot_Window::normalize(
   
   switch( style) {
   case Control_Panel_Window::NORMALIZATION_NONE:
-    wmin[axis_index] = -1;
-    wmax[axis_index] = +1;
+    amin[axis_index] = -1;
+    amax[axis_index] = +1;
     return 1;
 
   case Control_Panel_Window::NORMALIZATION_MINMAX:
-    wmin[axis_index] = tmin;
-    wmax[axis_index] = tmax;
+    amin[axis_index] = tmin;
+    amax[axis_index] = tmax;
     return 1;
 
   // All positive data fits in window, zero at "left" of axis.
   case Control_Panel_Window::NORMALIZATION_ZEROMAX: 
-    wmin[axis_index] = 0.0;
-    wmax[axis_index] = tmax;
+    amin[axis_index] = 0.0;
+    amax[axis_index] = tmax;
     return 1;
 
   // All data fits in window w/zero at center of axis
   case Control_Panel_Window::NORMALIZATION_MAXABS:  
     tmax = fmaxf(fabsf(tmin),fabsf(tmax));
     if( tmax != 0.0) {
-      wmin[axis_index] = -tmax;
-      wmax[axis_index] = tmax;
+      amin[axis_index] = -tmax;
+      amax[axis_index] = tmax;
     }
     return 1;
 
@@ -1506,8 +1506,8 @@ int Plot_Window::normalize(
   case Control_Panel_Window::NORMALIZATION_TRIM_1E2:
   {
     float trim = 1e-2;
-    wmin[axis_index] = a( a_rank((int) ((0.0 + (0.5*trim))*npoints)));
-    wmax[axis_index] = a( a_rank((int) ((1.0 - (0.5*trim))*npoints)));
+    amin[axis_index] = a( a_rank((int) ((0.0 + (0.5*trim))*npoints)));
+    amax[axis_index] = a( a_rank((int) ((1.0 - (0.5*trim))*npoints)));
     return 1;
   }
 
@@ -1515,8 +1515,8 @@ int Plot_Window::normalize(
   case Control_Panel_Window::NORMALIZATION_TRIM_1E3:
   {
     float trim = 1e-3;
-    wmin[axis_index] = a( a_rank((int) ((0.0 + (0.5*trim))*npoints)));
-    wmax[axis_index] = a( a_rank((int)((1.0 - (0.5*trim))*npoints)));
+    amin[axis_index] = a( a_rank((int) ((0.0 + (0.5*trim))*npoints)));
+    amax[axis_index] = a( a_rank((int)((1.0 - (0.5*trim))*npoints)));
     return 1;
   }
 
@@ -1526,8 +1526,8 @@ int Plot_Window::normalize(
     sigma = sqrt((1.0/(float)npoints)*sum(pow2(a(NPTS)-mu)));
     DEBUG (cout << "mu, sigma = " << mu << ", " << sigma << endl);
     if( finite(mu) && (sigma!=0.0)) {
-      wmin[axis_index] = mu - 3*sigma;
-      wmax[axis_index] = mu + 3*sigma;
+      amin[axis_index] = mu - 3*sigma;
+      amax[axis_index] = mu + 3*sigma;
     }
     return 1;
 
@@ -1541,15 +1541,15 @@ int Plot_Window::normalize(
     }
     // find smallest positive element
     a(NPTS) = where( a(NPTS) > 0, log10(a(NPTS)), 0);
-    wmin[axis_index] = min(a(NPTS));
-    wmax[axis_index] = a(a_rank(npoints-1));
+    amin[axis_index] = min(a(NPTS));
+    amax[axis_index] = a(a_rank(npoints-1));
     return 1;
 
   // Simple sigmoid, (-inf,0,+inf) -> (-1,0,+1)
   case Control_Panel_Window::NORMALIZATION_SQUASH: 
     a(NPTS) = a(NPTS)/(1+abs(a(NPTS)));
-    wmin[axis_index] = a(a_rank(0));
-    wmax[axis_index] = a(a_rank(npoints-1));
+    amin[axis_index] = a(a_rank(0));
+    amax[axis_index] = a(a_rank(npoints-1));
     return 1;
 
   // Replace each value with its rank, equal values get sequential rank
@@ -1558,8 +1558,8 @@ int Plot_Window::normalize(
     for( int i=0; i<npoints; i++) {
       a( a_rank(i)) = (float)(i+1);
     }
-    wmin[axis_index] = 1.0;
-    wmax[axis_index] = (float)(npoints);
+    amin[axis_index] = 1.0;
+    amax[axis_index] = (float)(npoints);
     return 1;
       
   // Replace each value with its rank, equal values get equal rank
@@ -1577,8 +1577,8 @@ int Plot_Window::normalize(
       }
       a(a_rank(i)) = partial_rank;
     }
-    wmin[axis_index] = 1.0;
-    wmax[axis_index] = partial_rank;
+    amin[axis_index] = 1.0;
+    amax[axis_index] = partial_rank;
     return 1;
   }
       
@@ -1590,8 +1590,8 @@ int Plot_Window::normalize(
         (float)gsl_cdf_ugaussian_Pinv((double)(float(i+1) / 
                                                (float)(npoints+2)));
     }
-    wmin[axis_index] = -1.0;
-    wmax[axis_index] = +1.0;
+    amin[axis_index] = -1.0;
+    amax[axis_index] = +1.0;
     return 1;
 
   // Default: do nothing
@@ -1725,8 +1725,6 @@ int Plot_Window::extract_data_points ()
   // and report results
   cout << " post-normalization: " << endl;
   (void) normalize( xpoints, x_rank, cp->x_normalization_style->value(), 0);
-  amin[0] = xpoints(x_rank(0));
-  amax[0] = xpoints(x_rank(npoints-1));
   cout << "  min: " << xlabel 
        << "(" << x_rank(0) << ") = " 
        << xpoints(x_rank(0));
@@ -1736,8 +1734,6 @@ int Plot_Window::extract_data_points ()
     
   // Normalize and scale the y-axis
   (void) normalize( ypoints, y_rank, cp->y_normalization_style->value(), 1);
-  amin[1] = ypoints(y_rank(0));
-  amax[1] = ypoints(y_rank(npoints-1));
   cout << "  min: " << ylabel 
        << "(" << y_rank(0) << ") = " 
        << ypoints(y_rank(0));
@@ -1748,8 +1744,6 @@ int Plot_Window::extract_data_points ()
   // Normalize and scale the z-axis, if any
   if( axis2 != nvars) {
     (void) normalize( zpoints, z_rank, cp->z_normalization_style->value(), 2);
-    amin[2] = zpoints(z_rank(0));
-    amax[2] = zpoints(z_rank(npoints-1));
     cout << "  min: " << zlabel 
          << "(" << z_rank(0) << ") = " 
          << zpoints(z_rank(0));

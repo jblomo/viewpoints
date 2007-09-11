@@ -199,6 +199,8 @@ void usage()
        << "input has NVARS values per point (only for row major binary data)" << endl;
   cerr << "  -h, --help                  "
        << "display this message and then exit" << endl;
+  cerr << "  -x, --expert                "
+       << "enable expert mode (bypass confirmations, read from stdin, etc.)" << endl;
   cerr << "  -V, --version               "
        << "output version information and then exit" << endl;
 
@@ -322,7 +324,7 @@ void create_main_control_panel(int main_x, int main_y, int main_w, int main_h, c
 // done on USER_DATA!
 void cb_main_control_panel( Fl_Widget *o, void* user_data)
 {
-  if( make_confirmation_window( "Quit?  Are you sure?") > 0) {
+  if( expert_mode || make_confirmation_window( "Quit?  Are you sure?") > 0) {
     ((Fl_Window*) user_data)->hide();
     exit( 0);
   }
@@ -1217,6 +1219,7 @@ int main( int argc, char **argv)
     { "borderless", no_argument, 0, 'b'},
     { "no_vbo", no_argument, 0, 'B'},
     { "help", no_argument, 0, 'h'},
+    { "expert", no_argument, 0, 'x'},
     { "version", no_argument, 0, 'V'},
 		// Apple OS X "provides" this next argument when any program invoked by clicking on its icon
     { "psn_", required_argument, 0, 'p'}, 
@@ -1235,7 +1238,7 @@ int main( int argc, char **argv)
   while( 
     ( c = getopt_long_only( 
         argc, argv, 
-        "f:n:v:s:o:r:c:m:i:M:d:bBhVp", long_options, NULL)) != -1) {
+        "f:n:v:s:o:r:c:m:i:M:d:bBhxVp", long_options, NULL)) != -1) {
   
     // Examine command-line options and extract any optional arguments
     switch( c) {
@@ -1358,6 +1361,11 @@ int main( int argc, char **argv)
       // don't use openGL vertex buffer objects (VBOs)
       case 'B':
         use_VBOs = false;
+        break;
+
+      // turn on expert mode
+      case 'x':
+        expert_mode = true;
         break;
 
      // show version information (managed by svn), and exit

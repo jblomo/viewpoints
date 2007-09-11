@@ -71,6 +71,8 @@ EXTERN int nvars INIT(MAXVARS);    // number of columns in data file
 // use openGL vertex buffer objects (VBOs).  
 EXTERN bool use_VBOs INIT(true);
 
+EXTERN bool expert_mode INIT(false);
+
 // Define blitz::Arrays to hold raw and ranked (sorted) data arrays.  Used 
 // extensively in many classes, so for reasons of simplicity and clarity, 
 // these are left global
