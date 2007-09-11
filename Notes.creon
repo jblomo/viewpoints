@@ -1161,11 +1161,35 @@ libgsl*.dylib, libblitz*.dylib, or libboost*.dylib and if it does,
 delete all dynamic versions of those libraries, and run all the make
 commands and the otool command again.
 
-To perform the check on linux, run the following commands:
+To perform the check on linux, run the following command:
 
-  ....
+  ldd vp
 
---------
+the output should look something like the following:
+
+	Libgl.So.1 => /Usr/Lib/Libgl.So.1 (0x00d43000)
+	Libglu.So.1 => /Usr/X11r6/Lib/Libglu.So.1 (0x00c21000)
+	Libxft.So.2 => /Usr/X11r6/Lib/Libxft.So.2 (0x0060f000)
+	Libxext.So.6 => /Usr/X11r6/Lib/Libxext.So.6 (0x00ab8000)
+	Libstdc++.So.6 => /Usr/Lib/Libstdc++.So.6 (0x0076d000)
+	Libm.So.6 => /Lib/Tls/I686/Libm.So.6 (0x00a20000)
+	Libgcc_S.So.1 => /Lib/Libgcc_S.So.1 (0x00605000)
+	Libc.So.6 => /Lib/Tls/I686/Libc.So.6 (0x0090b000)
+	Libx11.So.6 => /Usr/X11r6/Lib/Libx11.So.6 (0x0023c000)
+	Libglcore.So.1 => /Usr/Lib/Libglcore.So.1 (0x04987000)
+	Libnvidia-Tls.So.1 => /Usr/Lib/Tls/Libnvidia-Tls.So.1 (0x00a4b000)
+	Libdl.So.2 => /Lib/Libdl.So.2 (0x00a45000)
+	Libxrender.So.1 => /Usr/X11r6/Lib/Libxrender.So.1 (0x00b0b000)
+	Libfontconfig.So.1 => /Usr/Lib/Libfontconfig.So.1 (0x005b0000)
+	Libexpat.So.0 => /Usr/Lib/Libexpat.So.0 (0x00cee000)
+	Libfreetype.So.6 => /Usr/Lib/Libfreetype.So.6 (0x00111000)
+	/Lib/Ld-Linux.So.2 (0x008f4000)
+	Libz.So.1 => /Usr/Lib/Libz.So.1 (0x00b3c000)
+
+It must NOT contain any reference to dynamically loaded
+blitz, gsl, boost, fltk, or flews libraries.
+
+
 18:09:06 31 Jul 07
 
 Idea: Just addd lines rendering.  end each line when brush ends.
