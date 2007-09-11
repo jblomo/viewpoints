@@ -120,9 +120,8 @@ class Control_Panel_Window : public Fl_Group
     // Pointers to buttons
     Fl_Button *reset_view_button;
     Fl_Button *scale_points;
-    Fl_Button *spin, *dont_clear, *show_points, 
-              *show_deselected_points, 
-        *show_axes, *show_grid, *show_labels;
+    Fl_Button *spin, *dont_clear, *show_points, *show_deselected_points;
+    Fl_Button *show_axes, *show_grid, *show_labels;
 
     Fl_Menu_Button *show_histogram[3];
     enum histogram_styles {

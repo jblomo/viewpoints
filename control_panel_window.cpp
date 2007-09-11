@@ -99,36 +99,51 @@ void Control_Panel_Window::broadcast_change (Fl_Widget *master_widget)
     // Verify that master that and slave widgets are of the same type
     assert( typeid(master_widget) == typeid(slave_widget));
 
-    // MCL XXX downcasting to dispatch on type is considered very bad form.  
+    // MCL XXX downcasting to dispatch on type and/or existance of a method is
+    // considered very bad form.  
     // If value() were a virtual function of Fl_Widget (like callback() and 
-    // do_callback() are) it would be cleaner.  Or we could bite the bullet and 
-    // use one of the fltk publish/subscribe extensions.  That could clean up 
+    // do_callback() are) it would be cleaner.  Or we could  use one of the
+    // publish/subscribe extensions (from fltk or boost).  That could clean up 
     // all sort of things.....  Or we could take a stab at refactoring the
     // repetitive parts of the following code using templates.
     
     // If the master widget is a button then set the slave's value using
     // the master's value.
     {
-      Fl_Button *gp, *lp;
-      if( (gp = dynamic_cast <Fl_Button*> (master_widget)) && 
-          (lp = dynamic_cast <Fl_Button*> (slave_widget)))
-        lp->value(gp->value());
+      Fl_Button *mp, *sp;
+      if( (mp = dynamic_cast <Fl_Button*> (master_widget)) && (sp = dynamic_cast <Fl_Button*> (slave_widget)))
+      {
+        sp->value(mp->value());
+      }
     }
 
     // See previous comment
     {
-      Fl_Valuator *gp, *lp;
-      if( (gp = dynamic_cast <Fl_Valuator*> (master_widget)) && 
-          (lp = dynamic_cast <Fl_Valuator*> (slave_widget)))
-        lp->value(gp->value());
+      Fl_Valuator *mp, *sp;
+      if( (mp = dynamic_cast <Fl_Valuator*> (master_widget)) && (sp = dynamic_cast <Fl_Valuator*> (slave_widget)))
+      {
+        sp->value(mp->value());
+      }
     }
 
     // See previous comment
     {
-      Fl_Choice *gp, *lp;
-      if( (gp = dynamic_cast <Fl_Choice*> (master_widget)) && 
-          (lp = dynamic_cast <Fl_Choice*> (slave_widget)))
-        lp->value(gp->value());
+      Fl_Choice *mp, *sp;
+      if( (mp = dynamic_cast <Fl_Choice*> (master_widget)) && (sp = dynamic_cast <Fl_Choice*> (slave_widget)))
+      {
+        sp->copy(mp->menu());  // necessary when there is per menu item state info (for FL_MENU_TOGGLE, etc)
+        sp->value(mp->value());
+      }
+    }
+
+    // See previous comment
+    {
+      Fl_Menu_Button *mp, *sp;
+      if( (mp = dynamic_cast <Fl_Menu_Button*> (master_widget)) && (sp = dynamic_cast <Fl_Menu_Button*> (slave_widget)))
+      {
+        sp->copy(mp->menu());  // necessary when there is per menu item state info (for FL_MENU_TOGGLE, etc)
+        sp->value(mp->value());
+      }
     }
 
     // If the slave widget has a callback function defined, call the
