@@ -984,8 +984,12 @@ void Plot_Window::handle_selection ()
   // then "paint" them with the appropriate integer (index of current brush) 
   Brush *bp = dynamic_cast <Brush*> (brushes_tab->value());
   assert (bp);
-  int value = bp->index; 
-  selected( NPTS) = where( newly_selected( NPTS), value, previously_selected( NPTS));
+  int brush_index = bp->index; 
+  if (mask_out_deselected->value() && brush_index) {
+    selected( NPTS) = where( newly_selected( NPTS) && selected(NPTS), brush_index, previously_selected( NPTS));
+  } else {
+    selected( NPTS) = where( newly_selected( NPTS), brush_index, previously_selected( NPTS));
+  }
 
   // pack (gather) the new index arrays for later rendering
   color_array_from_selection ();
@@ -1695,7 +1699,7 @@ int Plot_Window::extract_data_points ()
   }
   cout << endl;
 
-  // OpenGL vertices, vertex arrays, and VBOs all need to have their x, y, and z coordinates
+  // OpenGL vertices, vertex arrays, and VBOs need to have their x, y, and z coordinates
   // interleaved i.e. stored in adjacent memory locations:  x[0],y[0],z[0],x[1],y[1],z[1],.....
   // This is not, unfortunately, how the raw data is stored in the blitz points() array.
   // So we copy the appropriate data "columns" from the points() array into the appropriate
@@ -1707,7 +1711,7 @@ int Plot_Window::extract_data_points ()
   // using aliases to the vertex data.  Since the vertex data are copies (not aliases) of the
   // original uncorrupted points() data, this works out fine.
 
-  // copy appropriate column of points() data into correct component of vertex() array
+  // copy (via assignment) the appropriate columns of points() data to corresponding components of vertex() array
   vertices( NPTS, 0) = points( axis0, NPTS);  
   vertices( NPTS, 1) = points( axis1, NPTS);
   // if z-axis is set to "-nothing-" (which it is, by default), then all z=0.

@@ -82,10 +82,10 @@ void Vp_Color_Chooser::rgb2hsv(
 }
 
 // Enumeration and static variable to hold SV and RGB mosed
-enum {M_HSV, M_RGB}; // modes
+enum {M_RGB, M_HSV}; // modes
 static Fl_Menu_Item mode_menu[] = {
-  {"HSV"},
   {"RGB"},
+  {"HSV"},
   {0}
 };
 

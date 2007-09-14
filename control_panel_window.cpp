@@ -427,10 +427,10 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
 
   // Next portion of the panel is miscellanious stuff, per plot
   // needs to be more organized.
-  ypos+=15;
+  // ypos+=15;
 
   // Initialize positions for buttons
-  int xpos2 = 50;
+  int xpos2 = 20;
   int ypos2 = ypos;
 
   // Button (1,1) Reset view in this plot
@@ -456,7 +456,7 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   dont_clear->tooltip("psychedelic fun");
 
   ypos=ypos2;
-  xpos=xpos2+105;
+  xpos=xpos2+120;
 
   // Button (1,2): Show points
   show_points = b = new Fl_Button(xpos, ypos+=25, 20, 20, "points");
@@ -513,7 +513,7 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   b->tooltip("toggle visibility of simple grid");
 
   ypos=ypos2;
-  xpos=xpos2+210;
+  xpos=xpos2+225;
 
   // Define Fl_Group to hold plot transform styles
   // XXX - this group should probably be a menu, or at least have a box around it

@@ -112,7 +112,7 @@ depend:	$(SRCS)
 	$(MAKEDEPEND) $(INCBLITZ) $(INCPATH) $(INCFLEWS) $(SRCS) > makedepend
 
 #after "make release", don't forget to copy the tarball to the server, i.e:
-#e.g.  "scp vp.tar trotsky.arc.nasa.gov:\~creon/WWW/public/vp/releases/ppc_mac"
+#e.g.  "scp vp.tar trotsky.arc.nasa.gov:WWW/public/vp/releases/ppc_mac"
 release: $(TARGET)
 	if test -e /tmp/vp; then \
 		/bin/rm -rf /tmp/vp ; \

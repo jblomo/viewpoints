@@ -1363,5 +1363,47 @@ idea: get rid of all c-style IO and then:
 
 should speed things up?
 
-idea: use boost::multi_index to hold conditioning varaible window for quick updates.
+idea: use boost::multi_index to hold conditioning varaible window for quick updates, or use the new libg++ policy based containers.
 
+17:21:34 11 Sep 07
+
+Ideas for cleaning up vp by adding class Data_Column and class Plot_Axis.
+
+Present big 2D data() array will be replaced by a vector (or multi-index-container) holding instances of Data_Column.
+The right number of data columns will be created when vp starts, based on the number of variables in the file header.
+Data_Columns can be dynamically created using internal or external routines, or by reading in more data from pipes or files.
+
+Class Data_Column should probably have:
+  int index (column number)
+  string name
+  float maxval, minval
+  blitz float array of actual values
+  bool sorted
+  blitz int array of sorted indices,
+  bool memory_mapped & associated mapped file data
+  other stuff like hash keys or other variants if it is a non-numerical data column
+  (boost::smart) pointers to all Plot_Axis that depend on this column (I hope we don't need this)
+
+Class Plot_Axis
+  string label
+  Data_Column *dp // if it comes directly from a data column
+  float max, min  // for axis
+  float wmax, wmin  // for window extents
+  blitz 1D float array of values (normalized, xformed, etc)
+  offsets (for timeseries)
+  normalization_style
+  histogram info
+  tick & grid data
+  pointer to Plot_Window(s) displaying this axis.
+
+We shoudl probably split out the view-dependent parts of an axis from the da adependent parts? I.e. to conserve storage & time when several plots are displaying the same values but with different openGL viewing xforms, or displaying different 2nd & 3rd axes? (assuming I can write the magic vertex program to take separate vertex components form separate arrays).
+
+How do VBOs fit in?  Class VBO?  Leave them alone?
+
+16:09:44 13 Sep 07
+
+Simple idea: seprate 2D plots from 3D plots.  2D plots do not need to
+waste vertex mememory with z=0.  This should recover 50% of vertex
+memory on the CPU and the GPU for sploms containing 2D plots only.
+However, this will require VBOs to be handled differently, since
+currently thay are hard-coded to allocate npoints*3*sizeof(GLfloat)

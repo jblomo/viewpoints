@@ -119,8 +119,7 @@ EXTERN Fl_Tabs *brushes_tab;
 EXTERN Fl_Button *add_to_selection_button,
           *clear_selection_button, 
           *delete_selection_button;
-EXTERN Fl_Button *show_deselected_button, 
-          *invert_selection_button;
+EXTERN Fl_Button *show_deselected_button, *mask_out_deselected, *invert_selection_button;
 EXTERN Fl_Button *write_data_button;
 EXTERN Fl_Button *choose_color_selected_button, 
           *choose_color_deselected_button; 

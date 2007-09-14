@@ -819,8 +819,7 @@ void make_global_widgets()
   int xpos1 = xpos, ypos1 = ypos;
 
   // Button(1,1): Show nonselected points (on by default)
-  show_deselected_button = b = 
-    new Fl_Button( xpos, ypos+=25, 20, 20, "show nonselected");
+  show_deselected_button = b = new Fl_Button( xpos, ypos+=25, 20, 20, "show nonselected");
   b->align( FL_ALIGN_RIGHT); 
   b->selection_color( FL_BLUE); 
   b->type( FL_TOGGLE_BUTTON);
@@ -828,9 +827,15 @@ void make_global_widgets()
   b->callback( (Fl_Callback*) Plot_Window::toggle_display_deselected);
   b->tooltip("toggle visibility of nonselected points in all plots");
 
+  // Button(2,1): mask out deselected
+  mask_out_deselected = b = new Fl_Button( xpos, ypos+=25, 20, 20, "mask nonselected");
+  b->type(FL_TOGGLE_BUTTON);
+  b->align( FL_ALIGN_RIGHT); 
+  b->selection_color( FL_BLUE); 
+  b->tooltip("don't select nonselected points");
+
   // Button(3,1): Invert selected and nonselected data
-  invert_selection_button = b = 
-    new Fl_Button( xpos, ypos+=25, 20, 20, "invert selection");
+  invert_selection_button = b = new Fl_Button( xpos, ypos+=25, 20, 20, "invert selection");
   b->align( FL_ALIGN_RIGHT); 
   b->selection_color( FL_BLUE); 
   b->callback( (Fl_Callback*) Plot_Window::invert_selection);
