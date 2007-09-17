@@ -1,24 +1,23 @@
 viewpoints -- Fast interactive linked plotting of large multivariate data sets.
 
-Version: 1.1.0  (Build 152)
-Date: 18 Apr 2007
+Version: 2.0  (Build 186)
+Date: 17 Sep 2007
   
 
 Overview:
 
-The archives on this site contains the executable, documentation,
-a sample data file with examples, and any dynamic link libraries 
-(dlls) that may be required for the 'viewpoints' (vp) package for
-Linux, Mac OSX, and Windows.  The contents of these archives are 
-listed below:
+The archives on this site contains the executable, documentation, a sample 
+data file with examples, and any dynamic link libraries (dlls) that may be 
+required for the 'viewpoints' (vp) package for Linux, Mac OSX, and Windows.  
+The contents of these archives are listed below:
 
 File                Comments
 -----------------------------------------------------------------
-README           This documentation file
+README              This documentation file
 vp.exe              viewpoints executable (MS windows only)
-vp.ico               viewpoints icon (MS windows only)
-vp                     viewpoints executable (linux only)
-viewpoints.app  application bundle (Mac OS X only, see below)
+vp.ico              viewpoints icon (MS windows only)
+vp                  viewpoints executable (linux only)
+viewpoints.app      application bundle (Mac OS X only, see below)
 vp_help_manual.htm  HTML help manual
 sampledata.txt      sample data
 libgsl.dll          DLL library for GSL (Windows only)
@@ -28,33 +27,31 @@ OglExt.dll          DLL for OGL Extension Library (Windows only)
 
 Installation:
 
-Unpack these files into a target directory, then either click on 
-the 'vp' icon or run the code from the command line as described 
-below.
+Unpack these files into a target directory, then either click on the 'vp' 
+icon or run the code from the command line as described below.
 
 Usage:
 
-In its current form (Version 1.0.3, build 69) 'viewpoints' is run 
-either by clicking on the 'vp' icon or from the command line in 
-the directory in which it has been installed or to which a path is 
-available.  When viewpoints is run from the icon, it will come up
-with an array of default data.  When it is run from the command
-line, the user must specify the input data file explicitly.
+In its current form (Version 2.0, build 186) 'viewpoints' is run either by 
+clicking on the 'vp' icon or from the command line in the directory in which 
+it has been installed or to which a path is available.  When viewpoints is 
+run from the icon, it will come up with an array of default data.  When it is 
+run from the command line, the user must specify the input data file 
+explicitly.
 
-Apple OS X: to run viewpoints from the command line, you will probably
-want to create a shell alias to the actual executable, which is
-located inside the application bundle.  For example, if you dragged
-the viewpoints application "viewpoints.app" to your /Applications
-folder,, then you will probably want to add the following to your
-.cshrc file (assuming you are using csh or tcsh as your shell):
+Apple OS X: to run viewpoints from the command line, you will probably want 
+to create a shell alias to the actual executable, which is located inside the 
+application bundle.  For example, if you dragged the viewpoints application 
+"viewpoints.app" to your /Applications folder, then you will probably want to 
+add the following to your .cshrc file (assuming you are using csh or tcsh as 
+your shell):
 
-  alias  vp  /Applications/viewpoints.app/Contents/MacOS/viewpoints
+ alias vp  /Applications/viewpoints.app/Contents/MacOS/viewpoints
 
 A symbolic link will not work.  Use a shell alias.
 
-If you don't care about running it from the command line, ignore the
-above.  You can just double-click on the viewpoints.app icon to start
-it up.
+If you don't care about running it from the command line, ignore the above.  
+You can just double-click on the viewpoints.app icon to start it up.
 
 
 The calling sequence for the command line version is:
@@ -64,30 +61,28 @@ The calling sequence for the command line version is:
  the optional arguments are:
 
   --format=ascii (default) [shortcut: -f a]
-    Read an ASCII input file that consists of a header block 
-    followed by a data block.  Lines in the header block are 
-    indicated by one the comment characters '!', '#', or '%'.  In 
-    the absence of comment characters, the header block consists of
-    a number of lines specified by the '--skip_header' command 
-    below, with a default value of 1 line.  The final line of the 
-    header contains the attribute names, whitespace delimited.  
-    Successive lines in the data block contain the numeric 
+    Read an ASCII input file that consists of a header block followed by a 
+    data block.  Lines in the header block are indicated by one the comment 
+    characters '!', '#', or '%'.  In the absence of comment characters, the 
+    header block consists of a number of lines specified by the 
+    '--skip_header' command below, with a default value of 1 line.  The 
+    final line of the header contains the attribute names, whitespace 
+    delimited.  Successive lines in the data block contain the numeric 
     attribute values for successive samples, whitespace delimited.
 
   --format=binary [shortcut: -f b]
-    Read a binary input file.  The first record of this file 
-    consists of a line of ASCII attribute names, whitespace 
-    delimited, ending with newline (\n).  This is followed by a
-    contiguous block that contains a table of binary floating 
-    point values.
+    Read a binary input file.  The first record of this file consists of a 
+    line of ASCII attribute names, whitespace delimited, ending with newline 
+    (\n).  This is followed by a contiguous block that contains a table of 
+    binary floating point values.
 
   --skip_header=<integer> [shortcut: -s <int>] (default 1)
-    Specifies the number of lines that will be assigned to the 
-    header block in the absence of comment characters.
+    Specifies the number of lines that will be assigned to the header block 
+    in the absence of comment characters.
 
   --npoints=<integer> [shortcut: -n <int>] (default all)
-    Specifies the number of samples (records or rows in the data
-    block of an ASCII file) to read.  
+    Specifies the number of samples (records or rows in the data block of an 
+    ASCII file) to read.  
 
   --rows=<integer> [shortcut: -r <int>] (default 2)
     Specifies the number of rows of scatterplots
@@ -96,14 +91,14 @@ The calling sequence for the command line version is:
     Specifies the number of columns of scatterplots
 
   --input_file=<filespec> [shortcut: -i <filespec>]
-    Filespec of the input file.  NOTE: if this parameter is not
-    specified, the code will assume that the final token in the
-    command line is the input filespec.
+    Filespec of the input file.  NOTE: if this parameter is not specified, 
+    the code will assume that the final token in the command line is the 
+    input filespec.
 
   --borderless [shortcut: -b]
-    Attempt to maximize plot windows' usable area by removing 
-    window manager decorations.  Note: this seems to cause problems
-    with keyboard shortcuts in plot windows under Mac OSX.
+    Attempt to maximize plot windows' usable area by removing window manager 
+    decorations.  Note: this seems to cause problems with keyboard shortcuts 
+    in plot windows under Mac OSX.
 
   --help [shortcut: -h]
     Print a short help message.
@@ -112,20 +107,21 @@ The calling sequence for the command line version is:
     ordering for binary data, default=columnmajor
 
   --nvars [shortcut -v <int>]
-       input has NVARS values per point (only for row major binary data)
+    input has NVARS values per point (only for row major binary data)
 
   --delimiter [shortcut -d=<char>]
-    interpret CHAR as field separator, default is whitespace.  
-   This delimter is also used in the header, to delimit attribute names.
+    interpret CHAR as field separator, default is whitespace.  This delimiter 
+    is also used in the header to delimit attribute names.
 
   --missing_values [shortcut -M <number>]
-    set the value of any unreadable, nonnumeric, empty, or missing values to NUMBER, default=0.0
-    N.B. if you use the default delimiter (whitespace) then lines with one or more missing values are 
-    skipped and thus this option has no effect. 
+    set the value of any unreadable, nonnumeric, empty, or missing values to 
+    NUMBER, default=0.0.  NOTE: if you use the default delimiter (whitespace) 
+    then lines with one or more missing values are skipped and thus this 
+    option has no effect. 
 
   --no_vbo [shortcut -B]
-    don't use openGL vertex buffer objects.  Useful if you have an older graphics card or if
-    the graphics are inconsistent or are very slow.
+    don't use openGL vertex buffer objects.  Useful if you have an older 
+    graphics card or if the graphics are inconsistent or are very slow.
 
   --version [shortcut -V]
     print version information and then exit.
@@ -134,166 +130,191 @@ The calling sequence for the command line version is:
     print out brief usage message and then exit.
 
 
-When 'viewpoints' is invoked, it will read the input file, then
-display a control panel along with an 'r' x 'c' array of linked 
-scatter plots.  These windows can be moved and resized in the
-conventional fashion.  If you delete some window by accident, 
-you can restore every window using the 'reload plots' command.
-WARNING: In the current version of 'viewpoints', if you delete 
-EVERY plot window, bad things may happen.  This will be changed 
-in future releases.
+When 'viewpoints' is invoked, it will read the input file, then display a 
+control panel along with an 'r' x 'c' array of linked scatter plots.  These 
+windows can be moved and resized in the conventional fashion.  If you delete 
+some window by accident, you can restore every window using the 'reload 
+plots' command.  WARNING: In the current version of 'viewpoints', if you 
+delete EVERY plot window, bad things may happen.  This will be changed in 
+future releases.
 
-You can select and move between windows by clicking on them in 
-the conventional fashion for your OS.  You can also select a 
-particular plot window by clicking on the associated tab in the
-control panel window as described below.  Within different 
-windows, you can use the mouse to select portions of the data 
-set.  It is in this feature that the power of 'viewpoints' 
-resides.  Rather than attempt to describe it in detail, we 
+You can select and move between windows by clicking on them in the 
+conventional fashion for your OS.  You can also select a particular plot 
+window by clicking on the associated tab in the control panel window as 
+described below.  Within different windows, you can use the mouse to select 
+portions of the data set.  It is in this feature that the power of 
+'viewpoints' resides.  Rather than attempt to describe it in detail, we 
 encourage you to experiment.
 
 
 Main menu bar
 
-  command                action
-  --------------------   ----------
-  File|Open ASCII file   Read an ASCII input file
-  File|Open binary file  Read a binary input file
-  File|Quit              Quit
-  View|Add Row           Add a row of plot windows
-  View|Add Column        Add a column of plot windows
-  View|Remove Row        Remove a row of plot windows
-  View|Remove Column     Remove a column of plot windows
-  View|Reload Plots      Restore plot window array
-  Help|Help              Opens a rudimentary HELP window
-  Help|About             Information about this version
+ command                     action
+ --------------------        ----------
+ File|Open ASCII file        Read an ASCII input file
+ File|Open binary file       Read a binary input file
+ File|Append ASCII file      Append additional samples from an ASCII file
+ File|Open binary file       Append additional samples from a binary file
+ File|Merge ASCII file       Merge additional attributes from an ASCII file
+ File|Merge binary file      Merge additional attributes from a binary file
+ File|Write ASCII file       Write all the current data as an ASCII file
+ File|Write binary file      Write all the current data as a binary file 
+                             (much faster to read back in)
+ File|Write selected ASCII   Write only the currently selected data as an 
+                             ASCII file
+ File|Write selected binary  Write only the currently selected data as a
+                             binary file
+ File|Load Configuration     Load some configuration information
+ File|Save Configuration     Save some configuration information
+ File|Quit                   Quit
+ View|Add Row                Add a row of plot windows
+ View|Add Column             Add a column of plot windows
+ View|Remove Row             Remove a row of plot windows
+ View|Remove Column          Remove a column of plot windows
+ View|Reload Plots           Restore plot windows
+ Help|Help                   Opens a simple HELP window
+ Help|About                  Information about this version
 
   
 Keys & Buttons (with the cursor in one of plot windows):
 
-  action                 key
-  --------------------   ----------
-  new selection          left-mouse
-  move selection         left-mouse + shift
-  invert selection       i
-  display deselected     d
-  clear selection        c
-  kill selected points   x
-  reset view             r
-  quit                   q
+ action                 key
+ --------------------   ----------
+ new selection          left-mouse
+ move selection         left-mouse + shift
+ invert selection       i
+ display deselected     d
+ clear selection        c
+ kill selected points   x
+ reset view             r
+ quit                   q
 
 
 Mouse Gestures (with the cursor in one of plot windows):
 
-  action                 gesture
-  --------------------   ----------
-  select points          left-mouse
-  translate              right-mouse  (opt-mouse in OSX)
-  scale                  middle-mouse (ctl-mouse in OSX)
-  scale histogram        middle-mouse + h (ctl-mouse + h in OSX)
+ action                 gesture
+ --------------------   ----------
+ select points          left-mouse
+ translate              right-mouse  (opt-mouse in OSX)
+ scale                  middle-mouse (ctl-mouse in OSX)
+ scale histogram        middle-mouse + h (ctl-mouse + h in OSX)
 
     
 Controls in the control panels:
 
- The control panel consists of a set of tabbed control panels for
- individual windows and a main control panel for the entire array
- of panels.  For the most part, these controls should be intuitive.
- Some of these controls are described below:
+ The control panel consists of a set of tabbed control panels for individual 
+ windows, tabbed control panels for individual brushes, and a main control 
+ panel for the entire array of panels.  For the most part, these controls 
+ should be intuitive.  Some of these controls are described below:
 
- Tabbed control panels:
-  control                action
-  --------------------   ----------
-  size                   point size, in pixels
-  smooth                 Use smoothed points
-  Bkg                    background color (try bkg=0.5, lum=0.2)
-  Lum                    point brightness
-  Alph                   point opacity
-  rot                    rotation angle in 3D about the y-axis --
-                         NOTE: to take advantage of this feature 
-                         one must first select something for the 
-                         3rd axis to display.
-  nbins                  number of histogram bins
-  axis 1-3               Attribute to be displayed in that axis
-  lock axis              Lock characteristics of this axis
-  normalize x,y,z        Normalization scheme for that axis
-  reset view             Reset rotation and other display params
-  spin                   continuous rotation about the y-axis --
-                         NOTE: To start this, you may have to give
-                         the 'rot' slider a twitch.
-  don't clear            Don't clear selected points in this panel
-  identify               plot y vs x
-  sum vs. diff plot      plot (x+y) vs. (x-y)
-  polar                  plot x<-r, y<-theta
-  points                 Show data points
-  unselected             Show unseelected data points
-  axes                   Show axes
-  labels                 Show axes labels
-  scales                 Show axes scales
-  grid                   Show grid
-  histogram              Show histograms along x and y axes
-  selection color        Pick color of selections from this panel
-  z-buffering            Use z-buffering
+ Tabbed control panels for individual windows:
+ control                action
+ --------------------   ----------
+ X, Y, and Z axis       Attribute to be displayed in that axis
+ locked                 Lock an axis so it won't change
+ scale                  Normalization scheme for that axis
+ histo                  Show histograms along that axis
+ histog                 Show histograms along that axis.  
+                        'Marginal/Selection/Conditional' corresponds to 
+                        'All points/Selected points/Fraction selected'
+ N bins                 number (log) of histogram bins for that axis
+ bin ht                 height of histogram bins for that axis
+ Bkg                    background color (try bkg=0.5, lum2=0.2)
+ lum                    successive brightness increase for overplotting
+ psize                  default size of unselected points
+ scale points           Scale point sizes along with axes
+ rot                    rotation angle in 3D about the y-axis.  NOTE: to take
+                        advantage of this feature one must first select 
+                        something for the Z-axis to display.
+ spin                   continuous rotation about the y-axis.  NOTE: to start
+                        this, you may have to give the rot slider a twitch.
+ reset view             Reset rotation and other display params
+ z-buffering            Use z-buffering (only for 3D plots)
+ don't clear            Don't clear selected points in this panel
+ points                 Show data points
+ unselected             Show unselected data points
+ axes                   Show axes
+ labels                 Show axes labels
+ scales                 Show axes scales
+ tics                   Show tic marks
+ grid                   Show grid
+ identity               plot y vs x
+ sum vs. diff plot      plot (x+y) vs. (x-y)
+ rank(y|x)              Rank points by y-value within a sliding bin of x-
+                        values.  The width of this bin is controlled by 
+                        changing the number, N bins, of histogram bins.
+ fluc(y|x)              Rank points by variation in y-value within a sliding 
+                        bin of x-values.
+
+ Tabbed control panels for individual brushes
+ control                action
+ --------------------   ----------
+ size                   size of this brush, in pixels
+ sym                    symbol used by this brush
+ Alpha                  point opacity
+ lum1                   successive brightness increase for overplotting
+ lum2                   successive brightness increase for overplotting
+ Color chart            Color controls for this brush
+ extend selection       combine successive selections with this brush
+ clear selection        clear successive selection for this brush
+ reset brush            reset this brush
+
   
  Main control panel
-  control                 action
-  --------------------   ----------
-  npts                   number of points displayed
-  show nonselected       Show unselected points
-  invert selection       Invert selected and nonselected points
-  clear selcetion        Clear selection
-  kill selection         Delete all selected points
-  unselected color       Chose color of unselected points
-  change axes            Change all (unlocked) axes
-  link axes              Link similar axes
-  reload plots           Restore plot window array
+ control                 action
+ --------------------   ----------
+ show nonselected       Show unselected points
+ invert selection       Invert selected and nonselected points
+ clear selcetion        Clear selection
+ kill selection         Delete all selected points
+ unselected color       Chose color of unselected points
+ change axes            Change all (unlocked) axes
+ link axes              Link similar axes
 
 
 Normalization schemes (per axis)
 
- Data can be normalized in several different ways.  The
- normalization scheme for any axis can be selected from the 
- appropriate menu.
+ Data can be normalized in several different ways.  The normalization scheme 
+ for any axis can be selected from the appropriate menu.
 
-  type                   description
-  --------------------   -----------
-  none                   show all data, center of window at median
-  minmax                 window spans maimimum to maximum.
-  zeromax                show all positive data
-  maxabs                 show all data, center the window at zero
-  trim 10^-2             window spans the 1st-99th percentile
-  trim 10^-3             window spans the 0.1th-99.9th percentile
-  threesigma             center window at sample mean so that 
-                         window spans +/- three sigma.
-  log_10                 Logarithmic axis
-  squash                 Simple sigmoid
-  rank                   plot rank (order) of x instead of x -- 
-                         i.e. nonuniform rescaling to force a 
-                         uniform marginal
-  gaussianize            plot inverse of the Gaussian cummulative 
-                         distribution function of x -- i.e. 
-                         nonuniform rescaling to force a uniform 
-                         marginal
+ type                   description
+ --------------------   -----------
+ none                   show all data, center of window at median
+ minmax                 window spans maimimum to maximum.
+ zeromax                show all positive data
+ maxabs                 show all data, center the window at zero
+ trim 10^-2             window spans the 1st-99th percentile
+ trim 10^-3             window spans the 0.1th-99.9th percentile
+ threesigma             center window at sample mean so that window spans 
+                        +/- three sigma.
+ log_10                 Logarithmic axis
+ atan                   Simple sigmoid
+ rank                   plot rank (order) of x instead of x -- i.e. 
+                        nonuniform rescaling to force a uniform marginal
+ partial rank           as 'rank' above, but overplot identical values
+ gaussianize            plot inverse of the Gaussian cummulative 
+                        distribution function of x -- i.e. nonuniform 
+                        rescaling to force a uniform marginal
 
 
 Notes and warnings:
 
-The current release of the 'viewpoints' package (version 1.1.0, 
-build 93) is still a development version.  While every effort has 
-been make to ensure that it will work -- or fail gracefully if it 
-doesn't -- it still has many rough edges.  Some of these are
-described below.  These issues will all be addressed in future
-releases.
+The current release of the 'viewpoints' package (version 2.0, build 174) is 
+still a development version.  While every effort has been make to ensure that 
+it will work -- or fail gracefully if it doesn't -- it still has many rough 
+edges.  Some of these are described below.  These issues will all be 
+addressed in future releases.
 
-1) The current release can only write binary files.  Future 
-releases will have the ability to write ASCII files complete with
-copies of the saved header.
+1) If you drag a window over the main control panel, the main control panel
+may need to be refreshed.  This can be accomplished by resizing it.
 
-2) There is, as yet, no 'print' command.  Needless to say, this 
-capability will be added as soon as possible!
+2) There is, as yet, no 'print' command.  Needless to say, this capability 
+will be added as soon as possible!
 
+3) The Load and Save configuration commands only save the most basic of
+session information.
 
-Please send any questions, bug reports, feature requests, and/or 
-praise to: 
+Please send any questions, bug reports, feature requests, and/or praise to: 
 
 Creon Levit at   creon.levit@nasa.gov
 or

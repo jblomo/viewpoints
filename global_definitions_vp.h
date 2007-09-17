@@ -20,7 +20,7 @@
 //   3) Consider putting these variables into a NAMESPACE?
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  13-JUL-2007
+// Modified: P. R. Gazis  17-AUG-2007
 //***************************************************************************
 
 #ifndef VP_GLOBAL_DEFINITIONS_VP_H
@@ -153,6 +153,17 @@ EXTERN Brush *brushes[NBRUSHES];  // MCL XXX this should be a static c++ vector 
 #endif
 #ifndef GL_COORD_REPLACE_ARB
   #define GL_COORD_REPLACE_ARB 0x8862
+#endif
+#ifndef GL_POINT_SPRITE
+  #define GL_POINT_SPRITE 0x8861
+#endif
+#ifndef GL_COORD_REPLACE
+  #define GL_COORD_REPLACE 0x8862
+#endif
+
+//# Make absolutely certain SVN_VERSION is defined
+#ifndef SVN_VERSION
+  #define SVN_VERSION "186"
 #endif
 
 // Define pointers to hold confirmation window

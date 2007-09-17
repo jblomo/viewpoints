@@ -53,6 +53,22 @@ The following commands are available from the main menu bar.
  <td>Read a binary input file</td>
 </tr>
 <tr>
+ <td>File|Append ASCII file</td>
+ <td>Append additional samples from an ASCII file</td>
+</tr>
+<tr>
+ <td>File|Open binary file</td>
+ <td>Append additional samples from a binary file</td>
+</tr>
+<tr>
+ <td>File|Merge ASCII file</td>
+ <td>Merge additional attributes from an ASCII file</td>
+</tr>
+<tr>
+ <td>File|Merge binary file</td>
+ <td>Merge additional attributes from a binary file</td>
+</tr>
+<tr>
  <td>File|Write ASCII file</td>
  <td>Write all the current data as an ASCII file</td>
 </tr>
@@ -67,6 +83,14 @@ The following commands are available from the main menu bar.
 <tr>
  <td>File|Write selected binary data</td>
  <td>Write only the currently selected data as a binary file</td>
+</tr>
+<tr>
+ <td>File|Load Configuration</td>
+ <td>Load <em>some</em> configuration information</td>
+</tr>
+<tr>
+ <td>File|Save Configuration</td>
+ <td>Save <em>some</em> configuration information</td>
 </tr>
 <tr>
  <td>File|Quit</td>
@@ -136,36 +160,48 @@ when the window manager focus is on a plot window.
 
 <p>
 The control panel consists of a set of tabbed control panels for
-individual windows and a main control panel for the entire array
+individual <em>windows</em>, tabbed control panels for individual 
+<em>brushes</em>, and a main control panel for the entire array
 of panels.  For the most part, these controls should be intuitive.
 Some of these controls are described below
+</p>
 
 <table>
-<tr><td colspan="2"><b>Tabbed control panels</td></tr>
+<tr><td colspan="2"><b>Tabbed control panels for <em>windows</em></td></tr>
 <tr>
  <th align="LEFT">Control</th><th align="LEFT">Action</th>
 </tr>
 <tr>
- <td>size</td><td>size of non-selected points, in pixels</td>
+ <td>X, Y, and Z axis</td><td>Attribute to be displayed in that axis</td>
 </tr>
 <tr>
-<tr>
- <td>size2</td><td>size of selected points, in pixels</td>
+ <td>locked</td><td>Lock an axis so it won't change when invoking "change axes"</td>
 </tr>
 <tr>
- <td>symbol</td><td>plot all points using this symbol</td>
+ <td>scale</td><td>Normalization scheme for that axis</td>
+</tr>
+<tr>
+ <td align="TOP">histog</td>
+ <td>Show histograms along that axis.  'Marginal/Selection/Conditional'<br>
+ corresponds to 'All points/Selected points/Fraction selected'</td>
+</tr>
+<tr>
+ <td>N bins</td><td>number (log) of histogram bins for that axis</td>
+</tr>
+<tr>
+ <td>bin ht</td><td>height of histogram bins for that axis</td>
 </tr>
 <tr>
  <td>Bkg</td><td>background color (try bkg=0.5, lum2=0.2)</td>
 </tr>
 <tr>
- <td>Lum</td><td>successive brightness increase for overplotting</td>
+ <td>lum</td><td>successive brightness increase for overplotting</td>
 </tr>
 <tr>
- <td>Lum2</td><td>base brightness of a single point before overplotting</td>
+ <td>psize</td><td>default size of unselected points</td>
 </tr>
 <tr>
- <td>Alph</td><td>point opacity</td>
+ <td>scale</td><td>Scale point sizes along with axes</td>
 </tr>
 <tr>
  <td valign="TOP">rot</td>
@@ -174,36 +210,18 @@ Some of these controls are described below
  for the 3rd axis to display.</td>
 </tr>
 <tr>
- <td>nbins</td><td>number of histogram bins</td>
-</tr>
-<tr>
- <td>axis 1-3</td><td>Attribute to be displayed in that axis</td>
-</tr>
-<tr>
- <td>lock axes</td><td>Lock an axis so it won't change when invoking "change axes"</td>
-</tr>
-<tr>
- <td>normalize x,y,z</td><td>Normalization scheme for that axis</td>
-</tr>
-<tr>
- <td>reset view</td><td>Reset rotation and other display params</td>
-</tr>
-<tr>
  <td valign="TOP">spin</td>
  <td>continuous rotation about the y-axis.&nbsp;&nbsp;NOTE: to start<br>
  this, you may have to give the <em>rot</em> slider a twitch.</td>
 </tr>
 <tr>
+ <td>reset view</td><td>Reset rotation and other display params</td>
+</tr>
+<tr>
+ <td>z-buffering</td><td>Use z-buffering (only for 3D plots)</td>
+</tr>
+<tr>
  <td>don't clear</td><td>Don't clear selected points in this panel</td>
-</tr>
-<tr>
- <td>identify</td><td>plot y vs x</td>
-</tr>
-<tr>
- <td>sum vs. diff plot</td><td>plot (x+y) vs. (x-y)</td>
-</tr>
-<tr>
- <td>polar</td><td>plot x<-r, y<-theta</td>
 </tr>
 <tr>
  <td>points</td><td>Show data points</td>
@@ -221,16 +239,62 @@ Some of these controls are described below
  <td>scales</td><td>Show axes scales</td>
 </tr>
 <tr>
- <td>grid</td><td>Show grid (broken)</td>
+ <td>ticks</td><td>Show tic marks</td>
 </tr>
 <tr>
- <td>histogram</td><td>Show histograms along x and y axes</td>
+ <td>grid</td><td>Show grid</td>
 </tr>
 <tr>
- <td>selection color</td><td>Pick color of selections from this panel</td>
+ <td>identity</td><td>plot y vs x</td>
 </tr>
 <tr>
- <td>z-buffering</td><td>Use z-buffering (only for 3D plots)</td>
+ <td>sum vs. diff plot</td><td>plot (x+y) vs. (x-y)</td>
+</tr>
+<tr>
+ <td valign="TOP">rank(y|x)</td>
+ <td>Rank points by y-value within a sliding bin of x-values.<br>
+ The width of this bin is controlled by changing the number, <br>
+ N bins, of histogram bins.</td>
+</tr>
+<tr>
+ <td valign="TOP">fluc(y|x)</td>
+ <td>Rank points by variation in y-value within a sliding bin of<br>
+ x-values.</td>
+</tr>
+</table>
+</p>
+
+<table>
+<tr><td colspan="2"><b>Tabbed control panels for <em>brushes</em></td></tr>
+<tr>
+ <th align="LEFT">Control</th><th align="LEFT">Action</th>
+</tr>
+<tr>
+ <td>size</td><td>size of this brush, in pixels</td>
+</tr>
+<tr>
+ <td>sym</td><td>symbol used by this brush</td>
+</tr>
+<tr>
+ <td>Alpha</td><td>point opacity</td>
+</tr>
+<tr>
+ <td>lum1</td><td>successive brightness increase for overplotting</td>
+</tr>
+<tr>
+ <td>lum2</td><td>successive brightness increase for overplotting</td>
+</tr>
+<tr>
+ <td>Color chart</td><td>Color controls for this brush</td>
+</tr>
+<tr>
+ <td>extend selection</td><td>combine successive selections with this brush</td>
+</tr>
+<tr>
+ <td>clear selection</td><td>clear successive selection for this brush</td>
+</tr>
+<tr>
+ <td>reset brush</td><td>reset this brush</td>
 </tr>
 </table>
 </p>
@@ -245,6 +309,9 @@ Some of these controls are described below
  <td>show nonselected</td><td>Show/don't show unselected points in all plots</td>
 </tr>
 <tr>
+ <td>mask nonselected</td><td>Mask out unselected points in all plots</td>
+</tr>
+<tr>
  <td>invert selection</td><td>Invert selected and nonselected points</td>
 </tr>
 <tr>
@@ -254,16 +321,10 @@ Some of these controls are described below
  <td>kill selection</td><td>Delete all selected points and renormalize (useful after selecting outliers)</td>
 </tr>
 <tr>
- <td>unselected color</td><td>Chose color of unselected points</td>
-</tr>
-<tr>
  <td>change axes</td><td>Change all (unlocked) axes in all plots.  Good for browsing.
 </tr>
 <tr>
  <td>link axes</td><td>Link similar axes so they translate and scale together</td>
-</tr>
-<tr>
- <td>reload plots</td><td>Restore plot windows to default layout</td>
 </tr>
 </table>
 </p>
@@ -276,9 +337,11 @@ These are chosen on a per-axis basis.
 <tr>
  <th align="LEFT">Scheme</th><th align="LEFT">Effect</th>
 </tr>
-</tr>
 <tr>
  <td>none</td><td>show all data, center of window at median</td>
+</tr>
+<tr>
+ <td>minmax</td><td>stadard min-max scaling</td>
 </tr>
 <tr>
  <td>zeromax</td><td>show all positive data</td>
@@ -302,12 +365,16 @@ These are chosen on a per-axis basis.
  <td>Logarithmic axis</td>
 </tr>
 <tr>
- <td>squash</td>
+ <td>atan</td>
  <td>Simple sigmoid</td>
 </tr>
 <tr>
  <td>rank<br>&nbsp;</td>
  <td>plot rank of x (instead of x)<br>(i.e. nonuniform rescaling to force uniform marginal)</td>
+</tr>
+<tr>
+ <td>partial rank<br>&nbsp;</td>
+ <td>rank as above, but overplot similar values</td>
 </tr>
 <tr>
  <td>gaussianize<br>&nbsp;</td>

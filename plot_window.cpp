@@ -40,7 +40,7 @@
 #define ALPHA_TEXTURE
 #ifdef ALPHA_TEXTURE
 static const float alpha_threshold = 0.25;
-#endif ALPHA_TEXTURE
+#endif   // ALPHA_TEXTURE
 
 #define CHECK_GL_ERROR(msg)                    \
     {                                          \

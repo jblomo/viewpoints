@@ -57,7 +57,7 @@
 //   redraw_if_changing( *dummy) -- Redraw changing plots
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  13-JUL-2007
+// Modified: P. R. Gazis  17-AUG-2007
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -116,16 +116,17 @@ static const int main_h = 950;
 // Increase this when the controls for individual windows need more height to 
 // fit in their subpanel
 // static const int cp_widget_h = 505; 
-static const int cp_widget_h = 505; 
-
+static const int cp_widget_h = 485; 
 static const int brushes_h = 250;
 
 // The rest of these should not have to change
 static const int tabs_widget_h = cp_widget_h+20;
-static const int global_widgets_y = tabs_widget_h + brushes_h + 20;
+// static const int global_widgets_y = tabs_widget_h + brushes_h + 20;
+static const int global_widgets_y = tabs_widget_h + brushes_h + 30;
 static const int tabs_widget_x = 3, tabs_widget_y = 30;
 static const int cp_widget_x = 3, cp_widget_y = tabs_widget_y+20;
-static const int brushes_x = 3, brushes_y = tabs_widget_y+tabs_widget_h;
+// static const int brushes_x = 3, brushes_y = tabs_widget_y+tabs_widget_h;
+static const int brushes_x = 3, brushes_y = tabs_widget_y+tabs_widget_h+10;
 static const int global_widgets_x = 10;
 
 // Define class to hold data file manager
@@ -282,7 +283,7 @@ void create_brushes(int w_x, int w_y, int w_w, int w_h)
 //***************************************************************************
 // create_main_control_panel( main_x, main_y, main_w, main_h, cWindowLabel) 
 // -- Create the main control panel window.
-void create_main_control_panel(int main_x, int main_y, int main_w, int main_h, char* cWindowLabel)
+void create_main_control_panel( int main_x, int main_y, int main_w, int main_h, char* cWindowLabel)
 {
   // Create main control panel window
   Fl_Group::current(0);
@@ -292,13 +293,14 @@ void create_main_control_panel(int main_x, int main_y, int main_w, int main_h, c
   Fl_Tooltip::size(12);
   main_control_panel = new Fl_Window( main_x, main_y, main_w, main_h, cWindowLabel);
   main_control_panel->resizable( main_control_panel);
+
   // Add callback function to intercept 'Close' operations
   main_control_panel->callback((Fl_Callback*) cb_main_control_panel, main_control_panel);
 
   // MCL XXX
   // if I move this call to create_brushes() to the end of this routine, to just before
   // the call to main_control_panel->end(), I get a core dump.  That's' too bad......
-  create_brushes (brushes_x, brushes_y, main_w-6, brushes_h);
+  create_brushes( brushes_x, brushes_y, main_w-6, brushes_h);
 
   // Make main menu bar and add the global widgets to control panel
   make_main_menu_bar();
@@ -315,7 +317,6 @@ void create_main_control_panel(int main_x, int main_y, int main_w, int main_h, c
   main_control_panel->end();
   Fl_Group::current(0);  
 }
-
 
 //***************************************************************************
 // cb_main_control_panel( *o, *user_data) -- Callback (and potentially 
@@ -1192,10 +1193,11 @@ void reset_selection_arrays () {
 // Main -- Driver routine
 int main( int argc, char **argv)
 {
-
+  // XXX: In a perfect world, this should be included with the global 
+  // definitions
   about_string = "\n\
-    viewpoints \n\
-    " + string(SVN_VERSION) + "\n\
+    viewpoints 2.0 \n\
+    revision " + string(SVN_VERSION) + "\n\
     \n\
     (c) 2006 M. Creon Levit and Paul R. Gazis   \n\
         creon.levit@@nasa.gov \n\
