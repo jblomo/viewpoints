@@ -40,7 +40,7 @@
 #define ALPHA_TEXTURE
 #ifdef ALPHA_TEXTURE
 static const float alpha_threshold = 0.25;
-#endif   // ALPHA_TEXTURE
+#endif // ALPHA_TEXTURE
 
 #define CHECK_GL_ERROR(msg)                    \
     {                                          \
@@ -753,7 +753,7 @@ void Plot_Window::screen_to_world(
 void Plot_Window::draw_axes()
 {
   // If requested draw axes
-  if( cp->show_axes->value() || cp->show_scale->value() || cp->show_labels->value()) {
+  if( cp->show_axes->value() || cp->show_scale->value() ) {
     glPushMatrix();
     glLoadIdentity();
 
@@ -790,90 +790,91 @@ void Plot_Window::draw_axes()
       glVertex3f( -(1+a), -(1+a), +(1+a));
 
       glEnd();
-    }
 
-    // Define a buffer used to lable tic marks and set the offset factor for 
-    // tic mark length. b<1 -> inwards, b>1 -> outwards, b==1 -> no tick.
-    char buf[ 1024];
-    float b = 1.5;
+      // draw axes labels
+      {
+        
+        // offset for axis labels values. b<1 -> inwards, 
+        // b>1 -> outwards, b==1 -> on axis.
+        float b = 2; 
+        
+        gl_font( FL_HELVETICA_BOLD, 11);
+        float wid = gl_width(xlabel.c_str())/(float)(w());
+        gl_draw( (const char *)(xlabel.c_str()), -wid, -(1+b*a));  
+        
+        b = 1.5;
+        gl_draw( (const char *)(ylabel.c_str()), -(1+b*a), 1+b*a);
+      }
+      
+      // Define a buffer used to lable tic marks and set the offset factor for 
+      // tic mark length. b<1 -> inwards, b>1 -> outwards, b==1 -> no tick.
+      char buf[ 1024];
+      float b = 1.5;
 
-    // If requested, draw tic marks to show scale  
-    if( cp->show_scale->value()) {
+      // If requested, draw tic marks and numbers to show scale  
+      if( cp->show_scale->value()) {
 
-      glBegin( GL_LINES);
+        glBegin( GL_LINES);
 
-      // lower X-axis tick
-      glVertex3f( -1, -(1+a), -(1+a)); 
-      glVertex3f( -1, -(1+b*a), -(1+a));
+        // lower X-axis tick
+        glVertex3f( -1, -(1+a), -(1+a)); 
+        glVertex3f( -1, -(1+b*a), -(1+a));
 
-      // upper X-axis tick
-      glVertex3f( +1, -(1+a), -(1+a)); 
-      glVertex3f( +1, -(1+b*a), -(1+a));
+        // upper X-axis tick
+        glVertex3f( +1, -(1+a), -(1+a)); 
+        glVertex3f( +1, -(1+b*a), -(1+a));
 
-      // lower Y-axis tick
-      glVertex3f( -(1+a), -1, -(1+a)); 
-      glVertex3f( -(1+b*a), -1, -(1+a)); 
+        // lower Y-axis tick
+        glVertex3f( -(1+a), -1, -(1+a)); 
+        glVertex3f( -(1+b*a), -1, -(1+a)); 
 
-      // upper Y-axis tick
-      glVertex3f( -(1+a), +1, -(1+a)); 
-      glVertex3f( -(1+b*a), +1, -(1+a)); 
+        // upper Y-axis tick
+        glVertex3f( -(1+a), +1, -(1+a)); 
+        glVertex3f( -(1+b*a), +1, -(1+a)); 
 
-      // XXX Z-axis ticks clutter 2D plots
-      b = 1; 
+        // XXX Z-axis ticks clutter 2D plots
+        b = 1; 
 
-      // lower Z-axis tick
-      glVertex3f( -(1+a), -(1+a), -1); 
-      glVertex3f( -(1+b*a), -(1+a), -1);
+        // lower Z-axis tick
+        glVertex3f( -(1+a), -(1+a), -1); 
+        glVertex3f( -(1+b*a), -(1+a), -1);
 
-      // upper Z-axis tick
-      glVertex3f (-(1+a), -(1+a), +1); 
-      glVertex3f (-(1+b*a), -(1+a), +1); 
+        // upper Z-axis tick
+        glVertex3f (-(1+a), -(1+a), +1); 
+        glVertex3f (-(1+b*a), -(1+a), +1); 
 
-      glEnd();
+        glEnd();
 
-      // Offset for drawing tick marks'.  Numeric values are conrolled by "b" 
-      // as follows:
-      //  b<1  -> draw it inside of the axis, 
-      //  b>1  -> draw it outside of the axis,
-      //  b==1 -> draw it on the axis.
-      b = 2;
+        // Offset for drawing tick marks'.  Numeric values are conrolled by "b" 
+        // as follows:
+        //  b<1  -> draw it inside of the axis, 
+        //  b>1  -> draw it outside of the axis,
+        //  b==1 -> draw it on the axis.
+        b = 2;
 
-      // draw lower X-axis tic mark's numeric value
-      snprintf( buf, sizeof(buf), "%+.3g", wmin[0]); 
-      gl_draw( 
-        (const char *)buf, 
-        -1.0-gl_width((const char *)buf)/(w()), -(1+b*a));
+        // draw lower X-axis tic mark's numeric value
+        snprintf( buf, sizeof(buf), "%+.3g", wmin[0]); 
+        gl_draw( 
+          (const char *)buf, 
+          -1.0-gl_width((const char *)buf)/(w()), -(1+b*a));
 
-      // draw upper X-axis tic mark's numeric value
-      snprintf(buf, sizeof(buf), "%+.3g", wmax[0]); 
-      gl_draw(
-        (const char *)buf, 
-        +1.0-gl_width((const char *)buf)/(w()), -(1+b*a));
+        // draw upper X-axis tic mark's numeric value
+        snprintf(buf, sizeof(buf), "%+.3g", wmax[0]); 
+        gl_draw(
+          (const char *)buf, 
+          +1.0-gl_width((const char *)buf)/(w()), -(1+b*a));
 
-      b = 2.4;
+        b = 2.4;
 
-      // draw lower Y-axis tic mark's numeric value
-      snprintf( buf, sizeof(buf), "%+.3g", wmin[1]);
-      gl_draw( (const char *)buf, -(1+b*a), -1.0f+a/4);
+        // draw lower Y-axis tic mark's numeric value
+        snprintf( buf, sizeof(buf), "%+.3g", wmin[1]);
+        gl_draw( (const char *)buf, -(1+b*a), -1.0f+a/4);
 
-      // draw upper Y-axis tic mark's numeric value
-      snprintf( buf, sizeof(buf), "%+.3g", wmax[1]);
-      gl_draw( (const char *)buf, -(1+b*a), +1.0f+a/4);
-    }
+        // draw upper Y-axis tic mark's numeric value
+        snprintf( buf, sizeof(buf), "%+.3g", wmax[1]);
+        gl_draw( (const char *)buf, -(1+b*a), +1.0f+a/4);
+      }
 
-    // If requested, draw axes labels
-    if( cp->show_labels->value()) {
-
-      // offset for axis labels values. b<1 -> inwards, 
-      // b>1 -> outwards, b==1 -> on axis.
-      b = 2; 
-
-      gl_font( FL_HELVETICA_BOLD, 11);
-      float wid = gl_width(xlabel.c_str())/(float)(w());
-      gl_draw( (const char *)(xlabel.c_str()), -wid, -(1+b*a));  
-
-      b = 1.5;
-      gl_draw( (const char *)(ylabel.c_str()), -(1+b*a), 1+b*a);
     }
 
     glPopMatrix();
@@ -1212,18 +1213,23 @@ void Plot_Window::compute_histogram( int axis)
   if (nbins <= 0) return;
   blitz::Range BINS( 0, nbins-1);
   counts( BINS, axis) = 0.0;
+
   counts_selected( BINS, axis) = 0.0;
   // range is tweaked by (n+1)/n to get the "last" point into the correct bin.
   float range = (amax[axis] - amin[axis]) * ((float)(npoints+1)/(float)npoints); 
 
-  // Loop: Sum over all data points
+  // only count points that are being selected by the most recent brush
+  Brush *bp = dynamic_cast <Brush*> (brushes_tab->value());
+  assert (bp);
+  int brush_index = bp->index; 
+
   for( int i=0; i<npoints; i++) {
     float x = vertices( i, axis);
     int bin = (int)(floorf( nbins * ( ( x - amin[axis]) / range)));
     if( bin < 0) bin = 0;
     if( bin > nbins-1) bin = nbins-1;
     counts( bin, axis)++;
-    if( selected( i) > 0) counts_selected( bin, axis)++;
+    if( selected( i) == brush_index) counts_selected( bin, axis)++;
   }
   float maxcount = max(max(counts(BINS,axis)), 1.0f);
   
@@ -1241,6 +1247,33 @@ void Plot_Window::compute_histograms()
 {
   compute_histogram(0);
   compute_histogram(1);
+}
+
+void Plot_Window::draw_x_histogram(const blitz::Array<float,1> bin_counts, const int nbins) {
+  float x = amin[0];
+  float xwidth = (amax[0]-amin[0]) / (float)(nbins);
+  glBegin( GL_LINE_STRIP);
+  for( int bin=0; bin<nbins; bin++, x+=xwidth) {
+    glVertex2f( x, 0.0); // lower left corner
+    glVertex2f( x, bin_counts( bin, 0));   // left edge
+    glVertex2f( x+xwidth, bin_counts( bin, 0));   // top edge
+    glVertex2f( x+xwidth,0.0);   // right edge 
+  }
+  glEnd();
+}
+
+void Plot_Window::draw_y_histogram(const blitz::Array<float,1> bin_counts, const int nbins) {
+  float y = amin[1];
+  float ywidth = (amax[1]-amin[1]) / (float)(nbins);
+  glBegin( GL_LINE_STRIP);
+  for( int bin=0; bin<nbins; bin++) {
+    glVertex2f( 0.0, y);          
+    glVertex2f(bin_counts(bin),y);   // bottom
+    glVertex2f(bin_counts(bin), y+ywidth);   // right edge
+    glVertex2f(0.0, y+ywidth);   // top edge 
+    y+=ywidth;
+  }
+  glEnd();
 }
 
 //***************************************************************************
@@ -1270,126 +1303,68 @@ void Plot_Window::draw_histograms()
 
   // histograms base is this far from edge of window
   float hoffset = 0.1; 
-  int nbins;
 
   glPushMatrix();
+  // histograms should cover pointclouds
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
   // x-axis histograms
-  nbins = xbins;
-  if ((x_marginal || x_selection || x_conditional) && nbins > 0) {
+  if ((x_marginal || x_selection || x_conditional) && xbins > 0) {
+    blitz::Range BINS( 0, xbins-1);
     glLoadIdentity();
-    // histograms should cover pointclouds
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glTranslatef( xzoomcenter*xscale, hoffset, 0);
     glScalef( xscale, yhscale*cp->hscale_slider[0]->value(), 1.0);
     glTranslatef( -xcenter, -1.0/(yhscale*cp->hscale_slider[0]->value()), 0.0);
     glTranslatef( -xzoomcenter, 0.0, 0);
-    
-    glTranslatef (0.0, 0.0, 0.1);
-    float xwidth = (amax[0]-amin[0]) / (float)(nbins);
+    glTranslatef (0.0, 0.0, hoffset);
     
     // Draw x-axis histogram of all points.
     if (x_marginal) {
-      float x = amin[0];
       glColor4f( 0.0, 0.5, 0.5, 1.0);
-      glBegin( GL_LINE_STRIP);
-      for( int bin=0; bin<nbins; bin++, x+=xwidth) {
-        glVertex2f( x, 0.0);  // lower left corner
-        glVertex2f( x, counts(bin,0));   // left edge
-        glVertex2f( x+xwidth, counts(bin,0));    // Top edge
-        glVertex2f( x+xwidth, 0.0);   // Right edge
-      }
-      glEnd();
+      draw_x_histogram (counts(BINS,0), xbins);
     }
-    
     // Draw x-axis histogram of selected points
     if( nselected > 0 && x_selection) {
-      float x = amin[0];
       glColor4f( 0.25, 1.0, 1.0, 1.0);
-      glBegin( GL_LINE_STRIP);
-      for( int bin=0; bin<nbins; bin++, x+=xwidth) {
-        glVertex2f( x, 0.0); // lower left corner
-        glVertex2f( x, counts_selected( bin, 0));   // left edge
-        glVertex2f( x+xwidth, counts_selected( bin, 0));   // top edge
-        glVertex2f( x+xwidth,0.0);   // right edge 
-      }
-      glEnd();
+      draw_x_histogram (counts_selected(BINS,0), xbins);
     }
-
     // Draw scaled x-axis histogram of selected points ("conditional");
     if( nselected > 0 && x_conditional) {
-      float x = amin[0];
-      blitz::Range BINS( 0, nbins-1);
       float yscale = max(counts(BINS,0))/max(counts_selected(BINS,0));
+      blitz::Array<float,1> scaled_bin_counts(xbins);
+      scaled_bin_counts = yscale*counts_selected(BINS,0);
       glColor4f( 0.5, 1.0, 1.0, 1.0);
-      glBegin( GL_LINE_STRIP);
-      for( int bin=0; bin<nbins; bin++, x+=xwidth) {
-        glVertex2f( x, 0.0); // lower left corner
-        glVertex2f( x, counts_selected( bin, 0)*yscale);   // left edge
-        glVertex2f( x+xwidth, counts_selected( bin, 0)*yscale);   // top edge
-        glVertex2f( x+xwidth,0.0);   // right edge 
-      }
-      glEnd();
+      draw_x_histogram (scaled_bin_counts, xbins);
     }
-
   }
-  
+
   // y-axis histograms
-  nbins = ybins;
-  if ((y_marginal || y_selection || y_conditional) && nbins > 0) {
+  if ((y_marginal || y_selection || y_conditional) && ybins > 0) {
+    blitz::Range BINS( 0, ybins-1);
     glLoadIdentity();
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glTranslatef( hoffset, yzoomcenter*yscale, 0);
     glScalef( xhscale*cp->hscale_slider[1]->value(), yscale, 1.0);
     glTranslatef( -1.0/(xhscale*cp->hscale_slider[1]->value()), -ycenter, 0.0);
     glTranslatef( 0.0, -yzoomcenter, 0);
-    float ywidth = (amax[1]-amin[1]) / (float)(nbins);
 
     // Draw y-axis histogram of all points.
     if (y_marginal) {
-      float y = amin[1];
       glColor4f( 0.0, 0.5, 0.5, 1.0);
-      glBegin( GL_LINE_STRIP);
-      for( int bin=0; bin<nbins; bin++) {
-        glVertex2f( 0.0, y);          
-        glVertex2f(counts(bin,1),y);   // bottom
-        glVertex2f(counts(bin,1), y+ywidth);   // right edge
-        glVertex2f(0.0, y+ywidth);   // top edge 
-        y+=ywidth;
-      }
-      glEnd();
+      draw_y_histogram (counts(BINS,1), ybins);
     }
-
     // Draw y-axis histogram of selected points
     if( nselected > 0 && y_selection) {
-      float y = amin[1];
       glColor4f( 0.25, 1.0, 1.0, 1.0);
-      glBegin( GL_LINE_STRIP);
-      for( int bin=0; bin<nbins; bin++) {
-        glVertex2f( 0.0, y);
-        glVertex2f(counts_selected( bin, 1),y);   // bottom
-        glVertex2f(counts_selected( bin, 1), y+ywidth);   // right edge
-        glVertex2f(0.0, y+ywidth);   // top edge 
-        y+=ywidth;
-      }
-      glEnd();
+      draw_y_histogram (counts_selected(BINS,1), ybins);
     }
-
     // Draw scaled y-axis histogram of selected points ("conditional");
     if( nselected > 0 && y_conditional) {
-      float y = amin[1];
-      blitz::Range BINS( 0, nbins-1);
-      float xscale = max(counts(BINS,1))/max(counts_selected(BINS,1));
-      glColor4f( 0.25, 1.0, 1.0, 1.0);
-      glBegin( GL_LINE_STRIP);
-      for( int bin=0; bin<nbins; bin++) {
-        glVertex2f( 0.0, y);
-        glVertex2f(counts_selected( bin, 1)*xscale,y);   // bottom
-        glVertex2f(counts_selected( bin, 1)*xscale,y+ywidth);   // right edge
-        glVertex2f(0.0, y+ywidth);   // top edge 
-        y+=ywidth;
-      }
-      glEnd();
+      float yscale = max(counts(BINS,1))/max(counts_selected(BINS,1));
+      blitz::Array<float,1> scaled_bin_counts(ybins);
+      scaled_bin_counts = yscale*counts_selected(BINS,1);
+      glColor4f( 0.5, 1.0, 1.0, 1.0);
+      draw_y_histogram (scaled_bin_counts, ybins);
     }
 
   }
@@ -1932,17 +1907,19 @@ void Plot_Window::invert_selection ()
     saved_selection = selected;
 
     // create something like an inverse in its place
-    selected = where(selected==0, 1, 0);
+    selected = where(selected, 0, 1);
     selection_is_inverted = true;
     // cout << "selection inverted" << endl;
   } 
   else {
-    // restore what we saved last time
+    // restore what we saved when inverting
+    // XXX this clobbers any brushing done while the selection is inverted
     selected = saved_selection;
     selection_is_inverted = false;
     // cout << "selection restored" << endl;
   }
 
+  previously_selected = selected;
   nselected = npoints-nselected;
 
   // Recolor all points using the new selection and redraw

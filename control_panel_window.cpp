@@ -485,6 +485,7 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   b->value(1);
   b->tooltip("toggle visibility of axis lines");
 
+#if 0
   // Button (4,2): Show axis labels
   show_labels = b = new Fl_Button(xpos, ypos+=25, 20, 20, "labels");
   b->callback((Fl_Callback*)static_maybe_redraw, this);
@@ -493,6 +494,7 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   b->selection_color(FL_BLUE);  
   b->value(1);
   b->tooltip("toggle visibility of axis labels");
+#endif // 0
 
   // Button (4,2): Show axis tickmarks
   show_scale = b = new Fl_Button(xpos, ypos+=25, 20, 20, "ticks");

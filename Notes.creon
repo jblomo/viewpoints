@@ -1407,3 +1407,38 @@ waste vertex mememory with z=0.  This should recover 50% of vertex
 memory on the CPU and the GPU for sploms containing 2D plots only.
 However, this will require VBOs to be handled differently, since
 currently thay are hard-coded to allocate npoints*3*sizeof(GLfloat)
+
+
+16:36:57 14 Sep 07
+
+Paul will work on the data column class.  And the file output/input dialogues, including #of rows, and optional autodetect.
+Creon will work on brush soloing, axis class, and vertex programs.
+
+But the real power is going to come with:
+
+ 1) creating columns by piping existing colmns to external apps (like awk, plastic, etc) and accepting new ones (unix pipe metaphor).
+
+ 2) Merging databases - creating new colmns from non-conforming tables via relational lookup, interpolation, etc.
+
+
+21:31:57 30 Sep 07
+
+presentation possibilities
+  SLAC, Grav probe B, Kavli (Jef Scargle)
+  Stanford - Megan Spencer
+  ARC 
+    aero - Lynda Haines
+    NAS - ?
+    robotics
+    kepler
+    Nano 
+      - Rich Jaffe
+      - Mino Freund
+    Friedeman
+    Ames space policy group (Will)
+    Surdar
+    Coughlan
+  Berkeley astro
+  Other NASA centers
+  
+    

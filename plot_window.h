@@ -166,6 +166,8 @@ class Plot_Window : public Fl_Gl_Window
     blitz::Array<float,2> counts, counts_selected;
     float xhscale, yhscale;
     void compute_histogram( int);
+    void draw_x_histogram(const blitz::Array<float,1>bin_counts, const int nbins);
+    void draw_y_histogram(const blitz::Array<float,1>bin_counts, const int nbins);
     void draw_histograms();
     void density_1D (blitz::Array<float,1>a, const int axis);
 

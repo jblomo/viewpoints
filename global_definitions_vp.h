@@ -26,34 +26,39 @@
 #ifndef VP_GLOBAL_DEFINITIONS_VP_H
 #define VP_GLOBAL_DEFINITIONS_VP_H 1
 
-#ifndef EXTERN
-  #define EXTERN extern
-#endif
-#ifndef INIT
+
+// The following trick allows a single include file (this one) to consistently define and/or declare global valriables,
+// as required, across compilation units.  To use it, insert a line: #define DEFINE_GLOBALS at the beginning
+// of (exactly) one .c or .c++ file, and include this file in all .c and .c++ files.
+#ifdef DEFINE_GLOBALS
+  // define a variable, and initialize its value if requested to do so.
+  #define GLOBAL
+  #define INIT(x) =x
+#else // DEFINE_GLOBALS
+  // otherwise, declare the same variable, qualified with "extern", and do not initialize it.
+  #define GLOBAL extern
   #define INIT(x)
-#endif
+#endif // DEFINE_GLOBALS
 
 // Use the Standard Template Library
 using namespace std;
 
 // Define debug flag and statement (move to global_definitions.h)
-EXTERN int debugging INIT(0);
+GLOBAL int debugging INIT(0);
 
 #define DEBUG(x) do {if (debugging) x;} while (0)
 
-EXTERN string about_string INIT ("");
+GLOBAL string about_string INIT ("");
 
 // Set parameters to hold error messages and flags.  These MUST be global
 // because they will be set and used throughout the system
-EXTERN string sErrorMessage INIT("");  // Default error message is empty
+GLOBAL string sErrorMessage INIT("");  // Default error message is empty
 
-// Set parameters to define the default layout of the plot windows.  NOTE: 
-// For early versions of this code, Creon noted that MAXPLOTS must be a power 
-// of 2 for the texture-based coloring scheme to work properly.
-EXTERN int nrows INIT(2);  // Default number of rows of plots
-EXTERN int ncols INIT(2);   // Default number of columns of plots
-EXTERN int nplots INIT(nrows*ncols);  // Default number of plot windows
-#define MAXPLOTS 256 // maximum number of plot windows, must be a power of 2.
+// Set parameters to define the default layout of the plot windows.
+GLOBAL int nrows INIT(2);  // Default number of rows of plots
+GLOBAL int ncols INIT(2);   // Default number of columns of plots
+GLOBAL int nplots INIT(nrows*ncols);  // Default number of plot windows
+#define MAXPLOTS 256 // maximum number of plot windows
 
 // number of symbols avaliable for plotting (i.e. number of textures available 
 // for points sprites) and also the number of symbols in the symbols_menu.
@@ -65,20 +70,20 @@ EXTERN int nplots INIT(nrows*ncols);  // Default number of plot windows
 
 // Initialize the actual number of rows (points or values) in the data file 
 // and the actual number of columns (fields) in each record.
-EXTERN int npoints INIT(MAXPOINTS);   // number of rows in data file
-EXTERN int nvars INIT(MAXVARS);    // number of columns in data file
+GLOBAL int npoints INIT(MAXPOINTS);   // number of rows in data file
+GLOBAL int nvars INIT(MAXVARS);    // number of columns in data file
 
 // use openGL vertex buffer objects (VBOs).  
-EXTERN bool use_VBOs INIT(true);
+GLOBAL bool use_VBOs INIT(true);
 
-EXTERN bool expert_mode INIT(false);
+GLOBAL bool expert_mode INIT(false);
 
 // Define blitz::Arrays to hold raw and ranked (sorted) data arrays.  Used 
 // extensively in many classes, so for reasons of simplicity and clarity, 
 // these are left global
-EXTERN blitz::Array<float,2> points;  // main data array
-EXTERN blitz::Array<int,2> ranked_points;   // data, ranked, as needed.
-EXTERN blitz::Array<int,1> ranked;    // flag: 1->column is ranked, 0->not
+GLOBAL blitz::Array<float,2> points;  // main data array
+GLOBAL blitz::Array<int,2> ranked_points;   // data, ranked, as needed.
+GLOBAL blitz::Array<int,1> ranked;    // flag: 1->column is ranked, 0->not
 
 // Define blitz::Arrays to flag selected points.  As with the raw data, these 
 // are left global for simplicity and clarity.
@@ -87,26 +92,26 @@ EXTERN blitz::Array<int,1> ranked;    // flag: 1->column is ranked, 0->not
 // previously_selected -- true iff selected before mouse went down
 // nselected -- number of points currently selected
 // saved_selection -- saves the old selection when "inverting", so we can go back.
-EXTERN blitz::Array<int,1> newly_selected;
-EXTERN blitz::Array<int,1> selected;
-EXTERN blitz::Array<int,1> previously_selected;
-EXTERN blitz::Array<int,1> saved_selection;
-EXTERN int nselected;  
-EXTERN bool selection_is_inverted INIT(false);
+GLOBAL blitz::Array<int,1> newly_selected;
+GLOBAL blitz::Array<int,1> selected;
+GLOBAL blitz::Array<int,1> previously_selected;
+GLOBAL blitz::Array<int,1> saved_selection;
+GLOBAL int nselected;  
+GLOBAL bool selection_is_inverted INIT(false);
 
 // Temporary array (reference) for use with qsort
-EXTERN blitz::Array<float,1> tmp_points;
+GLOBAL blitz::Array<float,1> tmp_points;
 
 // Define vector of strings to hold variable names.  Used extensively by the
 // main routine and class Control_Panel_Window
-EXTERN std::vector<std::string> column_labels; 
+GLOBAL std::vector<std::string> column_labels; 
 
 // Global toggle between scale histogram & scale view :-(
-EXTERN int scale_histogram INIT(0);
+GLOBAL int scale_histogram INIT(0);
 
 // Define variable to hold pointsize.  Used in main routine and classes 
 // Control_Panel_Window and Plot_Window.  (Move to class plot_window?)
-EXTERN float default_pointsize INIT(1.0);
+GLOBAL float default_pointsize INIT(1.0);
 
 // Define main control panel's top level (global) widgets.  Many of these must 
 // also be accessible to class plot_window and possibly Control_Panel_Window 
@@ -114,19 +119,19 @@ EXTERN float default_pointsize INIT(1.0);
 // cpt -- Tab widget to hold virtual control panels for individual plots.
 // npoints_slider -- maximum number of points to display in all 
 // plots.  Various buttons -- as suggested by their names.
-EXTERN Fl_Tabs *cpt;  
-EXTERN Fl_Tabs *brushes_tab;
-EXTERN Fl_Button *add_to_selection_button,
+GLOBAL Fl_Tabs *cpt;  
+GLOBAL Fl_Tabs *brushes_tab;
+GLOBAL Fl_Button *add_to_selection_button,
           *clear_selection_button, 
           *delete_selection_button;
-EXTERN Fl_Button *show_deselected_button, *mask_out_deselected, *invert_selection_button;
-EXTERN Fl_Button *write_data_button;
-EXTERN Fl_Button *choose_color_selected_button, 
+GLOBAL Fl_Button *show_deselected_button, *mask_out_deselected, *invert_selection_button;
+GLOBAL Fl_Button *write_data_button;
+GLOBAL Fl_Button *choose_color_selected_button, 
           *choose_color_deselected_button; 
-EXTERN Fl_Repeat_Button *change_all_axes_button;
-EXTERN Fl_Button *link_all_axes_button;
-EXTERN Fl_Button *reload_plot_window_array_button;
-EXTERN Fl_Button *read_data_button;
+GLOBAL Fl_Repeat_Button *change_all_axes_button;
+GLOBAL Fl_Button *link_all_axes_button;
+GLOBAL Fl_Button *reload_plot_window_array_button;
+GLOBAL Fl_Button *read_data_button;
 
 // Declare classes Control_Panel_Window and Plot_Window here so they can be 
 // referenced
@@ -138,14 +143,14 @@ class Brush;
 // can't be done until after the relevant class definitions.  NOTE: In the 
 // long run, it might be safer to store these in instances of the 
 // <vector> container class.
-EXTERN Plot_Window *pws[ MAXPLOTS];
+GLOBAL Plot_Window *pws[ MAXPLOTS];
 
 // There is one extra Control_Panel_Window, with index=MAXPLOTS.  It has no 
 // associated plot window - it affects all (unlocked) plots.
-EXTERN Control_Panel_Window *cps[ MAXPLOTS+1]; 
+GLOBAL Control_Panel_Window *cps[ MAXPLOTS+1]; 
 
 #define NBRUSHES 7
-EXTERN Brush *brushes[NBRUSHES];  // MCL XXX this should be a static c++ vector handled in brush.cpp
+GLOBAL Brush *brushes[NBRUSHES];  // MCL XXX this should be a static c++ vector handled in brush.cpp
 
 // Make absolutely certain variables for point sprites are defined
 #ifndef GL_POINT_SPRITE_ARB
@@ -167,11 +172,11 @@ EXTERN Brush *brushes[NBRUSHES];  // MCL XXX this should be a static c++ vector 
 #endif
 
 // Define pointers to hold confirmation window
-EXTERN Fl_Window *confirmation_window;
+GLOBAL Fl_Window *confirmation_window;
 
 // Global function definitions
-EXTERN int make_confirmation_window( const char* text, int nButtons = 3);
-EXTERN void reset_selection_arrays();
+GLOBAL int make_confirmation_window( const char* text, int nButtons = 3);
+GLOBAL void reset_selection_arrays();
 
 //***************************************************************************
 // Class: MyCompare

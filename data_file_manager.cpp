@@ -36,6 +36,8 @@
 // #include "New_File_Chooser.H"   // PRG's new file chooser
 // #include "New_File_Chooser.cpp"   // PRG's new file chooser
 
+#define WRITE_SELECTION_INFORMATION
+
 // Set static data members for class Data_File_Manager::
 
 // Define and set maximums length of header lines and number of lines in the 
@@ -94,8 +96,8 @@ void Data_File_Manager::initialize()
 int Data_File_Manager::findInputFile()
 {
   // Generate text, file extensions, etc, for this file type
-  char* title = NULL;
-  char* pattern = NULL;
+  string title;
+  string pattern;
   if( isAsciiInput) {
     title = "Read ASCII input from file";
     pattern = "*.{txt,lis,asc}\tAll Files (*)";
@@ -114,7 +116,7 @@ int Data_File_Manager::findInputFile()
   // Instantiate and show an New_File_Chooser widget.  NOTE: The pathname must
   // be passed as a variable or the window will begin in some root directory.
   New_File_Chooser* file_chooser =
-    new New_File_Chooser( cInFileSpec, pattern, New_File_Chooser::SINGLE, title);
+    new New_File_Chooser( cInFileSpec, pattern.c_str(), New_File_Chooser::SINGLE, title.c_str());
 
   // Loop: Select fileSpecs until a non-directory is obtained.  NOTE: If all
   // goes well, this should all be handled by the file_chooser object
@@ -997,8 +999,8 @@ int Data_File_Manager::read_binary_file_with_headers()
 int Data_File_Manager::findOutputFile()
 {
   // Generate query text and list file extensions, etc for this file type
-  char* title = NULL;
-  char* pattern = NULL;
+  string title;
+  string pattern;
   if( isAsciiOutput) {
     if( useSelectedData != 0) title = "Write ASCII output to file";
     else title = "Write selected ASCII output to file";
@@ -1020,7 +1022,7 @@ int Data_File_Manager::findOutputFile()
   // directory.
   New_File_Chooser* file_chooser = 
     new New_File_Chooser( 
-      cOutFileSpec, pattern, New_File_Chooser::CREATE, title);
+      cOutFileSpec, pattern.c_str(), New_File_Chooser::CREATE, title.c_str());
   file_chooser->directory( sDirectory_.c_str());
 
   // Loop: Select succesive filespecs until a non-directory is obtained
@@ -1160,6 +1162,9 @@ int Data_File_Manager::write_ascii_file_with_headers()
       if( i == 0) os << "!" << setw( 12) << column_labels[ i];
       else os << " " << setw( 13) << column_labels[ i];
     }
+		#ifdef WRITE_SELECTION_INFORMATION
+    os << " selection";
+		#endif // WRITE_SELECTION_INFORMATION
     os << endl;
     
     // Loop: Write successive ASCII records to the data block using the
@@ -1176,6 +1181,9 @@ int Data_File_Manager::write_ascii_file_with_headers()
           if( jcol > 0) os << " ";
           os << points( jcol, irow);
         }
+				#ifdef WRITE_SELECTION_INFORMATION
+		    os << " " << selected(irow);
+				#endif // WRITE_SELECTION_INFORMATION
         os << endl;
         rows_written++;
       }
@@ -1225,7 +1233,11 @@ int Data_File_Manager::write_binary_file_with_headers()
     
     // Loop: Write column labels to the header
     for( int i=0; i < nvars_out; i++ ) os << column_labels[ i] << " ";
+		#ifdef WRITE_SELECTION_INFORMATION
+    os << "selection";
+		#endif // WRITE_SELECTION_INFORMATION
     os << endl;
+
     
     // Loop: Write data and report any problems
     int nBlockSize = nvars*sizeof(float);
@@ -1234,6 +1246,10 @@ int Data_File_Manager::write_binary_file_with_headers()
       if( useSelectedData == 0 || selected( i) > 0) {
         vars = points( NVARS, i);
         os.write( (const char*) vars.data(), nBlockSize);
+				#ifdef WRITE_SELECTION_INFORMATION
+        float fselection = (float)(selected(i));
+			  os.write((const char*)&fselection, sizeof(float));
+				#endif // WRITE_SELECTION_INFORMATION
         if( os.fail()) {
           cerr << "Error writing to" << outFileSpec.c_str() << endl;
           return 1;

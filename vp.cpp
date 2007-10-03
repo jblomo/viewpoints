@@ -64,10 +64,8 @@
 #include "include_libraries_vp.h"
 #include <FL/Fl_Tooltip.H>
 
-// Include globals, and turn on initializers (using #define EXTERN)
-// initialize globals
-#define EXTERN
-#define INIT(x) = x
+// define and initialize globals
+#define DEFINE_GLOBALS
 #include "global_definitions_vp.h"
 
 // Include associated headers and source code
@@ -111,13 +109,12 @@ static const int main_w = 365;
 
 // Increase this when the main panel needs to get taller, including situations
 // when cp_widget_h increases:
-static const int main_h = 950;      
+static const int main_h = 850;      
 
-// Increase this when the controls for individual windows need more height to 
-// fit in their subpanel
+// Increase this when the plot controls need more height to fit in their subpanel
 // static const int cp_widget_h = 505; 
-static const int cp_widget_h = 485; 
-static const int brushes_h = 250;
+static const int cp_widget_h = 430; 
+static const int brushes_h = 225;
 
 // The rest of these should not have to change
 static const int tabs_widget_h = cp_widget_h+20;
@@ -1441,9 +1438,7 @@ int main( int argc, char **argv)
   #endif   // __WIN32__
 
   // Set the main control panel size and position.
-  // const int main_w = 350, main_h = 700;
-  const int main_x = 
-    number_of_screens*Fl::w() - (main_w + left_frame + right_frame + right_safe);
+  const int main_x = number_of_screens*Fl::w() - (main_w + left_frame + right_frame + right_safe);
   const int main_y = top_frame+top_safe;
 
   // Create the main control panel window

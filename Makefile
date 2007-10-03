@@ -5,7 +5,8 @@ platform := $(shell uname)
 hardware := $(shell uname -m)
 
 # compiler names:
-CXX		= g++
+#CXX		= g++
+CXX		= /sw/lib/gcc4.2/bin/g++ 
 MAKEDEPEND	= $(CXX) -E -MM
 
 ifeq ($(platform),Darwin)
@@ -26,7 +27,8 @@ ifeq ($(platform),Darwin)
 
   # compiling on intel mac
   ifeq ($(hardware),i386)
-	OPTIM = -O6 -ftree-vectorize -ftree-vectorizer-verbose=0 -Wall -Wconversion -Wno-long-double -ffast-math -fsigned-char -gfull 
+       #OPTIM = -O6 -ftree-vectorize -ftree-vectorizer-verbose=0 -Wall -Wconversion -Wno-long-double -ffast-math -fsigned-char -gfull 
+	OPTIM = -O6 -ftree-vectorize -ftree-vectorizer-verbose=0 -Wall -Wconversion -ffast-math -fsigned-char -gfull 
 
   # compiling on PowerPC mac
   else
