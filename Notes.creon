@@ -1441,4 +1441,24 @@ presentation possibilities
   Berkeley astro
   Other NASA centers
   
-    
+17:31:53 05 Oct 07
+
+IDEAS
+
+add "zoom to selection" - should be smooth.
+change zoom to use mouse down point as zoom center.
+add collapsing groups (from FLU)
+   find the author
+   will they be in fltk 2.0
+investigate qt4
+add save/restore state
+add "propagate" selection(s) based on equality in column?
+Or, add "folding" of data (on column?), e.g. on time value, to 3d dimension in able, then sweep through 3rd dimension, preserving selections.
+  What else can we do with "folding", or similar reshaping..  Can we replicate (some) columns?  Can we virtualize?  
+Or, is there a more general solution?
+
+09:19:29 10 Oct 07
+
+Add scrols to control panel (vertical).
+
+

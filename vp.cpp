@@ -63,6 +63,7 @@
 // Include the necessary include libraries
 #include "include_libraries_vp.h"
 #include <FL/Fl_Tooltip.H>
+#include <FL/Fl_Scroll.H>
 
 // define and initialize globals
 #define DEFINE_GLOBALS
@@ -79,10 +80,11 @@
 static int number_of_screens = 0;
 
 // Approximate values of window manager borders & desktop borders (stay out of
-// these).  These are used by the main method when the main control panel 
-// window is defined.  And when the plot windows are tiled to fit the screen.
-// Too bad they are only "hints" according most window managers (and we all 
-// know how well managers take hints).
+// these). The "*_frame" constants keep windows from crowding the coresponding screen
+// edge.  The "*_safe" constants keep windows from overlapping each other.
+// These are used when the main control panel window is defined.  And when the plot
+// windows are tiled to fit the screen. Too bad they are only "hints" according most
+// window managers (and we all know how well managers take hints).
 #ifdef __APPLE__
  static int top_frame=35, bottom_frame=0, left_frame=0, right_frame=5;
  static int top_safe = 1, bottom_safe=5, left_safe=5, right_safe=1;
@@ -133,6 +135,7 @@ Data_File_Manager dfm;
 // windows.  NOTE: help_view_widget must be defined here so it will be 
 // available to callback functions
 Fl_Window *main_control_panel;
+Fl_Scroll *main_scroll;
 Fl_Menu_Bar *main_menu_bar;
 Fl_Window *about_window;
 Fl_Window *help_view_window;
@@ -288,19 +291,30 @@ void create_main_control_panel( int main_x, int main_y, int main_w, int main_h, 
   Fl_Tooltip::delay(1.0);
   Fl_Tooltip::hoverdelay(1.0);
   Fl_Tooltip::size(12);
+  
+  main_h = min(main_h, Fl::h() - (top_frame + bottom_frame));
   main_control_panel = new Fl_Window( main_x, main_y, main_w, main_h, cWindowLabel);
   main_control_panel->resizable( main_control_panel);
 
   // Add callback function to intercept 'Close' operations
   main_control_panel->callback((Fl_Callback*) cb_main_control_panel, main_control_panel);
 
+  // Make main menu bar and add the global widgets to control panel
+  make_main_menu_bar();
+
+  // All controls (except the main menu bar) in the main panel are inside an Fl_Scroll, because
+  // there are too many controls to all fit vertically on some small screens.
+  // Eventally, we will make the sub-panels independently expnadable, ad reoragnize the gui, to
+  // alleviate this problem.
+  main_scroll = new Fl_Scroll(0, main_menu_bar->h(), main_w, main_h - main_menu_bar->h());
+  main_scroll->box(FL_NO_BOX);
+  
   // MCL XXX
   // if I move this call to create_brushes() to the end of this routine, to just before
   // the call to main_control_panel->end(), I get a core dump.  That's' too bad......
   create_brushes( brushes_x, brushes_y, main_w-6, brushes_h);
 
-  // Make main menu bar and add the global widgets to control panel
-  make_main_menu_bar();
+  // the widgets at the bottom of the main panel.  Seems they need to created here. :-?
   make_global_widgets ();
 
   // Inside the main control panel, there is a tab widget, cpt, 
@@ -311,6 +325,7 @@ void create_main_control_panel( int main_x, int main_y, int main_w, int main_h, 
 
   // Done creating main control panel (except for the tabbed 
   // sub-panels created by manage_plot_window_array)
+  main_scroll->end();
   main_control_panel->end();
   Fl_Group::current(0);  
 }
@@ -1194,7 +1209,7 @@ int main( int argc, char **argv)
   // definitions
   about_string = "\n\
     viewpoints 2.0 \n\
-    revision " + string(SVN_VERSION) + "\n\
+    " + string(SVN_VERSION) + "\n\
     \n\
     (c) 2006 M. Creon Levit and Paul R. Gazis   \n\
         creon.levit@@nasa.gov \n\
