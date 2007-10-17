@@ -8,6 +8,7 @@ hardware := $(shell uname -m)
 CXX		= g++
 # experimental
 #CXX		= /sw/lib/gcc4.2/bin/g++ 
+
 MAKEDEPEND	= $(CXX) -E -MM
 
 ifeq ($(platform),Darwin)

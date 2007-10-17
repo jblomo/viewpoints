@@ -80,7 +80,7 @@ class Brush : public Fl_Group
     // index of this brush in brushes[] array.
     int index;
 
-    static void set_sizes(int size);
+    static void set_sizes(float size);
 
     // number of points selected by this brush
     unsigned int count;

@@ -991,7 +991,7 @@ void read_data( Fl_Widget* o, void* user_data)
 
   // MCL XXX why is the following code repeated three times in this file?
   // Fewer points -> bigger starting default_pointsize
-  default_pointsize = max( 1.0, 6.0 - (int) 2*log10f( (float) npoints));
+  default_pointsize = max( 1.0, 6.0 - log10f( (float) npoints));
   Brush::set_sizes(default_pointsize);
 
   // DIAGNOSTIC
@@ -1057,7 +1057,7 @@ int load_state( Fl_Widget* o)
   }
 
   // Fewer points -> bigger starting default_pointsize
-  default_pointsize = max( 1.0, 6.0 - (int) log10f( (float) npoints));
+  default_pointsize = max( 1.0, 6.0 - log10f( (float) npoints));
   Brush::set_sizes(default_pointsize);
   
   // Set user_data for this widget to indicate that this is a READ operation, 
@@ -1441,7 +1441,7 @@ int main( int argc, char **argv)
   }
   
   // Fewer points -> bigger starting default_pointsize
-  default_pointsize = max( 1.0, 6.0 - (int) log10f( (float) npoints));
+  default_pointsize = max( 1.0, 6.0 - log10f( (float) npoints));
   Brush::set_sizes(default_pointsize);
 
   // STEP 3: Create main control panel.

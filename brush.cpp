@@ -136,8 +136,9 @@ void Brush::clear_now ()
 }
 
 // set the pointsize of all brushes (called when (re)initializing all brushes)
-void Brush::set_sizes(int size)
+void Brush::set_sizes(float size)
 {
+  printf("--- npoints = %d, setting default pointsize to %f\n", npoints, size);
   for (int i=0; i<nbrushes; i++) {
     brushes[i]->pointsize->value(size);
   }
