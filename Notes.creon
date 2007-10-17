@@ -1461,4 +1461,16 @@ Or, is there a more general solution?
 
 Add scrols to control panel (vertical).
 
+16:46:12 11 Oct 07
+
+BUG - merge data resets all plots, axes, etc.  Bummer.
+BUG - renrmalizign one axis resets all axes i a plot.  Bummer.
+
+01:48:01 14 Oct 07
+
+IDEA - use strides to do quick folding implementation --stride=<int>,
+and glMultiDrawArrays() (probably glMultiDrawElements() ), first with
+GL_POINTS, then with GL_LINE_STRIP.  Also use blitz where() statement
+to propagate (spread, in *lisp parlence) the selections based in the
+condition in ehe where(), and the selected spread axis.
 

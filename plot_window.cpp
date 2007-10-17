@@ -1204,6 +1204,8 @@ void Plot_Window::compute_histogram( int axis)
   int marginal    = cp->show_histogram[axis]->menu()[Control_Panel_Window::HISTOGRAM_MARGINAL].value();
   int selection   = cp->show_histogram[axis]->menu()[Control_Panel_Window::HISTOGRAM_SELECTION].value();
   int conditional = cp->show_histogram[axis]->menu()[Control_Panel_Window::HISTOGRAM_CONDITIONAL].value();
+  // MCL XXX presently, weighting is based on the z-axis variable.  Weighting variable should really be a pulldown of is own.
+  int weighted    = cp->show_histogram[axis]->menu()[Control_Panel_Window::HISTOGRAM_WEIGHTED].value();
   if (!(marginal || selection || conditional)) {
     return;
   }
@@ -1225,11 +1227,13 @@ void Plot_Window::compute_histogram( int axis)
 
   for( int i=0; i<npoints; i++) {
     float x = vertices( i, axis);
+    // MCL XXX presently, weighting is based on the z-axis variable.  Weighting variable should really be a pulldown of is own.
+    float weight = weighted?vertices(i,2):1.0;
     int bin = (int)(floorf( nbins * ( ( x - amin[axis]) / range)));
     if( bin < 0) bin = 0;
     if( bin > nbins-1) bin = nbins-1;
-    counts( bin, axis)++;
-    if( selected( i) == brush_index) counts_selected( bin, axis)++;
+    counts( bin, axis) += weight;
+    if( selected( i) == brush_index) counts_selected( bin, axis)+=weight;
   }
   float maxcount = max(max(counts(BINS,axis)), 1.0f);
   
@@ -1284,6 +1288,7 @@ void Plot_Window::draw_histograms()
   int x_marginal    = cp->show_histogram[0]->menu()[Control_Panel_Window::HISTOGRAM_MARGINAL].value();
   int x_selection   = cp->show_histogram[0]->menu()[Control_Panel_Window::HISTOGRAM_SELECTION].value();
   int x_conditional = cp->show_histogram[0]->menu()[Control_Panel_Window::HISTOGRAM_CONDITIONAL].value();
+
   int y_marginal    = cp->show_histogram[1]->menu()[Control_Panel_Window::HISTOGRAM_MARGINAL].value();
   int y_selection   = cp->show_histogram[1]->menu()[Control_Panel_Window::HISTOGRAM_SELECTION].value();
   int y_conditional = cp->show_histogram[1]->menu()[Control_Panel_Window::HISTOGRAM_CONDITIONAL].value();

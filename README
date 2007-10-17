@@ -60,15 +60,17 @@ The calling sequence for the command line version is:
 
  the optional arguments are:
 
-  --format=ascii (default) [shortcut: -f a]
-    Read an ASCII input file that consists of a header block followed by a 
-    data block.  Lines in the header block are indicated by one the comment 
-    characters '!', '#', or '%'.  In the absence of comment characters, the 
-    header block consists of a number of lines specified by the 
-    '--skip_header' command below, with a default value of 1 line.  The 
-    final line of the header contains the attribute names, whitespace 
-    delimited.  Successive lines in the data block contain the numeric 
+  --format=ascii (default) [shortcut: -f a] 
+    Read an ASCII input file that consists of a header block followed
+    by a data block.  Lines in the header block are indicated by one
+    the comment characters '!', '#', or '%'.  In the absence of
+    comment characters, the header block consists of a number of lines
+    specified by the '--skip_header' command below, with a default
+    value of 1 line.  The final line of the header contains the
+    attribute names, whitespace delimited by default (see --delimiter,
+    below).  Successive lines in the data block contain the numeric
     attribute values for successive samples, whitespace delimited.
+    See the file "sampledata.txt" for an example.
 
   --format=binary [shortcut: -f b]
     Read a binary input file.  The first record of this file consists of a 
@@ -80,9 +82,10 @@ The calling sequence for the command line version is:
     Specifies the number of lines that will be assigned to the header block 
     in the absence of comment characters.
 
-  --npoints=<integer> [shortcut: -n <int>] (default all)
+  --npoints=<integer> [shortcut: -n <int>] (default min(all,2000000))
     Specifies the number of samples (records or rows in the data block of an 
-    ASCII file) to read.  
+    ASCII file) to read. End of file will terminate reading.  Note the default:
+    if you want to read more than 2 million samples, say so using this argument.
 
   --rows=<integer> [shortcut: -r <int>] (default 2)
     Specifies the number of rows of scatterplots
@@ -107,21 +110,29 @@ The calling sequence for the command line version is:
     ordering for binary data, default=columnmajor
 
   --nvars [shortcut -v <int>]
-    input has NVARS values per point (only for row major binary data)
+    The number of variables (attributes) per sample is automatically
+    determined from the last header line in an ascii input file, or
+    from the first line of a column-major binary file.  This option is
+    only for row major binary data, in which case one must also
+    specfiy --npoints above.
 
   --delimiter [shortcut -d=<char>]
-    interpret CHAR as field separator, default is whitespace.  This delimiter 
-    is also used in the header to delimit attribute names.
-
+    interpret char as field separator, default is whitespace.  Delimiter characters can be
+    escaped usugn the standard c-language convetions. This delimiter 
+    is also used in the header to delimit variable (attribute) names.
+    e.g.  --delimiter=,  for comma delimited
+    or    --delimter=\t  for tab delimited
+    
   --missing_values [shortcut -M <number>]
     set the value of any unreadable, nonnumeric, empty, or missing values to 
     NUMBER, default=0.0.  NOTE: if you use the default delimiter (whitespace) 
-    then lines with one or more missing values are skipped and thus this 
+    then lines with one or more missing values are skipped and so this 
     option has no effect. 
 
   --no_vbo [shortcut -B]
     don't use openGL vertex buffer objects.  Useful if you have an older 
-    graphics card or if the graphics are inconsistent or are very slow.
+    graphics card or if the graphics are inconsistent or very slow.  May be
+    useful if you are attempting to look at huge datasets.
 
   --version [shortcut -V]
     print version information and then exit.
@@ -134,17 +145,14 @@ When 'viewpoints' is invoked, it will read the input file, then display a
 control panel along with an 'r' x 'c' array of linked scatter plots.  These 
 windows can be moved and resized in the conventional fashion.  If you delete 
 some window by accident, you can restore every window using the 'reload 
-plots' command.  WARNING: In the current version of 'viewpoints', if you 
-delete EVERY plot window, bad things may happen.  This will be changed in 
-future releases.
+plots' command. (If you delete every plot window, the program may crash).
 
-You can select and move between windows by clicking on them in the 
-conventional fashion for your OS.  You can also select a particular plot 
-window by clicking on the associated tab in the control panel window as 
-described below.  Within different windows, you can use the mouse to select 
-portions of the data set.  It is in this feature that the power of 
-'viewpoints' resides.  Rather than attempt to describe it in detail, we 
-encourage you to experiment.
+You can also select a particular plot by giving it the mouse focus
+directly, or by clicking on its associated tab in the control panel
+window.  Within different windows, you can use the mouse to select
+portions of the data set.  It is in this feature that the power of
+'viewpoints' resides.  Rather than attempt to describe it in detail,
+we encourage you to experiment.
 
 
 Main menu bar
@@ -176,7 +184,7 @@ Main menu bar
  Help|About                  Information about this version
 
   
-Keys & Buttons (with the cursor in one of plot windows):
+Buttons and (keyboard shortcuts when a plot window has mouse focus):
 
  action                 key
  --------------------   ----------

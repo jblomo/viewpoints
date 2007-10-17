@@ -313,7 +313,8 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   Fl_Menu_Item histogram_pulldown[] = {
     {"marginal",    0, 0, (void *)HISTOGRAM_MARGINAL,    FL_MENU_TOGGLE},
     {"selection",   0, 0, (void *)HISTOGRAM_SELECTION,   FL_MENU_TOGGLE},
-    {"conditional", 0, 0, (void *)HISTOGRAM_CONDITIONAL, FL_MENU_TOGGLE},
+    {"conditional", 0, 0, (void *)HISTOGRAM_CONDITIONAL, FL_MENU_TOGGLE|FL_MENU_DIVIDER},
+    {"weighted",    0, 0, (void *)HISTOGRAM_WEIGHTED,    FL_MENU_TOGGLE},
     {0}
   };
   // int n_histogram_pulldown_items = (sizeof(histogram_pulldown) / sizeof(histogram_pulldown[0])) - 1;

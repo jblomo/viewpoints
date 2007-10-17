@@ -127,7 +127,8 @@ class Control_Panel_Window : public Fl_Group
     enum histogram_styles {
         HISTOGRAM_MARGINAL = 0,
         HISTOGRAM_SELECTION,   
-        HISTOGRAM_CONDITIONAL
+        HISTOGRAM_CONDITIONAL,
+        HISTOGRAM_WEIGHTED
     };
 
     Fl_Button *show_scale;

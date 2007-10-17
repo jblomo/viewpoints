@@ -135,6 +135,14 @@ void Brush::clear_now ()
   pws[1]->redraw_all_plots(0);
 }
 
+// set the pointsize of all brushes (called when (re)initializing all brushes)
+void Brush::set_sizes(int size)
+{
+  for (int i=0; i<nbrushes; i++) {
+    brushes[i]->pointsize->value(size);
+  }
+}
+
 //***************************************************************************
 // Brush::make_widgets( *bw) -- Make widgets to hold brush control panel
 void Brush::make_widgets(Brush *bw)
