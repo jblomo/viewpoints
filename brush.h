@@ -104,7 +104,7 @@ class Brush : public Fl_Group
 
     // Pointers to sliders & menus
     Fl_Hor_Value_Slider_Input *pointsize;
-    Fl_Hor_Value_Slider_Input *lum1, *lum2, *alpha, *alpha0;
+    Fl_Hor_Value_Slider_Input *lum1, *lum2, *alpha, *cutoff;
     Vp_Color_Chooser *color_chooser;
 
     Fl_Button *add_to_selection;
@@ -125,6 +125,7 @@ class Brush : public Fl_Group
     static Fl_Pixmap* symbol_images[];
     void build_symbol_menu (void);
     int previous_symbol;
+
 };
 
 #endif   // BRUSH_H

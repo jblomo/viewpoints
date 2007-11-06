@@ -38,9 +38,6 @@
 
 // experimental
 #define ALPHA_TEXTURE
-#ifdef ALPHA_TEXTURE
-static const float alpha_threshold = 0.25;
-#endif // ALPHA_TEXTURE
 
 #define CHECK_GL_ERROR(msg)                    \
     {                                          \
@@ -972,6 +969,9 @@ void Plot_Window::handle_selection ()
 
   blitz::Range NPTS( 0, npoints-1);  
 
+  if (xdown==xtracked && ydown==ytracked)
+    return;
+
   // Identify newly-selected points.
   // XXX could be a bool array?  faster?
   // XXX could use binary search on sorted values.  Much faster?
@@ -986,8 +986,13 @@ void Plot_Window::handle_selection ()
   Brush *bp = dynamic_cast <Brush*> (brushes_tab->value());
   assert (bp);
   int brush_index = bp->index; 
-  if (mask_out_deselected->value() && brush_index) {
+  if (mask_out_deselected->value() && brush_index>0) {
+    // MCL this should be called "and with selection" or some such.
     selected( NPTS) = where( newly_selected( NPTS) && selected(NPTS), brush_index, previously_selected( NPTS));
+  } else if (mask_out_deselected->value() && brush_index==0) {
+    // MCL XXX this is a bogus hack to implement an "inverse" brush that deselects everything outside of it,
+    // and leaves unchanged whatever is inside it.  Invoke using brush zero while "mask_out_deselected" is turned on.
+    selected( NPTS) = where( !newly_selected( NPTS), brush_index, previously_selected( NPTS));
   } else {
     selected( NPTS) = where( newly_selected( NPTS), brush_index, previously_selected( NPTS));
   }
@@ -1061,17 +1066,7 @@ void Plot_Window::draw_data_points()
 
 #ifdef ALPHA_TEXTURE
   glEnable(GL_ALPHA_TEST);
-  glAlphaFunc(GL_GREATER, alpha_threshold);
 #endif //ALPHA_TEXTURE
-
-  // glBlendFunc(GL_SRC_ALPHA, GL_DST_ALPHA); // old default, use with ALPHA_TEXTURE #undefined
-
-  // next is almost right for bending against light backgrounds with ALPHA_TEXTURE #defined
-  // and it is OK (but not as good as the above with ALPHA_TEXTURE #undefined) for black backgrounds.
-  // needs glAlphaFunc(GL_GREATER, 0.5);
-  // glBlendFuncSeparate(GL_SRC_COLOR, GL_DST_ALPHA, GL_SRC_ALPHA, GL_ONE);  
-
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE);	// very good when compositing on black bkg w/ALPHA_TEXTURE #defined
 
   int z_bufferring_enabled = 0;
   int current_sprite = 0;
@@ -1080,7 +1075,7 @@ void Plot_Window::draw_data_points()
   if( cp->varindex3->value() != nvars) {
     if (cp->z_bufferring_button->value()) {
       glEnable( GL_DEPTH_TEST);
-      glDepthFunc( GL_GEQUAL);
+      glDepthFunc( GL_GREATER);
       z_bufferring_enabled = 1;
     }
   }
@@ -1100,6 +1095,38 @@ void Plot_Window::draw_data_points()
     glVertexPointer (3, GL_FLOAT, 0, (GLfloat *)vertices.data()); 
   }
 
+  // set the blending mode for this plot
+  switch (cp->blend_menu->value()) {
+  case Control_Panel_Window::BLEND_OVERPLOT:
+    glBlendFunc(GL_ONE, GL_ZERO);
+    break;
+  case Control_Panel_Window::BLEND_OVERPLOT_WITH_ALPHA:
+    glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA,GL_SRC_ALPHA,GL_ONE_MINUS_DST_COLOR);
+    break;
+  case Control_Panel_Window::BLEND_BRUSHES_SEPARATELY:
+    // MCL XXX this really needs to use stencil planes in order to Do The Right Thing.
+    clear_alpha_planes();
+    glBlendFunc(GL_SRC_ALPHA, GL_DST_ALPHA);
+    break; 
+  case Control_Panel_Window::BLEND_ALL_BRUSHES:
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE);	// very good when compositing on black bkg w/ALPHA_TEXTURE #defined
+    break;
+#if 0
+  case Control_Panel_Window::BLEND_ALL2:
+    glBlendFunc(GL_SRC_ALPHA, GL_DST_ALPHA); // old default, use with ALPHA_TEXTURE #undefined
+    break;
+  case Control_Panel_Window::BLEND_ALL3:
+    // next is almost right for bending against light backgrounds with ALPHA_TEXTURE #defined
+    // and it is OK (but not as good as the above with ALPHA_TEXTURE #undefined) for black backgrounds.
+    // needs glAlphaFunc(GL_GREATER, 0.5);
+    glBlendFuncSeparate(GL_SRC_COLOR, GL_DST_ALPHA, GL_SRC_ALPHA, GL_ONE);  
+    break;
+#endif
+  default:
+    assert (!"Impossible blending mode");
+    break;
+  }
+
   // Loop: Draw points for each brush, using that brush's properties.
 
   for( int brush_index=0; brush_index<NBRUSHES; brush_index++) {
@@ -1112,18 +1139,20 @@ void Plot_Window::draw_data_points()
     Brush *brush = brushes[brush_index];
     unsigned int count = brush->count;
     
-    // If some points were selected in this set, set their size, etc. and render
+    // If some points were selected in this set, render them
     if(count > 0) {
 
-      // clear_alpha_planes();  // MCL XXX this needs a per-brush toggle button
-
       // Set the pointsize for this brush (hard limit from 1 to 50 or 100)
+      // noe this is a combination of the brush's size and per-plot scaling
       float size_scaling = powf(2.0, cp->size->value());
       float size = min(max(brush->pointsize->value()*size_scaling, 1.0),50.0);
       if (cp->scale_points->value()) {
         size = min(sqrt(magnification)*size, 100.0f);
       }
-      glPointSize(size);
+
+      // alpa cutoff, usefull for soft brushes on light backgrounds.  This should perhaps
+      // be per plot instead of per brush, or better yet it should go away.
+      glAlphaFunc(GL_GREATER, brush->cutoff->value());
       
       // Set the sprite for this brush - the symbol used for plotting points.
       current_sprite = brush->symbol_menu->value();
@@ -1131,14 +1160,17 @@ void Plot_Window::draw_data_points()
       switch (current_sprite) {
       case 0:
         enable_regular_points();
+        glPointSize(size);
         break;
 #if 0 // this should be executed based on run-time test iff GL_POINT_SPRITE is absent.
       case 1:
         enable_antialiased_points();
+        glPointSize(size);
         break;
 #endif
       default:
         enable_sprites(current_sprite);
+        glPointSize(size+2); // sprites cover fewer pixels, in general
         break;
       }
 

@@ -157,7 +157,7 @@ void Brush::make_widgets(Brush *bw)
   // Fl_Button *b;
 
   // point size slider for this brush
-  pointsize = new Fl_Hor_Value_Slider_Input( xpos, ypos, bw->w()-145, 20, "size");
+  pointsize = new Fl_Hor_Value_Slider_Input( xpos, ypos, bw->w()-155, 20, "size");
   pointsize->align(FL_ALIGN_LEFT);
   pointsize->value(default_pointsize);
   pointsize->step(0.25);
@@ -166,7 +166,7 @@ void Brush::make_widgets(Brush *bw)
   pointsize->tooltip("change symbol size for this brush");
 
   // symbol types menu for this brush
-  symbol_menu = new Fl_Choice(xpos+pointsize->w()+35, ypos, 45, 20);
+  symbol_menu = new Fl_Choice(xpos+pointsize->w()+45, ypos, 60, 20);
   // call a method to do the dirty work of setting up all the glyphs for the symbols menu.
   build_symbol_menu ();
   symbol_menu->textsize(12);
@@ -174,13 +174,13 @@ void Brush::make_widgets(Brush *bw)
   symbol_menu->clear_visible_focus(); // MCL XXX - I think this should be set for all Fl_Choice widgets and perhaps more.
   symbol_menu->color(FL_WHITE);
   symbol_menu->menu(symbol_menu_items);
-  symbol_menu->label("sym");
+  symbol_menu->label("symb");
   symbol_menu->value(0);
   symbol_menu->callback( (Fl_Callback*)static_brush_changed, this);
   symbol_menu->tooltip("select symbol for this brush");
 
   // Alpha slider
-  alpha = new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, bw->w()-60, 20, "alpha");
+  alpha = new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, bw->w()-155, 20, "alpha");
   alpha->align(FL_ALIGN_LEFT);
   alpha->callback((Fl_Callback*)static_brush_changed, this);
   alpha->step(0.0001);
@@ -188,8 +188,17 @@ void Brush::make_widgets(Brush *bw)
   alpha->value(1.0);
   alpha->tooltip("change opacity of this brush");
 
+  // Alpha cutoff slider
+  cutoff = new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, bw->w()-155, 20, "cutoff");
+  cutoff->align(FL_ALIGN_LEFT);
+  cutoff->callback((Fl_Callback*)static_brush_changed, this);
+  cutoff->step(0.0001);
+  cutoff->bounds(0.0,1.0);
+  cutoff->value(0.0);
+  cutoff->tooltip("change alpha cutoff for this brush");
+
   // Initial luminosity slider
-  lum1 = new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, bw->w()-60, 20, "lum1");
+  lum1 = new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, bw->w()-50, 20, "lum1");
   lum1->align(FL_ALIGN_LEFT);
   lum1->callback((Fl_Callback*)static_brush_changed, this);
   lum1->step(0.0001);
@@ -198,7 +207,7 @@ void Brush::make_widgets(Brush *bw)
   lum1->tooltip("change initial luminosity for this brush");
 
   // Luminosity accumulation factor slider
-  lum2 = new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, bw->w()-60, 20, "lum2");
+  lum2 = new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, bw->w()-50, 20, "lum2");
   lum2->align(FL_ALIGN_LEFT);
   lum2->callback((Fl_Callback*)static_brush_changed, this);
   lum2->step(0.0001);

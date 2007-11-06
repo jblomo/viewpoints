@@ -160,6 +160,16 @@ class Control_Panel_Window : public Fl_Group
 
     static Fl_Menu_Item varindex_menu_items[]; 
 
+    Fl_Choice *blend_menu;
+    enum blend_styles {
+        BLEND_OVERPLOT = 0,
+        BLEND_OVERPLOT_WITH_ALPHA,
+        BLEND_BRUSHES_SEPARATELY,
+        BLEND_ALL_BRUSHES,
+        BLEND_ALL2,
+        BLEND_ALL3
+    };
+
     // Pointer to and index of the plot window associated with 
     // this control panel tab.  Each plot window has the same 
     // color and index as its associated control panel tab.

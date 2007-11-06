@@ -448,6 +448,25 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   b->selection_color(FL_BLUE); 
   b->tooltip("toggle z-buffering for this plot");
 
+  // blending menu for this plot
+  Fl_Menu_Item blend_menu_items[] = {
+    {"overplot",                               0, 0, (void *)BLEND_OVERPLOT,            0, 0, 0, 0, 0},
+    {"overplot with alpha",                    0, 0, (void *)BLEND_OVERPLOT_WITH_ALPHA, 0, 0, 0, 0, 0},
+    {"luminance blend each brush sepratately", 0, 0, (void *)BLEND_BRUSHES_SEPARATELY,  0, 0, 0, 0, 0},
+    {"luminance blend all brushes",            0, 0, (void *)BLEND_ALL_BRUSHES,         0, 0, 0, 0, 0},
+    {0}
+  };
+
+  blend_menu = new Fl_Choice(xpos2, ypos+=25, 20, 20);
+  blend_menu->textsize(14);
+  blend_menu->copy(blend_menu_items);
+  blend_menu->align(FL_ALIGN_RIGHT);
+  blend_menu->label("blending");
+  blend_menu->value(BLEND_BRUSHES_SEPARATELY);
+  blend_menu->clear_visible_focus();
+  blend_menu->callback( (Fl_Callback*)redraw_one_plot, this);
+  blend_menu->tooltip("select blending for this brush");
+
   // Button (1,3): Don't clear button - psychedelic fun!
   dont_clear = new Fl_Button(xpos2, ypos+=25, 20, 20, "don't clear");
   dont_clear->align(FL_ALIGN_RIGHT);

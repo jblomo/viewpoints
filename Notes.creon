@@ -1474,3 +1474,23 @@ GL_POINTS, then with GL_LINE_STRIP.  Also use blitz where() statement
 to propagate (spread, in *lisp parlence) the selections based in the
 condition in ehe where(), and the selected spread axis.
 
+13:09:12 20 Oct 07
+
+BUG delimiter characters dont work right.  Column headers (and data?) containing blanks get pares as multiple fields, even when delimiter is, say, a comma.
+
+IDEA: just add mask brush (sets alpha of all points outside to zero), and add spread function, and maybe a +1/-1 slider for mask, for folding points.
+
+18:02:10 24 Oct 07
+
+fixes: 
+
+  move blending menu to plot window, appply per plot rather than per brush
+  same for alpha cutoff (move under bkg).
+  eliminate all2 & all3 blend modes
+  zbuffer test sign reverse
+
+  saturation blending too?
+  brush solo
+  maskout
+  half float framebuffers
+  

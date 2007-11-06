@@ -116,7 +116,7 @@ static const int main_h = 850;
 // Increase this when the plot controls need more height to fit in their subpanel
 // static const int cp_widget_h = 505; 
 static const int cp_widget_h = 430; 
-static const int brushes_h = 225;
+static const int brushes_h = 250;
 
 // The rest of these should not have to change
 static const int tabs_widget_h = cp_widget_h+20;
