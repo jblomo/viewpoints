@@ -154,7 +154,8 @@ class Control_Panel_Window : public Fl_Group
       NORMALIZATION_SQUASH,
       NORMALIZATION_RANK,
       NORMALIZATION_PARTIAL_RANK,
-      NORMALIZATION_GAUSSIANIZE
+      NORMALIZATION_GAUSSIANIZE,
+      NORMALIZATION_RANDOMIZE
     };
     static Fl_Menu_Item normalization_style_menu_items[];
 

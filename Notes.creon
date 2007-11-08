@@ -1396,7 +1396,7 @@ Class Plot_Axis
   tick & grid data
   pointer to Plot_Window(s) displaying this axis.
 
-We shoudl probably split out the view-dependent parts of an axis from the da adependent parts? I.e. to conserve storage & time when several plots are displaying the same values but with different openGL viewing xforms, or displaying different 2nd & 3rd axes? (assuming I can write the magic vertex program to take separate vertex components form separate arrays).
+We shoudl probably split out the view-dependent parts of an axis from the data dependent parts? I.e. to conserve storage & time when several plots are displaying the same values but with different openGL viewing xforms, or displaying different 2nd & 3rd axes? (assuming I can write the magic vertex program to take separate vertex components form separate arrays).
 
 How do VBOs fit in?  Class VBO?  Leave them alone?
 
@@ -1476,7 +1476,7 @@ condition in ehe where(), and the selected spread axis.
 
 13:09:12 20 Oct 07
 
-BUG delimiter characters dont work right.  Column headers (and data?) containing blanks get pares as multiple fields, even when delimiter is, say, a comma.
+BUG delimiter characters dont work right.  Column headers (and data?) containing blanks get parsed as multiple fields, even when delimiter is, say, a comma.
 
 IDEA: just add mask brush (sets alpha of all points outside to zero), and add spread function, and maybe a +1/-1 slider for mask, for folding points.
 
@@ -1494,3 +1494,26 @@ fixes:
   maskout
   half float framebuffers
   
+12:47:44 06 Nov 07
+
+IDEA: use stencil buffers to correctly implement single-brush
+blending.  Render brushes from topmost to bottommost, decrementing
+stencil value each time?  Or something like that.  Can also respect
+z-buffer.
+
+PDL:
+ enable stenciling
+ clear stencil buffer to zero
+ for each brush number n, from highest number (topmost) to lowest (0, unselected).
+   // the next two lines cause the stencil test to pass if the current brush has a higher number
+   // than any previous brush which touched the pixel.  If the test passes,
+   // we write n+1 into the stencil buffer.  I.e, if a pixel has not yet been touched, then this brush can 
+   // write to it, over and over, and so composite with itself only..  But if a higher number brush has 
+   // already written into the pixel, the stencil test fails and the pixel is not over-written.
+   call glStencilFunc (GL_GEQUAL, n+1, 0xFFFF);
+   call glStencilOp (GL_KEEP, GL_KEEP, GL_REPLACE);
+   draw brush normally.
+ end for
+
+  
+ 

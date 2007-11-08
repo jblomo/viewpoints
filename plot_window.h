@@ -141,6 +141,7 @@ class Plot_Window : public Fl_Gl_Window
     void enable_antialiased_points();
     void disable_sprites();
     void clear_alpha_planes();
+    void clear_stencil_buffer();
 
     // Event handlers
     int handle( int event);

@@ -57,6 +57,7 @@ Fl_Menu_Item Control_Panel_Window::normalization_style_menu_items[] = {
   { "rank",         0, 0, (void *) NORMALIZATION_RANK,         0, 0, 0, 0, 0},
   { "partial rank", 0, 0, (void *) NORMALIZATION_PARTIAL_RANK, 0, 0, 0, 0, 0},
   { "gaussianize",  0, 0, (void *) NORMALIZATION_GAUSSIANIZE,  0, 0, 0, 0, 0},
+  { "randomize",    0, 0, (void *) NORMALIZATION_RANDOMIZE,    0, 0, 0, 0, 0},
   { 0,              0, 0, (void *) 0,                          0, 0, 0, 0, 0}
 };
 
@@ -219,6 +220,7 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   varindex1->clear_visible_focus();
   varindex1->callback( (Fl_Callback*)static_extract_and_redraw, this);
   varindex1->tooltip("select variable for this plot's x-axis");
+  varindex1->when(FL_WHEN_RELEASE);
 
   // Y-axis variable selection menu
   varindex2 = new Fl_Choice (xpos+subwidth, ypos, subwidth-15, 25, "Y axis");
@@ -229,6 +231,7 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   varindex2->clear_visible_focus();
   varindex2->callback( (Fl_Callback*)static_extract_and_redraw, this);
   varindex2->tooltip("select variable for this plot's y-axis");
+  varindex2->when(FL_WHEN_RELEASE|FL_WHEN_CHANGED);
 
   // Z-axis variable selection menu
   varindex3 = new Fl_Choice (xpos+2*subwidth, ypos, subwidth-15, 25, "Z axis");
@@ -443,7 +446,7 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   // Button (1,2): z-buffering control
   z_bufferring_button = b = new Fl_Button(xpos2, ypos+=25, 20, 20, "z-bufferring");
   b->callback((Fl_Callback*)redraw_one_plot, this);
-  b->align(FL_ALIGN_RIGHT); 
+  b->align(FL_ALIGN_RIGHT);
   b->type(FL_TOGGLE_BUTTON); 
   b->selection_color(FL_BLUE); 
   b->tooltip("toggle z-buffering for this plot");
@@ -576,4 +579,5 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   
   transform_style->end();
   no_transform->setonly();
+
 }

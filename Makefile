@@ -56,7 +56,7 @@ ifeq ($(platform),Darwin)
 	LDLIBS = -framework AGL -framework OpenGL -framework Carbon -framework ApplicationServices -framework vecLib /usr/local/lib/libgsl.a -lm -lmx -lboost_serialization-d
 
 # for OSX machines where I CAN install things as root... (don't forget to build all libraries as static only)
-	INCPATH = -I/sw/include -I/usr/local/include -I/usr/local/include/boost-1_34/
+	INCPATH = -I/usr/local/include -I/sw/include -I/usr/local/include/boost-1_34/
 	LIBPATH	= -L/usr/local/lib -L/sw/lib
 
 else
