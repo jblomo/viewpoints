@@ -1,10 +1,10 @@
 // viewpoints - interactive linked scatterplots and more.
 // copyright 2005 Creon Levit and Paul Gazis, all rights reserved.
 //***************************************************************************
-// File name: New_File_Chooser.h
+// File name: Vp_File_Chooser.h
 //
 // Class definitions:
-//   New_File_Chooser -- File chooser window for Creon Levit's viewpoints
+//   Vp_File_Chooser -- File chooser window for Creon Levit's viewpoints
 //
 // Classes referenced:
 //   Various FLTK classes
@@ -35,12 +35,12 @@
 //      vp.cpp could be consolidated.
 //
 // Author: Bill Spitzak and others   1998-2005
-// Modified: P. R. Gazis  13-JUL-2007
+// Modified: P. R. Gazis  07-NOV-2007
 //***************************************************************************
 
 // Protection to make sure this header is not included twice
-#ifndef NEW_FILE_CHOOSER_H
-#define NEW_FILE_CHOOSER_H
+#ifndef Vp_File_Chooser_H
+#define Vp_File_Chooser_H
 
 // Include necessary C libraries
 #include <stdio.h>
@@ -106,10 +106,10 @@ using namespace std;
 #include <FL/Fl_Shared_Image.H>
 
 //***************************************************************************
-// Class: New_File_Chooser.h
+// Class: Vp_File_Chooser.h
 //
 // Class definitions:
-//   New_File_Chooser -- File chooser window for Creon Levit's viewpoints
+//   Vp_File_Chooser -- File chooser window for Creon Levit's viewpoints
 //
 // Classes referenced:
 //   Various FLTK classes
@@ -117,8 +117,8 @@ using namespace std;
 // Purpose: File chooser for Creon Levit's viewpoints.
 //
 // Functions:
-//   New_File_Chooser( *value_in, *filter_in, type_in, *title) -- Const
-//   ~New_File_Chooser() -- Destructor
+//   Vp_File_Chooser( *value_in, *filter_in, type_in, *title) -- Const
+//   ~Vp_File_Chooser() -- Destructor
 //
 //    callback( (*pCallback)( *, *), *pData = 0) -- Set callback function
 //    color() -- Get file browset color
@@ -133,6 +133,8 @@ using namespace std;
 //    hide() -- Hide main window
 //    iconsize() -- Get icon size
 //    iconsize( size_in) -- Set icon size
+//    isAscii( isAscii_in) -- Set ASCII flag
+//    isAscii() -- Get ASCII flag
 //    char* label() -- Get label of main window
 //    label( const char *label_in) -- Set label of main window
 //    ok_label() -- Get label of the 'OK' button
@@ -155,6 +157,8 @@ using namespace std;
 //    value( index) -- Return filename for this index
 //    value( filename) -- Set filename
 //    visible() -- Get visibility state for main window
+//    writeSelectionInfo( writeSelectionInfo_in) set flag
+//    writeSelectionInfo() -- Get Write Selection Info flag
 //
 //    favoritesCB( *w) -- Handle favorites dialog
 //    previewCB( *fc) -- Handle timeouts for the preview box
@@ -203,7 +207,7 @@ using namespace std;
 // Author: Bill Spitzak and others   1998-2005
 // Modified: P. R. Gazis  23-APR-2007
 //***************************************************************************
-class FL_EXPORT New_File_Chooser
+class FL_EXPORT Vp_File_Chooser
 {
   // NOTE: In the original Fl_File_Chooser code, these methods and variables 
   // were all made private.  They are left protected here for development 
@@ -211,7 +215,7 @@ class FL_EXPORT New_File_Chooser
   protected:
     // General methods used in other methods
     void favoritesCB( Fl_Widget *pWidget);
-    static void previewCB( New_File_Chooser *fc);
+    static void previewCB( Vp_File_Chooser *fc);
     void update_favorites();
     void update_preview();
 
@@ -224,6 +228,9 @@ class FL_EXPORT New_File_Chooser
     static void cb_fileName( Fl_File_Input*, void*);
     void cb_fileName_i( Fl_File_Input*, void*);
     void fileNameCB();
+    static void cb_fileType( Fl_Choice*, void*);
+    void cb_fileType_i( Fl_Choice*, void*);
+    void fileTypeCB();
     static void cb_preview( Fl_Tile*, void*);
     void cb_preview_i( Fl_Tile*, void*);
     static void cb_showChoice( Fl_Choice*, void*);
@@ -255,14 +262,18 @@ class FL_EXPORT New_File_Chooser
     void cb_okButton_i( Fl_Return_Button*, void*);
     static void cb_previewButton( Fl_Check_Button*, void*);
     void cb_previewButton_i( Fl_Check_Button*, void*);
+    static void cb_selectionButton( Fl_Check_Button*, void*);
+    void cb_selectionButton_i( Fl_Check_Button*, void*);
 
     // Pointer to callback function and other buffers
-    void (*callback_)( New_File_Chooser*, void *);
+    void (*callback_)( Vp_File_Chooser*, void *);
     void *data_;
     char directory_[ 1024];
     char pattern_[ 1024];
     char preview_text_[ 2048];
     int type_;
+    int isAscii_;
+    int writeSelectionInfo_;
 
     // FLTK windows, boxes, and fields
     Fl_File_Browser *favList;
@@ -271,6 +282,7 @@ class FL_EXPORT New_File_Chooser
     Fl_File_Input *fileName;
     Fl_Box *previewBox;
     Fl_Choice *showChoice;
+    Fl_Choice *fileType;
     Fl_Double_Window *window;
     
     // FLTK Buttons
@@ -287,14 +299,14 @@ class FL_EXPORT New_File_Chooser
     static Fl_Preferences prefs_;
         
   public:
-    New_File_Chooser(   // Constructor
+    Vp_File_Chooser(   // Constructor
       const char *value_in, const char *filter_in, 
       int type_in, const char *title);
-    ~New_File_Chooser();   // Destructor
+    ~Vp_File_Chooser();   // Destructor
 
     // Access functions
     void callback(
-      void (*pCallback)( New_File_Chooser*, void*), void *pData = 0);
+      void (*pCallback)( Vp_File_Chooser*, void*), void *pData = 0);
     Fl_Color color();
     void color( Fl_Color file_browser_color_in);
     int count();
@@ -307,6 +319,8 @@ class FL_EXPORT New_File_Chooser
     void hide();
     uchar iconsize();
     void iconsize( uchar size_in);
+    void isAscii( int isAscii_in) { isAscii_ = isAscii_in;}
+    int isAscii() { return isAscii_;}
     const char* label();
     void label( const char *label_in);
     const char* ok_label();
@@ -329,6 +343,9 @@ class FL_EXPORT New_File_Chooser
     const char* value( int index = 1);
     void value( const char *filename_in);
     int visible();
+    void writeSelectionInfo( int writeSelectionInfo_in)
+      { writeSelectionInfo_ = writeSelectionInfo_in;}
+    int writeSelectionInfo() const { return writeSelectionInfo_;};
 
     // Enumeration to hold file browser states
     enum { SINGLE = 0, MULTI = 1, CREATE = 2, DIRECTORY = 4 };
@@ -336,6 +353,7 @@ class FL_EXPORT New_File_Chooser
     // Publicly-accessible buttons
     Fl_Button *newButton;   // New folder
     Fl_Check_Button *previewButton;   // Preview box checkbutton
+    Fl_Check_Button *selectionButton;   // Selection State checkbutton
 
     // Public static variables to hold various labels and the sort mode
     static const char *add_favorites_label;
@@ -343,6 +361,7 @@ class FL_EXPORT New_File_Chooser
     static const char *custom_filter_label;
     static const char *existing_file_label;
     static const char *favorites_label;
+    static const char *filetype_label;
     static const char *filename_label;
     static const char *filesystems_label;
     static const char *manage_favorites_label;
@@ -350,6 +369,8 @@ class FL_EXPORT New_File_Chooser
     static const char *new_directory_tooltip;
     static const char *preview_label;
     static const char *save_label;
+    static const char *selection_label;
+    static const char *selection_tooltip;
     static const char *show_label;
     static Fl_File_Sort_F *sort;
 };
@@ -358,7 +379,7 @@ class FL_EXPORT New_File_Chooser
 // some reason the compiler dies horribly when these are specified beginning with 
 // FL_EXPORT, so these lines have been commented out.
 // FL_EXPORT char *new_dir_chooser( const char *message, const char *fname, int relative=0);
-// FL_EXPORT char *new_File_Chooser( const char *message, const char *pat, const char *fname, int relative=0);
-// FL_EXPORT void new_File_Chooser_callback( void (*cb)( const char*));
-// FL_EXPORT void new_File_Chooser_ok_label( const char*l);
+// FL_EXPORT char *Vp_File_Chooser( const char *message, const char *pat, const char *fname, int relative=0);
+// FL_EXPORT void Vp_File_Chooser_callback( void (*cb)( const char*));
+// FL_EXPORT void Vp_File_Chooser_ok_label( const char*l);
 #endif

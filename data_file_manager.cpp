@@ -19,7 +19,7 @@
 // Purpose: Source code for <data_file_manager.h>
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  13-JUL-2007
+// Modified: P. R. Gazis  07-NOV-2007
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -33,8 +33,8 @@
 #include "plot_window.h"
 
 // These should not be necessary
-// #include "New_File_Chooser.H"   // PRG's new file chooser
-// #include "New_File_Chooser.cpp"   // PRG's new file chooser
+// #include "Vp_File_Chooser.H"   // PRG's new file chooser
+// #include "Vp_File_Chooser.cpp"   // PRG's new file chooser
 
 #define WRITE_SELECTION_INFORMATION
 
@@ -89,37 +89,39 @@ void Data_File_Manager::initialize()
 
 //***************************************************************************
 // Data_File_Manager::findInputFile() -- Query user to find the input file.
-// Class New_File_Chooser is used in preference to the New_File_Chooser method 
+// Class Vp_File_Chooser is used in preference to the Vp_File_Chooser method 
 // to obtain access to member functions such as directory() and to allow the 
 // possibility of a derived class with additional controls in the 
 // file_chooser window.  Returns 0 if successful.  
 int Data_File_Manager::findInputFile()
 {
-  // Generate text, file extensions, etc, for this file type
+  // Generate text, file extensions, etc, for this file type.  XXX PRG: Most 
+  // of this should be moved to Vp_File_Chooser
   string title;
   string pattern;
   if( isAsciiInput) {
-    title = "Read ASCII input from file";
+    title = "Open data file";
     pattern = "*.{txt,lis,asc}\tAll Files (*)";
   }
   else {
-    title =  "Read binary input from file";
+    title = "Open data file";
     pattern = "*.bin\tAll Files (*)";
   }
 
   // Initialize read status and filespec.  NOTE: cInFileSpec is defined as
-  // const char* for use with New_File_Chooser, which means it could be 
+  // const char* for use with Vp_File_Chooser, which means it could be 
   // destroyed by the relevant destructors!
   // const char *cInFileSpec = directory().c_str();
   const char *cInFileSpec = sDirectory_.c_str();
 
-  // Instantiate and show an New_File_Chooser widget.  NOTE: The pathname must
+  // Instantiate and show an Vp_File_Chooser widget.  NOTE: The pathname must
   // be passed as a variable or the window will begin in some root directory.
-  New_File_Chooser* file_chooser =
-    new New_File_Chooser( cInFileSpec, pattern.c_str(), New_File_Chooser::SINGLE, title.c_str());
+  Vp_File_Chooser* file_chooser =
+    new Vp_File_Chooser( cInFileSpec, pattern.c_str(), Vp_File_Chooser::SINGLE, title.c_str());
+  file_chooser->isAscii( isAsciiInput);
 
   // Loop: Select fileSpecs until a non-directory is obtained.  NOTE: If all
-  // goes well, this should all be handled by the file_chooser object
+  // goes well, this should be handled by the file_chooser object
   while( 1) {
     if( cInFileSpec != NULL) file_chooser->directory( cInFileSpec);
 
@@ -152,7 +154,7 @@ int Data_File_Manager::findInputFile()
     break;         
   } 
 
-  // If no file was specified then report, deallocate the New_File_Chooser 
+  // If no file was specified then report, deallocate the Vp_File_Chooser 
   // object, and quit.
   if( cInFileSpec == NULL) {
     cerr << "Data_File_Manager::findInputFile: "
@@ -161,7 +163,11 @@ int Data_File_Manager::findInputFile()
     return -1;
   }
 
-  // Load inFileSpec
+  // Query the Vp_File_Chooser object to get file type
+  if( file_chooser->isAscii() != 0) isAsciiInput = 1;
+  else isAsciiInput = 0;
+  
+  // Load the inFileSpec string
   inFileSpec.assign( (string) cInFileSpec);
   if( isAsciiInput == 1) 
     cout << "Data_File_Manager::findInputFile: Reading ASCII data from <";
@@ -183,8 +189,8 @@ int Data_File_Manager::findInputFile()
 }
 
 //***************************************************************************
-// Data_File_Manager::load_data_file( inFileSpec) -- Copy input filespec, then
-// invoke load_data_file to load  this file.
+// Data_File_Manager::load_data_file( inFileSpec) -- Copy the input filespec, 
+// then invoke load_data_file to load this file.
 int Data_File_Manager::load_data_file( string inFileSpec) 
 {
   input_filespec( inFileSpec);
@@ -223,7 +229,6 @@ int Data_File_Manager::load_data_file()
   int iReadStatus = 0;
   if( isAsciiInput == 0) iReadStatus = read_binary_file_with_headers();
   else iReadStatus = read_ascii_file_with_headers();
-
   if( iReadStatus != 0) {
     cout << "Data_File_Manager::load_data_file: "
          << "Problems reading file <" << inFileSpec.c_str() << ">" << endl;
@@ -454,7 +459,7 @@ int Data_File_Manager::load_data_file()
     old_points.free();
     old_column_labels.erase( old_column_labels.begin(), old_column_labels.end());
   }
-  
+
   // If we read a different number of points then we anticipated, we resize 
   // and preserve the main data array.  Note this can take lot of time and memory
   // temporarily.  XXX it would be better to handle the growth/shrinkage of this
@@ -462,8 +467,8 @@ int Data_File_Manager::load_data_file()
   if( npoints != npoints_cmd_line)
     points.resizeAndPreserve( nvars, npoints);
 
-  // Now that we know the number of variables and the number of points
-  // that we've read, we can allocate/reallocateResize the other global arrays.
+  // Now that we know the number of variables and points we've read, we can
+  // allocate and/or reallocateResize the other global arrays.
   resize_global_arrays();
 
   return 0;
@@ -992,7 +997,7 @@ int Data_File_Manager::read_binary_file_with_headers()
 
 //***************************************************************************
 // Data_File_Manager::findOutputFile() -- Query user to find the output file.
-// Class New_File_Chooser is used in preference to the New_File_Chooser method 
+// Class Vp_File_Chooser is used in preference to the Vp_File_Chooser method 
 // to obtain access to member functions such as directory() and to allow the 
 // possibility of a derived class with additional controls in the 
 // file_chooser window.  Returns 0 if successful.  
@@ -1013,17 +1018,18 @@ int Data_File_Manager::findOutputFile()
   }
 
   // Initialize output filespec.  NOTE: cOutFileSpec is defined as const 
-  // char* for use with New_File_Chooser, which means it could be destroyed 
+  // char* for use with Vp_File_Chooser, which means it could be destroyed 
   // by the relevant destructors!
   const char *cOutFileSpec = sDirectory_.c_str();
 
-  // Instantiate and show an New_File_Chooser widget.  NOTE: The pathname 
+  // Instantiate and show an Vp_File_Chooser widget.  NOTE: The pathname 
   // must be passed as a variable or the window will begin in some root 
   // directory.
-  New_File_Chooser* file_chooser = 
-    new New_File_Chooser( 
-      cOutFileSpec, pattern.c_str(), New_File_Chooser::CREATE, title.c_str());
+  Vp_File_Chooser* file_chooser = 
+    new Vp_File_Chooser( 
+      cOutFileSpec, pattern.c_str(), Vp_File_Chooser::CREATE, title.c_str());
   file_chooser->directory( sDirectory_.c_str());
+  file_chooser->isAscii( isAsciiOutput);
 
   // Loop: Select succesive filespecs until a non-directory is obtained
   while( 1) {
@@ -1076,7 +1082,11 @@ int Data_File_Manager::findOutputFile()
   // Obtain file name using the FLTK member function.  This code doesn't work, 
   // but is retained as a comment for descriptive purposes.
   // char *cOutFileSpec = 
-  //   New_File_Chooser( "write ASCII output to file", NULL, NULL, 0);
+  //   Vp_File_Chooser( "write ASCII output to file", NULL, NULL, 0);
+
+  // Get file type
+  if( file_chooser->isAscii() != 0) isAsciiOutput = 1;
+  else isAsciiOutput = 0;
 
   // Load outFileSpec
   int iResult = 0;
@@ -1099,7 +1109,7 @@ int Data_File_Manager::findOutputFile()
   // Make sure thepathname has been updated!
   directory( (string) file_chooser->directory());
 
-  // Deallocate the New_File_Chooser object
+  // Deallocate the Vp_File_Chooser object
   delete file_chooser;  // WARNING! This destroys cOutFileSpec!
 
   // Report result

@@ -22,7 +22,7 @@
 // Purpose: Source code for <brush.h>
 //
 // Author: Creon Levit    14-Aug-2007
-// Modified: P. R. Gazis  15-Aug-2007
+// Modified: P. R. Gazis  07-NOV-2007
 //***************************************************************************
 
 // Include the necessary system and 3rd party header files
@@ -58,17 +58,21 @@ Brush::Brush(int x, int y, int w, int h) : Fl_Group( x, y, w, h)
   count = 0;
   previous_symbol = 0;
 
-  if (index > 0) {
-    label("@circle");
-    labelsize(15);
-  } else {
-    label("@square");
+  if( index > 0) {
+    label( "@circle");
+    labelsize( 15);
+  } 
+  else {
+    label( "@square");
   }
   
   make_widgets(this);
   end();
 
-  double c[3] = {Brush::initial_colors[index][0],Brush::initial_colors[index][1],Brush::initial_colors[index][2]};
+  double c[3] = {
+    Brush::initial_colors[index][0],
+    Brush::initial_colors[index][1],
+    Brush::initial_colors[index][2]};
   color_chooser->rgb(c[0], c[1], c[2]);
   labelcolor(fl_rgb_color((uchar)(c[0]*255), (uchar)(c[1]*255), (uchar)(c[2]*255)));
   clear_visible_focus();
@@ -96,7 +100,10 @@ void Brush::brush_changed()
 // Brush::change_color() -- Change brush color
 void Brush::change_color()
 {
-  double c[3] = {color_chooser->r(), color_chooser->g(), color_chooser->b()};
+  double c[3] = {
+    color_chooser->r(),
+    color_chooser->g(),
+    color_chooser->b()};
   labelcolor(fl_rgb_color((uchar)(c[0]*255), (uchar)(c[1]*255), (uchar)(c[2]*255)));
   redraw_label();
 
@@ -108,10 +115,13 @@ void Brush::change_color()
 }
 
 //***************************************************************************
-// Brush::reset() -- Reset brish
+// Brush::reset() -- Reset brush
 void Brush::reset () 
 {
-  double c[3] = {Brush::initial_colors[index][0],Brush::initial_colors[index][1],Brush::initial_colors[index][2]};
+  double c[3] = {
+    Brush::initial_colors[index][0],
+    Brush::initial_colors[index][1],
+    Brush::initial_colors[index][2]};
   color_chooser->rgb(c[0], c[1], c[2]);
   change_color ();
   symbol_menu->value(0);
@@ -242,4 +252,3 @@ void Brush::make_widgets(Brush *bw)
   reset_button->value( 0);
   reset_button->tooltip("restore default parameters for this brush");
 }
-

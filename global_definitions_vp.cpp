@@ -21,9 +21,10 @@
 //
 // Functions:
 //   make_confirmation_window( text) -- Make confirmation window
+//   pow2 ( x) -- x*x
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  13-JUL-2007
+// Modified: P. R. Gazis  07-NOV-2007
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -43,7 +44,7 @@ int make_confirmation_window( const char* text, int nButtons)
   
   // Create the confirmation window
   Fl::scheme( "plastic");  // optional
-  confirmation_window = new Fl_Window( 400, 100, "Confirmation Window");
+  confirmation_window = new Fl_Window( 400, 70, "Confirmation Window");
   confirmation_window->begin();
   confirmation_window->selection_color( FL_BLUE);
   confirmation_window->labelsize( 10);
@@ -63,9 +64,9 @@ int make_confirmation_window( const char* text, int nButtons)
   output_box->align( FL_ALIGN_TOP|FL_ALIGN_CENTER|FL_ALIGN_INSIDE);
 
   // Define buttons and invoke callback functions to handle them
-  Fl_Button* yes_button = new Fl_Button( 90, 70, 60, 25, "&Yes");
-  Fl_Button* no_button = new Fl_Button( 170, 70, 60, 25, "&No");
-  Fl_Button* cancel_button = new Fl_Button( 250, 70, 60, 25, "&Cancel");
+  Fl_Button* yes_button = new Fl_Button( 90, 40, 60, 25, "&Yes");
+  Fl_Button* no_button = new Fl_Button( 170, 40, 60, 25, "&No");
+  Fl_Button* cancel_button = new Fl_Button( 250, 40, 60, 25, "&Cancel");
 
   // Revise format if this is not the three-button mode
   if( nButtons == 1) {
@@ -115,7 +116,9 @@ int make_confirmation_window( const char* text, int nButtons)
   return -1;
 }
 
-float pow2(float x)
+//***************************************************************************
+// pow2( x) -- For when you absolutely need x*x.
+float pow2( float x)
 {
-    return(x*x);
+    return( x*x);
 }

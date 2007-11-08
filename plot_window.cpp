@@ -22,7 +22,7 @@
 // Purpose: Source code for <Plot_Window.h>
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  13-JUL-2007
+// Modified: P. R. Gazis  07-NOV-2007
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -966,11 +966,9 @@ void Plot_Window::print_selection_stats ()
 // selection by calling draw_selection_information().
 void Plot_Window::handle_selection ()
 {
-
   blitz::Range NPTS( 0, npoints-1);  
 
-  if (xdown==xtracked && ydown==ytracked)
-    return;
+  if( xdown==xtracked && ydown==ytracked) return;
 
   // Identify newly-selected points.
   // XXX could be a bool array?  faster?
@@ -1477,7 +1475,7 @@ int Plot_Window::normalize(
   blitz::Array<int,1> a_rank, 
   int style, int axis_index)
 {
-  blitz::Range NPTS(0,npoints-1);
+  blitz::Range NPTS( 0, npoints-1);
 
 #ifdef CHECK_FOR_NANS_IN_NORMALIZATION
   blitz::Array<int,1> inrange(npoints);
@@ -1491,7 +1489,6 @@ int Plot_Window::normalize(
 #endif // CHECK_FOR_NANS_IN_NORMALIZATION
 
   float mu,sigma,partial_rank;
-  
   switch( style) {
   case Control_Panel_Window::NORMALIZATION_NONE:
     amin[axis_index] = -1;
@@ -1657,7 +1654,7 @@ void Plot_Window::compute_rank(int var_index)
 // MCL XXX this routine (and others) could be refactored to loop over the axes
 // instead of having so much code replicated for each axis.
 //
-int Plot_Window::extract_data_points ()
+int Plot_Window::extract_data_points()
 {
   // Get the labels for the plot's axes
   int axis0 = (int)(cp->varindex1->mvalue()->user_data());
@@ -1674,65 +1671,65 @@ int Plot_Window::extract_data_points ()
 
   // Order data to prepare for normalization and scaling and 
   // report progress
-  cout << "plot " << row << ", " << column << endl;
+  cout << "Plot_Window::extract_data_points: plot[ " 
+       << row << ", " << column << "]" <<endl;
   cout << " pre-normalization: " << endl;
 
-
   // Rank points by x-axis value
-  compute_rank(axis0);
-  x_rank.reference(ranked_points(axis0, NPTS));
-  cout << "  min: " << xlabel 
-       << "(" << x_rank(0) << ") = " 
-       << points( axis0, x_rank(0));
-  cout << "  max: " << xlabel 
-       << "(" << x_rank(npoints-1) << ") = " 
-       << points( axis0, x_rank(npoints-1));
+  compute_rank( axis0);
+  x_rank.reference( ranked_points(axis0, NPTS));
+  cout << "  x-axis( " << xlabel
+       << "): min[ " << x_rank( 0) << "] = "
+       << points( axis0, x_rank( 0))
+       << ", max[ " << x_rank( npoints-1) << "] = "
+       << points( axis0, x_rank( npoints-1)) << endl;
   
   // Rank points by y-axis value
-  compute_rank(axis1);
-  y_rank.reference(ranked_points(axis1, NPTS));
-  cout << "  min: " << ylabel 
-       << "("  << y_rank(0) << ") = " 
-       << points(axis1,y_rank(0));
-  cout << "  max: " << ylabel 
-       << "(" << y_rank(npoints-1) << ") = " 
-       << points( axis1, y_rank(npoints-1));
+  compute_rank( axis1);
+  y_rank.reference( ranked_points( axis1, NPTS));
+  cout << "  y-axis( " << ylabel
+       << "): min[ " << y_rank( 0) << "] = "
+       << points( axis1, y_rank( 0))
+       << ", max[ " << y_rank( npoints-1) << "] = "
+       << points( axis1, y_rank( npoints-1)) << endl;
   
   // If z-axis was specified, rank points by z-axis value
   if( axis2 != nvars) {
-    compute_rank(axis2);
-    z_rank.reference(ranked_points(axis2, NPTS));
-    cout << "  min: " << zlabel 
-         << "(" << z_rank(0) << ") = " 
-         << points(axis2,z_rank(0));
-    cout << "  max: " << zlabel 
-         << "(" << z_rank(npoints-1) << ") = " 
-         << points(axis2,z_rank(npoints-1));
+    compute_rank( axis2);
+    z_rank.reference( ranked_points( axis2, NPTS));
+    cout << "  z-axis( " << zlabel
+         << "): min[ " << z_rank( 0) << "] = "
+         << points( axis2, z_rank( 0))
+         << ", max[ " << z_rank( npoints-1) << "] = "
+         << points( axis2, z_rank( npoints-1)) << endl;
   }
-  cout << endl;
+  // cout << endl;
 
-  // OpenGL vertices, vertex arrays, and VBOs need to have their x, y, and z coordinates
-  // interleaved i.e. stored in adjacent memory locations:  x[0],y[0],z[0],x[1],y[1],z[1],.....
-  // This is not, unfortunately, how the raw data is stored in the blitz points() array.
-  // So we copy the appropriate data "columns" from the points() array into the appropriate
-  // components of the vertex() array.
+  // OpenGL vertices, vertex arrays, and VBOs need to have their x, y, and z 
+  // coordinates interleaved i.e. stored in adjacent memory locations -- i.e. 
+  // x[0],y[0],z[0],x[1],y[1],z[1],etc.  Unfortunately, this is not how the raw 
+  // data is stored in the blitz points()array. So we copy the appropriate data 
+  // "columns" from the points() array into the appropriate components of the 
+  // vertex() array.
   //
-  // Though this copying takes up time and memory, it is OK since we almost certainly want to
-  // normalize and/or transform the vertices prior rendering them.  Since we don't want to
-  // transform and/or normalize (i.e. clobber) the "original" data, we transform and/or normalize
-  // using aliases to the vertex data.  Since the vertex data are copies (not aliases) of the
+  // Though this copying takes up time and memory, it is OK since we almost 
+  // certainly want to normalize and/or transform the vertices prior rendering 
+  // them.  Since we don't want to transform and/or normalize (i.e. clobber) 
+  // the "original" data, we transform and/or normalize using aliases to the 
+  // vertex data.  Since the vertex data are copies (not aliases) of the 
   // original uncorrupted points() data, this works out fine.
 
-  // copy (via assignment) the appropriate columns of points() data to corresponding components of vertex() array
+  // Copy (via assignment) the appropriate columns of points() data to the
+  // corresponding components of the vertex() array
   vertices( NPTS, 0) = points( axis0, NPTS);  
   vertices( NPTS, 1) = points( axis1, NPTS);
-  // if z-axis is set to "-nothing-" (which it is, by default), then all z=0.
-  if( axis2 == nvars)
-    vertices( NPTS, 2) = 0.0;
-  else
-    vertices( NPTS, 2) = points( axis2, NPTS);
 
-  // create aliases to newly copied vertex data for normalization & transformation.
+  // If z-axis is set to "-nothing-" (which it is, by default), then all z=0.
+  if( axis2 == nvars) vertices( NPTS, 2) = 0.0;
+  else vertices( NPTS, 2) = points( axis2, NPTS);
+
+  // Create aliases to newly copied vertex data for normalization and
+  // transformation.
   blitz::Array<float,1> xpoints = vertices( NPTS, 0); 
   blitz::Array<float,1> ypoints = vertices( NPTS, 1);
   blitz::Array<float,1> zpoints = vertices( NPTS, 2);
@@ -1741,31 +1738,28 @@ int Plot_Window::extract_data_points ()
   // and report results
   cout << " post-normalization: " << endl;
   (void) normalize( xpoints, x_rank, cp->x_normalization_style->value(), 0);
-  cout << "  min: " << xlabel 
-       << "(" << x_rank(0) << ") = " 
-       << xpoints(x_rank(0));
-  cout << "  max: " << xlabel 
-       << "(" << x_rank(npoints-1) << ") = " 
-       << xpoints(x_rank(npoints-1)) << "  ";
+  cout << "  x-axis( " << xlabel
+       << "): min[ " << x_rank( 0) << "] = "
+       << points( axis0, x_rank( 0))
+       << ", max[ " << x_rank( npoints-1) << "] = "
+       << points( axis0, x_rank( npoints-1)) << endl;
     
   // Normalize and scale the y-axis
   (void) normalize( ypoints, y_rank, cp->y_normalization_style->value(), 1);
-  cout << "  min: " << ylabel 
-       << "(" << y_rank(0) << ") = " 
-       << ypoints(y_rank(0));
-  cout << "  max: " << ylabel 
-       << "(" << y_rank(npoints-1) << ") = " 
-       << ypoints(y_rank(npoints-1)) << "  ";
+  cout << "  y-axis( " << ylabel
+       << "): min[ " << y_rank( 0) << "] = "
+       << points( axis1, y_rank( 0))
+       << ", max[ " << y_rank( npoints-1) << "] = "
+       << points( axis1, y_rank( npoints-1)) << endl;
 
   // Normalize and scale the z-axis, if any
   if( axis2 != nvars) {
     (void) normalize( zpoints, z_rank, cp->z_normalization_style->value(), 2);
-    cout << "  min: " << zlabel 
-         << "(" << z_rank(0) << ") = " 
-         << zpoints(z_rank(0));
-    cout << "  max: " << zlabel 
-         << "(" << z_rank(npoints-1) << ") = " 
-         << zpoints(z_rank(npoints-1)) << "  ";
+    cout << "  z-axis( " << zlabel
+         << "): min[ " << z_rank( 0) << "] = "
+         << points( axis2, z_rank( 0))
+         << ", max[ " << z_rank( npoints-1) << "] = "
+         << points( axis2, z_rank( npoints-1)) << endl;
   }
   else {
     amin[2] = -1.0;

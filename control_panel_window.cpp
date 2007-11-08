@@ -576,5 +576,4 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   
   transform_style->end();
   no_transform->setonly();
-
 }

@@ -25,7 +25,7 @@
 //   1) Add comments and get this code to run under Windows.
 //
 // Author: Creon Levit     2005-2006
-// Modified: P. R. Gazis   13-JUL-2007
+// Modified: P. R. Gazis   07-NOV-2007
 //***************************************************************************
 
 // Protection to make sure this header is not included twice
@@ -138,7 +138,7 @@
 #include "Fl_Hor_Value_Slider_Input.H"  // my modified flews slider
 
 // Make provisions for PRG's new file chooser
-#include "New_File_Chooser.H"
+#include "Vp_File_Chooser.H"
 
 // OpenGL extensions.  NOTE: Some of these will clobber a Windows compile, so 
 // they must be excluded by the relevant defines!
