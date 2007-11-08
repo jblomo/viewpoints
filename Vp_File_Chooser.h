@@ -297,7 +297,7 @@ class FL_EXPORT Vp_File_Chooser
 
     // Static variables
     static Fl_Preferences prefs_;
-        
+    
   public:
     Vp_File_Chooser(   // Constructor
       const char *value_in, const char *filter_in, 
@@ -343,8 +343,7 @@ class FL_EXPORT Vp_File_Chooser
     const char* value( int index = 1);
     void value( const char *filename_in);
     int visible();
-    void writeSelectionInfo( int writeSelectionInfo_in)
-      { writeSelectionInfo_ = writeSelectionInfo_in;}
+    void writeSelectionInfo( int writeSelectionInfo_in);
     int writeSelectionInfo() const { return writeSelectionInfo_;};
 
     // Enumeration to hold file browser states

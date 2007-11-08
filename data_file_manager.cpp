@@ -19,7 +19,7 @@
 // Purpose: Source code for <data_file_manager.h>
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  07-NOV-2007
+// Modified: P. R. Gazis  08-NOV-2007
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -35,8 +35,6 @@
 // These should not be necessary
 // #include "Vp_File_Chooser.H"   // PRG's new file chooser
 // #include "Vp_File_Chooser.cpp"   // PRG's new file chooser
-
-#define WRITE_SELECTION_INFORMATION
 
 // Set static data members for class Data_File_Manager::
 
@@ -70,6 +68,7 @@ void Data_File_Manager::initialize()
   doAppend = 0;
   doMerge = 0;
   useSelectedData = 0;
+  writeSelectionInfo_ = 0;
 
   isColumnMajor = 1;
   nSkipHeaderLines = 1;  // Number of header lines to skip
@@ -1084,9 +1083,11 @@ int Data_File_Manager::findOutputFile()
   // char *cOutFileSpec = 
   //   Vp_File_Chooser( "write ASCII output to file", NULL, NULL, 0);
 
-  // Get file type
+  // Get file type and content information
   if( file_chooser->isAscii() != 0) isAsciiOutput = 1;
   else isAsciiOutput = 0;
+  if( file_chooser->writeSelectionInfo() != 0) writeSelectionInfo_ = 1;
+  else writeSelectionInfo_ = 0;
 
   // Load outFileSpec
   int iResult = 0;
@@ -1172,9 +1173,7 @@ int Data_File_Manager::write_ascii_file_with_headers()
       if( i == 0) os << "!" << setw( 12) << column_labels[ i];
       else os << " " << setw( 13) << column_labels[ i];
     }
-		#ifdef WRITE_SELECTION_INFORMATION
-    os << " selection";
-		#endif // WRITE_SELECTION_INFORMATION
+    if( writeSelectionInfo_ != 0) os << " selection";
     os << endl;
     
     // Loop: Write successive ASCII records to the data block using the
@@ -1191,9 +1190,7 @@ int Data_File_Manager::write_ascii_file_with_headers()
           if( jcol > 0) os << " ";
           os << points( jcol, irow);
         }
-				#ifdef WRITE_SELECTION_INFORMATION
-		    os << " " << selected(irow);
-				#endif // WRITE_SELECTION_INFORMATION
+        if( writeSelectionInfo_ != 0) os << " " << selected( irow);
         os << endl;
         rows_written++;
       }
@@ -1243,11 +1240,8 @@ int Data_File_Manager::write_binary_file_with_headers()
     
     // Loop: Write column labels to the header
     for( int i=0; i < nvars_out; i++ ) os << column_labels[ i] << " ";
-		#ifdef WRITE_SELECTION_INFORMATION
-    os << "selection";
-		#endif // WRITE_SELECTION_INFORMATION
+    if( writeSelectionInfo_ != 0) os << "selection";
     os << endl;
-
     
     // Loop: Write data and report any problems
     int nBlockSize = nvars*sizeof(float);
@@ -1256,10 +1250,10 @@ int Data_File_Manager::write_binary_file_with_headers()
       if( useSelectedData == 0 || selected( i) > 0) {
         vars = points( NVARS, i);
         os.write( (const char*) vars.data(), nBlockSize);
-				#ifdef WRITE_SELECTION_INFORMATION
-        float fselection = (float)(selected(i));
-			  os.write((const char*)&fselection, sizeof(float));
-				#endif // WRITE_SELECTION_INFORMATION
+				if( writeSelectionInfo_ != 0) {
+          float fselection = (float)(selected(i));
+	        os.write((const char*)&fselection, sizeof(float));
+				}
         if( os.fail()) {
           cerr << "Error writing to" << outFileSpec.c_str() << endl;
           return 1;

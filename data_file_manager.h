@@ -140,6 +140,7 @@ class Data_File_Manager
     int nSkipHeaderLines;
     int isAsciiInput, isAsciiOutput;
     int doAppend, doMerge, useSelectedData;
+    int writeSelectionInfo_;
     int isColumnMajor;
 
   public:

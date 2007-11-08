@@ -24,7 +24,7 @@
 //***************************************************************************
 
 // Include header
-#include "Vp_File_Chooser.H"
+#include "Vp_File_Chooser.h"
 
 // Define statics to hol bitmap image for new folder button
 static unsigned char idata_new[] = {
@@ -233,7 +233,8 @@ Vp_File_Chooser::Vp_File_Chooser(
         Fl_Check_Button* o = selectionButton = 
           new Fl_Check_Button( 85, 380, 160, 20, "Include selection info");
         o->down_box( FL_DOWN_BOX);
-        o->value( 0);
+        if( writeSelectionInfo_ == 0) o->value( 0);
+        else o->value( 1);
         o->callback( (Fl_Callback*) cb_selectionButton);
         o->tooltip( selection_tooltip);
         selectionButton->label( selection_label);
@@ -358,7 +359,11 @@ Vp_File_Chooser::Vp_File_Chooser(
   value( value_in);
   type( type_in);  // XXX PRG: Why is this here twice?
   isAscii_ = 1;
-  writeSelectionInfo_ = 0;
+  
+  // Set up selection state and box
+  int iWriteSelectionInfo;
+  prefs_.get( "writeSelectionInfo", iWriteSelectionInfo, 0);
+  writeSelectionInfo( iWriteSelectionInfo);
 
   // Set up the preview state and box
   int iPreview;
@@ -801,6 +806,11 @@ void Vp_File_Chooser::type( int type_in)
   if( type_in & DIRECTORY) 
     fileBrowser->filetype( Fl_File_Browser::DIRECTORIES);
   else fileBrowser->filetype( Fl_File_Browser::FILES);
+
+  // if( type_in & CREATE) selectionButton->activate();
+  // else selectionButton->deactivate();
+  if( type_in & CREATE) selectionButton->show();
+  else selectionButton->hide();
 }
 
 //*****************************************************************************
@@ -937,6 +947,15 @@ int Vp_File_Chooser::visible()
 }
 
 //*****************************************************************************
+// Vp_File_Chooser::writeSelectionState( writeSelectionInfo_in) -- Set write 
+// selection state and update preferences
+void Vp_File_Chooser::writeSelectionInfo( int writeSelectionInfo_in)
+{
+  writeSelectionInfo_ = writeSelectionInfo_in;
+  prefs_.set( "writeSelectionInfo", writeSelectionInfo_);
+}
+
+//*****************************************************************************
 // Vp_File_Chooser::favoritesCB( *pWidget) -- Master dialog handle to handle
 // all dialogs associated with the file browser window used as a favorites
 // button and pull-down menu.
@@ -1050,7 +1069,7 @@ void Vp_File_Chooser::favoritesCB( Fl_Widget *pWidget)
     int i;
     for( i = 0; i < favList->size(); i ++) {
       sprintf(name, "favorite%02d", i);
-      prefs_.set(name, favList->text( i + 1));
+      prefs_.set( name, favList->text( i + 1));
     }
 
     // Loop: Clear favorite directory 0 to 99 to clear old entries as 
@@ -1058,7 +1077,7 @@ void Vp_File_Chooser::favoritesCB( Fl_Widget *pWidget)
     for( ; i < 100; i ++) {
       sprintf( name, "favorite%02d", i);
       prefs_.get( name, pathname, "", sizeof( pathname));
-      if( pathname[0]) prefs_.set(name, "");
+      if( pathname[0]) prefs_.set( name, "");
       else break;
     }
 
@@ -2009,20 +2028,22 @@ void Vp_File_Chooser::cb_previewButton_i( Fl_Check_Button*, void*)
 
 //*****************************************************************************
 // Vp_File_Chooser::cb_selectionButton( o, v) -- Wrapper for the callback 
-// method for the 'Write Selection Info' checkbox.
+// method for the 'Write Selection Info' checkbox.  NOTE: The level of nesting 
+// in calls to parent() is important, and must reflect the actual level of 
+// nesting of the Fl_Check_Button object in the Vp_File_Chooser object!
 void Vp_File_Chooser::cb_selectionButton( Fl_Check_Button* o, void* v)
 {
   ( (Vp_File_Chooser*) 
-    (o->parent()->parent()->parent()->user_data()))->cb_selectionButton_i( o, v);
+    (o->parent()->parent()->user_data()))->cb_selectionButton_i( o, v);
 }
 
 //*****************************************************************************
 // Vp_File_Chooser::cb_selectionButton_i( *. *) -- Callback method for the 
-// 'Write Selection Info' checkbox. 
+// 'Write Selection Info' checkbox.  
 void Vp_File_Chooser::cb_selectionButton_i( Fl_Check_Button*, void*)
 {
-  // if( selectionButton->value() == 0) writeSelectionInfo_ = 0;
-  // else writeSelectionInfo_ = 1;
+  if( selectionButton->value()) writeSelectionInfo( 1);
+  else writeSelectionInfo( 0);
 }
 
 //*****************************************************************************
