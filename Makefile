@@ -79,7 +79,7 @@ LDFLAGS		= $(LIBPATH) $(LINKFLEWS) $(LINKFLTK) $(LINKBLITZ) $(LDLIBS)
 # The extension to use for executables...
 EXEEXT		= 
 
-SRCS =	vp.cpp global_definitions_vp.cpp control_panel_window.cpp plot_window.cpp data_file_manager.cpp New_File_Chooser.cpp \
+SRCS =	vp.cpp global_definitions_vp.cpp control_panel_window.cpp plot_window.cpp data_file_manager.cpp Vp_File_Chooser.cpp \
 	symbol_menu.cpp sprite_textures.cpp unescape.cpp brush.cpp Vp_Color_Chooser.cpp
 
 OBJS:=	$(SRCS:.cpp=.o)

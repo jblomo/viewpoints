@@ -1,4 +1,4 @@
-    // viewpoints - interactive linked scatterplots and more.
+// viewpoints - interactive linked scatterplots and more.
 // copyright 2005 Creon Levit and Paul Gazis, all rights reserved.
 //***************************************************************************
 // File name: vp.cpp
@@ -57,7 +57,7 @@
 //   redraw_if_changing( *dummy) -- Redraw changing plots
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  17-AUG-2007
+// Modified: P. R. Gazis  07-NOV-2007
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -80,11 +80,12 @@
 static int number_of_screens = 0;
 
 // Approximate values of window manager borders & desktop borders (stay out of
-// these). The "*_frame" constants keep windows from crowding the coresponding screen
-// edge.  The "*_safe" constants keep windows from overlapping each other.
-// These are used when the main control panel window is defined.  And when the plot
-// windows are tiled to fit the screen. Too bad they are only "hints" according most
-// window managers (and we all know how well managers take hints).
+// these). The "*_frame" constants keep windows from crowding the coresponding 
+// screen edge.  The "*_safe" constants keep windows from overlapping each 
+// other.  These are used when the main control panel window is defined.  And 
+// when the plot windows are tiled to fit the screen. Too bad they are only 
+// "hints" according most window managers (and we all know how well managers 
+// take hints).
 #ifdef __APPLE__
  static int top_frame=35, bottom_frame=0, left_frame=0, right_frame=5;
  static int top_safe = 1, bottom_safe=5, left_safe=5, right_safe=1;
@@ -241,15 +242,18 @@ void make_help_about_window( Fl_Widget *o)
   about_window->show();
 }
 
-
-// callback to keep tab's colored labels drawn in the right color when they're selected.
-void brushes_tab_cb () {
+//***************************************************************************
+// brushes_tab_cb() -- Callback to keep tab's colored labels drawn in the 
+// right color when they're selected.  Move this to class Brush?
+void brushes_tab_cb() {
   brushes_tab->labelcolor(brushes_tab->value()->labelcolor());
   brushes_tab->redraw_label();
 }
 
-// a lot of this should be moved to methods of class Brush.
-void create_brushes(int w_x, int w_y, int w_w, int w_h)
+//***************************************************************************
+// create_brushes( w_x, w_y, w_w, w_h) -- Create bushes.  Move this to class 
+// Brush?
+void create_brushes( int w_x, int w_y, int w_w, int w_h)
 {
   // Fl_Group::current(0);  // not a subwindow
   // brushes_window = new Fl_Window( w_x, w_y, w_w, w_h, "brushes");
@@ -278,7 +282,6 @@ void create_brushes(int w_x, int w_y, int w_w, int w_h)
 //  brushes_window->end();
 //  brushes_window->show();
 }
-
 
 //***************************************************************************
 // create_main_control_panel( main_x, main_y, main_w, main_h, cWindowLabel) 
@@ -451,10 +454,10 @@ void manage_plot_window_array( Fl_Widget *o, void* user_data)
     // When reading new data, invoke Fl_Gl_Window.hide() (instead of the 
     // destructor!) to destroy all plot windows along with their context, 
     // including VBOs
-    if( strncmp( widgetTitle, "Read", 4) == 0 ||
+    if( strncmp( widgetTitle, "Open", 4) == 0 ||
         strncmp( widgetTitle, "Append", 6) == 0 ||
         strncmp( widgetTitle, "Merge", 6) == 0 ||
-        strncmp( userData, "Read", 4) == 0) {
+        strncmp( userData, "Open", 4) == 0) {
       thisOperation = NEW_DATA;
       nplots_old = 0;
       for( int i=0; i<nplots; i++) pws[i]->hide();
@@ -660,7 +663,6 @@ void manage_plot_window_array( Fl_Widget *o, void* user_data)
       DEBUG(cout << "showing plot window " << i << endl);
         pws[i]->show( global_argc, global_argv);
     }
-    
     pws[i]->resizable( pws[i]);
 
     // Turn on the 'show' capability of Plot_Window::reset_view();
@@ -690,37 +692,24 @@ void make_main_menu_bar()
   main_menu_bar =
     new Fl_Menu_Bar( 0, 0, main_w, 25);
 
-  // Add File menu items
+  // Add File menu items.  NOTE: In some cases, the values of the title 
+  // and user_data fields of the main_menu_bar object may be used to control 
+  // the behavior of the manage_plot_window_array method.
   main_menu_bar->add( 
-    "File/Read ASCII file   ", 0, 
-    (Fl_Callback *) read_data, (void*) "ASCII");
+    "File/Open file            ", 0, 
+    (Fl_Callback *) read_data, (void*) "open ASCII");
   main_menu_bar->add( 
-    "File/Read binary file   ", 0, 
-    (Fl_Callback *) read_data, (void*) "binary", FL_MENU_DIVIDER);
-  main_menu_bar->add( 
-    "File/Append ASCII file   ", 0, 
+    "File/Append more data     ", 0, 
     (Fl_Callback *) read_data, (void*) "append ASCII");
   main_menu_bar->add( 
-    "File/Append binary file   ", 0, 
-    (Fl_Callback *) read_data, (void*) "append binary");
+    "File/Merge another file   ", 0, 
+    (Fl_Callback *) read_data, (void*) "merge ASCII", FL_MENU_DIVIDER);
   main_menu_bar->add( 
-    "File/Merge ASCII file   ", 0, 
-    (Fl_Callback *) read_data, (void*) "merge ASCII");
-  main_menu_bar->add( 
-    "File/Merge binary file   ", 0, 
-    (Fl_Callback *) read_data, (void*) "merge binary", FL_MENU_DIVIDER);
-  main_menu_bar->add( 
-    "File/Write ASCII file   ", 0, 
-    (Fl_Callback *) write_data, (void*) "ASCII");
-  main_menu_bar->add( 
-    "File/Write binary file   ", 0, 
-    (Fl_Callback *) write_data, (void*) "binary");
-  main_menu_bar->add( 
-    "File/Write selected ASCII data   ", 0, 
+    "File/Save selected data   ", 0, 
     (Fl_Callback *) write_data, (void*) "selected ASCII");
   main_menu_bar->add( 
-    "File/Write selected binary data   ", 0, 
-    (Fl_Callback *) write_data, (void*) "selected binary", FL_MENU_DIVIDER);
+    "File/Save all data        ", 0, 
+    (Fl_Callback *) write_data, (void*) "save ASCII", FL_MENU_DIVIDER);
   main_menu_bar->add( 
     "File/Load configuration   ", 0, 
     (Fl_Callback *) load_state);
@@ -951,18 +940,18 @@ void reset_all_plots()
 // data_file_manager to open and read data from a file.
 void read_data( Fl_Widget* o, void* user_data)
 {
-  // Evaluate user_data to get file format
-  if( strstr( (char *) user_data, "binary") != NULL) dfm.ascii_input( 0);
-  else dfm.ascii_input( 1);
+  // Begin by assuming that the input file is ASCII
+  dfm.ascii_input( 1);
 
-  // Evaluate user_data to get operation type
+  // Evaluate USER_DATA to get the operation type
   if( strstr( (char *) user_data, "append") != NULL) dfm.do_append( 1);
   else dfm.do_append( 0);
   if( strstr( (char *) user_data, "merge") != NULL) dfm.do_merge( 1);
   else dfm.do_merge( 0);
 
-  // Query user to find name of the input file.  If no file was specified, 
-  // return immediately and hope the calling routine can handle this.
+  // Invoke the findInputFile() methind of the data_file_manager object to 
+  // query the user for the input filename.  If no file is specified, return 
+  // immediately and hope the calling routine can handle this situation.
   int iQueryStatus = 0;
   iQueryStatus = dfm.findInputFile();
   if( iQueryStatus != 0) {
@@ -970,11 +959,11 @@ void read_data( Fl_Widget* o, void* user_data)
     return;
   }
 
-  // Invoke the load_data_file() method of the data file manager to read an 
-  // ASCII or BINARY file.  Error reporting is handled by the method itself.
+  // Invoke the load_data_file() method of the data_file_manager object to 
+  // read the data file.  Error reporting is handled by the method itself.
   dfm.load_data_file();
 
-  // If only one or fewer records are available then quit before something 
+  // If only one or fewer records are available, quit before something 
   // terrible happens!
   if( npoints <= 1) {
     cout << "Insufficient data, " << npoints
@@ -1000,9 +989,8 @@ void read_data( Fl_Widget* o, void* user_data)
   // char ans;
   // cin >> ans;
   
-  // Clear children of tab widget and reload plot window array.
+  // Clear children of the tab widgets and reload the plot window array.
   manage_plot_window_array( o, NULL);
-
 }
 
 //***************************************************************************
@@ -1011,25 +999,25 @@ void read_data( Fl_Widget* o, void* user_data)
 int load_state( Fl_Widget* o)
 {
   // Initialize filespec for the XML archive.  NOTE: cOutFileSpec is defined 
-  // as const char* for use with New_File_Chooser, which means it could be 
+  // as const char* for use with Vp_File_Chooser, which means it could be 
   // destroyed by the relevant destructors!
   const char *cInFileSpec = dfm.directory().c_str();
   // const char *cInFileSpec = strcat( dfm.directory().c_str(), "vp.xml");
 
-  // Instantiate and show an New_File_Chooser widget.  NOTE: The pathname 
+  // Instantiate and show an Vp_File_Chooser widget.  NOTE: The pathname 
   // must be passed as a variable or the window will begin in some root 
   // directory.
   char* title = "Load saved configuration from file";
   char* pattern = "*.xml\tAll Files (*)";
-  New_File_Chooser* file_chooser =
-    new New_File_Chooser( cInFileSpec, pattern, New_File_Chooser::SINGLE, title);
+  Vp_File_Chooser* file_chooser =
+    new Vp_File_Chooser( cInFileSpec, pattern, Vp_File_Chooser::SINGLE, title);
 
   // Loop: wait until the file selection is done
   file_chooser->show();
   while( file_chooser->shown()) Fl::wait();
   cInFileSpec = file_chooser->value();   
 
-  // If no file was specified then report, deallocate the New_File_Chooser 
+  // If no file was specified then report, deallocate the Vp_File_Chooser 
   // object, and quit.
   if( cInFileSpec == NULL) {
     cerr << "Main::load_state: "
@@ -1089,19 +1077,19 @@ int load_state( Fl_Widget* o)
 int save_state( Fl_Widget* o)
 {
   // Initialize filespec for the XML archive.  NOTE: cOutFileSpec is defined 
-  // as const char* for use with New_File_Chooser, which means it could be 
+  // as const char* for use with Vp_File_Chooser, which means it could be 
   // destroyed by the relevant destructors!
   const char *cOutFileSpec = dfm.directory().c_str();
   // const char *cOutFileSpec = strcat( dfm.directory().c_str(), "vp.xml");
 
-  // Instantiate and show an New_File_Chooser widget.  NOTE: The pathname 
+  // Instantiate and show an Vp_File_Chooser widget.  NOTE: The pathname 
   // must be passed as a variable or the window will begin in some root 
   // directory.
   char* title = "Save current configuration to file";
   char* pattern = "*.xml\tAll Files (*)";
-  New_File_Chooser* file_chooser = 
-    new New_File_Chooser( 
-      cOutFileSpec, pattern, New_File_Chooser::CREATE, title);
+  Vp_File_Chooser* file_chooser = 
+    new Vp_File_Chooser( 
+      cOutFileSpec, pattern, Vp_File_Chooser::CREATE, title);
 
   // Loop: Select succesive output filespecs until a non-directory is 
   // obtained and found acceptible to the user
@@ -1133,7 +1121,7 @@ int save_state( Fl_Widget* o)
     if( confirmationResult > 0) break;
   }
 
-  // If no file was specified then report, deallocate the New_File_Chooser 
+  // If no file was specified then report, deallocate the Vp_File_Chooser 
   // object, and quit.
   if( cOutFileSpec == NULL) {
     cerr << "Main::load_state: "
