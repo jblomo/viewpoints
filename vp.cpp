@@ -1413,8 +1413,10 @@ int main( int argc, char **argv)
   argc -= optind;
   argv += optind;
 
-  // Set random seed
+  // Set random seed (deprecated unix rand(3))
   srand( (unsigned int) time(0));
+  // initialize gsl random number generator (Mersenne Twister)
+  vp_gsl_rng = gsl_rng_alloc (gsl_rng_mt19937);
 
   // Restrict format and restrict and initialize the number of plots.  NOTE: 
   // nplots will later be reset by manage_plot_window_array( NULL) 

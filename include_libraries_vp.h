@@ -138,7 +138,7 @@
 #include "Fl_Hor_Value_Slider_Input.H"  // my modified flews slider
 
 // Make provisions for PRG's new file chooser
-#include "Vp_File_Chooser.H"
+#include "Vp_File_Chooser.h"
 
 // OpenGL extensions.  NOTE: Some of these will clobber a Windows compile, so 
 // they must be excluded by the relevant defines!
@@ -167,6 +167,8 @@
 #include <gsl/gsl_sys.h>
 #include <gsl/gsl_math.h>
 #include <gsl/gsl_cdf.h>
+#include <gsl/gsl_rng.h>
+#include <gsl/gsl_randist.h>
 
 // Blitz++ (C++ array operations via template metaprogramming)
 #include <blitz/array.h>

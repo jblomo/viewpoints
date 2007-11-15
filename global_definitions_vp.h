@@ -168,11 +168,14 @@ GLOBAL Brush *brushes[NBRUSHES];  // MCL XXX this should be a static c++ vector 
 
 //# Make absolutely certain SVN_VERSION is defined
 #ifndef SVN_VERSION
-  #define SVN_VERSION "186"
+  #define SVN_VERSION "unknown_version"
 #endif
 
 // Define pointers to hold confirmation window
 GLOBAL Fl_Window *confirmation_window;
+
+// persistant state for gsl random number generator (Mersenne Twister)
+GLOBAL gsl_rng * vp_gsl_rng;
 
 // Global function definitions
 GLOBAL int make_confirmation_window( const char* text, int nButtons = 3);

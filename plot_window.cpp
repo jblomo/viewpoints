@@ -1621,8 +1621,20 @@ int Plot_Window::normalize(
 
   // randomize the data - randomly shuffle the points.
   case Control_Panel_Window::NORMALIZATION_RANDOMIZE: 
+  {
+    // this is crufty because gsl doesn't know about 1D arrays with non-unit strides.
+    blitz::Array<float,1> acopy = a;
+    // initialize the temporary indices to be sequential.  
+    blitz::firstIndex ident;   
+    blitz::Array<int,1> tmp_indices(npoints);
+    tmp_indices = ident;
     // make a random permutation of a();
-    return 1;
+    gsl_ran_shuffle (vp_gsl_rng, tmp_indices.data(), npoints, sizeof(int));
+    for( int i=0; i<npoints; i++) {
+      a(i) = acopy(tmp_indices(i));
+    }
+  }
+  return 1;
 
   // Default: do nothing
   default:
