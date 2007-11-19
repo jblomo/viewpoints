@@ -26,10 +26,10 @@
 #ifndef VP_GLOBAL_DEFINITIONS_VP_H
 #define VP_GLOBAL_DEFINITIONS_VP_H 1
 
-
-// The following trick allows a single include file (this one) to consistently define and/or declare global valriables,
-// as required, across compilation units.  To use it, insert a line: #define DEFINE_GLOBALS at the beginning
-// of (exactly) one .c or .c++ file, and include this file in all .c and .c++ files.
+// The following trick allows a single include file (this one) to consistently 
+// define and/or declare global variables, as required, across compilation units.  
+// To use it, insert a line: #define DEFINE_GLOBALS at the beginning of (exactly) 
+// one .c or .c++ file, and include this file in all .c and .c++ files.
 #ifdef DEFINE_GLOBALS
   // define a variable, and initialize its value if requested to do so.
   #define GLOBAL

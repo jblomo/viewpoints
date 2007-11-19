@@ -19,7 +19,7 @@
 // Purpose: Source code for <data_file_manager.h>
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  08-NOV-2007
+// Modified: P. R. Gazis  18-NOV-2007
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -278,7 +278,7 @@ int Data_File_Manager::load_data_file()
       column_labels = old_column_labels;
 
       // DIAGNOSTIC
-      // cout << "PLOIT_04a: Restored old array during append ("
+      // cout << "PLOIT_04a: Restored old array during append or merge ("
       //      << points.rows() << "/" << nvars << ", "
       //      << points.columns() << "/" << npoints << ")" << endl;
       // cout << " Old Row( " << setw( 3) << 0 << "):";
@@ -319,7 +319,11 @@ int Data_File_Manager::load_data_file()
       // for( int ivar=0; ivar<nvars; ivar++) 
       //   cout << " " << setw( 8) << points( ivar, 0);
       // cout << endl;
-      // cout << "New Row( " << setw( 3) << npoints-1 << "):";
+      // cout << " New Row( " << setw( 3) << points.columns()-1 << "):";
+      // for( int ivar=0; ivar<nvars; ivar++) 
+      //   cout << " " << setw( 8) << points( ivar, points.columns()-1);
+      // cout << endl;
+      // cout << " New Row( " << setw( 3) << npoints-1 << "):";
       // for( int ivar=0; ivar<nvars; ivar++) 
       //   cout << " " << setw( 8) << points( ivar, npoints-1);
       // cout << endl;
@@ -328,7 +332,7 @@ int Data_File_Manager::load_data_file()
       points.resize( old_points.shape());
 
       // DIAGNOSTIC
-      // cout << "PLOIT_03b: About to combine arrays for append ("
+      // cout << "PLOIT_03b: Appended new array to old one ("
       //      << nvars << "/" << old_points.rows() << ", "
       //      << npoints << "/" << old_points.columns() << ")" << endl;
       // cout << " Old Row( " << setw( 3) << 0 << "):";
@@ -351,16 +355,16 @@ int Data_File_Manager::load_data_file()
       // for( int ivar=0; ivar<nvars; ivar++) 
       //   cout << " " << setw( 8) << points( ivar, 0);
       // cout << endl;
-      // cout << "New Row( " << setw( 3) << npoints-1 << "):";
+      // cout << " New Row( " << setw( 3) << all_npoints-1 << "):";
       // for( int ivar=0; ivar<nvars; ivar++) 
-      //   cout << " " << setw( 8) << points( ivar, npoints-1);
+      //   cout << " " << setw( 8) << points( ivar, all_npoints-1);
       // cout << endl;
 
       points = old_points;
       npoints = all_npoints;
 
       // DIAGNOSTIC
-      // cout << "PLOIT_04b: Finished combining arrays for append ("
+      // cout << "PLOIT_04b: Finished swapping arrays for append ("
       //      << old_nvars << "/" << points.rows() << ", "
       //      << old_npoints << "/" << points.columns() << ")" << endl;
       // cout << " New Row( " << setw( 3) << 0 << "):";
@@ -371,9 +375,13 @@ int Data_File_Manager::load_data_file()
       // for( int ivar=0; ivar<nvars; ivar++) 
       //   cout << " " << setw( 8) << points( ivar, old_npoints-1);
       // cout << endl;
-      // cout << " New Row( " << setw( 3) << npoints << "):";
+      // cout << " New Row( " << setw( 3) << old_npoints << "):";
       // for( int ivar=0; ivar<nvars; ivar++) 
       //   cout << " " << setw( 8) << points( ivar, old_npoints);
+      // cout << endl;
+      // cout << " New Row( " << setw( 3) << npoints-1 << "):";
+      // for( int ivar=0; ivar<nvars; ivar++) 
+      //   cout << " " << setw( 8) << points( ivar, npoints-1);
       // cout << endl;
       // cout << " New Row( " << setw( 3) << points.columns()-1 << "):";
       // for( int ivar=0; ivar<nvars; ivar++) 
@@ -1005,16 +1013,10 @@ int Data_File_Manager::findOutputFile()
   // Generate query text and list file extensions, etc for this file type
   string title;
   string pattern;
-  if( isAsciiOutput) {
-    if( useSelectedData != 0) title = "Write ASCII output to file";
-    else title = "Write selected ASCII output to file";
-    pattern = "*.{txt,lis,asc}\tAll Files (*)";
-  }
-  else {
-    if( useSelectedData != 0) title = "Write binary output to file";
-    else title = "Write selected binary output to file";
-    pattern = "*.bin\tAll Files (*)";
-  }
+  if( useSelectedData != 0) title = "Write all data to file";
+  else title = "Write selected data to file";
+  if( isAsciiOutput) pattern = "*.{txt,lis,asc}\tAll Files (*)";
+  else pattern = "*.bin\tAll Files (*)";
 
   // Initialize output filespec.  NOTE: cOutFileSpec is defined as const 
   // char* for use with Vp_File_Chooser, which means it could be destroyed 

@@ -22,7 +22,7 @@
 // Purpose: Source code for <Plot_Window.h>
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  13-JUL-2007
+// Modified: P. R. Gazis  18-NOV-2007
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -1628,8 +1628,9 @@ int Plot_Window::normalize(
     blitz::firstIndex ident;   
     blitz::Array<int,1> tmp_indices(npoints);
     tmp_indices = ident;
+
     // make a random permutation of a();
-    gsl_ran_shuffle (vp_gsl_rng, tmp_indices.data(), npoints, sizeof(int));
+    gsl_ran_shuffle( vp_gsl_rng, tmp_indices.data(), npoints, sizeof(int));
     for( int i=0; i<npoints; i++) {
       a(i) = acopy(tmp_indices(i));
     }
@@ -1700,40 +1701,37 @@ int Plot_Window::extract_data_points ()
 
   // Order data to prepare for normalization and scaling and 
   // report progress
-  cout << "plot " << row << ", " << column << endl;
+  cout << "Plot_Window::extract_data_points: plot[ " 
+       << row << ", " << column << "]" <<endl;
   cout << " pre-normalization: " << endl;
-
 
   // Rank points by x-axis value
   compute_rank(axis0);
   x_rank.reference(ranked_points(axis0, NPTS));
-  cout << "  min: " << xlabel 
-       << "(" << x_rank(0) << ") = " 
-       << points( axis0, x_rank(0));
-  cout << "  max: " << xlabel 
-       << "(" << x_rank(npoints-1) << ") = " 
-       << points( axis0, x_rank(npoints-1));
+  cout << "  x-axis( " << xlabel
+       << "): min[ " << x_rank( 0) << "] = "
+       << points( axis0, x_rank( 0))
+       << ", max[ " << x_rank( npoints-1) << "] = "
+       << points( axis0, x_rank( npoints-1)) << endl;
   
   // Rank points by y-axis value
   compute_rank(axis1);
   y_rank.reference(ranked_points(axis1, NPTS));
-  cout << "  min: " << ylabel 
-       << "("  << y_rank(0) << ") = " 
-       << points(axis1,y_rank(0));
-  cout << "  max: " << ylabel 
-       << "(" << y_rank(npoints-1) << ") = " 
-       << points( axis1, y_rank(npoints-1));
+  cout << "  y-axis( " << ylabel
+       << "): min[ " << y_rank( 0) << "] = "
+       << points( axis1, y_rank( 0))
+       << ", max[ " << y_rank( npoints-1) << "] = "
+       << points( axis1, y_rank( npoints-1)) << endl;
   
   // If z-axis was specified, rank points by z-axis value
   if( axis2 != nvars) {
     compute_rank(axis2);
     z_rank.reference(ranked_points(axis2, NPTS));
-    cout << "  min: " << zlabel 
-         << "(" << z_rank(0) << ") = " 
-         << points(axis2,z_rank(0));
-    cout << "  max: " << zlabel 
-         << "(" << z_rank(npoints-1) << ") = " 
-         << points(axis2,z_rank(npoints-1));
+    cout << "  z-axis( " << zlabel
+         << "): min[ " << z_rank( 0) << "] = "
+         << points( axis2, z_rank( 0))
+         << ", max[ " << z_rank( npoints-1) << "] = "
+         << points( axis2, z_rank( npoints-1)) << endl;
   }
   cout << endl;
 
@@ -1767,31 +1765,28 @@ int Plot_Window::extract_data_points ()
   // and report results
   cout << " post-normalization: " << endl;
   (void) normalize( xpoints, x_rank, cp->x_normalization_style->value(), 0);
-  cout << "  min: " << xlabel 
-       << "(" << x_rank(0) << ") = " 
-       << xpoints(x_rank(0));
-  cout << "  max: " << xlabel 
-       << "(" << x_rank(npoints-1) << ") = " 
-       << xpoints(x_rank(npoints-1)) << "  ";
+  cout << "  x-axis( " << xlabel
+       << "): min[ " << x_rank( 0) << "] = "
+       << points( axis0, x_rank( 0))
+       << ", max[ " << x_rank( npoints-1) << "] = "
+       << points( axis0, x_rank( npoints-1)) << endl;
     
   // Normalize and scale the y-axis
   (void) normalize( ypoints, y_rank, cp->y_normalization_style->value(), 1);
-  cout << "  min: " << ylabel 
-       << "(" << y_rank(0) << ") = " 
-       << ypoints(y_rank(0));
-  cout << "  max: " << ylabel 
-       << "(" << y_rank(npoints-1) << ") = " 
-       << ypoints(y_rank(npoints-1)) << "  ";
+  cout << "  y-axis( " << ylabel
+       << "): min[ " << y_rank( 0) << "] = "
+       << points( axis1, y_rank( 0))
+       << ", max[ " << y_rank( npoints-1) << "] = "
+       << points( axis1, y_rank( npoints-1)) << endl;
 
   // Normalize and scale the z-axis, if any
   if( axis2 != nvars) {
     (void) normalize( zpoints, z_rank, cp->z_normalization_style->value(), 2);
-    cout << "  min: " << zlabel 
-         << "(" << z_rank(0) << ") = " 
-         << zpoints(z_rank(0));
-    cout << "  max: " << zlabel 
-         << "(" << z_rank(npoints-1) << ") = " 
-         << zpoints(z_rank(npoints-1)) << "  ";
+    cout << "  z-axis( " << zlabel
+         << "): min[ " << z_rank( 0) << "] = "
+         << points( axis2, z_rank( 0))
+         << ", max[ " << z_rank( npoints-1) << "] = "
+         << points( axis2, z_rank( npoints-1)) << endl;
   }
   else {
     amin[2] = -1.0;

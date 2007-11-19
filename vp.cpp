@@ -57,7 +57,7 @@
 //   redraw_if_changing( *dummy) -- Redraw changing plots
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  07-NOV-2007
+// Modified: P. R. Gazis  18-NOV-2007
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -112,7 +112,8 @@ static const int main_w = 365;
 
 // Increase this when the main panel needs to get taller, including situations
 // when cp_widget_h increases:
-static const int main_h = 850;      
+// static const int main_h = 850;
+static const int main_h = 890;
 
 // Increase this when the plot controls need more height to fit in their subpanel
 // static const int cp_widget_h = 505; 
@@ -147,6 +148,8 @@ void usage();
 void make_help_about_window( Fl_Widget *o);
 void create_main_control_panel(int main_x, int main_y, int main_w, int main_h, char* cWindowLabel);
 void cb_main_control_panel( Fl_Widget *o, void* user_data);
+void create_brushes( int w_x, int w_y, int w_w, int w_h);
+void brushes_tab_cb();
 void create_broadcast_group();
 void manage_plot_window_array( Fl_Widget *o, void* user_data);
 void make_main_menu_bar();
@@ -243,47 +246,6 @@ void make_help_about_window( Fl_Widget *o)
 }
 
 //***************************************************************************
-// brushes_tab_cb() -- Callback to keep tab's colored labels drawn in the 
-// right color when they're selected.  Move this to class Brush?
-void brushes_tab_cb() {
-  brushes_tab->labelcolor(brushes_tab->value()->labelcolor());
-  brushes_tab->redraw_label();
-}
-
-//***************************************************************************
-// create_brushes( w_x, w_y, w_w, w_h) -- Create bushes.  Move this to class 
-// Brush?
-void create_brushes( int w_x, int w_y, int w_w, int w_h)
-{
-  // Fl_Group::current(0);  // not a subwindow
-  // brushes_window = new Fl_Window( w_x, w_y, w_w, w_h, "brushes");
-  // brushes_window->resizable(brushes_window);
-
-  // Inside the main control panel, there is a Tabs widget
-  // that contains all the indidual brush's sub-panels.
-  brushes_tab = new Fl_Tabs( w_x, w_y, w_w, w_h);
-  brushes_tab->selection_color( FL_BLUE);
-  brushes_tab->labelsize( 10);
-  brushes_tab->callback((Fl_Callback*)brushes_tab_cb);
-  // brushes_tab->clear_visible_focus(); // disbaled for future soloing...
-
-  Fl_Group::current(brushes_tab);
-  for (int i=0; i<NBRUSHES; i++) {
-    // create a brush (Fl_Group) corresponding to the tab
-    brushes[i] = new Brush(w_x, w_y+20, w_w-6, w_h-(20+6));
-  }
-  brushes_tab->end();
-
-  // we have to start with some brush active, and since
-  // brushes[0] is for "unselected" points, we start with brushes[1]
-  brushes_tab->value(brushes[1]);
-  brushes_tab_cb();
-
-//  brushes_window->end();
-//  brushes_window->show();
-}
-
-//***************************************************************************
 // create_main_control_panel( main_x, main_y, main_w, main_h, cWindowLabel) 
 // -- Create the main control panel window.
 void create_main_control_panel( int main_x, int main_y, int main_w, int main_h, char* cWindowLabel)
@@ -347,6 +309,47 @@ void cb_main_control_panel( Fl_Widget *o, void* user_data)
 }
 
 //***************************************************************************
+// create_brushes( w_x, w_y, w_w, w_h) -- Create bushes.  Move this to class 
+// Brush?
+void create_brushes( int w_x, int w_y, int w_w, int w_h)
+{
+  // Fl_Group::current(0);  // not a subwindow
+  // brushes_window = new Fl_Window( w_x, w_y, w_w, w_h, "brushes");
+  // brushes_window->resizable(brushes_window);
+
+  // Inside the main control panel, there is a Tabs widget
+  // that contains all the indidual brush's sub-panels.
+  brushes_tab = new Fl_Tabs( w_x, w_y, w_w, w_h);
+  brushes_tab->selection_color( FL_BLUE);
+  brushes_tab->labelsize( 10);
+  brushes_tab->callback( (Fl_Callback*) brushes_tab_cb);
+  // brushes_tab->clear_visible_focus(); // disbaled for future soloing...
+
+  Fl_Group::current(brushes_tab);
+  for (int i=0; i<NBRUSHES; i++) {
+    // create a brush (Fl_Group) corresponding to the tab
+    brushes[i] = new Brush(w_x, w_y+20, w_w-6, w_h-(20+6));
+  }
+  brushes_tab->end();
+
+  // we have to start with some brush active, and since
+  // brushes[0] is for "unselected" points, we start with brushes[1]
+  brushes_tab->value(brushes[1]);
+  brushes_tab_cb();
+
+//  brushes_window->end();
+//  brushes_window->show();
+}
+
+//***************************************************************************
+// brushes_tab_cb() -- Callback to keep tab's colored labels drawn in the 
+// right color when they're selected.  Move this to class Brush?
+void brushes_tab_cb() {
+  brushes_tab->labelcolor(brushes_tab->value()->labelcolor());
+  brushes_tab->redraw_label();
+}
+
+//***************************************************************************
 // create_broadcast_group () -- Create a special panel (really a group under 
 // a tab) with label "+" this group's widgets effect all the others (unless 
 // a plot's tab is "locked" - TBI).  MCL XXX should this be a method of 
@@ -399,7 +402,7 @@ void create_broadcast_group ()
 //    state' operation.  Set nplots_old = nplots, then calculate a new value 
 //    of nplots.  
 // 4) Reload operation -- Called from a button or menu.  Keep nplots = 
-//    nplots_old.  
+//    nplots_old.  NOTE: These no longer happen!
 // NOTE: Little attempt has been made to optimize this method for speed.  
 // WARNINGS: 1) This method is delicate, and slight changes in the FLTK calls 
 // could lead to elusive segmentation faults!  Test any changes carefully!  
@@ -453,10 +456,10 @@ void manage_plot_window_array( Fl_Widget *o, void* user_data)
 
     // When reading new data, invoke Fl_Gl_Window.hide() (instead of the 
     // destructor!) to destroy all plot windows along with their context, 
-    // including VBOs
+    // including VBOs.
     if( strncmp( widgetTitle, "Open", 4) == 0 ||
         strncmp( widgetTitle, "Append", 6) == 0 ||
-        strncmp( widgetTitle, "Merge", 6) == 0 ||
+        strncmp( widgetTitle, "Merge", 5) == 0 ||
         strncmp( userData, "Open", 4) == 0) {
       thisOperation = NEW_DATA;
       nplots_old = 0;
@@ -465,17 +468,20 @@ void manage_plot_window_array( Fl_Widget *o, void* user_data)
   }
 
   // CASE 3: If this was a button widget, assume it was a reload operation,
-  // since no other buttons can invoke this method
+  // since no other buttons can invoke this method.  NOTE: This operation
+  // doesn't work, but can no longer happen.
   else if( (pButton = dynamic_cast <Fl_Button*> (o))) {
     thisOperation = RELOAD;
     nplots_old = nplots;
     strcpy( widgetTitle, ((Fl_Menu_*) o)->label());
+    cout << "manage_plot_window_array: WARNING, RELOAD operation not supported!" << endl;
   }
 
-  // DEFAULT: Default to a reload operation
+  // DEFAULT: Default to a resize operation with nplots_old = nplots
   else {
-    thisOperation = RELOAD;
+    thisOperation = RESIZE;
     nplots_old = nplots;
+    strcpy( widgetTitle, "default");
   }
 
   // DIAGNOSTIC
@@ -489,7 +495,26 @@ void manage_plot_window_array( Fl_Widget *o, void* user_data)
   // cout << "DIAGNOSTIC, manage_plot_window_array: thisOperation " 
   //      << thisOperation << " (" << diag_stuff[ thisOperation].c_str() 
   //      << ")" << endl;
-    
+  
+  // If this is not an INITIALIZATION, save existing plot window positions
+  int npositions_save = 0;
+  if( thisOperation != INITIALIZE) npositions_save = nplots;
+  int pws_x_save[ npositions_save];
+  int pws_y_save[ npositions_save];
+  int pws_w_save[ npositions_save];
+  int pws_h_save[ npositions_save];
+  for( int i=0; i<npositions_save; i++) {
+    pws_x_save[ i] = pws[ i]->x();
+    pws_y_save[ i] = pws[ i]->y();
+    pws_w_save[ i] = pws[ i]->w();
+    pws_h_save[ i] = pws[ i]->h();
+    cout << "  window[ " << i << "/" << nplots_old
+         << "]: ( " << pws_x_save[ i]
+         << ", " << pws_y_save[ i]
+         << ", " << pws_w_save[ i]
+         << ", " << pws_h_save[ i] << ")" << endl;
+  }
+  
   // Recalculate number of plots
   nplots = nrows * ncols;
 
@@ -516,7 +541,7 @@ void manage_plot_window_array( Fl_Widget *o, void* user_data)
     y_axis_locked[ i] = cps[i]->lock_axis2_button->value();
     z_axis_locked[ i] = cps[i]->lock_axis3_button->value();
   }
-  
+
   // Clear children of the tab widget to delete old tabs
   cpt->clear();
 
@@ -653,6 +678,28 @@ void manage_plot_window_array( Fl_Widget *o, void* user_data)
       pws[i]->extract_data_points();
     }
 
+    // If this is a "append", "merge", "reload file" or "restore panels" 
+    // operation, restore old window positions
+    // if( thisOperation == RESIZE &&
+    //     ( strncmp( widgetTitle, "Append", 6) == 0 ||
+    //       strncmp( widgetTitle, "Merge", 5) == 0 ||
+    //       strncmp( widgetTitle, "Reload", 7) == 0 ||
+    //       strncmp( widgetTitle, "Restore", 7) == 0)) {
+    if( strncmp( widgetTitle, "Append", 6) == 0 ||
+        strncmp( widgetTitle, "Merge", 5) == 0 ||
+        strncmp( widgetTitle, "Reload", 6) == 0 ||
+        strncmp( widgetTitle, "Restore", 7) == 0) {
+      for( int i=0; i<npositions_save; i++) {
+        pws[ i]->position( pws_x_save[ i], pws_y_save[ i]);
+        pws[ i]->size( pws_w_save[ i], pws_h_save[ i]);
+        cout << "  window[ " << i << "/" << nplots_old
+             << "]: ( " << pws[ i]->x()
+             << ", " << pws[ i]->y()
+             << ", " << pws[ i]->w()
+             << ", " << pws[ i]->h() << ")" << endl;
+      }
+    }
+    
     // Account for the 'borderless' option
     if( borderless) pws[i]->border(0);
 
@@ -696,20 +743,20 @@ void make_main_menu_bar()
   // and user_data fields of the main_menu_bar object may be used to control 
   // the behavior of the manage_plot_window_array method.
   main_menu_bar->add( 
-    "File/Open file            ", 0, 
-    (Fl_Callback *) read_data, (void*) "open ASCII");
+    "File/Open data file       ", 0, 
+    (Fl_Callback *) read_data, (void*) "open data file");
   main_menu_bar->add( 
     "File/Append more data     ", 0, 
-    (Fl_Callback *) read_data, (void*) "append ASCII");
+    (Fl_Callback *) read_data, (void*) "append more data");
   main_menu_bar->add( 
     "File/Merge another file   ", 0, 
-    (Fl_Callback *) read_data, (void*) "merge ASCII", FL_MENU_DIVIDER);
+    (Fl_Callback *) read_data, (void*) "merge another file", FL_MENU_DIVIDER);
   main_menu_bar->add( 
     "File/Save selected data   ", 0, 
-    (Fl_Callback *) write_data, (void*) "selected ASCII");
+    (Fl_Callback *) write_data, (void*) "save selected data");
   main_menu_bar->add( 
     "File/Save all data        ", 0, 
-    (Fl_Callback *) write_data, (void*) "save ASCII", FL_MENU_DIVIDER);
+    (Fl_Callback *) write_data, (void*) "save data", FL_MENU_DIVIDER);
   main_menu_bar->add( 
     "File/Load configuration   ", 0, 
     (Fl_Callback *) load_state);
@@ -733,8 +780,19 @@ void make_main_menu_bar()
     "View/Remove Column   ", 0, 
     (Fl_Callback *) manage_plot_window_array, 0, FL_MENU_DIVIDER);
   main_menu_bar->add( 
+    "View/Reload File     ", 0, 
+    (Fl_Callback *) read_data, (void*) "reload file");
+  main_menu_bar->add( 
     "View/Restore Panels  ", 0, 
     (Fl_Callback *) manage_plot_window_array);
+  main_menu_bar->add( 
+    "View/Default Panels ", 0, 
+    (Fl_Callback *) manage_plot_window_array);
+
+  // Add Tools menu items
+  main_menu_bar->add( 
+    "Tools/Options       ", 0, 
+    (Fl_Callback *) manage_plot_window_array, 0, FL_MENU_INACTIVE);
 
   // Add Help menu items
   main_menu_bar->add( 
@@ -949,14 +1007,21 @@ void read_data( Fl_Widget* o, void* user_data)
   if( strstr( (char *) user_data, "merge") != NULL) dfm.do_merge( 1);
   else dfm.do_merge( 0);
 
-  // Invoke the findInputFile() methind of the data_file_manager object to 
-  // query the user for the input filename.  If no file is specified, return 
-  // immediately and hope the calling routine can handle this situation.
-  int iQueryStatus = 0;
-  iQueryStatus = dfm.findInputFile();
-  if( iQueryStatus != 0) {
-    cout << "No input file was selected" << endl;
-    return;
+  // If this was a "Reload File" operation and we know the name of the
+  // data file, do nothing.  Otherwise invoke the findInputFile() method of 
+  // the data_file_manager object to query the user for the input filename.
+  // If no file is specified, return immediately and hope the calling routine 
+  // can handle this situation.
+  if( ( strstr( (char *) user_data, "reload") != NULL) &&
+      (dfm.input_filespec()).length() > 0) {
+  }
+  else{
+    int iQueryStatus = 0;
+    iQueryStatus = dfm.findInputFile();
+    if( iQueryStatus != 0) {
+      cout << "No input file was selected" << endl;
+      return;
+    }
   }
 
   // Invoke the load_data_file() method of the data_file_manager object to 
@@ -1415,8 +1480,10 @@ int main( int argc, char **argv)
 
   // Set random seed (deprecated unix rand(3))
   srand( (unsigned int) time(0));
-  // initialize gsl random number generator (Mersenne Twister)
-  vp_gsl_rng = gsl_rng_alloc (gsl_rng_mt19937);
+
+  // Initialize gsl random number generator (Mersenne Twister)
+  // gsl_rng_env_setup();   // Not needed
+  vp_gsl_rng = gsl_rng_alloc( gsl_rng_mt19937);
 
   // Restrict format and restrict and initialize the number of plots.  NOTE: 
   // nplots will later be reset by manage_plot_window_array( NULL) 
@@ -1474,5 +1541,7 @@ int main( int argc, char **argv)
 
   // Enter the main event loop
   int result = Fl::run();
+
+  gsl_rng_free( vp_gsl_rng);
   return result;
 }

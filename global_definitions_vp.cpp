@@ -24,7 +24,7 @@
 //   pow2 ( x) -- x*x
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  07-NOV-2007
+// Modified: P. R. Gazis  18-NOV-2007
 //***************************************************************************
 
 // Include the necessary include libraries
