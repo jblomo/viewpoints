@@ -328,7 +328,7 @@ int Data_File_Manager::load_data_file()
       //   cout << " " << setw( 8) << points( ivar, npoints-1);
       // cout << endl;
 
-      old_points( blitz::Range( 0, nvars), blitz::Range( old_npoints, all_npoints-1)) = points;
+      old_points( blitz::Range( 0, nvars-1), blitz::Range( old_npoints, all_npoints-1)) = points;
       points.resize( old_points.shape());
 
       // DIAGNOSTIC

@@ -262,15 +262,15 @@ void create_main_control_panel( int main_x, int main_y, int main_w, int main_h, 
   main_control_panel->resizable( main_control_panel);
 
   // Add callback function to intercept 'Close' operations
-  main_control_panel->callback((Fl_Callback*) cb_main_control_panel, main_control_panel);
+  main_control_panel->callback( (Fl_Callback*) cb_main_control_panel, main_control_panel);
 
   // Make main menu bar and add the global widgets to control panel
   make_main_menu_bar();
 
-  // All controls (except the main menu bar) in the main panel are inside an Fl_Scroll, because
-  // there are too many controls to all fit vertically on some small screens.
-  // Eventally, we will make the sub-panels independently expnadable, ad reoragnize the gui, to
-  // alleviate this problem.
+  // All controls (except the main menu bar) in the main panel are inside an Fl_Scroll, 
+  // because there are too many controls to all fit vertically on some small screens.
+  // Eventally, we will make the sub-panels independently expandable and reorganize 
+  // the gui to alleviate this problem.
   main_scroll = new Fl_Scroll(0, main_menu_bar->h(), main_w, main_h - main_menu_bar->h());
   main_scroll->box(FL_NO_BOX);
   
@@ -999,7 +999,7 @@ void reset_all_plots()
 void read_data( Fl_Widget* o, void* user_data)
 {
   // Begin by assuming that the input file is ASCII
-  dfm.ascii_input( 1);
+  // dfm.ascii_input( 1);
 
   // Evaluate USER_DATA to get the operation type
   if( strstr( (char *) user_data, "append") != NULL) dfm.do_append( 1);

@@ -20,7 +20,7 @@
 //   modified by Paul Gazis and Creon Levit for use with viewpoints.
 //
 // Author: Bill Spitzak and others   1998-2005
-// Modified: P. R. Gazis  07-NOV-2007
+// Modified: P. R. Gazis  18-NOV-2007
 //***************************************************************************
 
 // Include header
@@ -69,12 +69,15 @@ static void unquote_pathname( char *, const char *, int);
 FL_EXPORT static int new_filename_isdir( const char* pathname);
 
 //*****************************************************************************
-// Vp_File_Chooser::Vp_File_Chooser( *value_in, *filter_in, type_in, 
-// *title) -- Constructor.  Create windows and buttons and initialize
-// various settings.
+// Vp_File_Chooser::Vp_File_Chooser( *value_in, *filter_in, type_in, *title) 
+// -- Constructor.  Create windows and buttons and initialize various settings.
 Vp_File_Chooser::Vp_File_Chooser( 
   const char *value_in, const char *filter_in, int type_in, const char *title)
 {
+  // KLUDGE: Attempt to determine if this is binary
+  if( strstr( filter_in, "bin") != NULL) isAscii_ = 0;
+  else isAscii_ = 1;
+  
   // Define pointer to the main double window
   Fl_Double_Window* w;
 
@@ -196,7 +199,7 @@ Vp_File_Chooser::Vp_File_Chooser(
         o->labelfont( 1);
         o->add( "ASCII");
         o->add( "binary");
-        o->value( 0);
+        o->value( isAscii_ != 1);
         o->callback( (Fl_Callback*) cb_fileType);
         Fl_Group::current()->resizable(o);
       }
