@@ -20,7 +20,7 @@
 //   modified by Paul Gazis and Creon Levit for use with viewpoints.
 //
 // Author: Bill Spitzak and others   1998-2005
-// Modified: P. R. Gazis  18-NOV-2007
+// Modified: P. R. Gazis  19-NOV-2007
 //***************************************************************************
 
 // Include header
@@ -75,8 +75,9 @@ Vp_File_Chooser::Vp_File_Chooser(
   const char *value_in, const char *filter_in, int type_in, const char *title)
 {
   // KLUDGE: Attempt to determine if this is binary
-  if( strstr( filter_in, "bin") != NULL) isAscii_ = 0;
-  else isAscii_ = 1;
+  // if( strstr( filter_in, "bin") != NULL) isAscii_ = 0;
+  // else isAscii_ = 1;
+  isAscii_ = 1;
   
   // Define pointer to the main double window
   Fl_Double_Window* w;
@@ -527,6 +528,14 @@ void Vp_File_Chooser::directory( const char *directory_in)
 }
 
 //*****************************************************************************
+// Vp_File_Chooser::fileTypeMenu_activate() -- Activate the FILETYPE menu
+void Vp_File_Chooser::fileTypeMenu_activate() { fileType->activate(); }
+
+//*****************************************************************************
+// Vp_File_Chooser::fileTypeMenu_deactivate() -- Deactivate the FILETYPE menu
+void Vp_File_Chooser::fileTypeMenu_deactivate() { fileType->deactivate(); }
+
+//*****************************************************************************
 // Vp_File_Chooser::filter() -- Get the file browser filter pattern(s).
 const char* Vp_File_Chooser::filter()
 {
@@ -613,11 +622,24 @@ uchar Vp_File_Chooser::iconsize()
 }
 
 //*****************************************************************************
-// Vp_File_Chooser::iconsize( sise_in) -- Set icon size for the file browser.
+// Vp_File_Chooser::iconsize( size_in) -- Set icon size for the file browser.
 void Vp_File_Chooser::iconsize( uchar size_in)
 {
   fileBrowser->iconsize( size_in);
 }
+
+//*****************************************************************************
+// Vp_File_Chooser::isAscii( isAscii_in) -- Set the isAscii_ flag and update 
+// the FILETYPE menu
+void Vp_File_Chooser::isAscii( int isAscii_in)
+{ 
+  isAscii_ = isAscii_in;
+  fileType->value( isAscii_ != 1);
+}
+
+//*****************************************************************************
+// Vp_File_Chooser::isAscii( isAscii_in) -- Get the isAscii_ flag
+int Vp_File_Chooser::isAscii() { return isAscii_;}
 
 //*****************************************************************************
 // Vp_File_Chooser::label() -- Get the label of the main window.
@@ -764,7 +786,7 @@ uchar Vp_File_Chooser::textfont()
 }
 
 //*****************************************************************************
-// Vp_File_Chooser::textfont( file_browswer_text_font_in) -- Set the file
+// Vp_File_Chooser::textfont( file_browser_text_font_in) -- Set the file
 // browser text font.
 void Vp_File_Chooser::textfont( uchar file_browser_text_font_in)
 {
@@ -1269,7 +1291,7 @@ void Vp_File_Chooser::cb_favList_i( Fl_File_Browser*, void*)
 
 //*****************************************************************************
 // Vp_File_Chooser::cb_fileBrowser( o, v) -- Wrapper for the callback method 
-// for the file browswer.
+// for the file browser.
 void Vp_File_Chooser::cb_fileBrowser( Fl_File_Browser* o, void* v)
 {
   ( (Vp_File_Chooser*) 
@@ -1278,7 +1300,7 @@ void Vp_File_Chooser::cb_fileBrowser( Fl_File_Browser* o, void* v)
 
 //*****************************************************************************
 // Vp_File_Chooser::cb_fileBrowser_i( *, *) -- Callback method for the file
-// browswer.  Invokes fileBroswerCB.
+// browser.  Invokes fileBroswerCB.
 void Vp_File_Chooser::cb_fileBrowser_i( Fl_File_Browser*, void*)
 {
   fileBrowserCB();

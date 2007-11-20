@@ -14,26 +14,24 @@
 <hr>
 
 <p>
-When <em><b>viewpoints</b></em> is invoked from the 
-<em><b>vp</b></em> icon, it displays a control panel at the far right
-along with 
-a 2x2 array of linked scatter plots of default data.  These 
-windows can be moved and resized in the conventional fashion.  
-If you delete some window by accident, you can restore every 
-window using the <em>reload plots</em> command from the command
-window.  (WARNING: In the current version of 
-<em><b>viewpoints</b></em>', if you delete every plot window, 
-bad things may happen.  This will be fixed in future releases.)
+When <em><b>viewpoints</b></em> is invoked from the <em><b>vp</b></em> icon, 
+it displays a control panel at the far right along with a 2x2 array of 
+linked scatter plots of default data.  These windows can be moved and resized 
+in the conventional fashion.  If you delete some window by accident, you can 
+restore every window using the <em>View|Restore Panels</em> command from the 
+main menu bar.  
+(WARNING: In the current version of <em><b>viewpoints</b></em>', if you 
+delete every plot window, bad things may happen.  This will be fixed in 
+future releases.)
 </p>
 
 <p>
-You can select and move between windows by clicking on them in 
-the conventional fashion.  You can also select a particular 
-plot window by clicking on the associated tab in the control 
-panel window.  Within different windows, you can use the mouse 
-to select portions of the data set.  It is in this feature that 
-the power of <em><b>viewpoints</b></em> resides.  Rather than 
-attempt to describe it in detail, we encourage you to experiment.
+You can select and move between windows by clicking on them in the 
+conventional fashion.  You can also select a particular plot window by 
+clicking on the associated tab in the control panel window.  Within 
+different windows, you can use the mouse to select portions of the data set.  
+It is in this feature that the power of <em><b>viewpoints</b></em> resides.  
+Rather than attempt to describe it in detail, we encourage you to experiment.
 </p>
 
 <h3>Main menu bar commands</h3>
@@ -45,44 +43,24 @@ The following commands are available from the main menu bar.
  <th align="LEFT">Command</th><th align="LEFT">Action</th>
 </tr>
 <tr>
- <td>File|Open ASCII file</td>
- <td>Read an ASCII input file</td>
+ <td>File|Open data file</td>
+ <td>Read data from an input file</td>
 </tr>
 <tr>
- <td>File|Open binary file</td>
- <td>Read a binary input file</td>
+ <td>File|Append more data</td>
+ <td>Append additional samples from an input file</td>
 </tr>
 <tr>
- <td>File|Append ASCII file</td>
- <td>Append additional samples from an ASCII file</td>
+ <td>File|Merge another file</td>
+ <td>Merge additional attributes for these samples</td>
 </tr>
 <tr>
- <td>File|Open binary file</td>
- <td>Append additional samples from a binary file</td>
+ <td>File|Save selected data</td>
+ <td>Write selected data to a file file</td>
 </tr>
 <tr>
- <td>File|Merge ASCII file</td>
- <td>Merge additional attributes from an ASCII file</td>
-</tr>
-<tr>
- <td>File|Merge binary file</td>
- <td>Merge additional attributes from a binary file</td>
-</tr>
-<tr>
- <td>File|Write ASCII file</td>
- <td>Write all the current data as an ASCII file</td>
-</tr>
-<tr>
- <td>File|Write binary file</td>
- <td>Write all the current data as a binary file (much faster to read back in)</td>
-</tr>
-<tr>
- <td>File|Write selected ASCII data</td>
- <td>Write only the currently selected data as an ASCII file</td>
-</tr>
-<tr>
- <td>File|Write selected binary data</td>
- <td>Write only the currently selected data as a binary file</td>
+ <td>File|Save all data</td>
+ <td>Write all the current data to a file</td>
 </tr>
 <tr>
  <td>File|Load Configuration</td>
@@ -113,8 +91,16 @@ The following commands are available from the main menu bar.
  <td>Remove a column of plot windows</td>
 </tr>
 <tr>
- <td>View|Reload Plots</td>
+ <td>View|Reload File</td>
+ <td>Reload current input file</td>
+</tr>
+<tr>
+ <td>View|Restore Panels</td>
  <td>Restore plot windows</td>
+</tr>
+<tr>
+ <td>View|Default Panels</td>
+ <td>Restore default config</td>
 </tr>
 <tr>
  <td>Help|Help</td>
@@ -159,11 +145,11 @@ when the window manager focus is on a plot window.
 <h3>Controls in the control panels</h3>
 
 <p>
-The control panel consists of a set of tabbed control panels for
-individual <em>windows</em>, tabbed control panels for individual 
-<em>brushes</em>, and a main control panel for the entire array
-of panels.  For the most part, these controls should be intuitive.
-Some of these controls are described below
+The control panel consists of a set of tabbed control panels for individual 
+<em>windows</em>, tabbed control panels for individual <em>brushes</em>, 
+and a main control panel for the entire array of panels.  For the most part, 
+these controls should be intuitive. Some of these controls are described 
+below.
 </p>
 
 <table>
@@ -219,6 +205,9 @@ Some of these controls are described below
 </tr>
 <tr>
  <td>z-buffering</td><td>Use z-buffering (only for 3D plots)</td>
+</tr>
+<tr>
+ <td>blending</td><td>Blending scheme for brushes</td>
 </tr>
 <tr>
  <td>don't clear</td><td>Don't clear selected points in this panel</td>
@@ -380,6 +369,10 @@ These are chosen on a per-axis basis.
  <td>gaussianize<br>&nbsp;</td>
  <td>plot inverse of Gaussian cummulative distribution function of x<br>(i.e. nonuniform rescaling to force Gaussian marginal)</td>
 </tr>
+<tr>
+ <td>randomize<br>&nbsp;</td>
+ <td>Randomize</td>
+</tr>
 </table>
 </p>
 
@@ -423,7 +416,7 @@ package and add features in response to experience, suggestions, and
 the requirements of the user community.  If you have any comments or
 suggestions, please feel free to contact the project team:
 <a href="mailto:creon.levit@nasa.gov">Creon Levit</a> or
-<a href="mailto:pgazis@mail.arc.nasa.gov">Paul R. Gazis</a>.
+<a href="mailto:Paul.R.Gazis@nasa.gov">Paul R. Gazis</a>.
 </p>
 
 <p>

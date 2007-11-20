@@ -57,7 +57,7 @@
 //   redraw_if_changing( *dummy) -- Redraw changing plots
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  18-NOV-2007
+// Modified: P. R. Gazis  19-NOV-2007
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -146,7 +146,8 @@ Fl_Help_View *help_view_widget;
 // Function definitions for the main method
 void usage();
 void make_help_about_window( Fl_Widget *o);
-void create_main_control_panel(int main_x, int main_y, int main_w, int main_h, char* cWindowLabel);
+void create_main_control_panel(
+  int main_x, int main_y, int main_w, int main_h, char* cWindowLabel);
 void cb_main_control_panel( Fl_Widget *o, void* user_data);
 void create_brushes( int w_x, int w_y, int w_w, int w_h);
 void brushes_tab_cb();
@@ -168,8 +169,9 @@ int save_state( Fl_Widget* o);
 void redraw_if_changing( void *dummy);
 
 //***************************************************************************
-// usage() -- Print help information to the console and exit.  NOTE: Problems 
-// may arise when window is too narrow.
+// usage() -- Print help information to the console and exit.  NOTE: This is
+// formatted for 80 columns without wrapoaround because this is still a
+// common console setting.
 void usage()
 {
   cerr << endl;
@@ -181,31 +183,49 @@ void usage()
   cerr << "  -B, --no_vbo                "
        << "don't use openGL vertex buffer objects" << endl;
   cerr << "  -c, --cols=NCOLS            "
-       << "startup showing this many columns of plot windows, default=2" << endl;
+       << "startup with this many columns of plot windows," << endl
+       << "                              "
+       << "default=2" << endl;
   cerr << "  -d, --delimiter=CHAR        "
-       << "interpret CHAR as field separator, default is whitespace" << endl;
+       << "interpret CHAR as a field separator, default is" << endl
+       << "                              "
+       << "whitespace" << endl;
   cerr << "  -f, --format={ascii,binary} "
        << "input file format, default=ascii" << endl;
   cerr << "  -i, --input_file=FILENAME   "
        << "read input data from FILENAME" << endl;
   cerr << "  -m, --monitors=NSCREENS     "
-       << "try and force output to display across NSCREENS screens if available" << endl;
+       << "try and force output to display across NSCREENS" << endl
+       << "                              "
+       << "screens if available" << endl;
   cerr << "  -M, --missing_values=NUMBER "
-       << "set the value of any unreadable, nonnumeric, empty, or missing values to NUMBER, default=0.0" << endl;
+       << "set the value of unreadable, nonnumeric, empty," << endl
+       << "                              "
+       << "or missing data to NUMBER, default=0.0" << endl;
   cerr << "  -n, --npoints=NPOINTS       "
-       << "read at most NPOINTS from input file, default is min(until_EOF, 2000000)" << endl;
-  cerr << "  -o, --ordering={rowmajor,columnmajor} "
+       << "read at most NPOINTS from input file, default is" << endl
+       << "                              "
+       << "min(until_EOF, 2000000)" << endl;
+  cerr << "  -o, --ordering={rowmajor,columnmajor} " << endl
+       << "                              "
        << "ordering for binary data, default=columnmajor" << endl;
   cerr << "  -r, --rows=NROWS            "
-       << "startup showing this many rows of plot windows, default=2" << endl;
-  cerr << "  -s, --skip_header_lines=NLINES "
-       << "skip over NLINES lines at start of input file, default=0" << endl;
+       << "startup with this many rows of plot windows," << endl
+       << "                              "
+       << "default=2" << endl;
+  cerr << "  -s, --skip_header_lines=NLINES " << endl
+       << "                              "
+       << "skip NLINES at start of input file, default=0" << endl;
   cerr << "  -v, --nvars=NVARS           "
-       << "input has NVARS values per point (only for row major binary data)" << endl;
+       << "input has NVARS values per point (only for row" << endl
+       << "                              "
+       << "major binary data)" << endl;
   cerr << "  -h, --help                  "
        << "display this message and then exit" << endl;
   cerr << "  -x, --expert                "
-       << "enable expert mode (bypass confirmations, read from stdin, etc.)" << endl;
+       << "enable expert mode (bypass confirmations, read" << endl
+       << "                              "
+       << "from stdin, etc.)" << endl;
   cerr << "  -V, --version               "
        << "output version information and then exit" << endl;
 
@@ -395,22 +415,25 @@ void create_broadcast_group ()
 // information, and loads new data into new plot windows.  
 //   There are four possible behaviors, which all must be recognized, 
 // identified, and treated differently:
-// 1) Initialization -- NULL argument.  Set nplots_old = 0.  
-// 2) New data -- Called from a button, a menu, or as part of a 'load saved
-//    state' operation.  Set nplots_old = 0.
-// 3) Resize operation -- Called from a menu or as part of a 'load saved
-//    state' operation.  Set nplots_old = nplots, then calculate a new value 
-//    of nplots.  
-// 4) Reload operation -- Called from a button or menu.  Keep nplots = 
-//    nplots_old.  NOTE: These no longer happen!
-// NOTE: Little attempt has been made to optimize this method for speed.  
-// WARNINGS: 1) This method is delicate, and slight changes in the FLTK calls 
-// could lead to elusive segmentation faults!  Test any changes carefully!  
-// 2) There is little protection against missing data!
+// 1) INITIALIZE -- NULL argument.  Set nplots_old = 0.  
+// 2) NEW_WINDOWS -- Called from a button, a menu, or as part of a 'load 
+//    saved state' operation.
+// 3) REFRESH_WINDOWS -- Called from a menu or as part of a 'load saved
+//    state' operation.
+// 4) RELOAD -- Called from a button or menu.  NOTE: These no longer happen, 
+//    and this operation is no longer supported!
+// Redrawing is controlled by the value of NPLOTS_OLD.  This is initialized
+// to NPLOTS.  If this is an INITIALIZE operation or new data is to be 
+// loaded, it is reset to zero and all existing plots are hidden so that 
+// they can be redrawn with new data.  
+//   NOTE: Little attempt has been made to optimize this method for speed.  
+//   WARNINGS: 1) This method is delicate, and slight changes in the FLTK 
+// calls could lead to elusive segmentation faults!  Test any changes 
+// carefully!  2) There is little protection against missing data!
 void manage_plot_window_array( Fl_Widget *o, void* user_data)
 {
   // Define an enumeration to hold a list of operation types
-  enum operationType { INITIALIZE = 0, NEW_DATA, RESIZE, RELOAD};
+  enum operationType { INITIALIZE = 0, NEW_WINDOWS, REFRESH_WINDOWS, RELOAD};
   
   // Define and initialize the operationType switch, old number of plots,
   // widget title, and pointers to the pMenu_ and pButton objects.
@@ -438,32 +461,52 @@ void manage_plot_window_array( Fl_Widget *o, void* user_data)
   // then figure out what operation was requested and revise the switches
   // and array descriptions accordingly
   else if( (pMenu_ = dynamic_cast <Fl_Menu_*> (o))) {
-    thisOperation = RESIZE;
+    thisOperation = REFRESH_WINDOWS;
     nplots_old = nplots;
 
+    // Get widget title and user data, and make absolutely sure that the
+    // latter isn't NULL
     strcpy( widgetTitle, ((Fl_Menu_*) o)->text());
-    if( strncmp( widgetTitle, "Add Row ", 8) == 0) nrows++;
-    else if( strncmp( widgetTitle, "Add Colu", 8) == 0) ncols++;
-    else if( strncmp( widgetTitle, "Remove R", 8) == 0 && nrows>1) nrows--;
-    else if( strncmp( widgetTitle, "Remove C", 8) == 0 && ncols>1) ncols--;
-
-    // Get any user data that may have been set by calling method, and make
-    // absolutely sure it isn't NULL.
-    // if( o->user_data() != NULL) strcpy( userData, (char*) o->user_data());
-    // else strcpy( userData, "");
     strcpy( userData, "");
     if( user_data != NULL) strcpy( userData, (char*) user_data);
 
+    // Examine widget title and user data to determine behavior on a
+    // case by case basis for reasons of clarity
+    int have_new_data = 0;
+    if( strncmp( widgetTitle, "Open", 4) == 0 ||
+        strncmp( userData, "Open", 4) == 0) {
+      thisOperation = NEW_WINDOWS;
+      have_new_data = 1;
+    }
+    if( strncmp( widgetTitle, "Append", 6) == 0 ||
+        strncmp( widgetTitle, "Merge", 5) == 0) {
+      thisOperation = NEW_WINDOWS;
+      have_new_data = 1;
+    }
+    else if( strncmp( widgetTitle, "Add Row ", 8) == 0) {
+      thisOperation = NEW_WINDOWS;
+      nrows++;
+    }
+    else if( strncmp( widgetTitle, "Add Colu", 8) == 0) {
+      ncols++;
+    }
+    else if( strncmp( widgetTitle, "Remove R", 8) == 0 && nrows>1) {
+      thisOperation = NEW_WINDOWS;
+      nrows--;
+    }
+    else if( strncmp( widgetTitle, "Remove C", 8) == 0 && ncols>1) {
+      thisOperation = NEW_WINDOWS;
+      ncols--;
+    }
+
     // When reading new data, invoke Fl_Gl_Window.hide() (instead of the 
     // destructor!) to destroy all plot windows along with their context, 
-    // including VBOs.
-    if( strncmp( widgetTitle, "Open", 4) == 0 ||
-        strncmp( widgetTitle, "Append", 6) == 0 ||
-        strncmp( widgetTitle, "Merge", 5) == 0 ||
-        strncmp( userData, "Open", 4) == 0) {
-      thisOperation = NEW_DATA;
-      nplots_old = 0;
+    // including VBOs.  Then set nplots_old to zero because we'll need to
+    // redraw all of these plots.  NOTE: Should this be disabled for some
+    // operations in which the old plots are to be retained?
+    if( have_new_data) {
       for( int i=0; i<nplots; i++) pws[i]->hide();
+      nplots_old = 0;
     }
   }
 
@@ -474,12 +517,13 @@ void manage_plot_window_array( Fl_Widget *o, void* user_data)
     thisOperation = RELOAD;
     nplots_old = nplots;
     strcpy( widgetTitle, ((Fl_Menu_*) o)->label());
-    cout << "manage_plot_window_array: WARNING, RELOAD operation not supported!" << endl;
+    cout << "manage_plot_window_array: WARNING, "
+         << "RELOAD operation not supported!" << endl;
   }
 
   // DEFAULT: Default to a resize operation with nplots_old = nplots
   else {
-    thisOperation = RESIZE;
+    thisOperation = REFRESH_WINDOWS;
     nplots_old = nplots;
     strcpy( widgetTitle, "default");
   }
@@ -487,8 +531,8 @@ void manage_plot_window_array( Fl_Widget *o, void* user_data)
   // DIAGNOSTIC
   // std::vector<std::string> diag_stuff;
   // diag_stuff.push_back( "INITIALIZE");
-  // diag_stuff.push_back( "NEW_DATA");
-  // diag_stuff.push_back( "RESIZE");
+  // diag_stuff.push_back( "REFRESH_WINDOWS");
+  // diag_stuff.push_back( "NEW_WINDOWS");
   // diag_stuff.push_back( "RELOAD");
   // cout << "DIAGNOSTIC, manage_plot_window_array: widgetTitle(" << widgetTitle  
   //      << ") userData(" << userData << ")" << endl;
@@ -497,50 +541,52 @@ void manage_plot_window_array( Fl_Widget *o, void* user_data)
   //      << ")" << endl;
   
   // If this is not an INITIALIZATION, save existing plot window positions
-  int npositions_save = 0;
-  if( thisOperation != INITIALIZE) npositions_save = nplots;
-  int pws_x_save[ npositions_save];
-  int pws_y_save[ npositions_save];
-  int pws_w_save[ npositions_save];
-  int pws_h_save[ npositions_save];
-  for( int i=0; i<npositions_save; i++) {
+  int nplots_save = 0;
+  if( thisOperation != INITIALIZE) nplots_save = nplots;
+  int pws_x_save[ nplots_save];
+  int pws_y_save[ nplots_save];
+  int pws_w_save[ nplots_save];
+  int pws_h_save[ nplots_save];
+  cout << "manage_plot_window_array: saving informaton for " << nplots_save 
+       << "windows" << endl;
+  for( int i=0; i<nplots_save; i++) {
     pws_x_save[ i] = pws[ i]->x();
     pws_y_save[ i] = pws[ i]->y();
     pws_w_save[ i] = pws[ i]->w();
     pws_h_save[ i] = pws[ i]->h();
-    cout << "  window[ " << i << "/" << nplots_old
+    cout << "  window[ " << i << "/" << nplots_save
          << "]: ( " << pws_x_save[ i]
          << ", " << pws_y_save[ i]
          << ", " << pws_w_save[ i]
          << ", " << pws_h_save[ i] << ")" << endl;
   }
   
-  // Recalculate number of plots
-  nplots = nrows * ncols;
-
   // Always save old variable indices and normalization styles, if any.  
   // QUESTION: are these array declarations safe on all compilers when 
-  // nplots_old = 0?
-  int ivar_old[ nplots_old];
-  int jvar_old[ nplots_old];
-  int kvar_old[ nplots_old];
-  int x_normalization_style_old[ nplots_old];
-  int y_normalization_style_old[ nplots_old];
-  int z_normalization_style_old[ nplots_old];
-  int x_axis_locked[ nplots_old];
-  int y_axis_locked[ nplots_old];
-  int z_axis_locked[ nplots_old];
-  for( int i=0; i<nplots_old; i++) {
-    ivar_old[ i] = cps[i]->varindex1->value();
-    jvar_old[ i] = cps[i]->varindex2->value();
-    kvar_old[ i] = cps[i]->varindex3->value();
-    x_normalization_style_old[ i] = cps[i]->x_normalization_style->value();
-    y_normalization_style_old[ i] = cps[i]->y_normalization_style->value();
-    z_normalization_style_old[ i] = cps[i]->z_normalization_style->value();
+  // nplots_save = 0?
+  int ivar_save[ nplots_save];
+  int jvar_save[ nplots_save];
+  int kvar_save[ nplots_save];
+  int x_normalization_style_save[ nplots_save];
+  int y_normalization_style_save[ nplots_save];
+  int z_normalization_style_save[ nplots_save];
+  int x_axis_locked[ nplots_save];
+  int y_axis_locked[ nplots_save];
+  int z_axis_locked[ nplots_save];
+  for( int i=0; i<nplots_save; i++) {
+    ivar_save[ i] = cps[i]->varindex1->value();
+    jvar_save[ i] = cps[i]->varindex2->value();
+    kvar_save[ i] = cps[i]->varindex3->value();
+    x_normalization_style_save[ i] = cps[i]->x_normalization_style->value();
+    y_normalization_style_save[ i] = cps[i]->y_normalization_style->value();
+    z_normalization_style_save[ i] = cps[i]->z_normalization_style->value();
     x_axis_locked[ i] = cps[i]->lock_axis1_button->value();
     y_axis_locked[ i] = cps[i]->lock_axis2_button->value();
     z_axis_locked[ i] = cps[i]->lock_axis3_button->value();
   }
+
+  // Recalculate number of plots
+  nplots = nrows * ncols;
 
   // Clear children of the tab widget to delete old tabs
   cpt->clear();
@@ -592,13 +638,14 @@ void manage_plot_window_array( Fl_Widget *o, void* user_data)
     cps[i]->end();
     Fl_Group::current( 0); 
 
-    // If this was an initialize, resize, or new_data operation, then create 
-    // or restore the relevant windows.  NOTE: If this code was executed 
-    // during a reload operation, it would cause a segmentation fault due to
-    // problems with the way shown() and hide() work.
+    // If this was an INITIALIZE, REFRESH_WINDOWS, or NEW_WINDOWS operation,
+    // then create or restore the relevant windows.  NOTE: If this code was 
+    // executed during a reload operation (which is no longer supported!), 
+    // it would cause a segmentation fault due to problems with the way the
+    // shown() and hide() calls work.
     if( thisOperation == INITIALIZE || 
-        thisOperation == RESIZE || 
-        thisOperation == NEW_DATA) {
+        thisOperation == REFRESH_WINDOWS || 
+        thisOperation == NEW_WINDOWS) {
       if( i >= nplots_old) {
         DEBUG(cout << "Creating new plot window " << i << endl);
         pws[i] = new Plot_Window( pw_w, pw_h, i);
@@ -643,12 +690,12 @@ void manage_plot_window_array( Fl_Widget *o, void* user_data)
     // normalization styles for the old panels.  Otherwise set new variable 
     // indices for the new panels    
     if( nplots != nplots_old && i<nplots_old) {
-      cps[i]->varindex1->value( ivar_old[i]);  
-      cps[i]->varindex2->value( jvar_old[i]);
-      cps[i]->varindex3->value( kvar_old[i]);
-      cps[i]->x_normalization_style->value( x_normalization_style_old[i]);  
-      cps[i]->y_normalization_style->value( y_normalization_style_old[i]);  
-      cps[i]->z_normalization_style->value( z_normalization_style_old[i]);  
+      cps[i]->varindex1->value( ivar_save[i]);  
+      cps[i]->varindex2->value( jvar_save[i]);
+      cps[i]->varindex3->value( kvar_save[i]);
+      cps[i]->x_normalization_style->value( x_normalization_style_save[i]);  
+      cps[i]->y_normalization_style->value( y_normalization_style_save[i]);  
+      cps[i]->z_normalization_style->value( z_normalization_style_save[i]);  
       cps[i]->lock_axis1_button->value( x_axis_locked[i]);  
       cps[i]->lock_axis2_button->value( y_axis_locked[i]);  
       cps[i]->lock_axis3_button->value( z_axis_locked[i]);  
@@ -659,13 +706,14 @@ void manage_plot_window_array( Fl_Widget *o, void* user_data)
       cps[i]->varindex3->value(nvars);  
     }
 
-    // If this is an initialization, resize, or new_data operation, test for 
-    // missing data, extract data, reset panels, and make them resizable.  
-    // Otherwise it must be a reload operation and we must invoke the 
-    // relevant Plot_Window member functions to initialize and draw panels.
+    // If this is an INITIALIZE, REFRESH_WINDOWS, or NEW_WINDOWS operation, 
+    // test for missing data, extract data, reset panels, and make them 
+    // resizable.  Otherwise it must be a RELOAD operation (which is no
+    // longer supported!), and we must invoke the relevant Plot_Window member 
+    // functions to initialize and draw panels.
     if( thisOperation == INITIALIZE || 
-        thisOperation == RESIZE ||
-        thisOperation == NEW_DATA) {
+        thisOperation == REFRESH_WINDOWS || 
+        thisOperation == NEW_WINDOWS) {
       if( npoints > 1) {
         pws[i]->extract_data_points();
         pws[i]->reset_view();
@@ -678,18 +726,13 @@ void manage_plot_window_array( Fl_Widget *o, void* user_data)
       pws[i]->extract_data_points();
     }
 
-    // If this is a "append", "merge", "reload file" or "restore panels" 
-    // operation, restore old window positions
-    // if( thisOperation == RESIZE &&
-    //     ( strncmp( widgetTitle, "Append", 6) == 0 ||
-    //       strncmp( widgetTitle, "Merge", 5) == 0 ||
-    //       strncmp( widgetTitle, "Reload", 7) == 0 ||
-    //       strncmp( widgetTitle, "Restore", 7) == 0)) {
+    // KLUDGE: If this is a "append", "merge", "reload file" or "restore 
+    // panels" operation, restore old window positions
     if( strncmp( widgetTitle, "Append", 6) == 0 ||
         strncmp( widgetTitle, "Merge", 5) == 0 ||
         strncmp( widgetTitle, "Reload", 6) == 0 ||
         strncmp( widgetTitle, "Restore", 7) == 0) {
-      for( int i=0; i<npositions_save; i++) {
+      for( int i=0; i<nplots_save; i++) {
         pws[ i]->position( pws_x_save[ i], pws_y_save[ i]);
         pws[ i]->size( pws_w_save[ i], pws_h_save[ i]);
         cout << "  window[ " << i << "/" << nplots_old
@@ -1076,6 +1119,8 @@ int load_state( Fl_Widget* o)
   char* pattern = "*.xml\tAll Files (*)";
   Vp_File_Chooser* file_chooser =
     new Vp_File_Chooser( cInFileSpec, pattern, Vp_File_Chooser::SINGLE, title);
+  file_chooser->isAscii( 1);
+  file_chooser->fileTypeMenu_deactivate();
 
   // Loop: wait until the file selection is done
   file_chooser->show();

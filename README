@@ -1,7 +1,7 @@
 viewpoints -- Fast interactive linked plotting of large multivariate data sets.
 
-Version: 2.0  (Build 186)
-Date: 17 Sep 2007
+Version: 2.0  (Build 199)
+Date: 19 Nov 2007
   
 
 Overview:
@@ -32,10 +32,10 @@ icon or run the code from the command line as described below.
 
 Usage:
 
-In its current form (Version 2.0, build 186) 'viewpoints' is run either by 
+In its current form (Version 2.0, build 199) 'viewpoints' is run either by 
 clicking on the 'vp' icon or from the command line in the directory in which 
 it has been installed or to which a path is available.  When viewpoints is 
-run from the icon, it will come up with an array of default data.  When it is 
+run from the icon, it will come up with an array of default data.  When it is
 run from the command line, the user must specify the input data file 
 explicitly.
 
@@ -61,16 +61,15 @@ The calling sequence for the command line version is:
  the optional arguments are:
 
   --format=ascii (default) [shortcut: -f a] 
-    Read an ASCII input file that consists of a header block followed
-    by a data block.  Lines in the header block are indicated by one
-    the comment characters '!', '#', or '%'.  In the absence of
-    comment characters, the header block consists of a number of lines
-    specified by the '--skip_header' command below, with a default
-    value of 1 line.  The final line of the header contains the
-    attribute names, whitespace delimited by default (see --delimiter,
-    below).  Successive lines in the data block contain the numeric
-    attribute values for successive samples, whitespace delimited.
-    See the file "sampledata.txt" for an example.
+    Read an ASCII input file that consists of a header block followed by a
+    data block.  Lines in the header block are indicated by one the comment 
+    characters '!', '#', or '%'.  In the absence of comment characters, the 
+    header block is assumed to consist of a number of lines specified by the 
+    '--skip_header' command below, with a default value of 1 line.  The 
+    final line of the header contains the attribute names, whitespace 
+    delimited by default (see --delimiter, below).  Successive lines in the 
+    data block contain the numeric attribute values for successive samples, 
+    whitespace delimited.  See the file "sampledata.txt" for an example.
 
   --format=binary [shortcut: -f b]
     Read a binary input file.  The first record of this file consists of a 
@@ -84,8 +83,9 @@ The calling sequence for the command line version is:
 
   --npoints=<integer> [shortcut: -n <int>] (default min(all,2000000))
     Specifies the number of samples (records or rows in the data block of an 
-    ASCII file) to read. End of file will terminate reading.  Note the default:
-    if you want to read more than 2 million samples, say so using this argument.
+    ASCII file) to read. End of file will terminate read.  Note the default:
+    if you want to read more than 2 million samples, you must say so using 
+    this argument.
 
   --rows=<integer> [shortcut: -r <int>] (default 2)
     Specifies the number of rows of scatterplots
@@ -110,16 +110,16 @@ The calling sequence for the command line version is:
     ordering for binary data, default=columnmajor
 
   --nvars [shortcut -v <int>]
-    The number of variables (attributes) per sample is automatically
-    determined from the last header line in an ascii input file, or
-    from the first line of a column-major binary file.  This option is
-    only for row major binary data, in which case one must also
-    specfiy --npoints above.
+    The number of variables (attributes) per sample is automatically 
+    determined from the last header line in an ascii input file, or from the 
+    first line of a column-major binary file.  This option is only for row 
+    major binary data, in which case one must also specfiy --npoints above.
 
   --delimiter [shortcut -d=<char>]
-    interpret char as field separator, default is whitespace.  Delimiter characters can be
-    escaped usugn the standard c-language convetions. This delimiter 
-    is also used in the header to delimit variable (attribute) names.
+    interpret char as field separator, default is whitespace.  Delimiter 
+    characters can be escaped using the standard c-language convetions. This 
+    delimiter is also used in the header to delimit variable (attribute) 
+    names.
     e.g.  --delimiter=,  for comma delimited
     or    --delimter=\t  for tab delimited
     
@@ -136,6 +136,10 @@ The calling sequence for the command line version is:
 
   --version [shortcut -V]
     print version information and then exit.
+    
+  --expert [shortcut -x]
+    enable expert mode, that bypasses confirmations and allows reads from
+    stdin, etc.
 
   --help [shortcut -h]
     print out brief usage message and then exit.
@@ -147,31 +151,23 @@ windows can be moved and resized in the conventional fashion.  If you delete
 some window by accident, you can restore every window using the 'reload 
 plots' command. (If you delete every plot window, the program may crash).
 
-You can also select a particular plot by giving it the mouse focus
-directly, or by clicking on its associated tab in the control panel
-window.  Within different windows, you can use the mouse to select
-portions of the data set.  It is in this feature that the power of
-'viewpoints' resides.  Rather than attempt to describe it in detail,
-we encourage you to experiment.
+You can also select a particular plot by giving it the mouse focus directly, 
+or by clicking on its associated tab in the control panel window.  Within 
+different windows, you can use the mouse to select portions of the data set.  
+It is in this feature that the power of 'viewpoints' resides.  Rather than 
+attempt to describe it in detail,we encourage you to experiment!
 
 
 Main menu bar
 
  command                     action
  --------------------        ----------
- File|Open ASCII file        Read an ASCII input file
- File|Open binary file       Read a binary input file
- File|Append ASCII file      Append additional samples from an ASCII file
- File|Open binary file       Append additional samples from a binary file
- File|Merge ASCII file       Merge additional attributes from an ASCII file
- File|Merge binary file      Merge additional attributes from a binary file
+ File|Open data file         Read data from an input file
+ File|Append more data       Append additional samples to the existing data
+ File|Merge another file     Merge additional attributes for these samples
  File|Write ASCII file       Write all the current data as an ASCII file
- File|Write binary file      Write all the current data as a binary file 
-                             (much faster to read back in)
- File|Write selected ASCII   Write only the currently selected data as an 
-                             ASCII file
- File|Write selected binary  Write only the currently selected data as a
-                             binary file
+ File|Save selected data     Write only the currently selected data
+ File|Save all data          Write all data
  File|Load Configuration     Load some configuration information
  File|Save Configuration     Save some configuration information
  File|Quit                   Quit
@@ -179,11 +175,13 @@ Main menu bar
  View|Add Column             Add a column of plot windows
  View|Remove Row             Remove a row of plot windows
  View|Remove Column          Remove a column of plot windows
- View|Reload Plots           Restore plot windows
+ View|Reload File            Reload the existing data file
+ View|Restore Panels         Restore deleted plot windows
+ View|Default Panels         Restore the default polt window configuration
  Help|Help                   Opens a simple HELP window
  Help|About                  Information about this version
 
-  
+
 Buttons and (keyboard shortcuts when a plot window has mouse focus):
 
  action                 key
@@ -221,7 +219,6 @@ Controls in the control panels:
  X, Y, and Z axis       Attribute to be displayed in that axis
  locked                 Lock an axis so it won't change
  scale                  Normalization scheme for that axis
- histo                  Show histograms along that axis
  histog                 Show histograms along that axis.  
                         'Marginal/Selection/Conditional' corresponds to 
                         'All points/Selected points/Fraction selected'
@@ -238,13 +235,14 @@ Controls in the control panels:
                         this, you may have to give the rot slider a twitch.
  reset view             Reset rotation and other display params
  z-buffering            Use z-buffering (only for 3D plots)
+ blending               Blending scheme for brushes
  don't clear            Don't clear selected points in this panel
  points                 Show data points
  unselected             Show unselected data points
  axes                   Show axes
  labels                 Show axes labels
  scales                 Show axes scales
- tics                   Show tic marks
+ ticks                  Show tic marks
  grid                   Show grid
  identity               plot y vs x
  sum vs. diff plot      plot (x+y) vs. (x-y)
@@ -303,11 +301,12 @@ Normalization schemes (per axis)
  gaussianize            plot inverse of the Gaussian cummulative 
                         distribution function of x -- i.e. nonuniform 
                         rescaling to force a uniform marginal
+randomize               Randomize
 
 
 Notes and warnings:
 
-The current release of the 'viewpoints' package (version 2.0, build 174) is 
+The current release of the 'viewpoints' package (version 2.0, build 199) is 
 still a development version.  While every effort has been make to ensure that 
 it will work -- or fail gracefully if it doesn't -- it still has many rough 
 edges.  Some of these are described below.  These issues will all be 
@@ -326,5 +325,5 @@ Please send any questions, bug reports, feature requests, and/or praise to:
 
 Creon Levit at   creon.levit@nasa.gov
 or
-Paul Gazis at    pgazis@mail.arc.nasa.gov
+Paul Gazis at    Paul.R.Gazis@nasa.gov
 

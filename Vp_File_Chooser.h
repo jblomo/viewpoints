@@ -35,7 +35,7 @@
 //      vp.cpp could be consolidated.
 //
 // Author: Bill Spitzak and others   1998-2005
-// Modified: P. R. Gazis  07-NOV-2007
+// Modified: P. R. Gazis  19-NOV-2007
 //***************************************************************************
 
 // Protection to make sure this header is not included twice
@@ -126,8 +126,8 @@ using namespace std;
 //    count() -- Get number of selected files
 //    directory() -- Get directory in browser
 //    directory( *directory_in) -- Set directory in browser
-//    filter() -- Get the file browswer filter pattern(s)
-//    filter( pattern_in) -- Set the file browswer filter pattern(s)
+//    filter() -- Get the file browser filter pattern(s)
+//    filter( pattern_in) -- Set the file browser filter pattern(s)
 //    filter_value() -- Get index of filter in choice window
 //    filter_value( index_in) -- Set index of filter in choice window
 //    hide() -- Hide main window
@@ -144,7 +144,7 @@ using namespace std;
 //    rescan() -- Rescan the directory in the file browser
 //    show() -- Set buffers and states and show main window.
 //    shown() -- Get show state of main window
-//    textcolor() -- Get file browswer text color
+//    textcolor() -- Get file browser text color
 //    textcolor( file_browser_text_color_in) -- Set file browser text color
 //    textfont() -- Get file browser text font
 //    textfont( file_browser_text_font_in) -- Get file browser text font
@@ -167,8 +167,8 @@ using namespace std;
 //
 //    cb_favList( *o, *v) -- Wrapper for callback method for favorites list
 //    cb_favList_i( *, *) -- Callback method for the favorites list
-//    cb_fileBrowser( *o, *v) -- Wrapper for callback for the file browswer.
-//    cb_fileBrowser_i( *, *) -- Callback method for the file browswer
+//    cb_fileBrowser( *o, *v) -- Wrapper for callback for the file browser.
+//    cb_fileBrowser_i( *, *) -- Callback method for the file browser
 //    fileBrowserCB() -- Handle file broswer dialog
 //    cb_fileName( *o, *v) -- Wrapper for callback for file name field.
 //    cb_fileName_i( *, *) -- Callback method for the file name field
@@ -205,7 +205,7 @@ using namespace std;
 //    cb_previewButton_i( *, *) -- Callback method for the preview checkbox
 //
 // Author: Bill Spitzak and others   1998-2005
-// Modified: P. R. Gazis  23-APR-2007
+// Modified: P. R. Gazis  18-NOV-2007
 //***************************************************************************
 class FL_EXPORT Vp_File_Chooser
 {
@@ -312,6 +312,8 @@ class FL_EXPORT Vp_File_Chooser
     int count();
     char* directory();
     void directory( const char *directory_in);
+    void fileTypeMenu_activate();
+    void fileTypeMenu_deactivate();
     const char* filter();
     void filter( const char *pattern_in);
     int filter_value();
@@ -319,8 +321,8 @@ class FL_EXPORT Vp_File_Chooser
     void hide();
     uchar iconsize();
     void iconsize( uchar size_in);
-    void isAscii( int isAscii_in) { isAscii_ = isAscii_in;}
-    int isAscii() { return isAscii_;}
+    void isAscii( int isAscii_in);
+    int isAscii();
     const char* label();
     void label( const char *label_in);
     const char* ok_label();
@@ -331,11 +333,11 @@ class FL_EXPORT Vp_File_Chooser
     void show();
     int shown();
     Fl_Color textcolor();
-    void textcolor( Fl_Color file_browswer_text_color_in);
+    void textcolor( Fl_Color file_browser_text_color_in);
     uchar textfont();
-    void textfont( uchar file_browswer_text_font_in);
+    void textfont( uchar file_browser_text_font_in);
     uchar textsize();
-    void textsize( uchar file_browswer_text_size_in);
+    void textsize( uchar file_browser_text_size_in);
     int type();
     void type( int type_in);
     void user_data( void *pData);
