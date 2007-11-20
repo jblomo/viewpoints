@@ -57,7 +57,7 @@
 //   redraw_if_changing( *dummy) -- Redraw changing plots
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  19-NOV-2007
+// Modified: P. R. Gazis  20-NOV-2007
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -416,29 +416,32 @@ void create_broadcast_group ()
 //   There are four possible behaviors, which all must be recognized, 
 // identified, and treated differently:
 // 1) INITIALIZE -- NULL argument.  Set nplots_old = 0.  
-// 2) NEW_WINDOWS -- Called from a button, a menu, or as part of a 'load 
-//    saved state' operation.
-// 3) REFRESH_WINDOWS -- Called from a menu or as part of a 'load saved
-//    state' operation.
+// 2) NEW_DATA -- Called from a menu or as part of a 'load saved state' 
+//    operation.  In this mode, new data is read into the VBOs, so all
+//    plot windows must be hidden and redrawn!
+// 3) REFRESH_WINDOWS -- Called from a menu.  In this mode, some windows 
+//    may be preserved without the need for redrawing.
 // 4) RELOAD -- Called from a button or menu.  NOTE: These no longer happen, 
 //    and this operation is no longer supported!
-// Redrawing is controlled by the value of NPLOTS_OLD.  This is initialized
-// to NPLOTS.  If this is an INITIALIZE operation or new data is to be 
-// loaded, it is reset to zero and all existing plots are hidden so that 
-// they can be redrawn with new data.  
+// Redrawing of plot windows is controlled by the value of NPLOTS_OLD.  This
+// is initialized to NPLOTS.  For an INITIALIZE or NEW_DATA operation, it is 
+// reset to zero, and all existing plots are hidden so they can be redrawn 
+// with new data, as noted above.  
+//   In some cases, it is desirable to restore window parameters such as
+// axis labels or normalization schemes.  This is controlled by the
+// DO_RESTORE_SETTINGS flag.
 //   NOTE: Little attempt has been made to optimize this method for speed.  
-//   WARNINGS: 1) This method is delicate, and slight changes in the FLTK 
-// calls could lead to elusive segmentation faults!  Test any changes 
-// carefully!  2) There is little protection against missing data!
+//   WARNING: This method is delicate, and slight changes in the FLTK calls 
+// could lead to elusive segmentation faults!  Test any changes carefully!
+//   WARNING: There is little protection against missing data!
 void manage_plot_window_array( Fl_Widget *o, void* user_data)
 {
   // Define an enumeration to hold a list of operation types
-  enum operationType { INITIALIZE = 0, NEW_WINDOWS, REFRESH_WINDOWS, RELOAD};
+  enum operationType { INITIALIZE = 0, NEW_DATA, REFRESH_WINDOWS, RELOAD};
   
   // Define and initialize the operationType switch, old number of plots,
   // widget title, and pointers to the pMenu_ and pButton objects.
   operationType thisOperation = INITIALIZE;
-  int nplots_old = nplots;
   char widgetTitle[ 80];
   char userData[ 80];
   strcpy( widgetTitle, "");
@@ -446,6 +449,11 @@ void manage_plot_window_array( Fl_Widget *o, void* user_data)
   Fl_Menu_* pMenu_;
   Fl_Button* pButton;
 
+  // Define and set flags and state variables to control the number of plots 
+  // to be preserved and whether or not to restore their settings
+  int nplots_old = nplots;
+  int do_restore_settings = 0;
+  
   // Determine how the method was invoked, and set flags and parameters
   // accordingly.  If method was called with a NULL arguments, assume this 
   // is an initialization operation and set the old number of plots to zero, 
@@ -470,41 +478,50 @@ void manage_plot_window_array( Fl_Widget *o, void* user_data)
     strcpy( userData, "");
     if( user_data != NULL) strcpy( userData, (char*) user_data);
 
-    // Examine widget title and user data to determine behavior on a
-    // case by case basis for reasons of clarity
-    int have_new_data = 0;
+    // Examine widget title and user data to determine behavior on a case by
+    // case basis for reasons of clarity
     if( strncmp( widgetTitle, "Open", 4) == 0 ||
-        strncmp( userData, "Open", 4) == 0) {
-      thisOperation = NEW_WINDOWS;
-      have_new_data = 1;
+        strncmp( userData, "Open", 4) == 0 ||
+        strncmp( widgetTitle, "Load", 4) == 0) {
+      thisOperation = NEW_DATA;
     }
     if( strncmp( widgetTitle, "Append", 6) == 0 ||
         strncmp( widgetTitle, "Merge", 5) == 0) {
-      thisOperation = NEW_WINDOWS;
-      have_new_data = 1;
+      thisOperation = NEW_DATA;
+      do_restore_settings = 1;
     }
     else if( strncmp( widgetTitle, "Add Row ", 8) == 0) {
-      thisOperation = NEW_WINDOWS;
+      thisOperation = REFRESH_WINDOWS;
       nrows++;
     }
     else if( strncmp( widgetTitle, "Add Colu", 8) == 0) {
+      thisOperation = REFRESH_WINDOWS;
       ncols++;
     }
     else if( strncmp( widgetTitle, "Remove R", 8) == 0 && nrows>1) {
-      thisOperation = NEW_WINDOWS;
+      thisOperation = REFRESH_WINDOWS;
       nrows--;
     }
     else if( strncmp( widgetTitle, "Remove C", 8) == 0 && ncols>1) {
-      thisOperation = NEW_WINDOWS;
+      thisOperation = REFRESH_WINDOWS;
       ncols--;
+    }
+    else if( strncmp( widgetTitle, "Reload F", 8) == 0) {
+      thisOperation = REFRESH_WINDOWS;
+      do_restore_settings = 1;
+    }
+    else if( strncmp( widgetTitle, "Restore", 7) == 0) {
+      thisOperation = REFRESH_WINDOWS;
+      do_restore_settings = 1;
     }
 
     // When reading new data, invoke Fl_Gl_Window.hide() (instead of the 
     // destructor!) to destroy all plot windows along with their context, 
     // including VBOs.  Then set nplots_old to zero because we'll need to
-    // redraw all of these plots.  NOTE: Should this be disabled for some
-    // operations in which the old plots are to be retained?
-    if( have_new_data) {
+    // redraw all of these plots.  NOTE: If this is not done, and one
+    // attempts to preserve some panels without redrawing them, VBO usage
+    // could fail.
+    if( thisOperation == NEW_DATA) {
       for( int i=0; i<nplots; i++) pws[i]->hide();
       nplots_old = 0;
     }
@@ -512,7 +529,7 @@ void manage_plot_window_array( Fl_Widget *o, void* user_data)
 
   // CASE 3: If this was a button widget, assume it was a reload operation,
   // since no other buttons can invoke this method.  NOTE: This operation
-  // doesn't work, but can no longer happen.
+  // doesn't work and is no longer supported!
   else if( (pButton = dynamic_cast <Fl_Button*> (o))) {
     thisOperation = RELOAD;
     nplots_old = nplots;
@@ -521,18 +538,21 @@ void manage_plot_window_array( Fl_Widget *o, void* user_data)
          << "RELOAD operation not supported!" << endl;
   }
 
-  // DEFAULT: Default to a resize operation with nplots_old = nplots
+  // DEFAULT: Default to a REFRESH_WINDOWS operation, in which all plots
+  // are preserved with new settings, and warn the user.
   else {
     thisOperation = REFRESH_WINDOWS;
     nplots_old = nplots;
     strcpy( widgetTitle, "default");
+    cout << "manage_plot_window_array: WARNING, "
+         << "defaulted to a REFRESH_WINDOW operation." << endl;
   }
 
   // DIAGNOSTIC
   // std::vector<std::string> diag_stuff;
   // diag_stuff.push_back( "INITIALIZE");
   // diag_stuff.push_back( "REFRESH_WINDOWS");
-  // diag_stuff.push_back( "NEW_WINDOWS");
+  // diag_stuff.push_back( "NEW_DATA");
   // diag_stuff.push_back( "RELOAD");
   // cout << "DIAGNOSTIC, manage_plot_window_array: widgetTitle(" << widgetTitle  
   //      << ") userData(" << userData << ")" << endl;
@@ -540,15 +560,19 @@ void manage_plot_window_array( Fl_Widget *o, void* user_data)
   //      << thisOperation << " (" << diag_stuff[ thisOperation].c_str() 
   //      << ")" << endl;
   
-  // If this is not an INITIALIZATION, save existing plot window positions
-  int nplots_save = 0;
-  if( thisOperation != INITIALIZE) nplots_save = nplots;
+  // Determine how many plot windows are available to be saved.  If this is an
+  // INITIALIZE operation, set this number to zero.
+  int nplots_save = nplots;
+  if( thisOperation == INITIALIZE) nplots_save = 0;
+
+  // Save positions of the existing plot window.  QUESTION: are these array 
+  // declarations safe on all compilers when NPLOTS_SAVE = 0?
   int pws_x_save[ nplots_save];
   int pws_y_save[ nplots_save];
   int pws_w_save[ nplots_save];
   int pws_h_save[ nplots_save];
-  cout << "manage_plot_window_array: saving informaton for " << nplots_save 
-       << "windows" << endl;
+  cout << "manage_plot_window_array: saving information for " << nplots_save 
+       << " windows" << endl;
   for( int i=0; i<nplots_save; i++) {
     pws_x_save[ i] = pws[ i]->x();
     pws_y_save[ i] = pws[ i]->y();
@@ -561,9 +585,7 @@ void manage_plot_window_array( Fl_Widget *o, void* user_data)
          << ", " << pws_h_save[ i] << ")" << endl;
   }
   
-  // Always save old variable indices and normalization styles, if any.  
-  // QUESTION: are these array declarations safe on all compilers when 
-  // nplots_save = 0?
+  // Save old axis and normalization information
   int ivar_save[ nplots_save];
   int jvar_save[ nplots_save];
   int kvar_save[ nplots_save];
@@ -638,14 +660,14 @@ void manage_plot_window_array( Fl_Widget *o, void* user_data)
     cps[i]->end();
     Fl_Group::current( 0); 
 
-    // If this was an INITIALIZE, REFRESH_WINDOWS, or NEW_WINDOWS operation,
+    // If this was an INITIALIZE, REFRESH_WINDOWS, or NEW_DATA operation,
     // then create or restore the relevant windows.  NOTE: If this code was 
     // executed during a reload operation (which is no longer supported!), 
     // it would cause a segmentation fault due to problems with the way the
     // shown() and hide() calls work.
     if( thisOperation == INITIALIZE || 
         thisOperation == REFRESH_WINDOWS || 
-        thisOperation == NEW_WINDOWS) {
+        thisOperation == NEW_DATA) {
       if( i >= nplots_old) {
         DEBUG(cout << "Creating new plot window " << i << endl);
         pws[i] = new Plot_Window( pw_w, pw_h, i);
@@ -686,10 +708,11 @@ void manage_plot_window_array( Fl_Widget *o, void* user_data)
     }
     else Plot_Window::upper_triangle_incr( ivar, jvar, nvars);
 
-    // If the number of plots has changed, restore the old variable indices and
-    // normalization styles for the old panels.  Otherwise set new variable 
-    // indices for the new panels    
-    if( nplots != nplots_old && i<nplots_old) {
+    // If there has been an explicit request to restore plot window settings, 
+    // or if the number of plots has changed, restore those settings.  Then
+    // generate any new settings that may be required.
+    if( do_restore_settings != 0 ||
+        nplots != nplots_old && i<nplots_old) {
       cps[i]->varindex1->value( ivar_save[i]);  
       cps[i]->varindex2->value( jvar_save[i]);
       cps[i]->varindex3->value( kvar_save[i]);
@@ -706,14 +729,14 @@ void manage_plot_window_array( Fl_Widget *o, void* user_data)
       cps[i]->varindex3->value(nvars);  
     }
 
-    // If this is an INITIALIZE, REFRESH_WINDOWS, or NEW_WINDOWS operation, 
+    // If this is an INITIALIZE, REFRESH_WINDOWS, or NEW_DATA operation, 
     // test for missing data, extract data, reset panels, and make them 
     // resizable.  Otherwise it must be a RELOAD operation (which is no
     // longer supported!), and we must invoke the relevant Plot_Window member 
     // functions to initialize and draw panels.
     if( thisOperation == INITIALIZE || 
         thisOperation == REFRESH_WINDOWS || 
-        thisOperation == NEW_WINDOWS) {
+        thisOperation == NEW_DATA) {
       if( npoints > 1) {
         pws[i]->extract_data_points();
         pws[i]->reset_view();
@@ -721,13 +744,14 @@ void manage_plot_window_array( Fl_Widget *o, void* user_data)
       pws[i]->size_range( 10, 10);
       pws[i]->resizable( pws[i]);
     }
-    else {
+    else {   // RELOAD no longer supported!
       pws[i]->initialize();
       pws[i]->extract_data_points();
     }
 
     // KLUDGE: If this is a "append", "merge", "reload file" or "restore 
-    // panels" operation, restore old window positions
+    // panels" operation, restore old window positions.  This should be
+    // controlled by a flag rather than examining WIDGETTITLE.
     if( strncmp( widgetTitle, "Append", 6) == 0 ||
         strncmp( widgetTitle, "Merge", 5) == 0 ||
         strncmp( widgetTitle, "Reload", 6) == 0 ||

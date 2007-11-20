@@ -19,7 +19,7 @@
 // Purpose: Source code for <data_file_manager.h>
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  18-NOV-2007
+// Modified: P. R. Gazis  20-NOV-2007
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -362,6 +362,7 @@ int Data_File_Manager::load_data_file()
 
       points = old_points;
       npoints = all_npoints;
+      column_labels = old_column_labels;
 
       // DIAGNOSTIC
       // cout << "PLOIT_04b: Finished swapping arrays for append ("
