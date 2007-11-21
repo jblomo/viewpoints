@@ -1,8 +1,8 @@
 viewpoints -- Fast interactive linked plotting of large multivariate data sets.
 
-Version: 2.0  (Build 199)
-Date: 19 Nov 2007
-  
+Version: 2.0.1  (Build 201)
+Date: 20 Nov 2007
+
 
 Overview:
 
@@ -166,8 +166,8 @@ Main menu bar
  File|Append more data       Append additional samples to the existing data
  File|Merge another file     Merge additional attributes for these samples
  File|Write ASCII file       Write all the current data as an ASCII file
- File|Save selected data     Write only the currently selected data
  File|Save all data          Write all data
+ File|Save selected data     Write only the currently selected data
  File|Load Configuration     Load some configuration information
  File|Save Configuration     Save some configuration information
  File|Quit                   Quit

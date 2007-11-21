@@ -112,6 +112,11 @@ int Data_File_Manager::findInputFile()
   // destroyed by the relevant destructors!
   // const char *cInFileSpec = directory().c_str();
   const char *cInFileSpec = sDirectory_.c_str();
+  
+  // DIAGNOSTIC: Check cInFileSpec
+  cout << endl
+       << "Data_File_Manager::findInputFile: cInFileSpec (" << cInFileSpec << ")"
+       << endl << endl;
 
   // Instantiate and show an Vp_File_Chooser widget.  NOTE: The pathname must
   // be passed as a variable or the window will begin in some root directory.
@@ -1046,25 +1051,36 @@ int Data_File_Manager::findOutputFile()
     // If no file was specified then quit
     if( cOutFileSpec == NULL) break;
 
-    // If this is a new file, it can't be opened for read, and we're done
+    // If this is a new file, it can't be opened for read
+    int isNewFile = 0;
     FILE* pFile = fopen( cOutFileSpec, "r");
-    if( pFile == NULL) break;
-    
-    // For some reason, the fl_filename_isdir method doesn't seem to work, so
-    // make sure this file is closed, the try to open this file to see if it 
-    // is a directory.  If it is, update pathname and continue.  Otherwise
-    // merely update pathname using the directory in the file chooser.
-    // if( pFile != NULL) fclose( pFile);
-    // pFile = fopen( cOutFileSpec, "w");
-    // if( pFile == NULL) {
-    //   file_chooser->directory( cOutFileSpec);
-    //   directory( (string) cOutFileSpec);
-    //   continue;
-    // }
-    // else directory( (string) file_chooser->directory());
+    if( pFile == NULL) isNewFile= 1;
+    else fclose( pFile);
 
-    // We're done examining the file, so close it
-    fclose( pFile);
+    // Attempt to open an output stream to make sure the file can be opened 
+    // for write.  If it can't, assume that cOutFileSpec was a directory and 
+    // make it the working directory.  Otherwise close the output stream.
+    // NOTE: This will create an empty file.
+    ofstream os;
+    os.open( cOutFileSpec, ios::out|ios::trunc);
+    if( os.fail()) {
+      cerr << " -DIAGNOSTIC: This should trigger on error opening "
+           << cOutFileSpec << "for write" << endl;
+      file_chooser->directory( cOutFileSpec);
+      directory( (string) cOutFileSpec);
+      os.close();
+      continue;
+    }
+    os.close();
+    if( isNewFile != 0) break;
+
+    // OLD CODE: If this is a new file, it can't be opened for read, and 
+    // we're done
+    // FILE* pFile = fopen( cOutFileSpec, "r");
+    // if( pFile == NULL) break;
+    
+    // OLD CODE:We're done examining the file, so close it
+    // fclose( pFile);
 
     // If we got this far, the file must exist and be available to be
     // overwritten, so open a confirmation window and wait for the button 
@@ -1159,8 +1175,8 @@ int Data_File_Manager::write_ascii_file_with_headers()
     ofstream os;
     os.open( outFileSpec.c_str(), ios::out|ios::trunc);
     if( os.fail()) {
-      cerr << "Error opening" << outFileSpec.c_str() 
-           << "for writing" << endl;
+      cerr << " -ERROR opening " << outFileSpec.c_str() 
+           << " for ASCII write" << endl;
       return -1;
     }
     
@@ -1236,8 +1252,8 @@ int Data_File_Manager::write_binary_file_with_headers()
       // fstream::out | fstream::trunc | fstream::binary);
 
     if( os.fail()) {
-      cerr << "Error opening" << outFileSpec.c_str() 
-           << "for writing" << endl;
+      cerr << " -ERROR opening " << outFileSpec.c_str() 
+           << "for binary write" << endl;
       return -1;
     }
     

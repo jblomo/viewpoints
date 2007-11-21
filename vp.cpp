@@ -55,6 +55,7 @@
 //   load_state( *o) -- Load saved state
 //   save_state( *o) -- Save current state
 //   redraw_if_changing( *dummy) -- Redraw changing plots
+//   reset_selection_arrays() -- Reset selection arrays
 //
 // Author: Creon Levit    2005-2006
 // Modified: P. R. Gazis  20-NOV-2007
@@ -167,6 +168,7 @@ void read_data( Fl_Widget* o, void* user_data);
 int load_state( Fl_Widget* o);
 int save_state( Fl_Widget* o);
 void redraw_if_changing( void *dummy);
+void reset_selection_arrays();
 
 //***************************************************************************
 // usage() -- Print help information to the console and exit.  NOTE: This is
@@ -480,12 +482,19 @@ void manage_plot_window_array( Fl_Widget *o, void* user_data)
 
     // Examine widget title and user data to determine behavior on a case by
     // case basis for reasons of clarity
-    if( strncmp( widgetTitle, "Open", 4) == 0 ||
+    if( strncmp( userData, "NEW_DATA", 8) == 0) {
+      thisOperation = NEW_DATA;
+    }
+    else if( strncmp( userData, "REFRESH_WINDOWS", 15) == 0) {
+      thisOperation = REFRESH_WINDOWS;
+      do_restore_settings = 1;
+    }
+    else if( strncmp( widgetTitle, "Open", 4) == 0 ||
         strncmp( userData, "Open", 4) == 0 ||
         strncmp( widgetTitle, "Load", 4) == 0) {
       thisOperation = NEW_DATA;
     }
-    if( strncmp( widgetTitle, "Append", 6) == 0 ||
+    else if( strncmp( widgetTitle, "Append", 6) == 0 ||
         strncmp( widgetTitle, "Merge", 5) == 0) {
       thisOperation = NEW_DATA;
       do_restore_settings = 1;
@@ -752,7 +761,8 @@ void manage_plot_window_array( Fl_Widget *o, void* user_data)
     // KLUDGE: If this is a "append", "merge", "reload file" or "restore 
     // panels" operation, restore old window positions.  This should be
     // controlled by a flag rather than examining WIDGETTITLE.
-    if( strncmp( widgetTitle, "Append", 6) == 0 ||
+    if( strncmp( userData, "REFRESH_WINDOWS", 15) == 0 ||
+        strncmp( widgetTitle, "Append", 6) == 0 ||
         strncmp( widgetTitle, "Merge", 5) == 0 ||
         strncmp( widgetTitle, "Reload", 6) == 0 ||
         strncmp( widgetTitle, "Restore", 7) == 0) {
@@ -819,11 +829,11 @@ void make_main_menu_bar()
     "File/Merge another file   ", 0, 
     (Fl_Callback *) read_data, (void*) "merge another file", FL_MENU_DIVIDER);
   main_menu_bar->add( 
-    "File/Save selected data   ", 0, 
-    (Fl_Callback *) write_data, (void*) "save selected data");
-  main_menu_bar->add( 
     "File/Save all data        ", 0, 
-    (Fl_Callback *) write_data, (void*) "save data", FL_MENU_DIVIDER);
+    (Fl_Callback *) write_data, (void*) "save data");
+  main_menu_bar->add( 
+    "File/Save selected data   ", 0, 
+    (Fl_Callback *) write_data, (void*) "save selected data", FL_MENU_DIVIDER);
   main_menu_bar->add( 
     "File/Load configuration   ", 0, 
     (Fl_Callback *) load_state);
@@ -1033,12 +1043,12 @@ void npoints_changed( Fl_Widget *o)
 void write_data( Fl_Widget *o, void* user_data)
 {
   // Evaluate user_data to get ASCII or binary file format
-  if( strstr( (char *) user_data, "binary") != NULL) dfm.ascii_output( 0);
-  else dfm.ascii_output( 1);
+  // if( strstr( (char *) user_data, "binary") != NULL) dfm.ascii_output( 0);
+  // else dfm.ascii_output( 1);
 
   // Evaluate user_data to determine if only selected data are to be used
-  if( strstr( (char *) user_data, "selected") != NULL) dfm.selected_data( 1);
-  else dfm.selected_data( 0);
+  // if( strstr( (char *) user_data, "selected") != NULL) dfm.selected_data( 1);
+  // else dfm.selected_data( 0);
 
   // Query user to find name of output file.  If no file was specified, 
   // return immediately and hope the calling routine can handle this.
@@ -1130,9 +1140,10 @@ void read_data( Fl_Widget* o, void* user_data)
 // XML archive.
 int load_state( Fl_Widget* o)
 {
-  // Initialize filespec for the XML archive.  NOTE: cOutFileSpec is defined 
-  // as const char* for use with Vp_File_Chooser, which means it could be 
-  // destroyed by the relevant destructors!
+  // Extract directory from the Data_File_Manager class to initialize the 
+  // filespec for the XML archive.  NOTE: cInFileSpec is defined as const 
+  // char* for use with Vp_File_Chooser, which means it could be destroyed 
+  // by the relevant destructors!
   const char *cInFileSpec = dfm.directory().c_str();
   // const char *cInFileSpec = strcat( dfm.directory().c_str(), "vp.xml");
 
@@ -1143,13 +1154,51 @@ int load_state( Fl_Widget* o)
   char* pattern = "*.xml\tAll Files (*)";
   Vp_File_Chooser* file_chooser =
     new Vp_File_Chooser( cInFileSpec, pattern, Vp_File_Chooser::SINGLE, title);
+  file_chooser->directory( cInFileSpec);
   file_chooser->isAscii( 1);
   file_chooser->fileTypeMenu_deactivate();
 
   // Loop: wait until the file selection is done
-  file_chooser->show();
-  while( file_chooser->shown()) Fl::wait();
-  cInFileSpec = file_chooser->value();   
+  // file_chooser->show();
+  // while( file_chooser->shown()) Fl::wait();
+  // cInFileSpec = file_chooser->value();   
+
+  // Loop: Set the directory, then select fileSpecs until a non-directory is 
+  // obtained.  NOTE: This should all be handled by the file_chooser object, 
+  // but it's necessary to add some protection in case the user selects a
+  // pathname that does not correspnd to a file.
+  while( 1) {
+    if( cInFileSpec != NULL) file_chooser->directory( cInFileSpec);
+
+    // Loop: wait until the file selection is done
+    file_chooser->show();
+    while( file_chooser->shown()) Fl::wait();
+    cInFileSpec = file_chooser->value();   
+
+    // If no file was specified then quit
+    if( cInFileSpec == NULL) {
+      cerr << "Main::load_state: "
+           << "No input file was specified" << endl;
+      break;
+    }
+
+    // In FLTK 1.1.7 under Windows, the fl_filename_isdir method doesn't work, 
+    // so try to open this file to see if it is a directory.  If it is, set 
+    // the pathname and continue.  Otherwise merely update the pathname stored
+    // in the Data_File_Manager object.
+    FILE* pFile = fopen( cInFileSpec, "r");
+    if( pFile == NULL) {
+      file_chooser->directory( cInFileSpec);
+      dfm.directory( (string) cInFileSpec);
+      continue;
+    }
+    else {
+      dfm.directory( (string) file_chooser->directory());
+    }
+
+    fclose( pFile);
+    break;         
+  } 
 
   // If no file was specified then report, deallocate the Vp_File_Chooser 
   // object, and quit.
@@ -1161,7 +1210,8 @@ int load_state( Fl_Widget* o)
   }
 
   // Create a file stream for input and make sure it exists.  This will
-  // be closed when destructors are called
+  // be closed when destructors are called.  NOTE: If this ASSERT triggers,
+  // something has gone badly wrong in the WHILE loop above.
   std::ifstream inputFileStream( cInFileSpec, std::ios::binary);
   assert( inputFileStream.good());
 
@@ -1183,23 +1233,124 @@ int load_state( Fl_Widget* o)
   default_pointsize = max( 1.0, 6.0 - log10f( (float) npoints));
   Brush::set_sizes(default_pointsize);
   
-  // Set user_data for this widget to indicate that this is a READ operation, 
-  // then invoke manage_plot_window( o) to clear children of the tab widget 
-  // and reload plot window array.
-  // o->user_data( (void*) "Read");
-  manage_plot_window_array( o, (void*) "Read");
-
-  // Read configuration information from archive
+  // Read configuration information from archive.  NOTE: This must be done
+  // before the first call to MANAGE_PLOT_WINDOW_ARRAY!
   inputArchive >> BOOST_SERIALIZATION_NVP( nrows);
   inputArchive >> BOOST_SERIALIZATION_NVP( ncols);
 
+  // Set user_data for this widget to indicate that this is a NEW_DATA 
+  // operation, then invoke MANAGE_PLOT_WINDOW_ARRAY to clear children of 
+  // the tab widget and reload the plot window array.
+  manage_plot_window_array( o, (void*) "NEW_DATA");
+
+  // Brute force scheme to read control panel information from archive
+  inputArchive >> BOOST_SERIALIZATION_NVP( nplots);
+  for( int i=0; i<nplots; i++) {
+       
+    // Convert index value to string
+    stringstream ss_i;
+    string s_i;
+    ss_i << i;
+    ss_i >> s_i;
+    
+    // Load control panel settings
+    using boost::serialization::make_nvp;
+    {
+      string sName = "ivar_save_" + s_i;
+      const char *cName = sName.c_str();
+      int iValue;
+      inputArchive & make_nvp( cName, iValue);
+      cps[ i]->varindex1->value( iValue);
+    }
+    {
+      string sName = "jvar_save_" + s_i;
+      const char *cName = sName.c_str();
+      int iValue;
+      inputArchive & make_nvp( cName, iValue);
+      cps[ i]->varindex2->value( iValue);
+    }
+    {
+      string sName = "kvar_save_" + s_i;
+      const char *cName = sName.c_str();
+      int iValue;
+      inputArchive & make_nvp( cName, iValue);
+      cps[ i]->varindex3->value( iValue);
+    }
+    {
+      string sName = "x_normalization_style_" + s_i;
+      const char *cName = sName.c_str();
+      int iValue;
+      inputArchive & make_nvp( cName, iValue);
+      cps[ i]->x_normalization_style->value( iValue);
+    }
+    {
+      string sName = "y_normalization_style_" + s_i;
+      const char *cName = sName.c_str();
+      int iValue;
+      inputArchive & make_nvp( cName, iValue);
+      cps[ i]->y_normalization_style->value( iValue);
+    }
+    {
+      string sName = "z_normalization_style_" + s_i;
+      const char *cName = sName.c_str();
+      int iValue;
+      inputArchive & make_nvp( cName, iValue);
+      cps[ i]->z_normalization_style->value( iValue);
+    }
+    {
+      string sName = "lock_axis1_button_" + s_i;
+      const char *cName = sName.c_str();
+      int iValue;
+      inputArchive & make_nvp( cName, iValue);
+      cps[ i]->lock_axis1_button->value( iValue);
+    }
+    {
+      string sName = "lock_axis2_button_" + s_i;
+      const char *cName = sName.c_str();
+      int iValue;
+      inputArchive & make_nvp( cName, iValue);
+      cps[ i]->lock_axis2_button->value( iValue);
+    }
+    {
+      string sName = "lock_axis3_button_" + s_i;
+      const char *cName = sName.c_str();
+      int iValue;
+      inputArchive & make_nvp( cName, iValue);
+      cps[ i]->lock_axis3_button->value( iValue);
+    }
+
+    // Load plot window positions
+    int x, y, w, h;
+    {
+      string sName = "pws_x_save_" + s_i;
+      const char *cName = sName.c_str();
+      inputArchive & make_nvp( cName, x);
+    }
+    {
+      string sName = "pws_y_save_" + s_i;
+      const char *cName = sName.c_str();
+      inputArchive & make_nvp( cName, y);
+    }
+    pws[ i]->position( x, y);
+    {
+      string sName = "pws_w_save_" + s_i;
+      const char *cName = sName.c_str();
+      inputArchive & make_nvp( cName, w);
+    }
+    {
+      string sName = "pws_h_save_" + s_i;
+      const char *cName = sName.c_str();
+      inputArchive & make_nvp( cName, h);
+    }
+    pws[ i]->size( w, h);
+  }
+  
   // Set user_data for this widget to indicate that this is a RESIZE 
   // operation, then invoke manage_plot_window( o) to apply configuration.
-  // o->user_data( (void*) "Resize");
-  manage_plot_window_array( o,  (void*) "Resize");
+  manage_plot_window_array( o,  (void*) "REFRESH_WINDOWS");
 
   // Refresh display
-  manage_plot_window_array( o,  (void*) "Resize");
+  // manage_plot_window_array( o,  (void*) "Resize");
 
   // Report success
   return 1;
@@ -1210,9 +1361,10 @@ int load_state( Fl_Widget* o)
 // XML archive.
 int save_state( Fl_Widget* o)
 {
-  // Initialize filespec for the XML archive.  NOTE: cOutFileSpec is defined 
-  // as const char* for use with Vp_File_Chooser, which means it could be 
-  // destroyed by the relevant destructors!
+  // Extract directory from the Data_File_Manager class to initialize the 
+  // filespec for the XML archive.  NOTE: cOutFileSpec is defined as const 
+  // char* for use with Vp_File_Chooser, which means it could be destroyed 
+  // by the relevant destructors!
   const char *cOutFileSpec = dfm.directory().c_str();
   // const char *cOutFileSpec = strcat( dfm.directory().c_str(), "vp.xml");
 
@@ -1224,12 +1376,16 @@ int save_state( Fl_Widget* o)
   Vp_File_Chooser* file_chooser = 
     new Vp_File_Chooser( 
       cOutFileSpec, pattern, Vp_File_Chooser::CREATE, title);
+  file_chooser->directory( cOutFileSpec);
+  file_chooser->isAscii( 1);
+  file_chooser->fileTypeMenu_deactivate();
 
-  // Loop: Select succesive output filespecs until a non-directory is 
-  // obtained and found acceptible to the user
+  // Loop: Select succesive filespecs until a non-directory is obtained
   while( 1) {
+    // if( cOutFileSpec != NULL) file_chooser->directory( cOutFileSpec);
 
-    // Loop: Wait until the file selection is done
+    // Loop: wait until the selection is done, then extract the value.  NOTE: 
+    // This usage of while and Fl::wait() seems strange.
     file_chooser->show();
     while( file_chooser->shown()) Fl::wait();
     cOutFileSpec = file_chooser->value();   
@@ -1237,23 +1393,43 @@ int save_state( Fl_Widget* o)
     // If no file was specified then quit
     if( cOutFileSpec == NULL) break;
 
-    // If this is a new file, it can't be opened for read, and we're done
+    // If this is a new file, it can't be opened for read
+    int isNewFile = 0;
     FILE* pFile = fopen( cOutFileSpec, "r");
-    if( pFile == NULL) break;
-    
+    if( pFile == NULL) isNewFile= 1;
+    else fclose( pFile);
+
+    // Attempt to open an output stream to make sure the file can be opened 
+    // for write.  If it can't, assume that cOutFileSpec was a directory and 
+    // make it the working directory.  Otherwise close the output stream.
+    // NOTE: This will create an empty file.
+    ofstream os;
+    os.open( cOutFileSpec, ios::out|ios::trunc);
+    if( os.fail()) {
+      cerr << " -DIAGNOSTIC: This should trigger on error opening "
+           << cOutFileSpec << "for write" << endl;
+      file_chooser->directory( cOutFileSpec);
+      dfm.directory( (string) cOutFileSpec);
+      os.close();
+      continue;
+    }
+    os.close();
+    if( isNewFile != 0) break;
+
     // If we got this far, the file must exist and be available to be
-    // overwritten, so close it, then open a confirmation window and wait 
-    // for the button handler to do something.
-    fclose( pFile);
-    int confirmationResult = 
-      make_confirmation_window( "Overwrite existing file?");
+    // overwritten, so open a confirmation window and wait for the button 
+    // handler to do something.
+    string sConfirmText = "File '";
+    sConfirmText.append( cOutFileSpec);
+    sConfirmText.append( "' already exists.\nOverwrite exisiting file?\n");
+    int iConfirmResult = make_confirmation_window( sConfirmText.c_str());
 
     // If this was a 'CANCEL' request, return without doing anything.  If 
     // this was a 'YES' request, move on.  Otherwise, make sure we're in
     // the right directory and try again.
-    if( confirmationResult < 0) return -1;
-    if( confirmationResult > 0) break;
-  }
+    if( iConfirmResult < 0) return -1;
+    if( iConfirmResult > 0) break;
+  } 
 
   // If no file was specified then report, deallocate the Vp_File_Chooser 
   // object, and quit.
@@ -1276,6 +1452,100 @@ int save_state( Fl_Widget* o)
   outputArchive << BOOST_SERIALIZATION_NVP( nrows);
   outputArchive << BOOST_SERIALIZATION_NVP( ncols);
 
+  // Brute force scheme to write control panel information to archive
+  outputArchive << BOOST_SERIALIZATION_NVP( nplots);
+  for( int i=0; i<nplots; i++) {
+
+    // Convert index value to string
+    stringstream ss_i;
+    string s_i, sName;
+    ss_i << i;
+    ss_i >> s_i;
+
+    // Load control panel settings
+    using boost::serialization::make_nvp;
+    {
+      string sName = "ivar_save_" + s_i;
+      const char *cName = sName.c_str();
+      int iValue = cps[ i]->varindex1->value();
+      outputArchive & make_nvp( cName, iValue);
+    }
+    {
+      string sName = "jvar_save_" + s_i;
+      const char *cName = sName.c_str();
+      int iValue = cps[ i]->varindex2->value();
+      outputArchive & make_nvp( cName, iValue);
+    }
+    {
+      string sName = "kvar_save_" + s_i;
+      const char *cName = sName.c_str();
+      int iValue = cps[ i]->varindex3->value();
+      outputArchive & make_nvp( cName, iValue);
+    }
+    {
+      string sName = "x_normalization_style_" + s_i;
+      const char *cName = sName.c_str();
+      int iValue = cps[ i]->x_normalization_style->value();
+      outputArchive & make_nvp( cName, iValue);
+    }
+    {
+      string sName = "y_normalization_style_" + s_i;
+      const char *cName = sName.c_str();
+      int iValue = cps[ i]->y_normalization_style->value();
+      outputArchive & make_nvp( cName, iValue);
+    }
+    {
+      string sName = "z_normalization_style_" + s_i;
+      const char *cName = sName.c_str();
+      int iValue = cps[ i]->z_normalization_style->value();
+      outputArchive & make_nvp( cName, iValue);
+    }
+    {
+      string sName = "lock_axis1_button_" + s_i;
+      const char *cName = sName.c_str();
+      int iValue = cps[ i]->lock_axis1_button->value();
+      outputArchive & make_nvp( cName, iValue);
+    }
+    {
+      string sName = "lock_axis2_button_" + s_i;
+      const char *cName = sName.c_str();
+      int iValue = cps[ i]->lock_axis2_button->value();
+      outputArchive & make_nvp( cName, iValue);
+    }
+    {
+      string sName = "lock_axis3_button_" + s_i;
+      const char *cName = sName.c_str();
+      int iValue = cps[ i]->lock_axis3_button->value();
+      outputArchive & make_nvp( cName, iValue);
+    }
+
+    // Save plot window positions
+    {
+      string sName = "pws_x_save_" + s_i;
+      const char *cName = sName.c_str();
+      int iValue = pws[ i]->x();
+      outputArchive & make_nvp( cName, iValue);
+    }
+    {
+      string sName = "pws_y_save_" + s_i;
+      const char *cName = sName.c_str();
+      int iValue = pws[ i]->y();
+      outputArchive & make_nvp( cName, iValue);
+    }
+    {
+      string sName = "pws_w_save_" + s_i;
+      const char *cName = sName.c_str();
+      int iValue = pws[ i]->w();
+      outputArchive & make_nvp( cName, iValue);
+    }
+    {
+      string sName = "pws_h_save_" + s_i;
+      const char *cName = sName.c_str();
+      int iValue = pws[ i]->h();
+      outputArchive & make_nvp( cName, iValue);
+    }
+  }
+  
   // Report success
   return 1;
 }
@@ -1298,6 +1568,8 @@ void redraw_if_changing( void *dummy)
   return;
 }
 
+//***************************************************************************
+// reset_selection_arrays() -- Reset selection arrays to 'unselected'.
 void reset_selection_arrays () {
   newly_selected = 0;
   selected = 0;
