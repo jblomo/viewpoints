@@ -19,7 +19,7 @@
 // Purpose: Source code for <data_file_manager.h>
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  20-NOV-2007
+// Modified: P. R. Gazis  23-NOV-2007
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -71,7 +71,8 @@ void Data_File_Manager::initialize()
   writeSelectionInfo_ = 0;
 
   isColumnMajor = 1;
-  nSkipHeaderLines = 1;  // Number of header lines to skip
+  nSkipHeaderLines = 0;  // Number of header lines to skip
+  // nSkipHeaderLines = 1;  // Number of header lines to skip
   // sDirectory_ = ".";  // Default pathname
   inFileSpec = "";  // Default input filespec
 
@@ -84,7 +85,6 @@ void Data_File_Manager::initialize()
   npoints = MAXPOINTS;
   nvars = MAXVARS;
 }
-
 
 //***************************************************************************
 // Data_File_Manager::findInputFile() -- Query user to find the input file.
@@ -113,11 +113,6 @@ int Data_File_Manager::findInputFile()
   // const char *cInFileSpec = directory().c_str();
   const char *cInFileSpec = sDirectory_.c_str();
   
-  // DIAGNOSTIC: Check cInFileSpec
-  cout << endl
-       << "Data_File_Manager::findInputFile: cInFileSpec (" << cInFileSpec << ")"
-       << endl << endl;
-
   // Instantiate and show an Vp_File_Chooser widget.  NOTE: The pathname must
   // be passed as a variable or the window will begin in some root directory.
   Vp_File_Chooser* file_chooser =
@@ -170,6 +165,7 @@ int Data_File_Manager::findInputFile()
   // Query the Vp_File_Chooser object to get file type
   if( file_chooser->isAscii() != 0) isAsciiInput = 1;
   else isAsciiInput = 0;
+  delimiter_char_ = file_chooser->delimiter_char();
   
   // Load the inFileSpec string
   inFileSpec.assign( (string) cInFileSpec);
@@ -183,7 +179,8 @@ int Data_File_Manager::findInputFile()
   delete file_chooser;  // WARNING! This destroys cInFileSpec!
 
   // Perform partial initialization and return success
-  nSkipHeaderLines = 1;
+  // nSkipHeaderLines = 1;
+  nSkipHeaderLines = 0;
   npoints_cmd_line = 0;
   nvars_cmd_line = 0;
   npoints = MAXPOINTS;
@@ -228,7 +225,8 @@ int Data_File_Manager::load_data_file()
     old_column_labels = column_labels;
   }
   
-  // Read data file and report results
+  // Read data file.If there was a problem, create default data to prevent 
+  // a crash, then quit before something terrible happens!
   cout << "Reading input data from <" << inFileSpec.c_str() << ">" << endl;
   int iReadStatus = 0;
   if( isAsciiInput == 0) iReadStatus = read_binary_file_with_headers();
@@ -236,6 +234,7 @@ int Data_File_Manager::load_data_file()
   if( iReadStatus != 0) {
     cout << "Data_File_Manager::load_data_file: "
          << "Problems reading file <" << inFileSpec.c_str() << ">" << endl;
+    create_default_data( 4);
     return -1;
   }
   else
@@ -247,11 +246,12 @@ int Data_File_Manager::load_data_file()
   // it can take both time and memory
   remove_trivial_columns();
 
-  // If only one or fewer records are available then quit before something 
-  // terrible happens!
-  if( npoints <= 1) {
-    cout << "Insufficient data, " << npoints
-         << " samples." << endl;
+  // If only one or fewer records are available then generate default data 
+  // to prevent a crash, then quit before something terrible happens!
+  if( nvars <= 1 || npoints <= 1) {
+    cout << " -WARNING: Insufficient data, " << nvars << "x" << npoints
+         << " samples.  Check delimiter setting." << endl;
+    create_default_data( 4);
     return -1;
   }
   else {
@@ -261,9 +261,7 @@ int Data_File_Manager::load_data_file()
   
   // MCL XXX Now that we're done reading, we can update nvars to count possible
   // additional program-generated variables (presently only the line number).
-  if( include_line_number) {
-    nvars = nvars+1;
-  }
+  if( include_line_number) nvars = nvars+1;
 
   // Compare array sizes and finish the append or merge operation
   if( doAppend > 0 | doMerge > 0) {
@@ -281,167 +279,24 @@ int Data_File_Manager::load_data_file()
       nvars = points.rows();
       npoints = points.columns();
       column_labels = old_column_labels;
-
-      // DIAGNOSTIC
-      // cout << "PLOIT_04a: Restored old array during append or merge ("
-      //      << points.rows() << "/" << nvars << ", "
-      //      << points.columns() << "/" << npoints << ")" << endl;
-      // cout << " Old Row( " << setw( 3) << 0 << "):";
-      // for( int ivar=0; ivar<nvars; ivar++) 
-      //   cout << " " << setw( 8) << points( ivar, 0);
-      // cout << endl;
-      // cout << " Old Row( " << setw( 3) << npoints-1 << "):";
-      // for( int ivar=0; ivar<nvars; ivar++) 
-      //   cout << " " << setw( 8) << points( ivar, npoints-1);
-      // cout << endl;
     }
     else if( doAppend > 0) {
       int all_npoints = npoints + old_npoints;
       points.resizeAndPreserve( nvars, npoints);
       old_points.resizeAndPreserve( nvars, all_npoints);
 
-      // DIAGNOSTIC
-      // cout << "PLOIT_02b: About to combine arrays for append ("
-      //      << old_nvars << "/" << old_points.rows() << ", "
-      //      << old_npoints << "/" << old_points.columns() << ")" << endl;
-      // cout << " Old Row( " << setw( 3) << 0 << "):";
-      // for( int ivar=0; ivar<nvars; ivar++) 
-      //   cout << " " << setw( 8) << old_points( ivar, 0);
-      // cout << endl;
-      // cout << " Old Row( " << setw( 3) << old_npoints-1 << "):";
-      // for( int ivar=0; ivar<nvars; ivar++) 
-      //   cout << " " << setw( 8) << old_points( ivar, old_npoints-1);
-      // cout << endl;
-      // cout << " Old Row( " << setw( 3) << old_npoints << "):";
-      // for( int ivar=0; ivar<nvars; ivar++) 
-      //   cout << " " << setw( 8) << old_points( ivar, old_npoints);
-      // cout << endl;
-      // cout << " Old Row( " << setw( 3) << old_points.columns()-1 << "):";
-      // for( int ivar=0; ivar<nvars; ivar++) 
-      //   cout << " " << setw( 8) << old_points( ivar, old_points.columns()-1);
-      // cout << endl;
-      // cout << " New Row( " << setw( 3) << 0 << "):";
-      // for( int ivar=0; ivar<nvars; ivar++) 
-      //   cout << " " << setw( 8) << points( ivar, 0);
-      // cout << endl;
-      // cout << " New Row( " << setw( 3) << points.columns()-1 << "):";
-      // for( int ivar=0; ivar<nvars; ivar++) 
-      //   cout << " " << setw( 8) << points( ivar, points.columns()-1);
-      // cout << endl;
-      // cout << " New Row( " << setw( 3) << npoints-1 << "):";
-      // for( int ivar=0; ivar<nvars; ivar++) 
-      //   cout << " " << setw( 8) << points( ivar, npoints-1);
-      // cout << endl;
-
       old_points( blitz::Range( 0, nvars-1), blitz::Range( old_npoints, all_npoints-1)) = points;
       points.resize( old_points.shape());
-
-      // DIAGNOSTIC
-      // cout << "PLOIT_03b: Appended new array to old one ("
-      //      << nvars << "/" << old_points.rows() << ", "
-      //      << npoints << "/" << old_points.columns() << ")" << endl;
-      // cout << " Old Row( " << setw( 3) << 0 << "):";
-      // for( int ivar=0; ivar<nvars; ivar++) 
-      //   cout << " " << setw( 8) << old_points( ivar, 0);
-      // cout << endl;
-      // cout << " Old Row( " << setw( 3) << old_npoints-1 << "):";
-      // for( int ivar=0; ivar<nvars; ivar++) 
-      //   cout << " " << setw( 8) << old_points( ivar, old_npoints-1);
-      // cout << endl;
-      // cout << " Old Row( " << setw( 3) << old_npoints << "):";
-      // for( int ivar=0; ivar<nvars; ivar++) 
-      //   cout << " " << setw( 8) << old_points( ivar, old_npoints);
-      // cout << endl;
-      // cout << " Old Row( " << setw( 3) << old_points.columns()-1 << "):";
-      // for( int ivar=0; ivar<nvars; ivar++) 
-      //   cout << " " << setw( 8) << old_points( ivar, old_points.columns()-1);
-      // cout << endl;
-      // cout << " New Row( " << setw( 3) << 0 << "):";
-      // for( int ivar=0; ivar<nvars; ivar++) 
-      //   cout << " " << setw( 8) << points( ivar, 0);
-      // cout << endl;
-      // cout << " New Row( " << setw( 3) << all_npoints-1 << "):";
-      // for( int ivar=0; ivar<nvars; ivar++) 
-      //   cout << " " << setw( 8) << points( ivar, all_npoints-1);
-      // cout << endl;
 
       points = old_points;
       npoints = all_npoints;
       column_labels = old_column_labels;
-
-      // DIAGNOSTIC
-      // cout << "PLOIT_04b: Finished swapping arrays for append ("
-      //      << old_nvars << "/" << points.rows() << ", "
-      //      << old_npoints << "/" << points.columns() << ")" << endl;
-      // cout << " New Row( " << setw( 3) << 0 << "):";
-      // for( int ivar=0; ivar<nvars; ivar++) 
-      //   cout << " " << setw( 8) << points( ivar, 0);
-      // cout << endl;
-      // cout << " New Row( " << setw( 3) << old_npoints-1 << "):";
-      // for( int ivar=0; ivar<nvars; ivar++) 
-      //   cout << " " << setw( 8) << points( ivar, old_npoints-1);
-      // cout << endl;
-      // cout << " New Row( " << setw( 3) << old_npoints << "):";
-      // for( int ivar=0; ivar<nvars; ivar++) 
-      //   cout << " " << setw( 8) << points( ivar, old_npoints);
-      // cout << endl;
-      // cout << " New Row( " << setw( 3) << npoints-1 << "):";
-      // for( int ivar=0; ivar<nvars; ivar++) 
-      //   cout << " " << setw( 8) << points( ivar, npoints-1);
-      // cout << endl;
-      // cout << " New Row( " << setw( 3) << points.columns()-1 << "):";
-      // for( int ivar=0; ivar<nvars; ivar++) 
-      //   cout << " " << setw( 8) << points( ivar, points.columns()-1);
-      // cout << endl;
     }
     else {
       int all_nvars = nvars + old_nvars;
-
-      // DIAGNOSTIC
-      // cout << "PLOIT_02c: About to combine arrays for merge ("
-      //      << points.rows() << "/" << nvars << ", "
-      //      << points.columns() << "/" << npoints << ")" << endl;
-      // cout << " Old Row( " << setw( 3) << 0 << "):";
-      // for( int ivar=0; ivar<old_nvars; ivar++) 
-      //   cout << " " << setw( 8) << old_points( ivar, 0);
-      // cout << endl;
-      // cout << " Old Row( " << setw( 3) << old_npoints-1 << "):";
-      // for( int ivar=0; ivar<old_nvars; ivar++) 
-      //   cout << " " << setw( 8) << old_points( ivar, old_npoints-1);
-      // cout << endl;
-      // cout << " New Row( " << setw( 3) << 0 << "):";
-      // for( int ivar=0; ivar<points.rows(); ivar++) 
-      //   cout << " " << setw( 8) << points( ivar, 0);
-      // cout << endl;
-      // cout << " New Row( " << setw( 3) << npoints-1 << "):";
-      // for( int ivar=0; ivar<points.rows(); ivar++) 
-      //   cout << " " << setw( 8) << points( ivar, npoints-1);
-      // cout << endl;
-
       points.reverseSelf( blitz::firstDim);
       old_points.reverseSelf( blitz::firstDim);
       points.resizeAndPreserve( all_nvars, npoints);
-
-      // DIAGNOSTIC
-      // cout << "PLOIT_03c: About to combine arrays for merge ("
-      //      << points.rows() << "/" << nvars << ", "
-      //      << points.columns() << "/" << npoints << ")" << endl;
-      // cout << " Old Row( " << setw( 3) << 0 << "):";
-      // for( int ivar=0; ivar<old_nvars; ivar++) 
-      //   cout << " " << setw( 8) << old_points( ivar, 0);
-      // cout << endl;
-      // cout << " Old Row( " << setw( 3) << old_npoints-1 << "):";
-      // for( int ivar=0; ivar<old_nvars; ivar++) 
-      //   cout << " " << setw( 8) << old_points( ivar, old_npoints-1);
-      // cout << endl;
-      // cout << " New Row( " << setw( 3) << 0 << "):";
-      // for( int ivar=0; ivar<points.rows(); ivar++) 
-      //   cout << " " << setw( 8) << points( ivar, 0);
-      // cout << endl;
-      // cout << " New Row( " << setw( 3) << npoints-1 << "):";
-      // for( int ivar=0; ivar<points.rows(); ivar++) 
-      //   cout << " " << setw( 8) << points( ivar, npoints-1);
-      // cout << endl;
 
       points( blitz::Range( nvars, all_nvars-1), blitz::Range( 0, npoints-1)) = old_points;
       points.reverseSelf( blitz::firstDim);
@@ -453,19 +308,6 @@ int Data_File_Manager::load_data_file()
         old_column_labels.push_back( column_labels[ i]);
       }
       column_labels = old_column_labels;
-
-      // DIAGNOSTIC
-      // cout << "PLOIT_04c: Finished combining arrays for merge ("
-      //      << points.rows() << "/" << nvars << ", "
-      //      << points.columns() << "/" << npoints << ")" << endl;
-      // cout << " New Row( " << setw( 3) << 0 << "):";
-      // for( int ivar=0; ivar<nvars; ivar++) 
-      //   cout << " " << setw( 8) << points( ivar, 0);
-      // cout << endl;
-      // cout << " New Row( " << setw( 3) << npoints-1 << "):";
-      // for( int ivar=0; ivar<nvars; ivar++) 
-      //   cout << " " << setw( 8) << points( ivar, npoints-1);
-      // cout << endl;
     }
 
     // Free memory in case this isn't handled by the compiler.
@@ -508,18 +350,19 @@ int Data_File_Manager::read_ascii_file_with_headers()
          << " -Opening <" << inFileSpec.c_str() << ">" << endl;
   }
 
-  // STEP 2: Read and discard the header block
 
-  // Loop: Read successive lines to find the last line of the header block and
-  // the beginning of the data block. NOTE: Since tellg() and seekg() don't 
-  // seem to work properly with getline with all compilers, this must be 
-  // accomplished by keeping track of lines explicitly.
+  // STEP 2: Read and discard the header block, saving the last line of the
+  // header in the LASTHEADERLINE buffer
+
+  // Loop: Read successive lines to find and store the last line of the 
+  // header block. NOTE: Since tellg() and seekg() don't seem to work 
+  // properly with getline() with all compilers, this must be accomplished 
+  // by reading and counting each line explicitly.
   std::string line = "";
   std::string lastHeaderLine = "";
   int nRead = 0, nHeaderLines = 0;
   for( int i = 0; i < MAX_HEADER_LINES; i++) {
     if( inFile.eof() != 0) break;
-
     (void) getline( inFile, line, '\n');
     nRead++;
 
@@ -542,39 +385,48 @@ int Data_File_Manager::read_ascii_file_with_headers()
   cout << " -Header block contains " << nHeaderLines 
        << " header lines." << endl;
 
-  // STEP 3: Generate column labels
+
+  // STEP 3: Generate column labels from LASTHEADERLINE if it is full.
+  // Otherwise generate default label names.
 
   // Initialize the column labels
   nvars = 0;
   column_labels.erase( column_labels.begin(), column_labels.end());
 
-  // DIAGNOSTIC
-  // delimiter_char_ = ',';
-  
   // If no header lines were found or the LASTHEADERLINE buffer is empty, 
   // examine the first line of the data block to determine the number of 
-  // columns and generate a set of column labels.
+  // columns and generate a set of default column labels.
   if( nHeaderLines == 0 || lastHeaderLine.length() == 0) {
     
-    // Invoke the replace() method from <algorithm> to replace tabs and/or a
-    // user-specified delimiter character so that operator>> will work.
-    replace( line.begin(), line.end(), '\t', ' ');
-    if( delimiter_char_ != ' ') {
-      replace( line.begin(), line.end(), delimiter_char_, ' ');
-    }
+    // If the delimiter character is not a tab, replace all tabs in the
+    // LINE string with spaces
+    if( delimiter_char_ != '\t') replace( line.begin(), line.end(), '\t', ' ');
 
-    // Loop: Insert the input string into a stream, define a buffer, read 
+    // Loop: Insert the LINE string into a stream, define a buffer, read 
     // and count successive tokens, generate default column labels, and 
-    // report results.
+    // report results.  NOTE: whitespace-delimited and character-delimited
+    // files must be handled differently
     std::stringstream ss( line);
     std::string buf;
-    while( ss >> buf) {
-      nvars++;
-      char cbuf[ 80];
-      (void) sprintf( cbuf, "%d", nvars);
-      buf = "Column_";
-      buf.append( cbuf);
-      column_labels.push_back( buf);
+    if( delimiter_char_ == ' ') {
+      while( ss >> buf) {
+        nvars++;
+        char cbuf[ 80];
+        (void) sprintf( cbuf, "%d", nvars);
+        buf = "Column_";
+        buf.append( cbuf);
+        column_labels.push_back( buf);
+      }
+    }
+    else { 
+      while( getline( ss, buf, delimiter_char_)) {
+        nvars++;
+        char cbuf[ 80];
+        (void) sprintf( cbuf, "%d", nvars);
+        buf = "Column_";
+        buf.append( cbuf);
+        column_labels.push_back( buf);
+      }
     }
     nvars = column_labels.size();
     cout << " -Generated " << nvars 
@@ -585,39 +437,53 @@ int Data_File_Manager::read_ascii_file_with_headers()
   // buffer to extract column labels.
   else {
 
-    // Discard the leading comment character, if any.  The rest of the 
-    // line is assumed to contain column labels separated by whitespace
+    // Discard the leading comment character, if any, of the LASTHEADERLINE
+    // string.  The rest of the line is assumed to contain column labels
     if( lastHeaderLine.find_first_of( "!#%") == 0) 
       lastHeaderLine.erase( 0, 1);
-    
-    // Invoke the REPLACE method from <algorithm> to replace tabs and/or a
-    // user-specified delimiter character so that operator>> will work.
-    replace( lastHeaderLine.begin(), lastHeaderLine.end(), '\t', ' ');
-    if( delimiter_char_ != ' ') {
-      replace( lastHeaderLine.begin(), lastHeaderLine.end(), delimiter_char_, ' ');
-    }
 
-    // Loop: Insert the input string into a stream, define a buffer, read 
-    // successive labels into the buffer, load them into the array of column
-    // labels, and report results
+    // Loop: Insert the LASTHEADERLINE string into a stream, define a buffer, 
+    // read successive labels into the buffer, load them into the array of 
+    // column labels, and report results.  NOTE: whitespace-delimited and 
+    // character-delimited labels must be handled differently.  Also, it is
+    // necessary to trim whitespace and verify character-delimited labels.
     std::stringstream ss( lastHeaderLine);
     std::string buf;
-    while( ss >> buf) column_labels.push_back(buf);
+    if( delimiter_char_ == ' ')
+      while( ss >> buf) column_labels.push_back(buf);
+    else {
+      while( getline( ss, buf, delimiter_char_)) {
+        string::size_type notwhite = buf.find_first_not_of( " ");
+        buf.erase( 0, notwhite);
+        notwhite = buf.find_last_not_of( " ");
+        buf.erase( notwhite+1);
+        if( buf.size() <= 0) buf = "Dummy";
+        column_labels.push_back( buf);
+      }
+    }
+
     nvars = column_labels.size();
-    cout << " -Extracted " << nvars 
-         << " column labels." << endl;
+    cout << " -Extracted " << nvars << " column labels." << endl;
   }
 
-  // If there were more than nvars_cmd_line variables, truncate the vector of 
-  // column labels and reset nvars.
+  // If there were more than NVARS_CMD_LINE variables, truncate the vector 
+  // of column labels, reset NVARS, and warn the user.
   if( nvars_cmd_line > 0 && nvars > nvars_cmd_line) {
     column_labels.erase( column_labels.begin()+nvars_cmd_line, column_labels.end());
     nvars = column_labels.size();
-    cout << " -Truncated list to " << nvars 
+    cout << " -WARNING: Too many variables, truncated list to " << nvars 
          << " column labels." << endl;
   }
 
-  // Examine the column labels for errors and report results
+  // Examine the number column labels.  If it is too low or high, report 
+  // error, close input file, and quit.  Otherwise report success.
+  if( nvars <= 1) {
+    cerr << " -ERROR, insufficient number of columns, "
+         << "check for correct delimiter character"
+         << endl;
+    inFile.close();
+    return 1;
+  }
   if( nvars > MAXVARS) {
     cerr << " -ERROR, too many columns, "
          << "increase MAXVARS and recompile"
@@ -630,7 +496,7 @@ int Data_File_Manager::read_ascii_file_with_headers()
        << " fields (columns) per record (row)" << endl;
 
   // If requested, add a column to contain line numbers
-  if (include_line_number) {
+  if( include_line_number) {
     column_labels.push_back( string( "-line number-"));
   }
   
@@ -648,7 +514,8 @@ int Data_File_Manager::read_ascii_file_with_headers()
   }
   cout << endl;
 
-  // STEP 4: Allocate memory and read data block
+
+  // STEP 4: Allocate memory and read the data block
 
   // Now we know the number of variables, NVARS, so if we know the number of 
   // points (e.g. from the command line, we can size the main points array 
@@ -660,12 +527,12 @@ int Data_File_Manager::read_ascii_file_with_headers()
   
   // Loop: Read successive lines from the file
   int nSkip = 0, i = 0;
-  unsigned uFirst = 1;
+  unsigned uFirstLine = 1;
   int nTestCycle = 0, nUnreadableData = 0;
   while( !inFile.eof() && i<npoints) {
   
     // Get the next line, check for EOF, and increment accounting information
-    if( !uFirst) {
+    if( !uFirstLine) {
       (void) getline( inFile, line, '\n');
       if( inFile.eof()) break;  // Break here to make accounting work right
       nRead++;
@@ -675,32 +542,44 @@ int Data_File_Manager::read_ascii_file_with_headers()
     // Skip blank lines and comment lines
     if( line.length() == 0 || line.find_first_of( "!#%") == 0) {
       nSkip++;
-      uFirst = 0;
+      uFirstLine = 0;
       continue;
     }
-    uFirst = 0;
+    uFirstLine = 0;
     nTestCycle++;
     
-    // Replace tabs with ' ' so that operator>> will work
-    replace( line.begin(), line.end(), '\t', ' ');
+    // If the delimiter character is not a tab, replace tabs with spaces
+    if( delimiter_char_ != '\t')
+      replace( line.begin(), line.end(), '\t', ' ');
 
     // Loop: Insert the string into a stream and read it
     std::stringstream ss( line); 
     unsigned isBadData = 0;
     double x;
     for( int j=0; j<nvars; j++) {
-      
-      // Invoke opperator>> to read and parse floating point data.  In general,
-      // this will recognize certain types of non-numeric data.
-      // float xTrial;
-      // if( !( ss >> xTrial)) {
-      //   x = bad_value_proxy_;
-      //   ss.clear();
-      // }
-      // else x = xTrial;
-      ss >> x;
+    
+      // Get the next word.  NOTE: whitespace-delimited and character-
+      // delimited files must be handled differently.
+      // PROBLEM: This isn't handling missing values correctly
+      if( delimiter_char_ == ' ') ss >> x;
+      else {
+        std::string buf;
+        getline( ss, buf, delimiter_char_);
+        
+        // Check for missing data
+        string::size_type notwhite = buf.find_first_not_of( " ");
+        buf.erase( 0, notwhite);
+        notwhite = buf.find_last_not_of( " ");
+        buf.erase( notwhite+1);
+        if( buf.size() <= 0) x = bad_value_proxy_;
+        else {
+          stringstream bufstream;
+          bufstream << buf;
+          bufstream >> x;
+        }
+      }
 
-      // Skip lines that do not appear to contain enough data
+      // Skip lines that don't appear to contain enough data
       if( ss.eof() && j<nvars-1) {
         cerr << " -WARNING, not enough data on line " << nRead
              << ", skipping this line!" << endl;
@@ -716,14 +595,8 @@ int Data_File_Manager::read_ascii_file_with_headers()
         points(j,i) = bad_value_proxy_;
         ss.clear();
       }
-      else {
-        points(j,i) = (float) x;
-      }
+      else points(j,i) = (float) x;
       
-      // Advance past the next field delimiter character, or to the end of the 
-      // line, whichever comes first.
-      ss.ignore( line.length(), delimiter_char_);
-
       // Check for unreadable data and flag this line to be skipped.  NOTE:
       // This should never happen, because error flags were cleared above.
       if( !ss.good() && j<nvars-1) {
@@ -731,12 +604,10 @@ int Data_File_Manager::read_ascii_file_with_headers()
              << "(binary or ASCII?) at line " << nRead
              << " column " << j+1 << "," << endl
              << "  skipping entire line." << endl;
-        // cerr << "  <" << line.c_str() << ">" << endl;
         nUnreadableData++;
         isBadData = 1;
         break;
       }
-
       DEBUG (cout << "points(" << j << "," << i << ") = " << points(j,i) << endl);
     }
 
@@ -768,13 +639,14 @@ int Data_File_Manager::read_ascii_file_with_headers()
     // }
     // cout << endl;
     
-    // If data were good, increment number of lines
+    // If data were good, increment the number of lines
     if( !isBadData) {
       i++;
       if( (i+1)%10000 == 0) cerr << "  Read " << i+1 << " lines." << endl;
     }
   }
   
+
   // STEP 5: Update NPOINTS, report results of file read operation to the 
   // console, close input file, and report success
   npoints = i;
@@ -831,18 +703,23 @@ int Data_File_Manager::read_binary_file_with_headers()
   column_labels.erase( column_labels.begin(), column_labels.end());
 
   // Loop: unpack the string of header information to obtain column labels.
+  // NOTE: Whitespace-delimited and character-delimited lines must be
+  // handled differently.
   std::stringstream ss( line);
   std::string buf;
-  while( ss >> buf) column_labels.push_back(buf);
+  if( delimiter_char_ == ' ')
+    while( ss >> buf) column_labels.push_back(buf);
+  else
+    while( getline( ss, buf, delimiter_char_)) column_labels.push_back(buf);
   nvars = column_labels.size();
   int nvars_in = nvars;
 
-  // If there were more than nvars_cmd_line variables, truncate the vector of 
-  // column labels and reset nvars.
+  // If there were more than NVARS_CMD_LINE variables, truncate the vector of 
+  // column labels, reset NVARS, and warn the user.
   if( nvars_cmd_line > 0 && nvars > nvars_cmd_line) {
     column_labels.erase( column_labels.begin()+nvars_cmd_line, column_labels.end());
     nvars = column_labels.size();
-    cout << " -Truncated list to " << nvars 
+    cout << " -WARNING: Too many variables, truncated list to " << nvars 
          << " column labels." << endl;
   }
 
@@ -855,6 +732,7 @@ int Data_File_Manager::read_binary_file_with_headers()
     return 1;
   }
 
+  // If requested, include line number
   if (include_line_number) {
     column_labels.push_back( string( "-line number-"));
   }
@@ -862,6 +740,7 @@ int Data_File_Manager::read_binary_file_with_headers()
   // Add a final column label that says 'nothing'.
   column_labels.push_back(string("-nothing-"));
 
+  // Report labels
   cout << "column_labels = ";
   for( unsigned int i=0; i < column_labels.size(); i++ ) {
     cout << column_labels[i] << " ";
@@ -893,7 +772,7 @@ int Data_File_Manager::read_binary_file_with_headers()
   // Assert possible types or ordering  
   // assert( ordering == COLUMN_MAJOR || ordering == ROW_MAJOR);
 
-  // Read file in Column Major order
+  // Read file in Column Major order...
   if( isColumnMajor == 1) {
     cout << " -Attempting to read binary file in"
          << " column-major order" << endl;
@@ -942,8 +821,8 @@ int Data_File_Manager::read_binary_file_with_headers()
     npoints = i;
   }
 
-  // Read file in Row Major order
-  if( isColumnMajor != 1) {
+  // ...or read file in Row Major order
+  else {
     cout << " -Attempting to read binary file in"
          << "row-major order with nvars=" << nvars_in
          << ", npoints=" << npoints << endl;
@@ -1190,7 +1069,8 @@ int Data_File_Manager::write_ascii_file_with_headers()
     // Loop: Write column labels to the header
     for( int i=0; i < nvars_out; i++ ) {
       if( i == 0) os << "!" << setw( 12) << column_labels[ i];
-      else os << " " << setw( 13) << column_labels[ i];
+      else os << delimiter_char_ << " " << setw( 13) << column_labels[ i];
+      // else os << " " << setw( 13) << column_labels[ i];
     }
     if( writeSelectionInfo_ != 0) os << " selection";
     os << endl;
@@ -1206,7 +1086,8 @@ int Data_File_Manager::write_ascii_file_with_headers()
     for( int irow = 0; irow < npoints; irow++) {
       if( useSelectedData == 0 || selected( irow) > 0) {
         for( int jcol = 0; jcol < nvars_out; jcol++) {
-          if( jcol > 0) os << " ";
+          // if( jcol > 0) os << " ";
+          if( jcol > 0) os << delimiter_char_ << " ";
           os << points( jcol, irow);
         }
         if( writeSelectionInfo_ != 0) os << " " << selected( irow);
@@ -1326,7 +1207,7 @@ void Data_File_Manager::remove_trivial_columns()
   if( nvars != nvars_save) {
       
     // Report what columns were removed
-    cout << "Removed " << nvars_save - nvars << "columns:";
+    cout << "Removed " << nvars_save - nvars << " columns:";
     for( unsigned int i=0; i<removed_columns.size(); i++) {
       int nLineLength = 8;
       nLineLength += 1+column_labels[ i].length();

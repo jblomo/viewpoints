@@ -58,7 +58,7 @@
 //   reset_selection_arrays() -- Reset selection arrays
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  20-NOV-2007
+// Modified: P. R. Gazis  23-NOV-2007
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -1157,6 +1157,7 @@ int load_state( Fl_Widget* o)
   file_chooser->directory( cInFileSpec);
   file_chooser->isAscii( 1);
   file_chooser->fileTypeMenu_deactivate();
+  file_chooser->delimiter_hide();
 
   // Loop: wait until the file selection is done
   // file_chooser->show();
@@ -1243,112 +1244,122 @@ int load_state( Fl_Widget* o)
   // the tab widget and reload the plot window array.
   manage_plot_window_array( o, (void*) "NEW_DATA");
 
-  // Brute force scheme to read control panel information from archive
-  inputArchive >> BOOST_SERIALIZATION_NVP( nplots);
-  for( int i=0; i<nplots; i++) {
-       
-    // Convert index value to string
-    stringstream ss_i;
-    string s_i;
-    ss_i << i;
-    ss_i >> s_i;
-    
-    // Load control panel settings
-    using boost::serialization::make_nvp;
-    {
-      string sName = "ivar_save_" + s_i;
-      const char *cName = sName.c_str();
-      int iValue;
-      inputArchive & make_nvp( cName, iValue);
-      cps[ i]->varindex1->value( iValue);
-    }
-    {
-      string sName = "jvar_save_" + s_i;
-      const char *cName = sName.c_str();
-      int iValue;
-      inputArchive & make_nvp( cName, iValue);
-      cps[ i]->varindex2->value( iValue);
-    }
-    {
-      string sName = "kvar_save_" + s_i;
-      const char *cName = sName.c_str();
-      int iValue;
-      inputArchive & make_nvp( cName, iValue);
-      cps[ i]->varindex3->value( iValue);
-    }
-    {
-      string sName = "x_normalization_style_" + s_i;
-      const char *cName = sName.c_str();
-      int iValue;
-      inputArchive & make_nvp( cName, iValue);
-      cps[ i]->x_normalization_style->value( iValue);
-    }
-    {
-      string sName = "y_normalization_style_" + s_i;
-      const char *cName = sName.c_str();
-      int iValue;
-      inputArchive & make_nvp( cName, iValue);
-      cps[ i]->y_normalization_style->value( iValue);
-    }
-    {
-      string sName = "z_normalization_style_" + s_i;
-      const char *cName = sName.c_str();
-      int iValue;
-      inputArchive & make_nvp( cName, iValue);
-      cps[ i]->z_normalization_style->value( iValue);
-    }
-    {
-      string sName = "lock_axis1_button_" + s_i;
-      const char *cName = sName.c_str();
-      int iValue;
-      inputArchive & make_nvp( cName, iValue);
-      cps[ i]->lock_axis1_button->value( iValue);
-    }
-    {
-      string sName = "lock_axis2_button_" + s_i;
-      const char *cName = sName.c_str();
-      int iValue;
-      inputArchive & make_nvp( cName, iValue);
-      cps[ i]->lock_axis2_button->value( iValue);
-    }
-    {
-      string sName = "lock_axis3_button_" + s_i;
-      const char *cName = sName.c_str();
-      int iValue;
-      inputArchive & make_nvp( cName, iValue);
-      cps[ i]->lock_axis3_button->value( iValue);
-    }
+  // Install most of the load procedure in a try-catch process to protect
+  // against corrupt serialization files
+  try {
 
-    // Load plot window positions
-    int x, y, w, h;
-    {
-      string sName = "pws_x_save_" + s_i;
-      const char *cName = sName.c_str();
-      inputArchive & make_nvp( cName, x);
-    }
-    {
-      string sName = "pws_y_save_" + s_i;
-      const char *cName = sName.c_str();
-      inputArchive & make_nvp( cName, y);
-    }
-    pws[ i]->position( x, y);
-    {
-      string sName = "pws_w_save_" + s_i;
-      const char *cName = sName.c_str();
-      inputArchive & make_nvp( cName, w);
-    }
-    {
-      string sName = "pws_h_save_" + s_i;
-      const char *cName = sName.c_str();
-      inputArchive & make_nvp( cName, h);
-    }
-    pws[ i]->size( w, h);
+    // Loop: Loop through NPLOTS in a brute force scheme to read control panel 
+    // information from the archive
+    inputArchive >> BOOST_SERIALIZATION_NVP( nplots);
+    for( int i=0; i<nplots; i++) {
+       
+      // Convert index value to string
+      stringstream ss_i;
+      string s_i;
+      ss_i << i;
+      ss_i >> s_i;
+    
+      // Load control panel settings
+      using boost::serialization::make_nvp;
+      {
+        string sName = "ivar_save_" + s_i;
+        const char *cName = sName.c_str();
+        int iValue;
+        inputArchive & make_nvp( cName, iValue);
+        cps[ i]->varindex1->value( iValue);
+      }
+      {
+        string sName = "jvar_save_" + s_i;
+        const char *cName = sName.c_str();
+        int iValue;
+        inputArchive & make_nvp( cName, iValue);
+        cps[ i]->varindex2->value( iValue);
+      }
+      {
+        string sName = "kvar_save_" + s_i;
+        const char *cName = sName.c_str();
+        int iValue;
+        inputArchive & make_nvp( cName, iValue);
+        cps[ i]->varindex3->value( iValue);
+      }
+      {
+        string sName = "x_normalization_style_" + s_i;
+        const char *cName = sName.c_str();
+        int iValue;
+        inputArchive & make_nvp( cName, iValue);
+        cps[ i]->x_normalization_style->value( iValue);
+      }
+      {
+        string sName = "y_normalization_style_" + s_i;
+        const char *cName = sName.c_str();
+        int iValue;
+        inputArchive & make_nvp( cName, iValue);
+        cps[ i]->y_normalization_style->value( iValue);
+      }
+      {
+        string sName = "z_normalization_style_" + s_i;
+        const char *cName = sName.c_str();
+        int iValue;
+        inputArchive & make_nvp( cName, iValue);
+        cps[ i]->z_normalization_style->value( iValue);
+      }
+      {
+        string sName = "lock_axis1_button_" + s_i;
+        const char *cName = sName.c_str();
+        int iValue;
+        inputArchive & make_nvp( cName, iValue);
+        cps[ i]->lock_axis1_button->value( iValue);
+      }
+      {
+        string sName = "lock_axis2_button_" + s_i;
+        const char *cName = sName.c_str();
+        int iValue;
+        inputArchive & make_nvp( cName, iValue);
+        cps[ i]->lock_axis2_button->value( iValue);
+      }
+      {
+        string sName = "lock_axis3_button_" + s_i;
+        const char *cName = sName.c_str();
+        int iValue;
+        inputArchive & make_nvp( cName, iValue);
+        cps[ i]->lock_axis3_button->value( iValue);
+      }
+
+      // Load plot window positions
+      int x, y, w, h;
+      {
+        string sName = "pws_x_save_" + s_i;
+        const char *cName = sName.c_str();
+        inputArchive & make_nvp( cName, x);
+      }
+      {
+        string sName = "pws_y_save_" + s_i;
+        const char *cName = sName.c_str();
+        inputArchive & make_nvp( cName, y);
+      }
+      pws[ i]->position( x, y);
+      {
+        string sName = "pws_w_save_" + s_i;
+        const char *cName = sName.c_str();
+        inputArchive & make_nvp( cName, w);
+      }
+      {
+        string sName = "pws_h_save_" + s_i;
+        const char *cName = sName.c_str();
+        inputArchive & make_nvp( cName, h);
+      }
+      pws[ i]->size( w, h);
+    }   // End of loop through NPLOTS
+
+    // Set user_data to indicate that this is a RESIZE operation, then i
+    // invoke manage_plot_window( o) to apply configuration.
+    manage_plot_window_array( o, (void*) "REFRESH_WINDOWS");
+  }
+  catch( exception &e) {
+    cout << "Main::load_state: WARNING, "
+         << "serialization file appears to be damaged" << endl;
   }
   
-  // Set user_data for this widget to indicate that this is a RESIZE 
-  // operation, then invoke manage_plot_window( o) to apply configuration.
-  manage_plot_window_array( o,  (void*) "REFRESH_WINDOWS");
-
   // Refresh display
   // manage_plot_window_array( o,  (void*) "Resize");
 
@@ -1651,6 +1662,7 @@ int main( int argc, char **argv)
   // process does NOT effect arc and argv in any way.
   int c;
   string inFileSpec = "";
+  char delimiter_char_ = ' ';
   while( 
     ( c = getopt_long_only( 
         argc, argv, 
@@ -1754,10 +1766,9 @@ int main( int argc, char **argv)
       case 'd':
         if( optarg!=NULL) {
           std::string buf(unescape(optarg));
-          // delimiter_char = buf[0];
-          // cout << "delimiter character is: " << delimiter_char << endl;
-          dfm.delimiter_char( buf[0]);
-          cout << "delimiter character is: " << dfm.delimiter_char() << endl;
+          delimiter_char_ = buf[0];
+          cout << "Main: delimiter character is: (" << delimiter_char_
+               << ")" << endl;
         } else {
           usage();
           exit( -1);
@@ -1836,6 +1847,9 @@ int main( int argc, char **argv)
   if( inFileSpec.length() <= 0) dfm.create_default_data( 10);
   else {
     dfm.input_filespec( inFileSpec);
+    dfm.delimiter_char( delimiter_char_);
+    cout << "Main: Set delimiter character to: (" << dfm.delimiter_char()
+         << ")" << endl;
     if( dfm.load_data_file() != 0) dfm.create_default_data( 10);
   }
   

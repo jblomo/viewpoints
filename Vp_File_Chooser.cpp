@@ -39,6 +39,7 @@ Fl_Preferences Vp_File_Chooser::prefs_( Fl_Preferences::USER, "fltk.org", "filec
 const char *Vp_File_Chooser::add_favorites_label = "Add to Favorites";
 const char *Vp_File_Chooser::all_files_label = "All Files (*)";
 const char *Vp_File_Chooser::custom_filter_label = "Custom Filter";
+const char *Vp_File_Chooser::delimiter_label = "Delimiter:";
 const char *Vp_File_Chooser::existing_file_label = "Please choose an existing file!";
 const char *Vp_File_Chooser::favorites_label = "Favorites";
 const char *Vp_File_Chooser::filename_label = "Filename:";
@@ -74,10 +75,9 @@ FL_EXPORT static int new_filename_isdir( const char* pathname);
 Vp_File_Chooser::Vp_File_Chooser( 
   const char *value_in, const char *filter_in, int type_in, const char *title)
 {
-  // KLUDGE: Attempt to determine if this is binary
-  // if( strstr( filter_in, "bin") != NULL) isAscii_ = 0;
-  // else isAscii_ = 1;
+  // Initialize to ASCII mode with no delimiter
   isAscii_ = 1;
+  delimiter_char_ = ' ';
   
   // Define pointer to the main double window
   Fl_Double_Window* w;
@@ -86,14 +86,14 @@ Vp_File_Chooser::Vp_File_Chooser(
   // hold almost everything
   { 
     Fl_Double_Window* mainDoubleWindow = window = 
-      new Fl_Double_Window( 490, 430, "Choose File");
-      // new Fl_Double_Window( 490, 380, "Choose File");
+      new Fl_Double_Window( 490, 460, "Choose File");
     w = mainDoubleWindow;
     mainDoubleWindow->callback( (Fl_Callback*) cb_window, (void*)(this));
 
     // Upper Row Group scope: Create a group to hold buttons and fields
     { 
-      Fl_Group* upperRowGroup = new Fl_Group( 10, 10, 470, 25);
+      Fl_Group* upperRowGroup = new Fl_Group( 10, 5, 470, 35);
+      // upperRowGroup->box( FL_UP_FRAME);
 
       // 'Favorites:' Button/menu at upper left
       { 
@@ -115,30 +115,23 @@ Vp_File_Chooser::Vp_File_Chooser(
         o->tooltip( new_directory_tooltip);
       }
 
-      // Box with preview checkbox above the preview window
+      // Preview checkbox above the preview window
       { 
-        Fl_Group* o = new Fl_Group( 10, 10, 470, 20);
-        { 
-          Fl_Check_Button* o = previewButton = 
-            new Fl_Check_Button( 340, 15, 73, 20, "Preview");
-          o->down_box( FL_DOWN_BOX);
-          o->value( 1);
-          o->shortcut( 0x80070);
-          o->callback( (Fl_Callback*) cb_previewButton);
-          previewButton->label( preview_label);
-        }
-        {
-          Fl_Box* o = new Fl_Box( 115, 15, 365, 20);
-          Fl_Group::current()->resizable(o);
-        }
-        o->end();
+        Fl_Check_Button* o = previewButton = 
+          new Fl_Check_Button( 360, 15, 73, 20, "Preview");
+        o->down_box( FL_DOWN_BOX);
+        o->value( 1);
+        o->shortcut( 0x80070);
+        o->callback( (Fl_Callback*) cb_previewButton);
+        previewButton->label( preview_label);
       }
-      
+
       upperRowGroup->end();
     }   // End of scope for the Upper Row Group
     
     // Browser Tile scope: Create a tiling to hold the file browser and 
-    // preview windows
+    // preview windows below the 'Favorites' field, 'New Folder' button, 
+    // and 'Preview'checkbox
     { 
       Fl_Tile* browserTile = new Fl_Tile( 10, 45, 470, 225);
       browserTile->callback( (Fl_Callback*) cb_preview);
@@ -152,7 +145,7 @@ Vp_File_Chooser::Vp_File_Chooser(
         w->hotspot( o);
       }
       
-      // Draw the 'Preview' box on th right below the 'Favorites' field,
+      // Draw the 'Preview' box on the right below the 'Favorites' field,
       // 'New Folder' button, and 'Preview'checkbox
       { 
         Fl_Box* o = previewBox = 
@@ -169,14 +162,20 @@ Vp_File_Chooser::Vp_File_Chooser(
     // filename input field, the file type chooser, the extension chooser,
     // and a box with the 'OK' and 'Cancel' buttons.
     {
-      // Fl_Group* lowerControlsGroup = new Fl_Group( 10, 275, 470, 95);
-      Fl_Group* lowerControlsGroup = new Fl_Group( 10, 275, 470, 145);
+      Fl_Group* lowerControlsGroup = new Fl_Group( 10, 275, 470, 175);
+      // lowerControlsGroup->box( FL_DOWN_FRAME);  // GROUP_FRAMING
 
-      // Filename input field
+      // Box with a 'Filename:' label followed by an Fl_File_Input widget to 
+      // manage the Filename input field
+      {
+        Fl_Box* o = new Fl_Box( 10, 290, 105, 25, "Filename:");
+        o->labelfont( 1);
+        o->align( FL_ALIGN_LEFT|FL_ALIGN_INSIDE);
+        o->label( filename_label);
+      }
       { 
         Fl_File_Input* o = fileName =
           new Fl_File_Input( 85, 280, 365, 35);
-          // new Fl_File_Input( 115, 300, 365, 35);
         o->labelfont( 1);
         o->callback( (Fl_Callback*) cb_fileName);
         o->when( FL_WHEN_ENTER_KEY);
@@ -184,18 +183,16 @@ Vp_File_Chooser::Vp_File_Chooser(
         fileName->when( FL_WHEN_CHANGED | FL_WHEN_ENTER_KEY_ALWAYS);
       }
 
-      // Box with filename label
+      // Box with a 'File Type:' label followed by an Fl_Choice widget to
+      // manage the File Type menu
       {
-        Fl_Box* o = new Fl_Box( 10, 290, 105, 25, "Filename:");
+        Fl_Box* o = new Fl_Box( 10, 320, 55, 25, "File Type:");
         o->labelfont( 1);
         o->align( FL_ALIGN_LEFT|FL_ALIGN_INSIDE);
-        o->label( filename_label);
+        o->label( filetype_label);
       }
-
-      // 'File Type:' File type menu
       { 
-        Fl_Choice* o = fileType = 
-          new Fl_Choice( 85, 320, 215, 25);
+        Fl_Choice* o = fileType = new Fl_Choice( 85, 320, 215, 25);
         o->down_box( FL_BORDER_BOX);
         o->labelfont( 1);
         o->add( "ASCII");
@@ -205,15 +202,14 @@ Vp_File_Chooser::Vp_File_Chooser(
         Fl_Group::current()->resizable(o);
       }
 
-      // Box with file type label
+      // Box with a 'Show ext:' label followed by an Fl_Choice widget to
+      // manage the 'File Extension' chooser
       {
-        Fl_Box* o = new Fl_Box( 10, 320, 55, 25, "File Type:");
+        Fl_Box* o = new Fl_Box( 10, 350, 105, 25, "Show ext:");
         o->labelfont( 1);
         o->align( FL_ALIGN_LEFT|FL_ALIGN_INSIDE);
-        o->label( filetype_label);
+        o->label( show_label);
       }
-
-      // 'Show:' Show extension chooser
       { 
         Fl_Choice* o = showChoice = 
           new Fl_Choice( 85, 350, 215, 25);
@@ -224,18 +220,65 @@ Vp_File_Chooser::Vp_File_Chooser(
         // showChoice->label( show_label);
       }
 
-      // Box with the show label
+      // Group to hold radio buttons to control delimiter type
       {
-        Fl_Box* o = new Fl_Box( 10, 350, 105, 25, "Show ext:");
+        Fl_Box* o = delimiter_box =
+          new Fl_Box( 10, 380, 105, 25, "Delimiter:");
         o->labelfont( 1);
         o->align( FL_ALIGN_LEFT|FL_ALIGN_INSIDE);
-        o->label( show_label);
+        o->label( delimiter_label);
+      }
+      {
+        Fl_Group* o =  delimiter_group = new Fl_Group( 85, 380, 355, 30);
+        // o->box( FL_UP_FRAME);
+        {
+          Fl_Round_Button* o = no_delimiter = 
+            new Fl_Round_Button( 85, 385, 15, 15, "none");
+          o->down_box( FL_ROUND_DOWN_BOX);
+          o->type( FL_RADIO_BUTTON);
+          o->callback( (Fl_Callback*) cb_delimiterButtons);
+        }
+        {
+          Fl_Round_Button* o = comma_delimiter = 
+            new Fl_Round_Button( 145, 385, 15, 15, "comma");
+          o->down_box( FL_ROUND_DOWN_BOX);
+          o->type( FL_RADIO_BUTTON);
+          o->callback( (Fl_Callback*) cb_delimiterButtons);
+        }
+        {
+          Fl_Round_Button* o = tab_delimiter = 
+            new Fl_Round_Button( 220, 385, 15, 15, "tab");
+          o->down_box( FL_ROUND_DOWN_BOX);
+          o->type( FL_RADIO_BUTTON);
+          o->callback( (Fl_Callback*) cb_delimiterButtons);
+        }
+        {
+          Fl_Round_Button* o = custom_delimiter = 
+            new Fl_Round_Button( 270, 385, 15, 15, "custom");
+          o->down_box( FL_ROUND_DOWN_BOX);
+          o->type( FL_RADIO_BUTTON);
+          o->callback( (Fl_Callback*) cb_delimiterButtons);
+        }
+        {
+          Fl_Input* o = custom_delimiter_input = 
+            new Fl_Input( 340, 380, 50, 25);
+          o->box( FL_DOWN_BOX);
+          // o->value( ",");
+          char cBuf[ 10];
+          strcpy( cBuf, " ");  // Crude way to initialize a 1-element string
+          cBuf[ 0] = delimiter_char_;
+          o->value( escape_sequences_insert( cBuf));
+          o->callback( (Fl_Callback*) cb_delimiterInput);
+        }
+        no_delimiter->value( 1);
+        o->end();
       }
 
       // Write Selection Info check button
       { 
         Fl_Check_Button* o = selectionButton = 
-          new Fl_Check_Button( 85, 380, 160, 20, "Include selection info");
+          // new Fl_Check_Button( 85, 380, 160, 20, "Include selection info");
+          new Fl_Check_Button( 85, 410, 160, 20, "Include selection info");
         o->down_box( FL_DOWN_BOX);
         if( writeSelectionInfo_ == 0) o->value( 0);
         else o->value( 1);
@@ -246,25 +289,22 @@ Vp_File_Chooser::Vp_File_Chooser(
 
       // Group with 'OK' and 'Cancel' buttons at bottom right
       {
-        // Fl_Group* o = new Fl_Group( 10, 345, 470, 25);
-        Fl_Group* o = new Fl_Group( 10, 395, 470, 25);
+        Fl_Group* o = new Fl_Group( 310, 420, 175, 35);
+        // o->box( FL_ROUNDED_BOX);  // GROUP_FRAMING
         {
           Fl_Return_Button* o = okButton = 
-            new Fl_Return_Button( 313, 395, 85, 25, "OK");
-            // new Fl_Return_Button( 313, 345, 85, 25, "OK");
+            new Fl_Return_Button( 313, 425, 85, 25, "OK");
           o->callback( (Fl_Callback*) cb_okButton);
           okButton->label( fl_ok);
         }
         {
           Fl_Button* o = cancelButton = 
-            new Fl_Button( 408, 395, 72, 25, "Cancel");
-            // new Fl_Button( 408, 345, 72, 25, "Cancel");
+            new Fl_Button( 408, 425, 72, 25, "Cancel");
           o->callback( (Fl_Callback*) cb_cancelButton);
           o->label( fl_cancel);
         }
         {
-          Fl_Box* o = new Fl_Box( 10, 395, 30, 25);
-          // Fl_Box* o = new Fl_Box( 10, 345, 30, 25);
+          Fl_Box* o = new Fl_Box( 10, 405, 30, 25);
           Fl_Group::current()->resizable(o);
         }
         o->end();
@@ -443,6 +483,30 @@ int Vp_File_Chooser::count()
 }
 
 //*****************************************************************************
+// Vp_File_Chooser::delimiter_char() -- Get the current delimiter character.
+// chooser.
+char Vp_File_Chooser::delimiter_char()
+{
+  return delimiter_char_;
+}
+
+//*****************************************************************************
+// Vp_File_Chooser::delimiter_hide() -- Hide the delimiter box
+void Vp_File_Chooser::delimiter_hide()
+{
+  delimiter_box->hide();
+  delimiter_group->hide();
+}
+
+//*****************************************************************************
+// Vp_File_Chooser::delimiter_deactivate() -- Show the delimiter box
+void Vp_File_Chooser::delimiter_show()
+{
+  delimiter_box->show();
+  delimiter_group->show();
+}
+
+//*****************************************************************************
 // Vp_File_Chooser::directory() -- Get the current directory in the file 
 // chooser.
 char* Vp_File_Chooser::directory()
@@ -525,6 +589,135 @@ void Vp_File_Chooser::directory( const char *directory_in)
 
   // If necessary, rescan the directory.
   if( shown()) rescan();
+}
+
+//*****************************************************************************
+// Vp_File_Chooser::escape_sequences_insert( *orig) - Return character string 
+// with actual the characters replaced by the corresponding escaped character 
+// sequences
+char* Vp_File_Chooser::escape_sequences_insert( char *orig)
+{
+  // Loop: Examine pointers to successive characters of the string
+  char c, *cp, *result = orig;
+  int i;
+  for( cp = orig; (*orig = *cp); cp++, orig++) {
+
+    // Check for different escape sequences.  Default is to do nothing
+    switch (*cp) {
+
+    case '\a':  /* alert (bell) */
+      *orig = '\\';
+      *orig++ = 'a';
+      continue;
+    case 'b':  /* backspace */
+      *orig = '\\';
+      *orig++ = 'b';
+      continue;
+    case 'e':  /* escape */
+      *orig = '\\';
+      *orig++ = 'e';
+      continue;
+    case 'f':  /* formfeed */
+      *orig = '\\';
+      *orig++ = 'f';
+      continue;
+    case 'n':  /* newline */
+      *orig = '\\';
+      *orig++ = 'n';
+      continue;
+    case 'r':  /* carriage return */
+      *orig = '\\';
+      *orig++ = 'r';
+      continue;
+    case 't':  /* horizontal tab */
+      *orig = '\\';
+      *orig++ = 't';
+      continue;
+    case 'v':  /* vertical tab */
+      *orig = '\\';
+      *orig++ = 'v';
+      continue;
+    case '\\':  /* backslash */
+      *orig = '\\';
+      *orig++ = '\\';
+      continue;
+    case '\'':  /* single quote */
+      *orig = '\\';
+      *orig++ = '\'';
+      continue;
+    case '\"':  /* double quote */
+      *orig = '\\';
+      *orig++ = '"';
+      continue;
+
+    default:
+      break;
+    }
+  }
+
+  // Return result and quit
+  return (result);
+}
+
+//*****************************************************************************
+// Vp_File_Chooser::escape_sequences_remove( orig) - Return a character string 
+// with escaped character sequences replaced by the actual characters that the 
+// escape codes refer to.  This is a simplified version of unescape() that is 
+// replicated here to ensure that this class is self-contained.
+char* Vp_File_Chooser::escape_sequences_remove( char *orig)
+{
+  // Loop: Examine pointers to successive characters of the string
+  char c, *cp, *result = orig;
+  int i;
+  for( cp = orig; (*orig = *cp); cp++, orig++) {
+
+    // If this is not an escape sequence, keep going
+    if (*cp != '\\') continue;
+
+    // Check for different escape sequences
+    switch (*++cp) {
+    case 'a':  /* alert (bell) */
+      *orig = '\a';
+      continue;
+    case 'b':  /* backspace */
+      *orig = '\b';
+      continue;
+    case 'e':  /* escape */
+      *orig = '\e';
+      continue;
+    case 'f':  /* formfeed */
+      *orig = '\f';
+      continue;
+    case 'n':  /* newline */
+      *orig = '\n';
+      continue;
+    case 'r':  /* carriage return */
+      *orig = '\r';
+      continue;
+    case 't':  /* horizontal tab */
+      *orig = '\t';
+      continue;
+    case 'v':  /* vertical tab */
+      *orig = '\v';
+      continue;
+    case '\\':  /* backslash */
+      *orig = '\\';
+      continue;
+    case '\'':  /* single quote */
+      *orig = '\'';
+      continue;
+    case '\"':  /* double quote */
+      *orig = '"';
+      continue;
+
+    default:
+      --cp;
+      break;
+    }
+  }
+
+  // Return result and quit
+  return (result);
 }
 
 //*****************************************************************************
@@ -635,6 +828,14 @@ void Vp_File_Chooser::isAscii( int isAscii_in)
 { 
   isAscii_ = isAscii_in;
   fileType->value( isAscii_ != 1);
+  if( isAscii_ != 1) {
+    delimiter_box->hide();
+    delimiter_group->hide();
+  }
+  else {
+    delimiter_box->show();
+    delimiter_group->show();
+  }
 }
 
 //*****************************************************************************
@@ -1712,6 +1913,16 @@ void Vp_File_Chooser::fileTypeCB()
 
   // Set the pattern
   filter( pattern_);
+
+  // If this isn't ASCII, turn off delimiter group
+  if( isAscii_ != 1) {
+    delimiter_box->hide();
+    delimiter_group->hide();
+  }
+  else {
+    delimiter_box->show();
+    delimiter_group->show();
+  }
   
   // If necessary, rescan the directory.
   if( shown()) rescan();
@@ -1810,6 +2021,89 @@ void Vp_File_Chooser::cb_cancelButton_i( Fl_Button*, void*)
   fileBrowser->deselect();
   Fl::remove_timeout( (Fl_Timeout_Handler) previewCB, this);
   window->hide();
+}
+
+//*****************************************************************************
+// Vp_File_Chooser:::cb_delimiterButtons( o, v) -- Wrapper for the callback 
+// method for the delimiter buttons.
+void Vp_File_Chooser::cb_delimiterButtons( Fl_Round_Button* o, void* v)
+{
+  ( (Vp_File_Chooser*) 
+      (o->parent()->parent()->parent()->user_data()))->cb_delimiterButtons_i( o, v);
+}
+
+//*****************************************************************************
+// Vp_File_Chooser::cb_delimiterButtons_i( *, *) -- Callback method for the 
+// delimiter buttons.  Checks label, then decides what to do.
+void Vp_File_Chooser::cb_delimiterButtons_i( Fl_Round_Button* pButton, void*) 
+{
+  char buttonLabel[ 80];
+  strcpy( buttonLabel, pButton->label());
+  if( strcmp( buttonLabel, "none") == 0) delimiter_char_ = ' ';
+  else if( strcmp( buttonLabel, "comma") == 0) delimiter_char_ = ',';
+  else if( strcmp( buttonLabel, "tab") == 0) delimiter_char_ = '\t';
+  else if( strcmp( buttonLabel, "custom") == 0) {
+    custom_delimiter_input->set_changed();  // Make sure
+    char cBuf[ 80];
+    strcpy( cBuf, custom_delimiter_input->value());
+
+    // OBSOLETE CODE to remove escape sequences by hand
+    // if( cBuf == NULL || strlen( cBuf) <= 0) delimiter_char_ = '\t';
+    // else if( cBuf[ 0] == '\\') {
+    //   if( strlen( cBuf) <= 1) delimiter_char_ = '\t';
+    //   else delimiter_char_ = '\t';
+    // }
+    // else delimiter_char_ = cBuf[ 0];
+
+    // Ignore leading blanks and remove escape sequences, then attempt to
+    // set the delimiter character.  If the result is of zero length, set 
+    // the delimiter character to a blank
+    char* delimiter_buf = escape_sequences_remove( &cBuf[ strspn( cBuf, " ")]);
+    if( strlen( delimiter_buf) > 0) delimiter_char_ = delimiter_buf[ 0];
+    else if( strlen( cBuf) > 0) delimiter_char_ = cBuf[ 0];
+    else delimiter_char_ = ' ';
+  }
+  else delimiter_char_ = ' ';
+
+  // DIAGNOSTIC
+  // cout << "Vp_File_Chooser::cb_delimiterButtons_i:" << endl
+  //      << "   buttonLabel (" << buttonLabel << ")" << endl
+  //      << "   delimiterChar_ (" << delimiter_char_ << ")" << endl;
+}
+
+//*****************************************************************************
+// Vp_File_Chooser:::cb_delimiterInput( o, v) -- Wrapper for the callback 
+// method for the custom delimiter input fielc.
+void Vp_File_Chooser::cb_delimiterInput( Fl_Input* o, void* v)
+{
+  ( (Vp_File_Chooser*) 
+      (o->parent()->parent()->parent()->user_data()))->cb_delimiterInput_i( o, v);
+}
+
+//*****************************************************************************
+// Vp_File_Chooser::cb_delimiterInput_i( *, *) -- Callback method for the 
+// custom delimiter input field.  Sets button label and delimiter character.
+void Vp_File_Chooser::cb_delimiterInput_i( Fl_Input* pButton, void*) 
+{
+  // Set the radio buttons
+  no_delimiter->value( 0);
+  comma_delimiter->value( 0);
+  tab_delimiter->value( 0);
+  custom_delimiter->value( 1);
+
+  // Ignore leading blanks and remove escape sequences, then attempt to
+  // set the delimiter character.  If the result is of zero length, set 
+  // the delimiter character to a blank
+  char cBuf[ 80];
+  strcpy( cBuf, custom_delimiter_input->value());
+  char* delimiter_buf = escape_sequences_remove( &cBuf[ strspn( cBuf, " ")]);
+  if( strlen( delimiter_buf) > 0) delimiter_char_ = delimiter_buf[ 0];
+  else if( strlen( cBuf) > 0) delimiter_char_ = cBuf[ 0];
+  else delimiter_char_ = ' ';
+
+  // DIAGNOSTIC
+  // cout << "Vp_File_Chooser::cb_delimiterInput_i:" << endl
+  //      << "   delimiterChar_ (" << delimiter_char_ << ")" << endl;
 }
 
 //*****************************************************************************

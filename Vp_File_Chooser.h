@@ -35,7 +35,7 @@
 //      vp.cpp could be consolidated.
 //
 // Author: Bill Spitzak and others   1998-2005
-// Modified: P. R. Gazis  19-NOV-2007
+// Modified: P. R. Gazis  23-NOV-2007
 //***************************************************************************
 
 // Protection to make sure this header is not included twice
@@ -48,7 +48,7 @@
 #include <errno.h>
 #include <ctype.h>
 
-// Include string funsctions implemented in FLTK, including strlcpy() and 
+// Include string functions implemented in FLTK, including strlcpy() and 
 // strlcat() as replacements for strncpy() and strncat().  NOTE: This is
 // in the FLTK source directory rather than the usual header directory
 // #include "flstring.h"
@@ -95,6 +95,7 @@ using namespace std;
 #include <FL/Fl_Check_Button.H>
 #include <FL/Fl_File_Input.H>
 #include <FL/Fl_Return_Button.H>
+#include <FL/Fl_Round_Button.H>
 #include <FL/fl_ask.H>
 
 // Include necessary FLTK libraries mentioned in the source code
@@ -124,8 +125,13 @@ using namespace std;
 //    color() -- Get file browset color
 //    color( file_browser_color_in) -- Set file browser color
 //    count() -- Get number of selected files
+//    delimiter_char() -- Get the delimiter character
+//    delimiter_hide() -- Hide the delimiter box
+//    delimiter_deactivate() -- Show the delimiter box
 //    directory() -- Get directory in browser
 //    directory( *directory_in) -- Set directory in browser
+//    escape_sequences_insert( *orig) -- Insert escape sequences
+//    escape_sequences_remove( *orig) -- Remove escape sequences
 //    filter() -- Get the file browser filter pattern(s)
 //    filter( pattern_in) -- Set the file browser filter pattern(s)
 //    filter_value() -- Get index of filter in choice window
@@ -183,6 +189,10 @@ using namespace std;
 //
 //    cb_cancelButton( *o, *v) -- Wrapper for callback for cancel button.
 //    cb_cancelButton_i( *, *) -- Callback method for the cancel button.
+//    cb_delimiterButtons( *o, *v) -- Wrapper for callback for delimiter buttons
+//    cb_delimiterButtons_i( *, *) -- Callback method for delimiter buttons
+//    cb_delimiterInput_i( *o, *v) -- Wrapper for callback for delimiter field
+//    cb_delimiterInput_i( *, *) -- Callback method for delimiter field
 //    cb_favCancelButton( *o, *v) -- Wrapper for callback for Favorites Cancel
 //    cb_favCancelButton_i( *, *) -- Callback method for Favorites Cancel
 //    cb_favDeleteButton( *o, *v) -- Wrapper for callback for Favorites Delete
@@ -205,7 +215,7 @@ using namespace std;
 //    cb_previewButton_i( *, *) -- Callback method for the preview checkbox
 //
 // Author: Bill Spitzak and others   1998-2005
-// Modified: P. R. Gazis  18-NOV-2007
+// Modified: P. R. Gazis  23-NOV-2007
 //***************************************************************************
 class FL_EXPORT Vp_File_Chooser
 {
@@ -242,6 +252,10 @@ class FL_EXPORT Vp_File_Chooser
     // Button-related callbacks, grouped by button
     static void cb_cancelButton( Fl_Button*, void*);
     void cb_cancelButton_i( Fl_Button*, void*);
+    static void cb_delimiterButtons( Fl_Round_Button*, void* v);
+    void cb_delimiterButtons_i( Fl_Round_Button*, void*);
+    static void cb_delimiterInput( Fl_Input* pButton, void*);
+    void cb_delimiterInput_i( Fl_Input* pButton, void*);
     static void cb_favCancelButton( Fl_Button*, void*);
     void cb_favCancelButton_i( Fl_Button*, void*);
     static void cb_favDeleteButton( Fl_Button*, void*);
@@ -268,6 +282,7 @@ class FL_EXPORT Vp_File_Chooser
     // Pointer to callback function and other buffers
     void (*callback_)( Vp_File_Chooser*, void *);
     void *data_;
+    char delimiter_char_;
     char directory_[ 1024];
     char pattern_[ 1024];
     char preview_text_[ 2048];
@@ -294,6 +309,15 @@ class FL_EXPORT Vp_File_Chooser
     Fl_Return_Button *favOkButton;
     Fl_Button *favUpButton;
     Fl_Return_Button *okButton;
+    
+    // FLTK Buttons to control choice of delimiter
+    Fl_Box* delimiter_box;
+    Fl_Group* delimiter_group;
+    Fl_Round_Button *no_delimiter;
+    Fl_Round_Button *comma_delimiter;
+    Fl_Round_Button *tab_delimiter;
+    Fl_Round_Button *custom_delimiter;
+    Fl_Input* custom_delimiter_input;
 
     // Static variables
     static Fl_Preferences prefs_;
@@ -310,8 +334,13 @@ class FL_EXPORT Vp_File_Chooser
     Fl_Color color();
     void color( Fl_Color file_browser_color_in);
     int count();
+    char delimiter_char();
+    void delimiter_hide();
+    void delimiter_show();
     char* directory();
     void directory( const char *directory_in);
+    char* escape_sequences_insert( char *orig);
+    char* escape_sequences_remove( char *orig);
     void fileTypeMenu_activate();
     void fileTypeMenu_deactivate();
     const char* filter();
@@ -360,6 +389,7 @@ class FL_EXPORT Vp_File_Chooser
     static const char *add_favorites_label;
     static const char *all_files_label;
     static const char *custom_filter_label;
+    static const char *delimiter_label;
     static const char *existing_file_label;
     static const char *favorites_label;
     static const char *filetype_label;
