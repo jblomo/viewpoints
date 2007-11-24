@@ -1047,8 +1047,8 @@ void write_data( Fl_Widget *o, void* user_data)
   // else dfm.ascii_output( 1);
 
   // Evaluate user_data to determine if only selected data are to be used
-  // if( strstr( (char *) user_data, "selected") != NULL) dfm.selected_data( 1);
-  // else dfm.selected_data( 0);
+  if( strstr( (char *) user_data, "selected") != NULL) dfm.selected_data( 1);
+  else dfm.selected_data( 0);
 
   // Query user to find name of output file.  If no file was specified, 
   // return immediately and hope the calling routine can handle this.

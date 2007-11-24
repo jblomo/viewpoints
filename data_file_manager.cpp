@@ -957,18 +957,21 @@ int Data_File_Manager::findOutputFile()
     // for write.  If it can't, assume that cOutFileSpec was a directory and 
     // make it the working directory.  Otherwise close the output stream.
     // NOTE: This will create an empty file.
-    ofstream os;
-    os.open( cOutFileSpec, ios::out|ios::trunc);
-    if( os.fail()) {
-      cerr << " -DIAGNOSTIC: This should trigger on error opening "
-           << cOutFileSpec << "for write" << endl;
-      file_chooser->directory( cOutFileSpec);
-      directory( (string) cOutFileSpec);
+    // #ifndef __APPLE__
+    #ifdef __WIN32__
+      ofstream os;
+      os.open( cOutFileSpec, ios::out|ios::trunc);
+      if( os.fail()) {
+        cerr << " -DIAGNOSTIC: This should trigger on error opening "
+             << cOutFileSpec << "for write" << endl;
+        file_chooser->directory( cOutFileSpec);
+        directory( (string) cOutFileSpec);
+        os.close();
+        continue;
+      }
       os.close();
-      continue;
-    }
-    os.close();
-    if( isNewFile != 0) break;
+      if( isNewFile != 0) break;
+    #endif // __APPLE__
 
     // OLD CODE: If this is a new file, it can't be opened for read, and 
     // we're done
