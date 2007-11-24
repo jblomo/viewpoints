@@ -702,15 +702,27 @@ int Data_File_Manager::read_binary_file_with_headers()
   nvars = 0;
   column_labels.erase( column_labels.begin(), column_labels.end());
 
-  // Loop: unpack the string of header information to obtain column labels.
-  // NOTE: Whitespace-delimited and character-delimited lines must be
-  // handled differently.
+  // Loop: Examine the line to see if it contains any tabs.  If it doesn't,
+  // unpack labels as if they were whitespace-delimited.  Otherwise, unpack 
+  // labels as if they were tab-delimited and erase any leading and traling
+  // whitespace.
   std::stringstream ss( line);
   std::string buf;
-  if( delimiter_char_ == ' ')
+  int isTabDelimited = 0;
+  // cout << "POOKA (" << line.c_str() << ") POO" << endl;
+  // cout << "-first tab position is " << line.find( '\t') << "/" << line.size() << endl;
+  if( line.find( '\t') < 0 || line.size() <= line.find( '\t'))
     while( ss >> buf) column_labels.push_back(buf);
-  else
-    while( getline( ss, buf, delimiter_char_)) column_labels.push_back(buf);
+  else {
+    isTabDelimited = 1;
+    while( getline( ss, buf, '\t')) {
+      string::size_type notwhite = buf.find_first_not_of( " ");
+      buf.erase( 0, notwhite);
+      notwhite = buf.find_last_not_of( " ");
+      buf.erase( notwhite+1);
+      column_labels.push_back(buf);
+    }
+  }
   nvars = column_labels.size();
   int nvars_in = nvars;
 
@@ -740,10 +752,15 @@ int Data_File_Manager::read_binary_file_with_headers()
   // Add a final column label that says 'nothing'.
   column_labels.push_back(string("-nothing-"));
 
-  // Report labels
-  cout << "column_labels = ";
+  // Report label information
+  int nLabels = column_labels.size();
+  cout << "Read " << nLabels << "/" << nvars;
+  if( isTabDelimited <= 0) cout << " whitespace-delimited ";
+  else cout << " tab-delimited ";
+  cout << "column_labels:" << endl;
   for( unsigned int i=0; i < column_labels.size(); i++ ) {
-    cout << column_labels[i] << " ";
+    cout << column_labels[i];
+    if( i < column_labels.size()-1) cout << ", ";
   }  
   cout << endl;
   cout << " -About to read " << nvars
@@ -755,7 +772,7 @@ int Data_File_Manager::read_binary_file_with_headers()
   // once and for all, and not waste memory.
   if( npoints_cmd_line > 0) npoints = npoints_cmd_line;
   else npoints = MAXPOINTS;
-  if (include_line_number) {
+  if( include_line_number) {
     points.resize( nvars+1, npoints);
   } else {
     points.resize( nvars, npoints);
@@ -1138,9 +1155,16 @@ int Data_File_Manager::write_binary_file_with_headers()
       return -1;
     }
     
-    // Loop: Write column labels to the header
-    for( int i=0; i < nvars_out; i++ ) os << column_labels[ i] << " ";
-    if( writeSelectionInfo_ != 0) os << "selection";
+    // Loop: Write tab-delimited column labels to the header.  Each label is
+    // followed by a space to make sure the file can be read by older versions 
+    // of viewpoints.
+    // for( int i=0; i < nvars_out; i++ ) os << column_labels[ i] << " ";
+    // if( writeSelectionInfo_ != 0) os << "selection";
+    for( int i=0; i < nvars_out; i++ ) {
+      os << column_labels[ i] << " ";;
+      if( i<nvars-1) os << '\t';
+    }
+    if( writeSelectionInfo_ != 0) os << '\t' << "selection";
     os << endl;
     
     // Loop: Write data and report any problems
