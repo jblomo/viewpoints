@@ -19,7 +19,7 @@
 // Purpose: Source code for <data_file_manager.h>
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  23-NOV-2007
+// Modified: P. R. Gazis  24-NOV-2007
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -285,7 +285,9 @@ int Data_File_Manager::load_data_file()
       points.resizeAndPreserve( nvars, npoints);
       old_points.resizeAndPreserve( nvars, all_npoints);
 
-      old_points( blitz::Range( 0, nvars-1), blitz::Range( old_npoints, all_npoints-1)) = points;
+      old_points(
+        blitz::Range( 0, nvars-1), 
+        blitz::Range( old_npoints, all_npoints-1)) = points;
       points.resize( old_points.shape());
 
       points = old_points;
@@ -298,7 +300,9 @@ int Data_File_Manager::load_data_file()
       old_points.reverseSelf( blitz::firstDim);
       points.resizeAndPreserve( all_nvars, npoints);
 
-      points( blitz::Range( nvars, all_nvars-1), blitz::Range( 0, npoints-1)) = old_points;
+      points( 
+        blitz::Range( nvars, all_nvars-1), 
+        blitz::Range( 0, npoints-1)) = old_points;
       points.reverseSelf( blitz::firstDim);
       nvars = all_nvars;
 
@@ -325,6 +329,15 @@ int Data_File_Manager::load_data_file()
   // Now that we know the number of variables and points we've read, we can
   // allocate and/or reallocateResize the other global arrays.
   resize_global_arrays();
+
+  // Search for selection information
+  for( int i=0; i<nvars; i++) {
+    if( column_labels[ i].compare( "SELECTION_BY_VP") == 0) {
+      for( int j=0; j<npoints; j++) selected( j) = (int) points( i, j);
+      cout << "Loaded selection information from column[ " << i << "]" << endl;
+      break;
+    }
+  }
 
   return 0;
 }
@@ -1004,6 +1017,7 @@ int Data_File_Manager::findOutputFile()
   // Get file type and content information
   if( file_chooser->isAscii() != 0) isAsciiOutput = 1;
   else isAsciiOutput = 0;
+  delimiter_char_ = file_chooser->delimiter_char();
   if( file_chooser->writeSelectionInfo() != 0) writeSelectionInfo_ = 1;
   else writeSelectionInfo_ = 0;
 
@@ -1092,7 +1106,7 @@ int Data_File_Manager::write_ascii_file_with_headers()
       else os << delimiter_char_ << " " << setw( 13) << column_labels[ i];
       // else os << " " << setw( 13) << column_labels[ i];
     }
-    if( writeSelectionInfo_ != 0) os << " selection";
+    if( writeSelectionInfo_ != 0) os << delimiter_char_ << " SELECTION_BY_VP";
     os << endl;
     
     // Loop: Write successive ASCII records to the data block using the
@@ -1110,7 +1124,7 @@ int Data_File_Manager::write_ascii_file_with_headers()
           if( jcol > 0) os << delimiter_char_ << " ";
           os << points( jcol, irow);
         }
-        if( writeSelectionInfo_ != 0) os << " " << selected( irow);
+        if( writeSelectionInfo_ != 0) os << delimiter_char_ << " " << selected( irow);
         os << endl;
         rows_written++;
       }
@@ -1167,7 +1181,7 @@ int Data_File_Manager::write_binary_file_with_headers()
       os << column_labels[ i] << " ";;
       if( i<nvars-1) os << '\t';
     }
-    if( writeSelectionInfo_ != 0) os << '\t' << "selection";
+    if( writeSelectionInfo_ != 0) os << '\t' << " SELECTION_BY_VP";
     os << endl;
     
     // Loop: Write data and report any problems
@@ -1177,10 +1191,10 @@ int Data_File_Manager::write_binary_file_with_headers()
       if( useSelectedData == 0 || selected( i) > 0) {
         vars = points( NVARS, i);
         os.write( (const char*) vars.data(), nBlockSize);
-				if( writeSelectionInfo_ != 0) {
-          float fselection = (float)(selected(i));
-	        os.write((const char*)&fselection, sizeof(float));
-				}
+        if( writeSelectionInfo_ != 0) {
+          float fselection = (float) (selected(i));
+          os.write((const char*)&fselection, sizeof(float));
+		}
         if( os.fail()) {
           cerr << "Error writing to" << outFileSpec.c_str() << endl;
           return 1;
@@ -1286,7 +1300,6 @@ void Data_File_Manager::resize_global_arrays()
   saved_selection.resize(npoints);
   Plot_Window::indices_selected.resize(NBRUSHES,npoints);
   reset_selection_arrays();
-
 }
 
 //***************************************************************************

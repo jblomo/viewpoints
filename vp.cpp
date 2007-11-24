@@ -58,7 +58,7 @@
 //   reset_selection_arrays() -- Reset selection arrays
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  23-NOV-2007
+// Modified: P. R. Gazis  24-NOV-2007
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -1581,14 +1581,14 @@ void redraw_if_changing( void *dummy)
 
 //***************************************************************************
 // reset_selection_arrays() -- Reset selection arrays to 'unselected'.
-void reset_selection_arrays () {
+void reset_selection_arrays()
+{
   newly_selected = 0;
   selected = 0;
   previously_selected = 0;
   saved_selection = 0;
   nselected = 0;
   selection_is_inverted = false;
-
   Plot_Window::indices_selected = 0;
   for( int i=0; i<npoints; i++) {
     Plot_Window::indices_selected(0,i) = i;
@@ -1607,7 +1607,7 @@ void reset_selection_arrays () {
 //   main() -- main routine
 //
 // Author:   Creon Levit   unknown
-// Modified: P. R. Gazis   04-OCT-2006
+// Modified: P. R. Gazis   24-NOV-2006
 //***************************************************************************
 //***************************************************************************
 // Main -- Driver routine
@@ -1621,7 +1621,7 @@ int main( int argc, char **argv)
     \n\
     (c) 2006 M. Creon Levit and Paul R. Gazis   \n\
         creon.levit@@nasa.gov \n\
-        pgazis@@mail.arc.nasa.gov \n\
+        Paul.R.Gazis@@nasa.gov \n\
     \n";
 
   // STEP 1: Parse the command line
@@ -1873,7 +1873,10 @@ int main( int argc, char **argv)
   const int main_y = top_frame+top_safe;
 
   // Create the main control panel window
-  create_main_control_panel(main_x, main_y, main_w, main_h, "viewpoints -> creon.levit@nasa.gov");
+  // create_main_control_panel(main_x, main_y, main_w, main_h, "viewpoints -> creon.levit@nasa.gov");
+  create_main_control_panel( 
+    main_x, main_y, main_w, main_h,
+    "viewpoints -> Creon Levit and Paul Gazis");
 
   // Step 4: Call manage_plot_window_array with a NULL argument to
   // initialize the plot window array.  KLUDGE ALERT: argc and argv are
