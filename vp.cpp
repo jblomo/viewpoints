@@ -58,7 +58,7 @@
 //   reset_selection_arrays() -- Reset selection arrays
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  24-NOV-2007
+// Modified: P. R. Gazis  28-NOV-2007
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -543,7 +543,7 @@ void manage_plot_window_array( Fl_Widget *o, void* user_data)
     thisOperation = RELOAD;
     nplots_old = nplots;
     strcpy( widgetTitle, ((Fl_Menu_*) o)->label());
-    cout << "manage_plot_window_array: WARNING, "
+    cerr << "manage_plot_window_array: WARNING, "
          << "RELOAD operation not supported!" << endl;
   }
 
@@ -553,7 +553,7 @@ void manage_plot_window_array( Fl_Widget *o, void* user_data)
     thisOperation = REFRESH_WINDOWS;
     nplots_old = nplots;
     strcpy( widgetTitle, "default");
-    cout << "manage_plot_window_array: WARNING, "
+    cerr << "manage_plot_window_array: WARNING, "
          << "defaulted to a REFRESH_WINDOW operation." << endl;
   }
 
@@ -1047,8 +1047,8 @@ void write_data( Fl_Widget *o, void* user_data)
   // else dfm.ascii_output( 1);
 
   // Evaluate user_data to determine if only selected data are to be used
-  if( strstr( (char *) user_data, "selected") != NULL) dfm.selected_data( 1);
-  else dfm.selected_data( 0);
+  if( strstr( (char *) user_data, "selected") != NULL) dfm.write_all_data( 0);
+  else dfm.write_all_data( 1);
 
   // Query user to find name of output file.  If no file was specified, 
   // return immediately and hope the calling routine can handle this.
@@ -1356,7 +1356,11 @@ int load_state( Fl_Widget* o)
     manage_plot_window_array( o, (void*) "REFRESH_WINDOWS");
   }
   catch( exception &e) {
-    cout << "Main::load_state: WARNING, "
+    string sWarning = "";
+    sWarning.append( "WARNING: Serialization file appears to be damaged\n.");
+    sWarning.append( "The resulting configuration may be unpredictable");
+    make_confirmation_window( sWarning.c_str(), 1);
+    cerr << "Main::load_state: WARNING, "
          << "serialization file appears to be damaged" << endl;
   }
   

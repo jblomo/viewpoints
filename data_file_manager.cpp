@@ -19,7 +19,7 @@
 // Purpose: Source code for <data_file_manager.h>
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  24-NOV-2007
+// Modified: P. R. Gazis  28-NOV-2007
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -50,7 +50,8 @@ const bool include_line_number = false; // MCL XXX This should be an option
 // initializer.
 Data_File_Manager::Data_File_Manager() : delimiter_char_( ' '), 
   bad_value_proxy_( 0.0), isAsciiInput( 1), isAsciiOutput( 0), 
-  doAppend( 0), doMerge( 0), useSelectedData( 0), isColumnMajor( 0)
+  readSelectionInfo_( 0), doAppend( 0), doMerge( 0), 
+  writeAllData_( 1), writeSelectionInfo_( 0), isColumnMajor( 0)
 {
   sDirectory_ = ".";  // Default pathname
   initialize();
@@ -67,7 +68,8 @@ void Data_File_Manager::initialize()
   isAsciiOutput = 0;
   doAppend = 0;
   doMerge = 0;
-  useSelectedData = 0;
+  readSelectionInfo_ = 1;
+  writeAllData_ = 1;
   writeSelectionInfo_ = 0;
 
   isColumnMajor = 1;
@@ -110,13 +112,13 @@ int Data_File_Manager::findInputFile()
   // Initialize read status and filespec.  NOTE: cInFileSpec is defined as
   // const char* for use with Vp_File_Chooser, which means it could be 
   // destroyed by the relevant destructors!
-  // const char *cInFileSpec = directory().c_str();
   const char *cInFileSpec = sDirectory_.c_str();
   
   // Instantiate and show an Vp_File_Chooser widget.  NOTE: The pathname must
   // be passed as a variable or the window will begin in some root directory.
   Vp_File_Chooser* file_chooser =
-    new Vp_File_Chooser( cInFileSpec, pattern.c_str(), Vp_File_Chooser::SINGLE, title.c_str());
+    new Vp_File_Chooser( 
+      cInFileSpec, pattern.c_str(), Vp_File_Chooser::SINGLE, title.c_str());
   file_chooser->isAscii( isAsciiInput);
 
   // Loop: Select fileSpecs until a non-directory is obtained.  NOTE: If all
@@ -162,7 +164,7 @@ int Data_File_Manager::findInputFile()
     return -1;
   }
 
-  // Query the Vp_File_Chooser object to get file type
+  // Query Vp_File_Chooser object to get file type and delimiter character
   if( file_chooser->isAscii() != 0) isAsciiInput = 1;
   else isAsciiInput = 0;
   delimiter_char_ = file_chooser->delimiter_char();
@@ -224,10 +226,15 @@ int Data_File_Manager::load_data_file()
     old_points = points;
     old_column_labels = column_labels;
   }
+
+  // Initialize READ_SELECTED here
+  read_selected.resize( npoints);
+  read_selected = 0;
   
   // Read data file.If there was a problem, create default data to prevent 
   // a crash, then quit before something terrible happens!
-  cout << "Reading input data from <" << inFileSpec.c_str() << ">" << endl;
+  cout << "Data_File_Manager::load_data_file: Reading input data from <"
+       << inFileSpec.c_str() << ">" << endl;
   int iReadStatus = 0;
   if( isAsciiInput == 0) iReadStatus = read_binary_file_with_headers();
   else iReadStatus = read_ascii_file_with_headers();
@@ -242,15 +249,19 @@ int Data_File_Manager::load_data_file()
          << inFileSpec.c_str() << ">" << endl;
 
   // Remove trivial columns
-  // XXX this should be a command line (and menu) option, default OFF, since
-  // it can take both time and memory
+  // XXX this should be a command line and Tool menu option with default 
+  // OFF, since it can take both time and memory
   remove_trivial_columns();
 
-  // If only one or fewer records are available then generate default data 
-  // to prevent a crash, then quit before something terrible happens!
+  // If only one or fewer records are available, generate default data to
+  // prevent a crash, then quit before something terrible happens!
   if( nvars <= 1 || npoints <= 1) {
-    cout << " -WARNING: Insufficient data, " << nvars << "x" << npoints
+    cerr << " -WARNING: Insufficient data, " << nvars << "x" << npoints
          << " samples.  Check delimiter setting." << endl;
+    string sWarning = "";
+    sWarning.append( "WARNING: Insufficient number of attributes or samples\n.");
+    sWarning.append( "Check delimiter setting.  Generating default data");
+    make_confirmation_window( sWarning.c_str(), 1);
     create_default_data( 4);
     return -1;
   }
@@ -319,6 +330,10 @@ int Data_File_Manager::load_data_file()
     old_column_labels.erase( old_column_labels.begin(), old_column_labels.end());
   }
 
+  // DIAGNOSTIC_20
+  // cout << "DIAGNOSTIC_20: About to resize_and_preserve( " << nvars
+  //      << ", " << npoints << ")" << endl;
+  
   // If we read a different number of points then we anticipated, we resize 
   // and preserve the main data array.  Note this can take lot of time and memory
   // temporarily.  XXX it would be better to handle the growth/shrinkage of this
@@ -326,20 +341,200 @@ int Data_File_Manager::load_data_file()
   if( npoints != npoints_cmd_line)
     points.resizeAndPreserve( nvars, npoints);
 
-  // Now that we know the number of variables and points we've read, we can
-  // allocate and/or reallocateResize the other global arrays.
-  resize_global_arrays();
+  // DIAGNOSTIC_21
+  // cout << "DIAGNOSTIC_21: About to resize_global_arrays()" << endl;
 
-  // Search for selection information
-  for( int i=0; i<nvars; i++) {
-    if( column_labels[ i].compare( "SELECTION_BY_VP") == 0) {
-      for( int j=0; j<npoints; j++) selected( j) = (int) points( i, j);
-      cout << "Loaded selection information from column[ " << i << "]" << endl;
-      break;
-    }
+  // KLUDGE: If this is a merge, save current selection information in 
+  // READ_SELECTED so it won't be destroyed by the resize_global_arrays().
+  if( doMerge) {
+    read_selected( blitz::Range( 0, npoints-1)) = 
+      selected( blitz::Range( 0, npoints-1));
   }
 
+  // Now that we know the number of variables and points we've read, we can
+  // allocate and/or reallocateResize the other global arrays.  NOTE: This 
+  // will invoke reset_selection_arrays()
+  resize_global_arrays();
+
+  // DIAGNOSTIC_22
+  // cout << "DIAGNOSTIC_22: About to load READ_SELECTED( 0, blitz::Range(" << npoints-1 << "))" << endl;
+
+  // If this selction information was found or this was a merge operation, 
+  // load saved selections in READ_SELECTED into the SELECTED array.
+  if( readSelectionInfo_ || doMerge) {
+    selected( blitz::Range( 0, npoints-1)) = 
+      read_selected( blitz::Range( 0, npoints-1));
+  }
+  read_selected.free();
+
+  // If selection information was found, edit the vector of column labels to
+  // remove the selection label, "SELECTION_BY_VP".
+  if( readSelectionInfo_) {
+    vector<string>::iterator pTarget = column_labels.end();
+    pTarget--;
+    pTarget--;
+    if( include_line_number) pTarget--;
+    column_labels.erase( pTarget);
+  }
+
+  // DIAGNOSTIC_23
+  // cout << "DIAGNOSTIC_23: Done loading data" << endl;
+
   return 0;
+}
+
+//***************************************************************************
+// Data_File_Manager::extract_column_labels( sLine, doDefault) -- Extract or
+// generate column labels and selection flag
+int Data_File_Manager::extract_column_labels( string sLine, int doDefault)
+{
+  // Initialize the column labels
+  int nLabels = 0;
+  nvars = 0;
+  column_labels.erase( column_labels.begin(), column_labels.end());
+
+  // If requested, examine the line, count the number of values, and use this
+  // information to generate a set of default column labels.
+  if( doDefault != 0) {
+    
+    // If the delimiter character is not a tab, replace all tabs in the
+    // LINE string with spaces
+    if( delimiter_char_ != '\t') replace( sLine.begin(), sLine.end(), '\t', ' ');
+
+    // Loop: Insert the LINE string into a stream, define a buffer, read 
+    // and count successive tokens, generate default column labels, and 
+    // report results.  NOTE: whitespace-delimited and character-delimited
+    // files must be handled differently
+    std::stringstream ss( sLine);
+    std::string buf;
+    if( delimiter_char_ == ' ') {
+      while( ss >> buf) {
+        nvars++;
+        char cbuf[ 80];
+        (void) sprintf( cbuf, "%d", nvars);
+        buf = "Column_";
+        buf.append( cbuf);
+        column_labels.push_back( buf);
+      }
+    }
+    else { 
+      while( getline( ss, buf, delimiter_char_)) {
+        nvars++;
+        char cbuf[ 80];
+        (void) sprintf( cbuf, "%d", nvars);
+        buf = "Column_";
+        buf.append( cbuf);
+        column_labels.push_back( buf);
+      }
+    }
+    nvars = column_labels.size();
+    cout << " -Generated " << nvars 
+         << " default column labels." << endl;
+  }
+
+  // ...otherwise, examine the line to extract column labels.
+  else {
+
+    // Discard the leading comment character, if any, of the SLINE string.
+    // The rest of the line is assumed to contain column labels
+    if( sLine.find_first_of( "!#%") == 0) sLine.erase( 0, 1);
+
+    // Loop: Insert the SLINE string into a stream, define a buffer, read 
+    // successive labels into the buffer, then load them into the array of 
+    // column labels and report results.  NOTE: whitespace-delimited and 
+    // character-delimited labels must be handled differently.  Also, it is
+    // necessary to trim whitespace and verify character-delimited labels.
+    std::stringstream ss( sLine);
+    std::string buf;
+    if( delimiter_char_ == ' ')
+      while( ss >> buf) column_labels.push_back(buf);
+    else {
+      while( getline( ss, buf, delimiter_char_)) {
+        string::size_type notwhite = buf.find_first_not_of( " ");
+        buf.erase( 0, notwhite);
+        notwhite = buf.find_last_not_of( " ");
+        buf.erase( notwhite+1);
+        if( buf.size() <= 0) buf = "Dummy";
+        column_labels.push_back( buf);
+      }
+    }
+
+    nvars = column_labels.size();
+    cout << " -Extracted " << nvars << " column labels." << endl;
+  }
+
+  // If there were more than NVARS_CMD_LINE variables in the file, truncate 
+  // the vector of column labels, reset NVARS, and warn the user.
+  if( nvars_cmd_line > 0 && nvars > nvars_cmd_line) {
+    column_labels.erase( column_labels.begin()+nvars_cmd_line, column_labels.end());
+    nvars = column_labels.size();
+    cerr << " -WARNING: Too many variables, truncated list to " << nvars 
+         << " column labels." << endl;
+  }
+
+  // Examine the number of column labels that remain.  If it is too low or 
+  // high, report error, close input file, and quit.  Otherwise report 
+  // success.
+  if( nvars <= 1) {
+    cerr << " -WARNING, insufficient number of columns, "
+         << "check for correct delimiter character"
+         << endl;
+    make_confirmation_window( 
+      "WARNING: Insufficient number of columns.  Check delimiter setting.", 1);
+    return -1;
+  }
+  if( nvars > MAXVARS) {
+    cerr << " -WARNING, too many data columns, "
+         << "increase MAXVARS and recompile"
+         << endl;
+    make_confirmation_window( 
+      "WARNING: Too many data columns.", 1);
+    return -1;
+  }
+  cout << " -Examined header of <" << inFileSpec.c_str() << ">," << endl
+       << "  There should be " << nvars 
+       << " fields (columns) per record (row)" << endl;
+
+  // If requested, add a column to contain line numbers
+  if( include_line_number) {
+    column_labels.push_back( string( "-line number-"));
+  }
+  
+  // Add a final column label that says 'nothing'.
+  column_labels.push_back( string( "-nothing-"));
+
+  // Report label information
+  nLabels = column_labels.size();
+  cout << " -Read " << nLabels << "/" << nLabels;
+  if( delimiter_char_ == ' ') cout << " whitespace-delimited ";
+  else if( delimiter_char_ == ',') cout << " comma-delimited ";
+  else cout << " custom-delimited ";
+  cout << "column_labels:" << endl;
+
+  // Clever formatting to keep line lengths under control.  NOTE: This
+  // will misbehave if some column label is more than 80 characters long.
+  cout << "  ";
+  int nLineLength = 4;
+  for( unsigned int i=0; i < column_labels.size(); i++ ) {
+    nLineLength += 2+column_labels[ i].length();
+    if( nLineLength > 80) {
+      cout << endl << "  ";
+      nLineLength = 4 + column_labels[ i].length();
+    }
+    cout << "  " << column_labels[ i];
+  }
+  cout << endl;
+
+  // Check last column labels to see if it is the selection label,
+  // "SELECTION_BY_VP"
+  readSelectionInfo_ = 0;
+  if( column_labels[ nvars-1].compare( "SELECTION_BY_VP") == 0) {
+    readSelectionInfo_ = 1;
+    cout << "   -Read selection info-" << endl;
+  }
+  
+  // Return number of labels
+  return nLabels;
 }
 
 //***************************************************************************
@@ -353,7 +548,7 @@ int Data_File_Manager::read_ascii_file_with_headers()
   ifstream inFile;
   inFile.open( inFileSpec.c_str(), ios::in);
   if( inFile.bad() || !inFile.is_open()) {
-    cout << "read_ascii_file_with_headers:" << endl
+    cerr << "read_ascii_file_with_headers:" << endl
          << " -ERROR, couldn't open <" << inFileSpec.c_str()
          << ">" << endl;
     return 1;
@@ -402,131 +597,24 @@ int Data_File_Manager::read_ascii_file_with_headers()
   // STEP 3: Generate column labels from LASTHEADERLINE if it is full.
   // Otherwise generate default label names.
 
-  // Initialize the column labels
-  nvars = 0;
-  column_labels.erase( column_labels.begin(), column_labels.end());
-
   // If no header lines were found or the LASTHEADERLINE buffer is empty, 
-  // examine the first line of the data block to determine the number of 
-  // columns and generate a set of default column labels.
-  if( nHeaderLines == 0 || lastHeaderLine.length() == 0) {
-    
-    // If the delimiter character is not a tab, replace all tabs in the
-    // LINE string with spaces
-    if( delimiter_char_ != '\t') replace( line.begin(), line.end(), '\t', ' ');
+  // count the number of values in the first line of data to generate a set 
+  // of default column labels.  Otherwise examine the LASTHEADERLINE buffer 
+  // to extract column labels.
+  int nLabels = 0;
+  if( nHeaderLines == 0 || lastHeaderLine.length() == 0)
+    nLabels = extract_column_labels( line, 1);
+  else nLabels = extract_column_labels( lastHeaderLine, 0);
 
-    // Loop: Insert the LINE string into a stream, define a buffer, read 
-    // and count successive tokens, generate default column labels, and 
-    // report results.  NOTE: whitespace-delimited and character-delimited
-    // files must be handled differently
-    std::stringstream ss( line);
-    std::string buf;
-    if( delimiter_char_ == ' ') {
-      while( ss >> buf) {
-        nvars++;
-        char cbuf[ 80];
-        (void) sprintf( cbuf, "%d", nvars);
-        buf = "Column_";
-        buf.append( cbuf);
-        column_labels.push_back( buf);
-      }
-    }
-    else { 
-      while( getline( ss, buf, delimiter_char_)) {
-        nvars++;
-        char cbuf[ 80];
-        (void) sprintf( cbuf, "%d", nvars);
-        buf = "Column_";
-        buf.append( cbuf);
-        column_labels.push_back( buf);
-      }
-    }
-    nvars = column_labels.size();
-    cout << " -Generated " << nvars 
-         << " default column labels." << endl;
-  }
-
-  // ...otherwise, header lines were found, so examine the LASTHEADERLINE 
-  // buffer to extract column labels.
-  else {
-
-    // Discard the leading comment character, if any, of the LASTHEADERLINE
-    // string.  The rest of the line is assumed to contain column labels
-    if( lastHeaderLine.find_first_of( "!#%") == 0) 
-      lastHeaderLine.erase( 0, 1);
-
-    // Loop: Insert the LASTHEADERLINE string into a stream, define a buffer, 
-    // read successive labels into the buffer, load them into the array of 
-    // column labels, and report results.  NOTE: whitespace-delimited and 
-    // character-delimited labels must be handled differently.  Also, it is
-    // necessary to trim whitespace and verify character-delimited labels.
-    std::stringstream ss( lastHeaderLine);
-    std::string buf;
-    if( delimiter_char_ == ' ')
-      while( ss >> buf) column_labels.push_back(buf);
-    else {
-      while( getline( ss, buf, delimiter_char_)) {
-        string::size_type notwhite = buf.find_first_not_of( " ");
-        buf.erase( 0, notwhite);
-        notwhite = buf.find_last_not_of( " ");
-        buf.erase( notwhite+1);
-        if( buf.size() <= 0) buf = "Dummy";
-        column_labels.push_back( buf);
-      }
-    }
-
-    nvars = column_labels.size();
-    cout << " -Extracted " << nvars << " column labels." << endl;
-  }
-
-  // If there were more than NVARS_CMD_LINE variables, truncate the vector 
-  // of column labels, reset NVARS, and warn the user.
-  if( nvars_cmd_line > 0 && nvars > nvars_cmd_line) {
-    column_labels.erase( column_labels.begin()+nvars_cmd_line, column_labels.end());
-    nvars = column_labels.size();
-    cout << " -WARNING: Too many variables, truncated list to " << nvars 
-         << " column labels." << endl;
-  }
-
-  // Examine the number column labels.  If it is too low or high, report 
-  // error, close input file, and quit.  Otherwise report success.
-  if( nvars <= 1) {
-    cerr << " -ERROR, insufficient number of columns, "
-         << "check for correct delimiter character"
-         << endl;
+  // If there were problems, close file and quit
+  if( nLabels < 0) {
     inFile.close();
     return 1;
   }
-  if( nvars > MAXVARS) {
-    cerr << " -ERROR, too many columns, "
-         << "increase MAXVARS and recompile"
-         << endl;
-    inFile.close();
-    return 1;
-  }
-  cout << " -Examined header of <" << inFileSpec.c_str() << ">," << endl
-       << "  There should be " << nvars 
-       << " fields (columns) per record (row)" << endl;
 
-  // If requested, add a column to contain line numbers
-  if( include_line_number) {
-    column_labels.push_back( string( "-line number-"));
-  }
-  
-  // Add a final column label that says 'nothing'.
-  column_labels.push_back( string( "-nothing-"));
-  cout << " -column_labels:";
-  int nLineLength = 17;
-  for( unsigned int i=0; i < column_labels.size(); i++ ) {
-    nLineLength += 1+column_labels[ i].length();
-    if( nLineLength > 80) {
-      cout << endl << "   ";
-      nLineLength = 4 + column_labels[ i].length();
-    }
-    cout << " " << column_labels[ i];
-  }
-  cout << endl;
-
+  // DIAGNOSTIC_10
+  // cout << "DIAGNOSTIC_10: nvars, nLabels, readSelectionInfo_ ( "
+  //      << nvars << ", " << nLabels << ", " << readSelectionInfo_ << ")" << endl;
 
   // STEP 4: Allocate memory and read the data block
 
@@ -535,9 +623,19 @@ int Data_File_Manager::read_ascii_file_with_headers()
   // once and for all, and not waste memory.
   if( npoints_cmd_line > 0) npoints = npoints_cmd_line;
   else npoints = MAXPOINTS;
-  if( include_line_number) points.resize( nvars+1, npoints);
-  else points.resize( nvars, npoints);
+  if( include_line_number) {
+    if( !readSelectionInfo_) points.resize( nvars+1, npoints);
+    else points.resize( nvars, npoints);
+  }
+  else {
+    if( !readSelectionInfo_) points.resize( nvars, npoints);
+    else points.resize( nvars-1, npoints);
+  }
   
+  // DIAGNOSTIC_11
+  // cout << "DIAGNOSTIC_11: points.resize( " << points.rows()
+  //      << ", " << points.columns() << ")" << endl;
+
   // Loop: Read successive lines from the file
   int nSkip = 0, i = 0;
   unsigned uFirstLine = 1;
@@ -550,7 +648,6 @@ int Data_File_Manager::read_ascii_file_with_headers()
       if( inFile.eof()) break;  // Break here to make accounting work right
       nRead++;
     }
-    DEBUG (cout << "line is: " << line << endl);
     
     // Skip blank lines and comment lines
     if( line.length() == 0 || line.find_first_of( "!#%") == 0) {
@@ -564,6 +661,10 @@ int Data_File_Manager::read_ascii_file_with_headers()
     // If the delimiter character is not a tab, replace tabs with spaces
     if( delimiter_char_ != '\t')
       replace( line.begin(), line.end(), '\t', ' ');
+
+    // DIAGNOSTIC_12, DIAGNOSTIC 13A
+    // cout << "  DIAGNOSTIC_12[ " << i << "] (" << line.c_str() << ")" << endl;
+    // cout << "   DIAGNOSTIC_13: ";
 
     // Loop: Insert the string into a stream and read it
     std::stringstream ss( line); 
@@ -599,16 +700,28 @@ int Data_File_Manager::read_ascii_file_with_headers()
         isBadData = 1;
         break;
       }
-      
-      // Inspect the 'ss' stringstream to check for values of NULL that imply
-      // certain types of bad data and/or missing values, replace these with a
-      // default value, and clear error flags.  NOTE: for whitespace delimited 
-      // files, simply skip lines with missing values.
-      if( !ss) {
-        points(j,i) = bad_value_proxy_;
-        ss.clear();
+
+      // If this was selection information, load it into the READ_SELECTED
+      // vector, otherwise load it into the POINTS array.  In both cases 
+      // inspect the SS stringstream to check for values of NULL that imply
+      // certain types of bad data and/or missing values, and if necessary,
+      // replace these with a default value and clear the error flags.
+      if( !readSelectionInfo_ || j < nvars-1) {
+        if( !ss) {
+          points(j,i) = bad_value_proxy_;
+          ss.clear();
+        }
+        else points(j,i) = (float) x;
+
+        // DIAGNOSTIC_13B
+        // cout << "  point( " << j << ") <" << points( j, i) << ">";
       }
-      else points(j,i) = (float) x;
+      else {
+        if( !ss) ss.clear();
+        else read_selected( i) = (int) x;
+        // DIAGNOSTIC_13C
+        // cout << "  selection <" << read_selected( i) << ">";
+      }
       
       // Check for unreadable data and flag this line to be skipped.  NOTE:
       // This should never happen, because error flags were cleared above.
@@ -621,8 +734,10 @@ int Data_File_Manager::read_ascii_file_with_headers()
         isBadData = 1;
         break;
       }
-      DEBUG (cout << "points(" << j << "," << i << ") = " << points(j,i) << endl);
     }
+
+    // DIAGNOSTIC_13
+    // cout << endl;
 
     // Loop: Check for bad data flags and flag this line to be skipped
     for( int j=0; j<nvars; j++) {
@@ -660,11 +775,16 @@ int Data_File_Manager::read_ascii_file_with_headers()
   }
   
 
-  // STEP 5: Update NPOINTS, report results of file read operation to the 
-  // console, close input file, and report success
+  // STEP 5: Update NVARS and NPOINTS, report results of the read operation 
+  // to the console, close input file, and report success
+  if( readSelectionInfo_ != 0) nvars = nvars-1;
   npoints = i;
-  cout << " -Finished reading data block with " << npoints
-       << " records." << endl;
+
+  cout << " -Finished reading " << nvars << "x" << npoints
+       << " data block with ";
+  if( readSelectionInfo_ == 0) cout << "no ";
+  else cout << " added column of ";
+  cout << "selection information." << endl;
   cout << "  " << nHeaderLines 
        << " header + " << i 
        << " good data + " << nSkip 
@@ -686,10 +806,9 @@ int Data_File_Manager::read_binary_file_with_headers()
   FILE * pInFile;
   pInFile = fopen( inFileSpec.c_str(), "rb");
   if( pInFile == NULL) {
-    cout << "read_binary_file_with_headers: ERROR" << endl
+    cerr << "read_binary_file_with_headers: ERROR" << endl
          << " -Couldn't open binary file <" << inFileSpec.c_str() 
          << ">" << endl;
-    return 1;
   }
   else {
     cout << "read_binary_file_with_headers:" << endl
@@ -702,82 +821,38 @@ int Data_File_Manager::read_binary_file_with_headers()
   char cBuf[ MAX_HEADER_LENGTH];
   fgets( cBuf, MAX_HEADER_LENGTH, pInFile);
   if( strlen( cBuf) >= (int)MAX_HEADER_LENGTH) {
-    cout << " -ERROR: Header string is too long, "
+    cerr << " -ERROR: Header string is too long, "
          << "increase MAX_HEADER_LENGTH and recompile"
          << endl;
     fclose( pInFile);
+    make_confirmation_window( "ERROR: Header string is too long", 1);
     return 1;
   }
   std::string line;
   line.assign( cBuf);
 
-  // Initialize the column labels
-  nvars = 0;
-  column_labels.erase( column_labels.begin(), column_labels.end());
-
-  // Loop: Examine the line to see if it contains any tabs.  If it doesn't,
-  // unpack labels as if they were whitespace-delimited.  Otherwise, unpack 
-  // labels as if they were tab-delimited and erase any leading and traling
-  // whitespace.
-  std::stringstream ss( line);
-  std::string buf;
-  int isTabDelimited = 0;
-  // cout << "POOKA (" << line.c_str() << ") POO" << endl;
-  // cout << "-first tab position is " << line.find( '\t') << "/" << line.size() << endl;
-  if( line.find( '\t') < 0 || line.size() <= line.find( '\t'))
-    while( ss >> buf) column_labels.push_back(buf);
+  // Save existing delimiter character, then examine the line.  If it 
+  // contains tabs, temporarily set the deliminer character to a tab.
+  // Otherwise set it to whitespace.
+  char saved_delimiter_char_ = delimiter_char_;
+  if( line.find( '\t') < 0 || line.size() <= line.find( '\t')) {
+    cout << " -Header is WHITESPACE delimited" << endl;
+    delimiter_char_ = ' ';
+  }
   else {
-    isTabDelimited = 1;
-    while( getline( ss, buf, '\t')) {
-      string::size_type notwhite = buf.find_first_not_of( " ");
-      buf.erase( 0, notwhite);
-      notwhite = buf.find_last_not_of( " ");
-      buf.erase( notwhite+1);
-      column_labels.push_back(buf);
-    }
-  }
-  nvars = column_labels.size();
-  int nvars_in = nvars;
-
-  // If there were more than NVARS_CMD_LINE variables, truncate the vector of 
-  // column labels, reset NVARS, and warn the user.
-  if( nvars_cmd_line > 0 && nvars > nvars_cmd_line) {
-    column_labels.erase( column_labels.begin()+nvars_cmd_line, column_labels.end());
-    nvars = column_labels.size();
-    cout << " -WARNING: Too many variables, truncated list to " << nvars 
-         << " column labels." << endl;
+    cout << " -Header is TAB delimited" << endl;
+    delimiter_char_ = '\t';
   }
 
-  // Examine and report content of header
-  if( nvars > MAXVARS) {
-    cerr << " -ERROR: Too many columns, "
-         << "increase MAXVARS and recompile"
-         << endl;
-    fclose( pInFile);
-    return 1;
-  }
-
-  // If requested, include line number
-  if (include_line_number) {
-    column_labels.push_back( string( "-line number-"));
-  }
-
-  // Add a final column label that says 'nothing'.
-  column_labels.push_back(string("-nothing-"));
-
-  // Report label information
-  int nLabels = column_labels.size();
-  cout << "Read " << nLabels << "/" << nvars;
-  if( isTabDelimited <= 0) cout << " whitespace-delimited ";
-  else cout << " tab-delimited ";
-  cout << "column_labels:" << endl;
-  for( unsigned int i=0; i < column_labels.size(); i++ ) {
-    cout << column_labels[i];
-    if( i < column_labels.size()-1) cout << ", ";
-  }  
-  cout << endl;
+  // Inovke the EXTRACT_COLUMN_LABEL method to extract column labels,
+  // then reset the delimiter character
+  int nLabels = 0;
+  nLabels = extract_column_labels( line, 0);
+  delimiter_char_ = saved_delimiter_char_;
+  
+  // Report status to the console
   cout << " -About to read " << nvars
-       << " variables from a binary file with " << nvars_in
+       << " variables from a binary file with " << nLabels
        << " fields (columns) per record (row)" << endl;
 
   // Now we know the number of variables (nvars), so if we know the number of 
@@ -786,9 +861,12 @@ int Data_File_Manager::read_binary_file_with_headers()
   if( npoints_cmd_line > 0) npoints = npoints_cmd_line;
   else npoints = MAXPOINTS;
   if( include_line_number) {
-    points.resize( nvars+1, npoints);
-  } else {
-    points.resize( nvars, npoints);
+    if( !readSelectionInfo_) points.resize( nvars+1, npoints);
+    else points.resize( nvars, npoints);
+  }
+  else {
+    if( !readSelectionInfo_) points.resize( nvars, npoints);
+    else points.resize( nvars-1, npoints);
   }
   
   // Warn if the input buffer is non-contiguous.
@@ -804,14 +882,17 @@ int Data_File_Manager::read_binary_file_with_headers()
 
   // Read file in Column Major order...
   if( isColumnMajor == 1) {
-    cout << " -Attempting to read binary file in"
-         << " column-major order" << endl;
-    blitz::Array<float,1> vars( nvars_in);
+    cout << " -Attempting to read binary file in column-major order" << endl;
+         
+    // Define input buffers and make sure they're contiguous
+    blitz::Array<float,1> vars( nvars);
     blitz::Range NVARS( 0, nvars-1);
     if( !vars.isStorageContiguous()) {
       cerr << " -ERROR: Tried to read into a noncontiguous buffer."
            << endl;
       fclose( pInFile);
+      make_confirmation_window( 
+        "ERROR: Tried to read into a noncontiguous buffer", 1);
       return -1;
     }
 
@@ -821,7 +902,7 @@ int Data_File_Manager::read_binary_file_with_headers()
     
       // Read the next NVAR values using conventional C-style fread.
       unsigned int ret = 
-        fread( (void *)(vars.data()), sizeof(float), nvars_in, pInFile);
+        fread( (void *)(vars.data()), sizeof(float), nvars, pInFile);
       
       // Check for normal termination
       if( ret == 0 || feof( pInFile)) {
@@ -832,16 +913,21 @@ int Data_File_Manager::read_binary_file_with_headers()
       }
       
       // If wrong number of values was returned, report error.
-      if( ret != (unsigned int)nvars_in) {
+      if( ret != (unsigned int) nvars) {
         cerr << " -ERROR reading row[ " << i+1 << "], "
              << "returned values " << ret 
-             << " NE number of variables " << nvars_in << endl;
+             << " NE number of variables " << nvars << endl;
         fclose( pInFile);
+        make_confirmation_window( "Error reading row of binary data", 1);
         return 1;
       }
 
       // Load data array and report progress
-      points( NVARS,i) = vars( NVARS);
+      if( !readSelectionInfo_) points( NVARS, i) = vars( NVARS);
+      else {
+        points( blitz::Range( 0, nvars-2), i) = vars( blitz::Range( 0, nvars-2));
+        read_selected( i) = (int) vars( nvars-1);
+      }
       if( i>0 && (i%10000 == 0)) 
         cout << "  Reading row " << i << endl;
     }
@@ -853,14 +939,16 @@ int Data_File_Manager::read_binary_file_with_headers()
 
   // ...or read file in Row Major order
   else {
-    cout << " -Attempting to read binary file in"
-         << "row-major order with nvars=" << nvars_in
+    cout << " -Attempting to read binary file in row-major order "
+         << "with nvars=" << nvars
          << ", npoints=" << npoints << endl;
     if( npoints_cmd_line == 0) {
       cerr << " -ERROR, --npoints must be specified for"
            << " --inputformat=rowmajor"
            << endl;
       fclose( pInFile);
+      make_confirmation_window( 
+        "ERROR: NPOINTS must be specified for ROWMAJOR binary files", 1);
       return 1;
     }
     else {
@@ -874,6 +962,8 @@ int Data_File_Manager::read_binary_file_with_headers()
       cerr << " -ERROR, Tried to read into noncontiguous buffer."
            << endl;
       fclose( pInFile);
+      make_confirmation_window( 
+        "ERROR: Tried to read into noncontiguous buffer", 1);
       return -1;
     }
 
@@ -899,11 +989,18 @@ int Data_File_Manager::read_binary_file_with_headers()
              << "returned values " << ret 
              << " NE number of variables " << nvars << endl;
         fclose( pInFile);
+        make_confirmation_window( "ERROR reading column of binary file", 1);
         return 1;
       }
 
       // Load data array and report progress
-      points( i, NPTS) = vars( NPTS);
+      if( !readSelectionInfo_ && i < nvars-1) points( i, NPTS) = vars( NPTS);
+      else {
+        points( i, NPTS) = vars( NPTS);
+        // read_selected( NPTS) = blitz::cast( vars( NPTS), int());
+        // read_selected( NPTS) = cast<int>(vars(NPTS));
+        for( int j=0; j<npoints; j++) read_selected( j) = (int) vars( j);
+      }
       cout << "  Reading column " << i+1 << endl;
     }
     
@@ -912,7 +1009,8 @@ int Data_File_Manager::read_binary_file_with_headers()
          << " columns" << endl;
   }
   
-  // Close input file and terminate
+  // Update NVARS, close input file and terminate
+  if( readSelectionInfo_ != 0) nvars = nvars-1;
   fclose( pInFile);
   return 0;
 }
@@ -928,7 +1026,7 @@ int Data_File_Manager::findOutputFile()
   // Generate query text and list file extensions, etc for this file type
   string title;
   string pattern;
-  if( useSelectedData != 0) title = "Write all data to file";
+  if( writeAllData_ != 0) title = "Write all data to file";
   else title = "Write selected data to file";
   if( isAsciiOutput) pattern = "*.{txt,lis,asc}\tAll Files (*)";
   else pattern = "*.bin\tAll Files (*)";
@@ -1118,7 +1216,7 @@ int Data_File_Manager::write_ascii_file_with_headers()
     os.unsetf (ios::scientific); // force floatfield to default
     int rows_written = 0;
     for( int irow = 0; irow < npoints; irow++) {
-      if( useSelectedData == 0 || selected( irow) > 0) {
+      if( writeAllData_ != 0 || selected( irow) > 0) {
         for( int jcol = 0; jcol < nvars_out; jcol++) {
           // if( jcol > 0) os << " ";
           if( jcol > 0) os << delimiter_char_ << " ";
@@ -1188,7 +1286,7 @@ int Data_File_Manager::write_binary_file_with_headers()
     int nBlockSize = nvars*sizeof(float);
     int rows_written = 0;
     for( int i=0; i<npoints; i++) {
-      if( useSelectedData == 0 || selected( i) > 0) {
+      if( writeAllData_ != 0 || selected( i) > 0) {
         vars = points( NVARS, i);
         os.write( (const char*) vars.data(), nBlockSize);
         if( writeSelectionInfo_ != 0) {
@@ -1197,6 +1295,10 @@ int Data_File_Manager::write_binary_file_with_headers()
 		}
         if( os.fail()) {
           cerr << "Error writing to" << outFileSpec.c_str() << endl;
+          string sWarning = "";
+          sWarning.append( "WARNING: Error writing to file\n");
+          sWarning.append( outFileSpec);
+          make_confirmation_window( sWarning.c_str(), 1);
           return 1;
         }
         rows_written++;

@@ -121,13 +121,10 @@ GLOBAL float default_pointsize INIT(1.0);
 // plots.  Various buttons -- as suggested by their names.
 GLOBAL Fl_Tabs *cpt;  
 GLOBAL Fl_Tabs *brushes_tab;
-GLOBAL Fl_Button *add_to_selection_button,
-          *clear_selection_button, 
-          *delete_selection_button;
+GLOBAL Fl_Button *add_to_selection_button, *clear_selection_button, *delete_selection_button;
 GLOBAL Fl_Button *show_deselected_button, *mask_out_deselected, *invert_selection_button;
 GLOBAL Fl_Button *write_data_button;
-GLOBAL Fl_Button *choose_color_selected_button, 
-          *choose_color_deselected_button; 
+GLOBAL Fl_Button *choose_color_selected_button, *choose_color_deselected_button; 
 GLOBAL Fl_Repeat_Button *change_all_axes_button;
 GLOBAL Fl_Button *link_all_axes_button;
 GLOBAL Fl_Button *reload_plot_window_array_button;

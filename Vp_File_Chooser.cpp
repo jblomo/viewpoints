@@ -20,7 +20,7 @@
 //   modified by Paul Gazis and Creon Levit for use with viewpoints.
 //
 // Author: Bill Spitzak and others   1998-2005
-// Modified: P. R. Gazis  19-NOV-2007
+// Modified: P. R. Gazis  28-NOV-2007
 //***************************************************************************
 
 // Include header
@@ -1179,6 +1179,7 @@ void Vp_File_Chooser::writeSelectionInfo( int writeSelectionInfo_in)
 {
   writeSelectionInfo_ = writeSelectionInfo_in;
   prefs_.set( "writeSelectionInfo", writeSelectionInfo_);
+  selectionButton->value( writeSelectionInfo_ != 0);
 }
 
 //*****************************************************************************

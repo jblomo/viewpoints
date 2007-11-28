@@ -32,7 +32,7 @@
 //      vp.cpp could be consolidated.
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  13-JUL-2007
+// Modified: P. R. Gazis  28-NOV-2007
 //***************************************************************************
 
 // Protection to make sure this header is not included twice
@@ -66,6 +66,7 @@
 //   findInputFile() -- Query user to find input file
 //   load_data_file( inFileSpec) -- Load and initialize data
 //   load_data_file() -- Load and initialize data
+//   extract_column_labels( sLine, doDefault) -- Extract column labels
 //   read_ascii_file_with_headers() -- Read ASCII
 //   read_binary_file_with_headers() -- Read binary
 //   create_default_data( nvars_in) -- Create default data
@@ -96,13 +97,13 @@
 //   do_append( i) -- Set append flag
 //   do_merge() -- Get append flag
 //   do_merge( i) -- Set merge flag
-//   selected_data() -- Get 'use selected data' flag
-//   selected_data( i)-- Set 'use selected data' flag
+//   write_all_data() -- Get the 'write all data' flag
+//   selected_data( i)-- Set the 'write all data' flag
 //   column_major() -- Get column major flag
 //   column_major( i) -- Set column major flag
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  12-JUL-2007
+// Modified: P. R. Gazis  27-NOV-2007
 //***************************************************************************
 class Data_File_Manager
 {
@@ -125,8 +126,9 @@ class Data_File_Manager
     void remove_trivial_columns();
     void resize_global_arrays();
 
-    // Buffers to hold filespec and pathname
+    // Buffers to hold filespec, pathname, and selection information
     string sDirectory_, inFileSpec, outFileSpec;
+    blitz::Array<int,1> read_selected;
     
     // Delimiter for files, e.g. ',' for CSV.  Default is whitespace.  Note 
     // that missing values can be specified in asci input file as long as the 
@@ -139,8 +141,8 @@ class Data_File_Manager
     // State variables
     int nSkipHeaderLines;
     int isAsciiInput, isAsciiOutput;
-    int doAppend, doMerge, useSelectedData;
-    int writeSelectionInfo_;
+    int doAppend, doMerge, writeAllData_;
+    int readSelectionInfo_, writeSelectionInfo_;
     int isColumnMajor;
 
   public:
@@ -151,6 +153,7 @@ class Data_File_Manager
     int findInputFile();
     int load_data_file( string inFileSpec);
     int load_data_file();
+    int extract_column_labels( string sLine, int doDefault);
     int read_ascii_file_with_headers();
     int read_binary_file_with_headers();
     void create_default_data( int nvars_in);
@@ -183,8 +186,8 @@ class Data_File_Manager
     void do_append( int i) { doAppend = (i==1);}
     int do_merge() { return doMerge;}
     void do_merge( int i) { doMerge = (i==1);}
-    int selected_data() { return useSelectedData;}
-    void selected_data( int i) { useSelectedData = (i==1);}
+    int write_all_data() { return writeAllData_;}
+    void write_all_data( int i) { writeAllData_ = (i==1);}
     int column_major() { return isColumnMajor;}
     void column_major( int i) { isColumnMajor = (i==1);}
     

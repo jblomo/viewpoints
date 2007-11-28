@@ -35,7 +35,7 @@
 //      vp.cpp could be consolidated.
 //
 // Author: Bill Spitzak and others   1998-2005
-// Modified: P. R. Gazis  23-NOV-2007
+// Modified: P. R. Gazis  28-NOV-2007
 //***************************************************************************
 
 // Protection to make sure this header is not included twice
@@ -215,7 +215,7 @@ using namespace std;
 //    cb_previewButton_i( *, *) -- Callback method for the preview checkbox
 //
 // Author: Bill Spitzak and others   1998-2005
-// Modified: P. R. Gazis  23-NOV-2007
+// Modified: P. R. Gazis  28-NOV-2007
 //***************************************************************************
 class FL_EXPORT Vp_File_Chooser
 {
