@@ -32,7 +32,7 @@
 //      vp.cpp could be consolidated.
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  28-NOV-2007
+// Modified: P. R. Gazis  29-NOV-2007
 //***************************************************************************
 
 // Protection to make sure this header is not included twice
@@ -119,8 +119,12 @@ class Data_File_Manager
     template<class Archive>
     void serialize( Archive & ar, const unsigned int /* file_version */)
     {
-      ar & boost::serialization::make_nvp( "is_ASCII_data", isAsciiInput);
       ar & boost::serialization::make_nvp( "dataFileSpec", inFileSpec);
+      ar & boost::serialization::make_nvp( "is_ASCII_data", isAsciiInput);
+      ar & boost::serialization::make_nvp( "delimiter_char_", delimiter_char_);
+      ar & boost::serialization::make_nvp( "nSkipHeaderLines", nSkipHeaderLines);
+      ar & boost::serialization::make_nvp( "isColumnMajor", isColumnMajor);
+      ar & boost::serialization::make_nvp( "bad_value_proxy_", bad_value_proxy_);
     }
 
     void remove_trivial_columns();
@@ -144,6 +148,7 @@ class Data_File_Manager
     int doAppend, doMerge, writeAllData_;
     int readSelectionInfo_, writeSelectionInfo_;
     int isColumnMajor;
+    int isSavedFile_;
 
   public:
     Data_File_Manager();
@@ -186,6 +191,8 @@ class Data_File_Manager
     void do_append( int i) { doAppend = (i==1);}
     int do_merge() { return doMerge;}
     void do_merge( int i) { doMerge = (i==1);}
+    int is_saved_file() { return isSavedFile_;}
+    void is_saved_file( int i) { isSavedFile_ = i;}
     int write_all_data() { return writeAllData_;}
     void write_all_data( int i) { writeAllData_ = (i==1);}
     int column_major() { return isColumnMajor;}
@@ -199,6 +206,7 @@ class Data_File_Manager
     // Define statics to hold header format
     static const int MAX_HEADER_LENGTH;
     static const int MAX_HEADER_LINES;
+    static string SELECTION_LABEL;
     
     // Define statics to hold tests for bad lines of ASCII data
     static const int MAX_NTESTCYCLES = 1000;

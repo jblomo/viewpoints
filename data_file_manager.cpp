@@ -19,7 +19,7 @@
 // Purpose: Source code for <data_file_manager.h>
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  28-NOV-2007
+// Modified: P. R. Gazis  30-NOV-2007
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -37,6 +37,7 @@
 // #include "Vp_File_Chooser.cpp"   // PRG's new file chooser
 
 // Set static data members for class Data_File_Manager::
+string Data_File_Manager::SELECTION_LABEL = "SELECTION_BY_VP";
 
 // Define and set maximums length of header lines and number of lines in the 
 // header block
@@ -51,7 +52,8 @@ const bool include_line_number = false; // MCL XXX This should be an option
 Data_File_Manager::Data_File_Manager() : delimiter_char_( ' '), 
   bad_value_proxy_( 0.0), isAsciiInput( 1), isAsciiOutput( 0), 
   readSelectionInfo_( 0), doAppend( 0), doMerge( 0), 
-  writeAllData_( 1), writeSelectionInfo_( 0), isColumnMajor( 0)
+  writeAllData_( 1), writeSelectionInfo_( 0), isColumnMajor( 0),
+  isSavedFile_( 0)
 {
   sDirectory_ = ".";  // Default pathname
   initialize();
@@ -71,6 +73,7 @@ void Data_File_Manager::initialize()
   readSelectionInfo_ = 1;
   writeAllData_ = 1;
   writeSelectionInfo_ = 0;
+  isSavedFile_ = 0;
 
   isColumnMajor = 1;
   nSkipHeaderLines = 0;  // Number of header lines to skip
@@ -380,6 +383,9 @@ int Data_File_Manager::load_data_file()
   // DIAGNOSTIC_23
   // cout << "DIAGNOSTIC_23: Done loading data" << endl;
 
+  // Set saved file flag and report success
+  if( doAppend > 0 | doMerge > 0) isSavedFile_ = 0;
+  else isSavedFile_ = 1;
   return 0;
 }
 
@@ -528,7 +534,8 @@ int Data_File_Manager::extract_column_labels( string sLine, int doDefault)
   // Check last column labels to see if it is the selection label,
   // "SELECTION_BY_VP"
   readSelectionInfo_ = 0;
-  if( column_labels[ nvars-1].compare( "SELECTION_BY_VP") == 0) {
+  // if( column_labels[ nvars-1].compare( "SELECTION_BY_VP") == 0) {
+  if( column_labels[ nvars-1].compare( SELECTION_LABEL) == 0) {
     readSelectionInfo_ = 1;
     cout << "   -Read selection info-" << endl;
   }
@@ -1163,6 +1170,7 @@ int Data_File_Manager::save_data_file()
 {
   if( isAsciiOutput != 1) return write_binary_file_with_headers();
   else return write_ascii_file_with_headers();
+  isSavedFile_ = 1;
 }
 
 //***************************************************************************
@@ -1204,7 +1212,8 @@ int Data_File_Manager::write_ascii_file_with_headers()
       else os << delimiter_char_ << " " << setw( 13) << column_labels[ i];
       // else os << " " << setw( 13) << column_labels[ i];
     }
-    if( writeSelectionInfo_ != 0) os << delimiter_char_ << " SELECTION_BY_VP";
+    // if( writeSelectionInfo_ != 0) os << delimiter_char_ << " SELECTION_BY_VP";
+    if( writeSelectionInfo_ != 0) os << delimiter_char_ << " " << SELECTION_LABEL;
     os << endl;
     
     // Loop: Write successive ASCII records to the data block using the
@@ -1279,7 +1288,8 @@ int Data_File_Manager::write_binary_file_with_headers()
       os << column_labels[ i] << " ";;
       if( i<nvars-1) os << '\t';
     }
-    if( writeSelectionInfo_ != 0) os << '\t' << " SELECTION_BY_VP";
+    // if( writeSelectionInfo_ != 0) os << '\t' << " SELECTION_BY_VP";
+    if( writeSelectionInfo_ != 0) os << '\t' << " " << SELECTION_LABEL;
     os << endl;
     
     // Loop: Write data and report any problems

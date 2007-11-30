@@ -58,7 +58,7 @@
 //   reset_selection_arrays() -- Reset selection arrays
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  28-NOV-2007
+// Modified: P. R. Gazis  30-NOV-2007
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -161,7 +161,7 @@ void step_help_view_widget( Fl_Widget *o, void* user_data);
 void make_global_widgets();
 void change_all_axes( Fl_Widget *o);
 void npoints_changed( Fl_Widget *o);
-void resize_selection_index_arrays( int nplots_old, int nplots);
+// void resize_selection_index_arrays( int nplots_old, int nplots);
 void write_data( Fl_Widget *o, void* user_data);
 void reset_all_plots();
 void read_data( Fl_Widget* o, void* user_data);
@@ -1220,33 +1220,33 @@ int load_state( Fl_Widget* o)
   // closed when destructors are called
   boost::archive::xml_iarchive inputArchive( inputFileStream);
 
-  // Get data file from archive and read it
-  inputArchive >> BOOST_SERIALIZATION_NVP( dfm);
-  if( dfm.input_filespec().length() <= 0) dfm.create_default_data( 10);
-  else {
-    if( dfm.load_data_file() != 0) dfm.create_default_data( 10);
-    else 
-      cout << "Loaded " << npoints
-           << " samples with " << nvars << " fields" << endl;
-  }
-
-  // Fewer points -> bigger starting default_pointsize
-  default_pointsize = max( 1.0, 6.0 - log10f( (float) npoints));
-  Brush::set_sizes(default_pointsize);
-  
-  // Read configuration information from archive.  NOTE: This must be done
-  // before the first call to MANAGE_PLOT_WINDOW_ARRAY!
-  inputArchive >> BOOST_SERIALIZATION_NVP( nrows);
-  inputArchive >> BOOST_SERIALIZATION_NVP( ncols);
-
-  // Set user_data for this widget to indicate that this is a NEW_DATA 
-  // operation, then invoke MANAGE_PLOT_WINDOW_ARRAY to clear children of 
-  // the tab widget and reload the plot window array.
-  manage_plot_window_array( o, (void*) "NEW_DATA");
-
   // Install most of the load procedure in a try-catch process to protect
   // against corrupt serialization files
   try {
+
+    // Get data file from archive and read it
+    inputArchive >> BOOST_SERIALIZATION_NVP( dfm);
+    if( dfm.input_filespec().length() <= 0) dfm.create_default_data( 10);
+    else {
+      if( dfm.load_data_file() != 0) dfm.create_default_data( 10);
+      else 
+        cout << "Loaded " << npoints
+             << " samples with " << nvars << " fields" << endl;
+    }
+
+    // Fewer points -> bigger starting default_pointsize
+    default_pointsize = max( 1.0, 6.0 - log10f( (float) npoints));
+    Brush::set_sizes(default_pointsize);
+  
+    // Read configuration information from archive.  NOTE: This must be done
+    // before the first call to MANAGE_PLOT_WINDOW_ARRAY!
+    inputArchive >> BOOST_SERIALIZATION_NVP( nrows);
+    inputArchive >> BOOST_SERIALIZATION_NVP( ncols);
+
+    // Set user_data for this widget to indicate that this is a NEW_DATA 
+    // operation, then invoke MANAGE_PLOT_WINDOW_ARRAY to clear children of 
+    // the tab widget and reload the plot window array.
+    manage_plot_window_array( o, (void*) "NEW_DATA");
 
     // Loop: Loop through NPLOTS in a brute force scheme to read control panel 
     // information from the archive
@@ -1357,11 +1357,13 @@ int load_state( Fl_Widget* o)
   }
   catch( exception &e) {
     string sWarning = "";
-    sWarning.append( "WARNING: Serialization file appears to be damaged\n.");
+    sWarning.append( "WARNING: Config file may be damaged or obsolete\n.");
     sWarning.append( "The resulting configuration may be unpredictable");
     make_confirmation_window( sWarning.c_str(), 1);
     cerr << "Main::load_state: WARNING, "
-         << "serialization file appears to be damaged" << endl;
+         << "problem loading serialization file" << endl;
+    cerr << "       load_state reports exception (" << e.what()
+         << ")" << endl;
   }
   
   // Refresh display
@@ -1611,7 +1613,7 @@ void reset_selection_arrays()
 //   main() -- main routine
 //
 // Author:   Creon Levit   unknown
-// Modified: P. R. Gazis   24-NOV-2006
+// Modified: P. R. Gazis   30-NOV-2006
 //***************************************************************************
 //***************************************************************************
 // Main -- Driver routine
@@ -1620,7 +1622,7 @@ int main( int argc, char **argv)
   // XXX: In a perfect world, this should be included with the global 
   // definitions
   about_string = "\n\
-    viewpoints 2.0 \n\
+    viewpoints 2.0.1 \n\
     " + string(SVN_VERSION) + "\n\
     \n\
     (c) 2006 M. Creon Levit and Paul R. Gazis   \n\

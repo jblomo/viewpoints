@@ -324,7 +324,6 @@ int Plot_Window::handle( int event)
         selection_changed = 1;
         handle_selection ();
         redraw_all_plots (index);
-
       }
 
       return 1;
