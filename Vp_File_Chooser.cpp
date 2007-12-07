@@ -20,7 +20,7 @@
 //   modified by Paul Gazis and Creon Levit for use with viewpoints.
 //
 // Author: Bill Spitzak and others   1998-2005
-// Modified: P. R. Gazis  28-NOV-2007
+// Modified: P. R. Gazis  06-DEC-2007
 //***************************************************************************
 
 // Include header
@@ -39,6 +39,9 @@ Fl_Preferences Vp_File_Chooser::prefs_( Fl_Preferences::USER, "fltk.org", "filec
 const char *Vp_File_Chooser::add_favorites_label = "Add to Favorites";
 const char *Vp_File_Chooser::all_files_label = "All Files (*)";
 const char *Vp_File_Chooser::custom_filter_label = "Custom Filter";
+const char *Vp_File_Chooser::commentLabels_label = "Column labels are included in the header";
+const char *Vp_File_Chooser::commentLabels_tooltip = 
+  "Column Labels are included in the last line of the \nheader and begin with a comment character";
 const char *Vp_File_Chooser::delimiter_label = "Delimiter:";
 const char *Vp_File_Chooser::existing_file_label = "Please choose an existing file!";
 const char *Vp_File_Chooser::favorites_label = "Favorites";
@@ -54,7 +57,7 @@ const char *Vp_File_Chooser::new_directory_label = "New Directory?";
 const char *Vp_File_Chooser::new_directory_tooltip = "Create a new directory.";
 const char *Vp_File_Chooser::preview_label = "Preview";
 const char *Vp_File_Chooser::save_label = "Save";
-const char *Vp_File_Chooser::selection_label = "Write Selection Info";
+const char *Vp_File_Chooser::selection_label = "Write Selection Information";
 const char *Vp_File_Chooser::selection_tooltip = "Include selection information with data";
 const char *Vp_File_Chooser::show_label = "Show ext:";
 Fl_File_Sort_F *Vp_File_Chooser::sort = fl_numericsort;
@@ -78,6 +81,7 @@ Vp_File_Chooser::Vp_File_Chooser(
   // Initialize to ASCII mode with no delimiter
   isAscii_ = 1;
   delimiter_char_ = ' ';
+  doCommentLabels_ = 0;
   
   // Define pointer to the main double window
   Fl_Double_Window* w;
@@ -277,14 +281,27 @@ Vp_File_Chooser::Vp_File_Chooser(
       // Write Selection Info check button
       { 
         Fl_Check_Button* o = selectionButton = 
-          // new Fl_Check_Button( 85, 380, 160, 20, "Include selection info");
-          new Fl_Check_Button( 85, 410, 160, 20, "Include selection info");
+          new Fl_Check_Button( 10, 405, 160, 20, "Write selection information");
+          // new Fl_Check_Button( 85, 410, 160, 20, "Write selection info");
         o->down_box( FL_DOWN_BOX);
         if( writeSelectionInfo_ == 0) o->value( 0);
         else o->value( 1);
         o->callback( (Fl_Callback*) cb_selectionButton);
         o->tooltip( selection_tooltip);
         selectionButton->label( selection_label);
+      }
+
+      // Write Comment Column Labels check button
+      { 
+        Fl_Check_Button* o = commentLabelsButton = 
+          new Fl_Check_Button( 10, 425, 160, 20, "Column labels are included in the header");
+          // new Fl_Check_Button( 165, 410, 160, 20, "Comment Labels");
+        o->down_box( FL_DOWN_BOX);
+        if( doCommentLabels_ == 0) o->value( 0);
+        else o->value( 1);
+        o->callback( (Fl_Callback*) cb_commentLabelsButton);
+        o->tooltip( commentLabels_tooltip);
+        commentLabelsButton->label( commentLabels_label);
       }
 
       // Group with 'OK' and 'Cancel' buttons at bottom right
@@ -491,19 +508,23 @@ char Vp_File_Chooser::delimiter_char()
 }
 
 //*****************************************************************************
-// Vp_File_Chooser::delimiter_hide() -- Hide the delimiter box
+// Vp_File_Chooser::delimiter_hide() -- Hide the delimiter box and comment 
+// labels button
 void Vp_File_Chooser::delimiter_hide()
 {
   delimiter_box->hide();
   delimiter_group->hide();
+  commentLabelsButton->hide();
 }
 
 //*****************************************************************************
-// Vp_File_Chooser::delimiter_deactivate() -- Show the delimiter box
+// Vp_File_Chooser::delimiter_deactivate() -- Show the delimiter box and comment 
+// labels button
 void Vp_File_Chooser::delimiter_show()
 {
   delimiter_box->show();
   delimiter_group->show();
+  commentLabelsButton->show();
 }
 
 //*****************************************************************************
@@ -589,6 +610,16 @@ void Vp_File_Chooser::directory( const char *directory_in)
 
   // If necessary, rescan the directory.
   if( shown()) rescan();
+}
+
+//*****************************************************************************
+// Vp_File_Chooser::doCommentLabels( doCommentLabels_in) -- Set mode for use 
+// of comment characters in line of column labels.
+void Vp_File_Chooser::doCommentLabels( int doCommentLabels_in)
+{
+  doCommentLabels_ = doCommentLabels_in;
+  // prefs_.set( "doCommentLabels", doCommentLabels_);
+  // commentLabelsButton->value( doCommentLabels_ != 0);
 }
 
 //*****************************************************************************
@@ -831,10 +862,12 @@ void Vp_File_Chooser::isAscii( int isAscii_in)
   if( isAscii_ != 1) {
     delimiter_box->hide();
     delimiter_group->hide();
+    commentLabelsButton->hide();
   }
   else {
     delimiter_box->show();
     delimiter_group->show();
+    commentLabelsButton->show();
   }
 }
 
@@ -1915,15 +1948,9 @@ void Vp_File_Chooser::fileTypeCB()
   // Set the pattern
   filter( pattern_);
 
-  // If this isn't ASCII, turn off delimiter group
-  if( isAscii_ != 1) {
-    delimiter_box->hide();
-    delimiter_group->hide();
-  }
-  else {
-    delimiter_box->show();
-    delimiter_group->show();
-  }
+  // If this isn't ASCII, turn off delimiter group and comment labels button
+  if( isAscii_ != 1) delimiter_hide();
+  else delimiter_show();
   
   // If necessary, rescan the directory.
   if( shown()) rescan();
@@ -2022,6 +2049,26 @@ void Vp_File_Chooser::cb_cancelButton_i( Fl_Button*, void*)
   fileBrowser->deselect();
   Fl::remove_timeout( (Fl_Timeout_Handler) previewCB, this);
   window->hide();
+}
+
+//*****************************************************************************
+// Vp_File_Chooser::cb_commentLabelsButton( o, v) -- Wrapper for the callback 
+// method for the 'Comment Column labels' checkbox.  NOTE: The level of nesting 
+// in calls to parent() is important, and must reflect the actual level of 
+// nesting of the Fl_Check_Button object in the Vp_File_Chooser object!
+void Vp_File_Chooser::cb_commentLabelsButton( Fl_Check_Button* o, void* v)
+{
+  ( (Vp_File_Chooser*) 
+    (o->parent()->parent()->user_data()))->cb_commentLabelsButton_i( o, v);
+}
+
+//*****************************************************************************
+// Vp_File_Chooser::cb_commentLabelsButton_i( *. *) -- Callback method for the 
+// 'Comment Column Labels' checkbox.  
+void Vp_File_Chooser::cb_commentLabelsButton_i( Fl_Check_Button*, void*)
+{
+  if( commentLabelsButton->value()) doCommentLabels( 1);
+  else doCommentLabels( 0);
 }
 
 //*****************************************************************************

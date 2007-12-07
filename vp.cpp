@@ -42,6 +42,7 @@
 //   create_broadcast_group() -- Create special panel under tabs
 //   manage_plot_window_array( *o, *u) -- Manage plot window array
 //   make_help_view_window( *o) -- Make Help View window
+//   textsize_help_view_widget( *o, *u) -- Change help text size
 //   close_help_window( *o, *u -- Help View window callback
 //   make_main_menu_bar() -- Create main menu bar (unused)
 //   step_help_view_widget( *o, *u) -- Step through the 'Help|Help' window.
@@ -58,7 +59,7 @@
 //   reset_selection_arrays() -- Reset selection arrays
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  30-NOV-2007
+// Modified: P. R. Gazis  06-DEC-2007
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -156,6 +157,7 @@ void create_broadcast_group();
 void manage_plot_window_array( Fl_Widget *o, void* user_data);
 void make_main_menu_bar();
 void make_help_view_window( Fl_Widget *o);
+void textsize_help_view_widget( Fl_Widget *o, void* user_data);
 void close_help_window( Fl_Widget *o, void* user_data);
 void step_help_view_widget( Fl_Widget *o, void* user_data);
 void make_global_widgets();
@@ -901,31 +903,52 @@ void make_help_view_window( Fl_Widget *o)
   
   // Create Help|Help window
   Fl::scheme( "plastic");  // optional
-  help_view_window = new Fl_Window( 600, 400, "Viewpoints Help");
+  help_view_window = new Fl_Window( 600, 500, "Viewpoints Help");
   help_view_window->begin();
   help_view_window->selection_color( FL_BLUE);
   help_view_window->labelsize( 10);
 
   // Define Fl_Help_View widget
-  help_view_widget = new Fl_Help_View( 5, 5, 590, 350, "");
+  help_view_widget = new Fl_Help_View( 5, 5, 590, 450, "");
   (void) help_view_widget->load( "vp_help_manual.htm");
   help_view_widget->labelsize( 14);
+  help_view_widget->textsize( 14);
   help_topline = help_view_widget->topline();
+
+  // Invoke callback functions to change text size
+  Fl_Box* fontsize_box = new Fl_Box( 15, 465, 60, 25, "Font Size:"); 
+  fontsize_box->align( FL_ALIGN_CENTER);
+  Fl_Button* shrink_font = new Fl_Button( 80, 465, 25, 25, "-");
+  shrink_font->callback( (Fl_Callback*) textsize_help_view_widget, (void*) -2);
+  Fl_Button* grow_font = new Fl_Button( 110, 465, 25, 25, "+");
+  grow_font->callback( (Fl_Callback*) textsize_help_view_widget, (void*) 2);
   
   // Invoke callback function to move through help_view widget
-  Fl_Button* back = new Fl_Button( 325, 365, 70, 30, "&Back");
-  back->callback( (Fl_Callback*) step_help_view_widget, (void*) -60);
-  Fl_Button* fwd = new Fl_Button( 400, 365, 70, 30, "&Fwd");
-  fwd->callback( (Fl_Callback*) step_help_view_widget, (void*) 60);
+  int help_height = help_view_widget->h();
+  help_height = 3*help_height/4;
+  Fl_Button* back = new Fl_Button( 325, 465, 70, 25, "&Back");
+  back->callback( (Fl_Callback*) step_help_view_widget, (void*) -help_height);
+  Fl_Button* fwd = new Fl_Button( 400, 465, 70, 25, "&Fwd");
+  fwd->callback( (Fl_Callback*) step_help_view_widget, (void*) help_height);
 
   // Invoke callback function to close window
-  Fl_Button* close = new Fl_Button( 500, 365, 70, 30, "&Close");
+  Fl_Button* close = new Fl_Button( 500, 465, 70, 25, "&Close");
   close->callback( (Fl_Callback*) close_help_window, help_view_window);
 
   // Done creating the 'Help|Help' window
   help_view_window->resizable( help_view_window);
   help_view_window->end();
   help_view_window->show();
+}
+
+//***************************************************************************
+// textsize_help_view_window( *o, *user_data) -- Step through the 'Help|Help' 
+// window.
+void textsize_help_view_widget( Fl_Widget *o, void* user_data)
+{
+  int help_textsize = help_view_widget->textsize() + (int) user_data;
+  if( help_textsize < 8) help_textsize=8;
+  help_view_widget->textsize( help_textsize);
 }
 
 //***************************************************************************

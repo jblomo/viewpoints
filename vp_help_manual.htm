@@ -11,7 +11,69 @@
 <h1><em>viewpoints</em> Help</h1>
 </center>
 
+
+<h3>Contents</h3>
+
+<a href="#Overview">Overview</a><br>
+<a href="#Data_Formats">Data Formats and Organization</a><br>
+<a href="#Usage">Usage</a><br>
+<a href="#Main_Menu_Bar">Main Menu Bar</a><br>
+<a href="#Mouse_Gestures">Mouse Gestures</a><br>
+<a href="#Control_Panels">Control Panels</a><br>
+&nbsp;&nbsp;&nbsp;<a href="#Plot_Window_Controls">Plot Window Controls</a><br>
+&nbsp;&nbsp;&nbsp;<a href="#Brush_Controls">Brush Controls</a><br>
+&nbsp;&nbsp;&nbsp;<a href="#Main_Control_Panel">Main Control Panel</a><br>
+<a href="#Normalization_Schemes">Normalization Schemes</a><br>
+<a href="#Command_Shortcuts_In_Plot_Windows">Command Shortcuts in Plot Windows</a><br>
+<a href="#Compatibility_Issues">Compatibility Issues</a><br>
+<br>
+
 <hr>
+
+<a name="Overview"></a>
+<h3>Overview</h3>
+
+<p>
+<em><b>Viewpoints</b></em> is a high-performance visualization and analysis 
+tool for large, complex, multidimensional data sets.  It generates multiple 
+linked scatterplots (millions of points in 2D & 3D) with overplotting and 
+brushing.  It supports histograms with dynamically adjustable binwidth. It 
+supports several common types of normalization (linear, logarithmic, logistic, 
+trimmed, etc), equalization (gaussian, uniform, etc), and rudimentary outlier 
+detection and forward search.
+</p>
+
+<p>
+<em><b>Viewpoints</b></em> is designed to take advantage of the hardware 
+accelerated graphics and fast processors on modern high-end workstations and 
+laptops.  It is highly interactive, so that most parameters are modifiable in 
+real time with immediate visual feedback. It allows interactive exploration 
+of data in 100 or more dimensions with sample counts, or the number of points, 
+exceeding 10e6 (up to 10e8 depending on available RAM). 
+</p>
+
+<a name="Data_Formats"></a>
+<h3>Data Formats and Organization</h3>
+
+<p>
+<em>Viewpoints</em> can read data from ASCII or binary files.  ASCII files
+consist of zero or more <em>header lines</em> (indicated by comment 
+characters '!#%') followed by a <em>data block</em> that consists of a line 
+of column labels followed by successive lines of data.  The column labels 
+and data words can be delimited by a user-defined character.  Note that the
+line of column labels is <em>not</em> preceded by a comment character unless
+it is specified by the user to be part of the header.
+</p>
+
+<p>
+Binary files consist of a single record containing column information 
+followed by a block of binary words in column- or row-major organization.
+The default is column-major organization, in which successive words 
+represent successive values on a row.
+</p>
+
+<a name="Usage"></a>
+<h3>Usage</h3>
 
 <p>
 When <em><b>viewpoints</b></em> is invoked from the <em><b>vp</b></em> icon, 
@@ -34,6 +96,7 @@ It is in this feature that the power of <em><b>viewpoints</b></em> resides.
 Rather than attempt to describe it in detail, we encourage you to experiment.
 </p>
 
+<a name="Main_Menu_Bar"></a>
 <h3>Main menu bar commands</h3>
 
 <p>
@@ -113,7 +176,7 @@ The following commands are available from the main menu bar.
 </table>
 </p>
 
-
+<a name="Mouse_Gestures"></a>
 <h3>Mouse Gestures in plot windows:</h3>
 
 <p>
@@ -142,6 +205,7 @@ when the window manager focus is on a plot window.
 </p>
 
 
+<a name="Control_Panels"></a>
 <h3>Controls in the control panels</h3>
 
 <p>
@@ -152,6 +216,7 @@ these controls should be intuitive. Some of these controls are described
 below.
 </p>
 
+<a name="Plot_Window_Controls"></a>
 <table>
 <tr><td colspan="2"><b>Tabbed control panels for <em>windows</em></td></tr>
 <tr>
@@ -253,6 +318,7 @@ below.
 </table>
 </p>
 
+<a name="Brush_Controls"></a>
 <table>
 <tr><td colspan="2"><b>Tabbed control panels for <em>brushes</em></td></tr>
 <tr>
@@ -288,6 +354,7 @@ below.
 </table>
 </p>
 
+<a name="Main_Control_Panel"></a>
 <p>
 <table>
 <tr><td colspan="2"><b>Main control panel</td></tr>
@@ -318,6 +385,7 @@ below.
 </table>
 </p>
 
+<a name="Normalization_Schemes"></a>
 <h3>Normalization Schemes</h3>
 
 <p>Several different normalization or scaling schemes are available.
@@ -376,6 +444,7 @@ These are chosen on a per-axis basis.
 </table>
 </p>
 
+<a name="Command_Shortcuts_In_Plot_Windows"></a>
 <h3>Keys & Buttons in plot windows:</h3>
 
 <p>
@@ -427,6 +496,7 @@ it if you could acknowledge this project in the relevant publications.
 Thank you.
 </p>
 
+<a name="Compatibility_Issues"></a>
 <p>
 <b>Compatibility:</b> The Linux version has been tested on Fedora
 Core 4 while the MacOS versions have been tested on MacOS 10.4.8 on G4,

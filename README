@@ -1,7 +1,7 @@
 viewpoints -- Fast interactive linked plotting of large multivariate data sets.
 
-Version: 2.0.1  (Build 207)
-Date: 30 Nov 2007
+Version: 2.0.2  (Build 208)
+Date: 05 Dec 2007
 
 
 Overview:
@@ -30,9 +30,21 @@ Installation:
 Unpack these files into a target directory, then either click on the 'vp' 
 icon or run the code from the command line as described below.
 
+Data Organization and Format:
+
+Viewpoints can read and write data from ASCII or binary files.  ASCII files 
+consist of zero of more header lines, indicated by comment characters '!#&%', 
+followed by a data block.  The data block is assumed to consist of a line of 
+column labels followed by successive lines of data.  Words in the data block 
+can be delimited by whitespace or some user-defined character.  Binary files
+conists of a line of column label information followed by a block of binary
+data in row- or column-major format.  Note that the line of column labels 
+must NOT be preceded by a comment character unless they are specified by the
+user to be part of the header.
+
 Usage:
 
-In its current form (Version 2.0, build 199) 'viewpoints' is run either by 
+In its current form (Version 2.0.2, build 208) 'viewpoints' is run either by 
 clicking on the 'vp' icon or from the command line in the directory in which 
 it has been installed or to which a path is available.  When viewpoints is 
 run from the icon, it will come up with an array of default data.  When it is
@@ -306,7 +318,7 @@ randomize               Randomize
 
 Notes and warnings:
 
-The current release of the 'viewpoints' package (version 2.0, build 199) is 
+The current release of the 'viewpoints' package (version 2.0.2, build 208) is 
 still a development version.  While every effort has been make to ensure that 
 it will work -- or fail gracefully if it doesn't -- it still has many rough 
 edges.  Some of these are described below.  These issues will all be 
@@ -318,8 +330,8 @@ may need to be refreshed.  This can be accomplished by resizing it.
 2) There is, as yet, no 'print' command.  Needless to say, this capability 
 will be added as soon as possible!
 
-3) The Load and Save configuration commands only save the most basic of
-session information.
+3) The Load and Save Configuration commands are a comparatively new feature,
+only save basic session information, and may not work on every system.
 
 Please send any questions, bug reports, feature requests, and/or praise to: 
 

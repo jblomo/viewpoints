@@ -252,6 +252,8 @@ class FL_EXPORT Vp_File_Chooser
     // Button-related callbacks, grouped by button
     static void cb_cancelButton( Fl_Button*, void*);
     void cb_cancelButton_i( Fl_Button*, void*);
+    static void cb_commentLabelsButton( Fl_Check_Button*, void*);
+    void cb_commentLabelsButton_i( Fl_Check_Button*, void*);
     static void cb_delimiterButtons( Fl_Round_Button*, void* v);
     void cb_delimiterButtons_i( Fl_Round_Button*, void*);
     static void cb_delimiterInput( Fl_Input* pButton, void*);
@@ -289,6 +291,7 @@ class FL_EXPORT Vp_File_Chooser
     int type_;
     int isAscii_;
     int writeSelectionInfo_;
+    int doCommentLabels_;
 
     // FLTK windows, boxes, and fields
     Fl_File_Browser *favList;
@@ -339,6 +342,8 @@ class FL_EXPORT Vp_File_Chooser
     void delimiter_show();
     char* directory();
     void directory( const char *directory_in);
+    void doCommentLabels( int doCommentLabels_in);
+    int doCommentLabels() const { return doCommentLabels_;};
     char* escape_sequences_insert( char *orig);
     char* escape_sequences_remove( char *orig);
     void fileTypeMenu_activate();
@@ -384,10 +389,13 @@ class FL_EXPORT Vp_File_Chooser
     Fl_Button *newButton;   // New folder
     Fl_Check_Button *previewButton;   // Preview box checkbutton
     Fl_Check_Button *selectionButton;   // Selection State checkbutton
+    Fl_Check_Button *commentLabelsButton;  // Comment column label line
 
     // Public static variables to hold various labels and the sort mode
     static const char *add_favorites_label;
     static const char *all_files_label;
+    static const char *commentLabels_label;
+    static const char *commentLabels_tooltip;
     static const char *custom_filter_label;
     static const char *delimiter_label;
     static const char *existing_file_label;

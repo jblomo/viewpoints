@@ -147,6 +147,7 @@ class Data_File_Manager
     int isAsciiInput, isAsciiOutput;
     int doAppend, doMerge, writeAllData_;
     int readSelectionInfo_, writeSelectionInfo_;
+    int doCommentLabels_;
     int isColumnMajor;
     int isSavedFile_;
 

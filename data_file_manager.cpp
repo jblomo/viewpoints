@@ -19,7 +19,7 @@
 // Purpose: Source code for <data_file_manager.h>
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  30-NOV-2007
+// Modified: P. R. Gazis  06-DEC-2007
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -52,8 +52,8 @@ const bool include_line_number = false; // MCL XXX This should be an option
 Data_File_Manager::Data_File_Manager() : delimiter_char_( ' '), 
   bad_value_proxy_( 0.0), isAsciiInput( 1), isAsciiOutput( 0), 
   readSelectionInfo_( 0), doAppend( 0), doMerge( 0), 
-  writeAllData_( 1), writeSelectionInfo_( 0), isColumnMajor( 0),
-  isSavedFile_( 0)
+  writeAllData_( 1), writeSelectionInfo_( 0), doCommentLabels_( 0),
+  isColumnMajor( 0), isSavedFile_( 0)
 {
   sDirectory_ = ".";  // Default pathname
   initialize();
@@ -171,11 +171,13 @@ int Data_File_Manager::findInputFile()
   if( file_chooser->isAscii() != 0) isAsciiInput = 1;
   else isAsciiInput = 0;
   delimiter_char_ = file_chooser->delimiter_char();
+  if( file_chooser->doCommentLabels() != 0) doCommentLabels_ = 1;
+  else doCommentLabels_ = 0;
   
   // Load the inFileSpec string
   inFileSpec.assign( (string) cInFileSpec);
   if( isAsciiInput == 1) 
-    cout << "Data_File_Manager::findInputFile: Reading ASCII data from <";
+    cout << "Data_File_Manager::inputFile: Reading ASCII data from <";
   else 
     cout << "Data_File_Manager::findInputFile: Reading binary data from <";
   cout << inFileSpec.c_str() << ">" << endl;
@@ -609,9 +611,12 @@ int Data_File_Manager::read_ascii_file_with_headers()
   // of default column labels.  Otherwise examine the LASTHEADERLINE buffer 
   // to extract column labels.
   int nLabels = 0;
-  if( nHeaderLines == 0 || lastHeaderLine.length() == 0)
-    nLabels = extract_column_labels( line, 1);
-  else nLabels = extract_column_labels( lastHeaderLine, 0);
+  if( doCommentLabels_ == 0) nLabels = extract_column_labels( line, 0);
+  else {
+    if( nHeaderLines == 0 || lastHeaderLine.length() == 0)
+      nLabels = extract_column_labels( line, 1);
+    else nLabels = extract_column_labels( lastHeaderLine, 0);
+  }
 
   // If there were problems, close file and quit
   if( nLabels < 0) {
@@ -645,7 +650,8 @@ int Data_File_Manager::read_ascii_file_with_headers()
 
   // Loop: Read successive lines from the file
   int nSkip = 0, i = 0;
-  unsigned uFirstLine = 1;
+  unsigned uFirstLine = 0;
+  if( doCommentLabels_) uFirstLine = 1;
   int nTestCycle = 0, nUnreadableData = 0;
   while( !inFile.eof() && i<npoints) {
   
@@ -1125,6 +1131,8 @@ int Data_File_Manager::findOutputFile()
   delimiter_char_ = file_chooser->delimiter_char();
   if( file_chooser->writeSelectionInfo() != 0) writeSelectionInfo_ = 1;
   else writeSelectionInfo_ = 0;
+  if( file_chooser->doCommentLabels() != 0) doCommentLabels_ = 1;
+  else doCommentLabels_ = 0;
 
   // Load outFileSpec
   int iResult = 0;
@@ -1207,8 +1215,10 @@ int Data_File_Manager::write_ascii_file_with_headers()
     int nvars_out = include_line_number?nvars-1:nvars;
 
     // Loop: Write column labels to the header
+    char first_char = ' ';
+    if( doCommentLabels_) first_char = '!';
     for( int i=0; i < nvars_out; i++ ) {
-      if( i == 0) os << "!" << setw( 12) << column_labels[ i];
+      if( i == 0) os << first_char << setw( 12) << column_labels[ i];
       else os << delimiter_char_ << " " << setw( 13) << column_labels[ i];
       // else os << " " << setw( 13) << column_labels[ i];
     }
