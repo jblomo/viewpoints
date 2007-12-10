@@ -19,7 +19,7 @@
 // Purpose: Source code for <data_file_manager.h>
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  06-DEC-2007
+// Modified: P. R. Gazis  10-DEC-2007
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -38,6 +38,9 @@
 
 // Set static data members for class Data_File_Manager::
 string Data_File_Manager::SELECTION_LABEL = "SELECTION_BY_VP";
+Fl_Window* Data_File_Manager::edit_labels_window = NULL;
+Fl_Check_Browser* Data_File_Manager::edit_labels_widget = NULL;
+int Data_File_Manager::needs_restore_panels_ = 0;
 
 // Define and set maximums length of header lines and number of lines in the 
 // header block
@@ -74,6 +77,7 @@ void Data_File_Manager::initialize()
   writeAllData_ = 1;
   writeSelectionInfo_ = 0;
   isSavedFile_ = 0;
+  needs_restore_panels_ = 0;
 
   isColumnMajor = 1;
   nSkipHeaderLines = 0;  // Number of header lines to skip
@@ -271,7 +275,7 @@ int Data_File_Manager::load_data_file()
     return -1;
   }
   else {
-    cout << "Loaded " << npoints
+    cout << "Data_File_Manager::load_data_file: Loaded " << npoints
          << " samples with " << nvars << " fields" << endl;
   }
   
@@ -335,19 +339,12 @@ int Data_File_Manager::load_data_file()
     old_column_labels.erase( old_column_labels.begin(), old_column_labels.end());
   }
 
-  // DIAGNOSTIC_20
-  // cout << "DIAGNOSTIC_20: About to resize_and_preserve( " << nvars
-  //      << ", " << npoints << ")" << endl;
-  
   // If we read a different number of points then we anticipated, we resize 
   // and preserve the main data array.  Note this can take lot of time and memory
   // temporarily.  XXX it would be better to handle the growth/shrinkage of this
   // array while reading.
   if( npoints != npoints_cmd_line)
     points.resizeAndPreserve( nvars, npoints);
-
-  // DIAGNOSTIC_21
-  // cout << "DIAGNOSTIC_21: About to resize_global_arrays()" << endl;
 
   // KLUDGE: If this is a merge, save current selection information in 
   // READ_SELECTED so it won't be destroyed by the resize_global_arrays().
@@ -360,9 +357,6 @@ int Data_File_Manager::load_data_file()
   // allocate and/or reallocateResize the other global arrays.  NOTE: This 
   // will invoke reset_selection_arrays()
   resize_global_arrays();
-
-  // DIAGNOSTIC_22
-  // cout << "DIAGNOSTIC_22: About to load READ_SELECTED( 0, blitz::Range(" << npoints-1 << "))" << endl;
 
   // If this selction information was found or this was a merge operation, 
   // load saved selections in READ_SELECTED into the SELECTED array.
@@ -382,8 +376,8 @@ int Data_File_Manager::load_data_file()
     column_labels.erase( pTarget);
   }
 
-  // DIAGNOSTIC_23
-  // cout << "DIAGNOSTIC_23: Done loading data" << endl;
+  // Refresh edit window, if it exists.
+  refresh_edit_column_labels();
 
   // Set saved file flag and report success
   if( doAppend > 0 | doMerge > 0) isSavedFile_ = 0;
@@ -624,12 +618,6 @@ int Data_File_Manager::read_ascii_file_with_headers()
     return 1;
   }
 
-  // DIAGNOSTIC_10
-  // cout << "DIAGNOSTIC_10: nvars, nLabels, readSelectionInfo_ ( "
-  //      << nvars << ", " << nLabels << ", " << readSelectionInfo_ << ")" << endl;
-
-  // STEP 4: Allocate memory and read the data block
-
   // Now we know the number of variables, NVARS, so if we know the number of 
   // points (e.g. from the command line, we can size the main points array 
   // once and for all, and not waste memory.
@@ -644,10 +632,6 @@ int Data_File_Manager::read_ascii_file_with_headers()
     else points.resize( nvars-1, npoints);
   }
   
-  // DIAGNOSTIC_11
-  // cout << "DIAGNOSTIC_11: points.resize( " << points.rows()
-  //      << ", " << points.columns() << ")" << endl;
-
   // Loop: Read successive lines from the file
   int nSkip = 0, i = 0;
   unsigned uFirstLine = 0;
@@ -674,10 +658,6 @@ int Data_File_Manager::read_ascii_file_with_headers()
     // If the delimiter character is not a tab, replace tabs with spaces
     if( delimiter_char_ != '\t')
       replace( line.begin(), line.end(), '\t', ' ');
-
-    // DIAGNOSTIC_12, DIAGNOSTIC 13A
-    // cout << "  DIAGNOSTIC_12[ " << i << "] (" << line.c_str() << ")" << endl;
-    // cout << "   DIAGNOSTIC_13: ";
 
     // Loop: Insert the string into a stream and read it
     std::stringstream ss( line); 
@@ -725,15 +705,10 @@ int Data_File_Manager::read_ascii_file_with_headers()
           ss.clear();
         }
         else points(j,i) = (float) x;
-
-        // DIAGNOSTIC_13B
-        // cout << "  point( " << j << ") <" << points( j, i) << ">";
       }
       else {
         if( !ss) ss.clear();
         else read_selected( i) = (int) x;
-        // DIAGNOSTIC_13C
-        // cout << "  selection <" << read_selected( i) << ">";
       }
       
       // Check for unreadable data and flag this line to be skipped.  NOTE:
@@ -748,9 +723,6 @@ int Data_File_Manager::read_ascii_file_with_headers()
         break;
       }
     }
-
-    // DIAGNOSTIC_13
-    // cout << endl;
 
     // Loop: Check for bad data flags and flag this line to be skipped
     for( int j=0; j<nvars; j++) {
@@ -1333,6 +1305,149 @@ int Data_File_Manager::write_binary_file_with_headers()
 }
 
 //***************************************************************************
+// Data_File_Manager::edit_column_labels( *o) -- Static function to handle
+// Edit column labels
+void Data_File_Manager::edit_column_labels( Fl_Widget *o)
+{
+  // DIAGNOSTIC
+  cout << endl << "DIAGNOSTIC: Called Data_File_Manager::edit_column_labels" << endl;
+
+  // edit_column_labels_i( o);
+  // ( (Data_File_Manager*)
+  //  (o->parent()->parent()->user_data()))->edit_column_labels_i( o);
+  // ( (Data_File_Manager*)
+  //  (o->parent()->parent()))->edit_column_labels_i( o);
+  ( (Data_File_Manager*)
+   (o->parent()))->edit_column_labels_i( o);
+}
+
+//***************************************************************************
+// Data_File_Manager::edit_column_labels_i( *o) -- Edit column labels
+void Data_File_Manager::edit_column_labels_i( Fl_Widget *o)
+{
+  if( edit_labels_window != NULL) edit_labels_window->hide();
+
+  // Create Tools|Edit Column Labels window
+  Fl::scheme( "plastic");  // optional
+  edit_labels_window = new Fl_Window( 250, 305, "Edit Column Labels");
+  edit_labels_window->begin();
+  edit_labels_window->selection_color( FL_BLUE);
+  edit_labels_window->labelsize( 10);
+  
+  // Write warning in box at top of window
+  Fl_Box* warningBox = new Fl_Box( 5, 5, 240, 20);
+  warningBox->label( "Warning: this will reset axes \nselections, and scaling");
+  warningBox->align( FL_ALIGN_INSIDE|FL_ALIGN_LEFT);
+
+  // Set an invisible box to control resize behavior
+  Fl_Box *box = new Fl_Box( 5, 35, 240, 220);
+  box->box( FL_NO_BOX);
+  // box->box( FL_ROUNDED_BOX);
+  edit_labels_window->resizable( box);
+
+  // Define Fl_Check_Browser widget
+  edit_labels_widget = new Fl_Check_Browser( 5, 35, 240, 220, "");
+  edit_labels_widget->labelsize( 14);
+  edit_labels_widget->textsize( 12);
+  
+  // Load column labels into browser
+  refresh_edit_column_labels();
+
+  // Invoke callback function to delete labels
+  Fl_Button* delete_button = new Fl_Button( 10, 270, 100, 25, "&Delete labels");
+  delete_button->callback( (Fl_Callback*) delete_labels, edit_labels_widget);
+
+  // Invoke callback function to quit and close window
+  Fl_Button* quit = new Fl_Button( 160, 270, 70, 25, "&Quit");
+  quit->callback( (Fl_Callback*) close_edit_labels_window, edit_labels_window);
+
+  // Done creating the 'Tools|Edit Column_Labels' window.  
+  edit_labels_window->end();
+  // edit_labels_window->set_modal();   // This window shouldn't be modal
+  edit_labels_window->show();
+}
+
+//***************************************************************************
+// Data_File_Manager::refresh_edit_column_labels() -- Make sure edit window
+// exists, then refresh list of column labels
+void Data_File_Manager::refresh_edit_column_labels()
+{
+  if( edit_labels_window == NULL) return;
+  edit_labels_widget->clear();
+  for( int i=0; i<nvars; i++)
+    edit_labels_widget->add( column_labels[ i].c_str());
+}
+
+//***************************************************************************
+// Data_File_Manager::delete_labels( *o, *user_data) -- Callback to delete
+// labels
+void Data_File_Manager::delete_labels( Fl_Widget *o, void* user_data)
+{
+  // DIAGNOSTIC
+  cout << "Data_File_Manager::delete_labels: checked "
+       << edit_labels_widget->nchecked() << "/"
+       << edit_labels_widget->nitems() << " items" << endl;
+  for( int i=0; i<nvars; i++) {
+    cout << "Label[ " << i << "]: (" << column_labels[i] << ") ";
+    if( edit_labels_widget->checked(i+1)) cout << "CHECKED";
+    cout << endl;
+  }
+
+  // If nothing was checked then quit
+  int nChecked = edit_labels_widget->nchecked();
+  int nRemain = nvars - nChecked;
+  if( nChecked <= 0) return;
+  if( nRemain <=1) {
+    make_confirmation_window(
+      "WARNING: Attempted to delete too many columns", 1);
+    return;
+  }
+
+  // Move and resize data
+  blitz::Range NPOINTS( 0, npoints-1);
+  int ivar = 0;
+  for( int i=0; i<nvars; i++) {
+    if( edit_labels_widget->checked(i+1) <= 0) {
+      points( ivar, NPOINTS) = points( i, NPOINTS);
+      ivar++;
+    }
+  }
+  nvars = ivar;
+  points.resizeAndPreserve( nvars, npoints);
+
+  // Update column labels
+  ivar = 0;
+  for( int i=0; i<column_labels.size(); i++) {
+    if( edit_labels_widget->checked(i+1) <= 0) {
+      column_labels[ ivar] = column_labels[ i];
+      ivar++;
+    }
+  }
+  column_labels.resize( ivar);
+  edit_labels_widget->clear();
+  for( int i=0; i<nvars; i++)
+    edit_labels_widget->add( column_labels[ i].c_str());
+
+  // Set flag so the idle callback, cb_manage_plot_window_array, in MAIN 
+  // will know to do a Restore Panels operation!
+  needs_restore_panels_ = 1;
+
+  // DIAGNOSTIC
+  cout << "Data_File_Manager::delete_labels: finished with "
+       << "needs_restore_panels (" << needs_restore_panels_ << ")" << endl;
+}
+
+//***************************************************************************
+// Data_File_Manager::close_edit_labels_window( *o, *user_data) -- Callback 
+// function to close the Edit Column Labels window.  It is assumed that a 
+// pointer to the window will be passed as USER_DATA.  WARNING: No error 
+// checking is done on USER_DATA!
+void Data_File_Manager::close_edit_labels_window( Fl_Widget *o, void* user_data)
+{
+  ((Fl_Window*) user_data)->hide();
+}
+
+//***************************************************************************
 // Data_File_Manager::remove_trivial_columns -- Examine an array of data and 
 // remove columns for which all values are identical.  Part of the read 
 // process.
@@ -1464,18 +1579,19 @@ void Data_File_Manager::create_default_data( int nvars_in)
 
   // Resize data array to avoid the madening frustration of segmentation 
   // errors!  Important!
-  npoints = 2;
+  npoints = 3;
   points.resize( nvars, npoints);
 
   // Loop: load each variable with 0 and 1.  These two loops are kept separate
   // for clarity and to facilitate changes
   for( int i=0; i<nvars; i++) {
     points( i, 0) = 0.0;
-    points( i, 1) = 1.0;
+    points( i, 1) = 0.5;
+    points( i, 2) = 1.0;
   }
 
   // Resize global arrays
-  resize_global_arrays ();
+  resize_global_arrays();
 
   // Report results
   cout << "Generated default data with " << npoints 

@@ -41,6 +41,7 @@
 //   cb_main_control_panel( *o, *u); -- Callback for main control panel
 //   create_broadcast_group() -- Create special panel under tabs
 //   manage_plot_window_array( *o, *u) -- Manage plot window array
+//   cb_manage_plot_window_array( *o) -- Idle callback
 //   make_help_view_window( *o) -- Make Help View window
 //   textsize_help_view_widget( *o, *u) -- Change help text size
 //   close_help_window( *o, *u -- Help View window callback
@@ -59,7 +60,7 @@
 //   reset_selection_arrays() -- Reset selection arrays
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  06-DEC-2007
+// Modified: P. R. Gazis  10-DEC-2007
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -155,6 +156,7 @@ void create_brushes( int w_x, int w_y, int w_w, int w_h);
 void brushes_tab_cb();
 void create_broadcast_group();
 void manage_plot_window_array( Fl_Widget *o, void* user_data);
+void cb_manage_plot_window_array( void* o);
 void make_main_menu_bar();
 void make_help_view_window( Fl_Widget *o);
 void textsize_help_view_widget( Fl_Widget *o, void* user_data);
@@ -259,7 +261,7 @@ void make_help_about_window( Fl_Widget *o)
   output_box->align(FL_ALIGN_TOP|FL_ALIGN_CENTER|FL_ALIGN_INSIDE);
   output_box->copy_label(about_string.c_str());
 
-  // Invoke universal callback function to close window
+  // Invoke a multi-purpose callback function to close window
   Fl_Button* close = new Fl_Button( 200, 170, 60, 25, "&Close");
   close->callback( (Fl_Callback*) close_help_window, about_window);
 
@@ -452,7 +454,7 @@ void manage_plot_window_array( Fl_Widget *o, void* user_data)
   strcpy( userData, "");
   Fl_Menu_* pMenu_;
   Fl_Button* pButton;
-
+  
   // Define and set flags and state variables to control the number of plots 
   // to be preserved and whether or not to restore their settings
   int nplots_old = nplots;
@@ -589,11 +591,13 @@ void manage_plot_window_array( Fl_Widget *o, void* user_data)
     pws_y_save[ i] = pws[ i]->y();
     pws_w_save[ i] = pws[ i]->w();
     pws_h_save[ i] = pws[ i]->h();
-    cout << "  window[ " << i << "/" << nplots_save
-         << "]: ( " << pws_x_save[ i]
-         << ", " << pws_y_save[ i]
-         << ", " << pws_w_save[ i]
-         << ", " << pws_h_save[ i] << ")" << endl;
+    
+    // DIAGNOSTIC
+    // cout << "  window[ " << i << "/" << nplots_save
+    //      << "]: ( " << pws_x_save[ i]
+    //      << ", " << pws_y_save[ i]
+    //      << ", " << pws_w_save[ i]
+    //      << ", " << pws_h_save[ i] << ")" << endl;
   }
   
   // Save old axis and normalization information
@@ -771,11 +775,13 @@ void manage_plot_window_array( Fl_Widget *o, void* user_data)
       for( int i=0; i<nplots_save; i++) {
         pws[ i]->position( pws_x_save[ i], pws_y_save[ i]);
         pws[ i]->size( pws_w_save[ i], pws_h_save[ i]);
-        cout << "  window[ " << i << "/" << nplots_old
-             << "]: ( " << pws[ i]->x()
-             << ", " << pws[ i]->y()
-             << ", " << pws[ i]->w()
-             << ", " << pws[ i]->h() << ")" << endl;
+        
+        // DIAGNOSTIC
+        // cout << "  window[ " << i << "/" << nplots_old
+        //      << "]: ( " << pws[ i]->x()
+        //      << ", " << pws[ i]->y()
+        //      << ", " << pws[ i]->w()
+        //      << ", " << pws[ i]->h() << ")" << endl;
       }
     }
     
@@ -806,6 +812,27 @@ void manage_plot_window_array( Fl_Widget *o, void* user_data)
   
   // Create a master control panel to encompass all the tabs
   create_broadcast_group ();
+}
+
+//***************************************************************************
+// cb_manage_plot_window_array( o) -- Idle callback to see if the plot 
+// windows need to be refreshed.
+void cb_manage_plot_window_array( void* o)
+{
+  // Examine and set flags
+  if( dfm.needs_restore_panels() <= 0) return;
+  dfm.needs_restore_panels( 0);
+
+  // DIAGNOSTIC
+  cout << "MAIN::cb_manage_plot_window_array: DIAGNOSTIC "
+       << "manage_plot_window_array invoked via callback" << endl;
+
+  // NOTE: We need some way to revise the window scales.  Is there also
+  // some way to avoid chosing random axes from the reduced set?
+  
+  // KLUDGE: make manage_plot_window_array think it's called from a menu.  
+  // manage_plot_window_array( main_menu_bar, (void*) "REFRESH_WINDOWS");
+  manage_plot_window_array( main_menu_bar, (void*) "NEW_DATA");
 }
 
 //***************************************************************************
@@ -870,7 +897,10 @@ void make_main_menu_bar()
 
   // Add Tools menu items
   main_menu_bar->add( 
-    "Tools/Options       ", 0, 
+    "Tools/Edit Column Labels ", 0, 
+    (Fl_Callback *) dfm.edit_column_labels);
+  main_menu_bar->add( 
+    "Tools/Options            ", 0, 
     (Fl_Callback *) manage_plot_window_array, 0, FL_MENU_INACTIVE);
 
   // Add Help menu items
@@ -1182,7 +1212,8 @@ int load_state( Fl_Widget* o)
   file_chooser->fileTypeMenu_deactivate();
   file_chooser->delimiter_hide();
 
-  // Loop: wait until the file selection is done
+  // Loop: wait until the file selection is done.  NOTE: This version 
+  // doesn't work and is retained only for archival purposes
   // file_chooser->show();
   // while( file_chooser->shown()) Fl::wait();
   // cInFileSpec = file_chooser->value();   
@@ -1417,7 +1448,7 @@ int save_state( Fl_Widget* o)
     new Vp_File_Chooser( 
       cOutFileSpec, pattern, Vp_File_Chooser::CREATE, title);
   file_chooser->directory( cOutFileSpec);
-  file_chooser->isAscii( 1);
+  file_chooser->isAscii( 1, 1);
   file_chooser->fileTypeMenu_deactivate();
 
   // Loop: Select succesive filespecs until a non-directory is obtained
@@ -1682,7 +1713,8 @@ int main( int argc, char **argv)
     { 0, 0, 0, 0}
   };
 
-  // Initialize the data file manager, just in case
+  // Initialize the data file manager, just in case, even though this should
+  // already have been done by the constructor.
   dfm.initialize();
 
   // Loop: Invoke GETOPT_LONG to parse successive command-line arguments 
@@ -1927,6 +1959,7 @@ int main( int argc, char **argv)
   Fl::add_timeout(0.01, redraw_if_changing);
 
   // Enter the main event loop
+  Fl::add_idle( cb_manage_plot_window_array, 0);
   int result = Fl::run();
 
   gsl_rng_free( vp_gsl_rng);

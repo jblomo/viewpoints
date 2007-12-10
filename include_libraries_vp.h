@@ -25,7 +25,7 @@
 //   1) Add comments and get this code to run under Windows.
 //
 // Author: Creon Levit     2005-2006
-// Modified: P. R. Gazis   07-NOV-2007
+// Modified: P. R. Gazis   07-DEC-2007
 //***************************************************************************
 
 // Protection to make sure this header is not included twice
@@ -125,6 +125,7 @@
 #include <FL/Fl_Gl_Window.H>
 #include <FL/Fl_File_Chooser.H>
 #include <FL/Fl_Repeat_Button.H>
+#include <FL/Fl_Check_Browser.H>
 
 // XXX: for main menu bar
 #include <FL/Fl_Menu_Bar.H>

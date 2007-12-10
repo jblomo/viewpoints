@@ -20,7 +20,7 @@
 //   modified by Paul Gazis and Creon Levit for use with viewpoints.
 //
 // Author: Bill Spitzak and others   1998-2005
-// Modified: P. R. Gazis  06-DEC-2007
+// Modified: P. R. Gazis  10-DEC-2007
 //***************************************************************************
 
 // Include header
@@ -853,13 +853,14 @@ void Vp_File_Chooser::iconsize( uchar size_in)
 }
 
 //*****************************************************************************
-// Vp_File_Chooser::isAscii( isAscii_in) -- Set the isAscii_ flag and update 
-// the FILETYPE menu
-void Vp_File_Chooser::isAscii( int isAscii_in)
+// Vp_File_Chooser::isAscii( isAscii_in, int isXML_in) -- Set the isAscii_ 
+// flag and update the FILETYPE menu.  NOTE: This includes special provisions
+// to hide parts of the menu for special ASCII formats such as XML.
+void Vp_File_Chooser::isAscii( int isAscii_in, int isXML_in)
 { 
   isAscii_ = isAscii_in;
   fileType->value( isAscii_ != 1);
-  if( isAscii_ != 1) {
+  if( isAscii_ != 1 || isXML_in != 0) {
     delimiter_box->hide();
     delimiter_group->hide();
     commentLabelsButton->hide();
@@ -869,6 +870,7 @@ void Vp_File_Chooser::isAscii( int isAscii_in)
     delimiter_group->show();
     commentLabelsButton->show();
   }
+  if( isXML_in != 0) selectionButton->hide();
 }
 
 //*****************************************************************************

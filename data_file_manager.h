@@ -32,7 +32,7 @@
 //      vp.cpp could be consolidated.
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  29-NOV-2007
+// Modified: P. R. Gazis  10-DEC-2007
 //***************************************************************************
 
 // Protection to make sure this header is not included twice
@@ -76,6 +76,12 @@
 //   write_ascii_file_with_headers() -- Write ASCII file
 //   write_binary_file_with_headers() -- Write binary file
 //
+//   edit_column_labels_i( *o) -- Static wrapper for edit_column_labels
+//   edit_column_labels( *o) -- Maintain Edit Column Labels window
+//   refresh_edit_column_labels() -- Refresh labels of edit window
+//   delete_labels( *o, *u) -- Static callback to delete labels
+//   close_edit_labels_window( *o, *u) -- Static callback to close window
+//
 //   findOutputFile() -- Query user to find output file
 //   directory() -- Get pathname
 //   directory( sDirectory_in) -- Set pathname
@@ -93,17 +99,19 @@
 //   ascii_input( i) -- Set ASCII input flag
 //   ascii_output() -- Get ASCII output flag
 //   ascii_output( i) -- Set ASCII output flag
+//   column_major() -- Get column major flag
+//   column_major( i) -- Set column major flag
 //   do_append() -- Get append flag
 //   do_append( i) -- Set append flag
 //   do_merge() -- Get append flag
 //   do_merge( i) -- Set merge flag
+//   needs_restore_panels() -- Get flag
+//   needs_restore_panels( i) -- Set flag
 //   write_all_data() -- Get the 'write all data' flag
 //   selected_data( i)-- Set the 'write all data' flag
-//   column_major() -- Get column major flag
-//   column_major( i) -- Set column major flag
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  27-NOV-2007
+// Modified: P. R. Gazis  07-DEC-2007
 //***************************************************************************
 class Data_File_Manager
 {
@@ -134,6 +142,12 @@ class Data_File_Manager
     string sDirectory_, inFileSpec, outFileSpec;
     blitz::Array<int,1> read_selected;
     
+    // Define pointers to hold Edit Column Labels window.  These must be
+    // static to prevent the class from defining new pointers
+    static Fl_Window *edit_labels_window;
+    static Fl_Check_Browser *edit_labels_widget;
+    static int needs_restore_panels_;
+
     // Delimiter for files, e.g. ',' for CSV.  Default is whitespace.  Note 
     // that missing values can be specified in asci input file as long as the 
     // delimiter is not whitespace, e.g. 1,2,3,,5,,,8,9,10
@@ -170,6 +184,13 @@ class Data_File_Manager
     int write_ascii_file_with_headers();
     int write_binary_file_with_headers();
 
+    // Column label edit window methods
+    static void edit_column_labels( Fl_Widget *o);
+    void edit_column_labels_i( Fl_Widget *o);
+    void refresh_edit_column_labels();
+    static void delete_labels( Fl_Widget *o, void* user_data);
+    static void close_edit_labels_window( Fl_Widget *o, void* user_data);
+    
     // Access methods
     string directory();
     void directory( string sDirectory_in);
@@ -188,17 +209,19 @@ class Data_File_Manager
     void ascii_input( int i) { isAsciiInput = (i==1);}
     int ascii_output() { return isAsciiOutput;}
     void ascii_output( int i) { isAsciiOutput = (i==1);}
+    int column_major() { return isColumnMajor;}
+    void column_major( int i) { isColumnMajor = (i==1);}
     int do_append() { return doAppend;}
     void do_append( int i) { doAppend = (i==1);}
     int do_merge() { return doMerge;}
     void do_merge( int i) { doMerge = (i==1);}
     int is_saved_file() { return isSavedFile_;}
     void is_saved_file( int i) { isSavedFile_ = i;}
+    int needs_restore_panels() { return needs_restore_panels_;}
+    void needs_restore_panels( int i) {needs_restore_panels_ = i;}
     int write_all_data() { return writeAllData_;}
     void write_all_data( int i) { writeAllData_ = (i==1);}
-    int column_major() { return isColumnMajor;}
-    void column_major( int i) { isColumnMajor = (i==1);}
-    
+        
     // Define number of points and  number of variables specified by the 
     // command line argument.  NOTE: 0 means read to EOF and/or end of line.
     int npoints_cmd_line;

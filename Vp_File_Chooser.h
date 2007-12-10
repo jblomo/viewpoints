@@ -35,7 +35,7 @@
 //      vp.cpp could be consolidated.
 //
 // Author: Bill Spitzak and others   1998-2005
-// Modified: P. R. Gazis  28-NOV-2007
+// Modified: P. R. Gazis  10-DEC-2007
 //***************************************************************************
 
 // Protection to make sure this header is not included twice
@@ -355,7 +355,7 @@ class FL_EXPORT Vp_File_Chooser
     void hide();
     uchar iconsize();
     void iconsize( uchar size_in);
-    void isAscii( int isAscii_in);
+    void isAscii( int isAscii_in, int isXML_in = 0);
     int isAscii();
     const char* label();
     void label( const char *label_in);
