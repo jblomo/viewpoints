@@ -1,7 +1,7 @@
 viewpoints -- Fast interactive linked plotting of large multivariate data sets.
 
-Version: 2.0.2  (Build 208)
-Date: 05 Dec 2007
+Version: 2.0.2  (Build 210)
+Date: 10 Dec 2007
 
 
 Overview:
@@ -331,7 +331,17 @@ may need to be refreshed.  This can be accomplished by resizing it.
 will be added as soon as possible!
 
 3) The Load and Save Configuration commands are a comparatively new feature,
-only save basic session information, and may not work on every system.
+and save basic session information.  They may not work on every system.  
+Also, there is not, as yet, any guarantee that old configuration files will
+be upward-compatible with new versions of viewpoints.
+
+4) The Edit Column Labels tool is also a new feature, and is not guaranteed
+to preserve axis or scaling information.  In the current release, it can only
+delete labels.  Column labels of ASCII files can be renamed via by using an
+editor in a conventional fashion.  Small binary files can be saved to ASCII 
+and edited.  For large binary files, it is possible, with difficulty, to 
+rename labels by saving a small portion of the file as ASCII, editing this, 
+reloading it, and appending the remainding portion of the original binary file.
 
 Please send any questions, bug reports, feature requests, and/or praise to: 
 

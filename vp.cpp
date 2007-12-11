@@ -1676,7 +1676,7 @@ int main( int argc, char **argv)
   // XXX: In a perfect world, this should be included with the global 
   // definitions
   about_string = "\n\
-    viewpoints 2.0.1 \n\
+    viewpoints 2.0.2 \n\
     " + string(SVN_VERSION) + "\n\
     \n\
     (c) 2006 M. Creon Levit and Paul R. Gazis   \n\

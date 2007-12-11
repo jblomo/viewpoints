@@ -237,11 +237,13 @@ int Data_File_Manager::load_data_file()
   }
 
   // Initialize READ_SELECTED here
-  read_selected.resize( npoints);
+  // read_selected.resize( npoints);
+  read_selected.resize( MAXPOINTS);
   read_selected = 0;
   
   // Read data file.If there was a problem, create default data to prevent 
-  // a crash, then quit before something terrible happens!
+  // a crash, then quit before something terrible happens!  NOTE: The read
+  // methods load selection information, but don't resize read_selected;
   cout << "Data_File_Manager::load_data_file: Reading input data from <"
        << inFileSpec.c_str() << ">" << endl;
   int iReadStatus = 0;
@@ -256,6 +258,9 @@ int Data_File_Manager::load_data_file()
   else
     cout << "Data_File_Manager::load_data_file: Finished reading file <" 
          << inFileSpec.c_str() << ">" << endl;
+         
+  // Resize the READ_SELECTED array here
+  read_selected.resizeAndPreserve( npoints);  
 
   // Remove trivial columns
   // XXX this should be a command line and Tool menu option with default 
@@ -367,7 +372,7 @@ int Data_File_Manager::load_data_file()
   read_selected.free();
 
   // If selection information was found, edit the vector of column labels to
-  // remove the selection label, "SELECTION_BY_VP".
+  // remove the selection label, SELECTION_LABEL.
   if( readSelectionInfo_) {
     vector<string>::iterator pTarget = column_labels.end();
     pTarget--;
@@ -528,10 +533,9 @@ int Data_File_Manager::extract_column_labels( string sLine, int doDefault)
   cout << endl;
 
   // Check last column labels to see if it is the selection label,
-  // "SELECTION_BY_VP"
+  // SELECTION_LABEL
   readSelectionInfo_ = 0;
-  // if( column_labels[ nvars-1].compare( "SELECTION_BY_VP") == 0) {
-  if( column_labels[ nvars-1].compare( SELECTION_LABEL) == 0) {
+  if( column_labels[ nvars-1].compare( 0, SELECTION_LABEL.size(), SELECTION_LABEL) == 0) {
     readSelectionInfo_ = 1;
     cout << "   -Read selection info-" << endl;
   }
@@ -1194,7 +1198,6 @@ int Data_File_Manager::write_ascii_file_with_headers()
       else os << delimiter_char_ << " " << setw( 13) << column_labels[ i];
       // else os << " " << setw( 13) << column_labels[ i];
     }
-    // if( writeSelectionInfo_ != 0) os << delimiter_char_ << " SELECTION_BY_VP";
     if( writeSelectionInfo_ != 0) os << delimiter_char_ << " " << SELECTION_LABEL;
     os << endl;
     
@@ -1270,7 +1273,6 @@ int Data_File_Manager::write_binary_file_with_headers()
       os << column_labels[ i] << " ";;
       if( i<nvars-1) os << '\t';
     }
-    // if( writeSelectionInfo_ != 0) os << '\t' << " SELECTION_BY_VP";
     if( writeSelectionInfo_ != 0) os << '\t' << " " << SELECTION_LABEL;
     os << endl;
     
