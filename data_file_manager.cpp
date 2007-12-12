@@ -1057,7 +1057,6 @@ int Data_File_Manager::findOutputFile()
     // for write.  If it can't, assume that cOutFileSpec was a directory and 
     // make it the working directory.  Otherwise close the output stream.
     // NOTE: This will create an empty file.
-    // #ifndef __APPLE__
     #ifdef __WIN32__
       ofstream os;
       os.open( cOutFileSpec, ios::out|ios::trunc);
@@ -1071,7 +1070,7 @@ int Data_File_Manager::findOutputFile()
       }
       os.close();
       if( isNewFile != 0) break;
-    #endif // __APPLE__
+    #endif // __WIN32__
 
     // OLD CODE: If this is a new file, it can't be opened for read, and 
     // we're done

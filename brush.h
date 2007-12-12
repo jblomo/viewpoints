@@ -107,7 +107,7 @@ class Brush : public Fl_Group
     Fl_Hor_Value_Slider_Input *lum1, *lum2, *alpha, *cutoff;
     Vp_Color_Chooser *color_chooser;
 
-    Fl_Button *add_to_selection;
+    Fl_Button *add_to_selection, *paint;
 
     Fl_Button *clear_now_button;
     void clear_now ();

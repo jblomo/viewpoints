@@ -629,8 +629,7 @@ void Vp_File_Chooser::doCommentLabels( int doCommentLabels_in)
 char* Vp_File_Chooser::escape_sequences_insert( char *orig)
 {
   // Loop: Examine pointers to successive characters of the string
-  char c, *cp, *result = orig;
-  int i;
+  char *cp, *result = orig;
   for( cp = orig; (*orig = *cp); cp++, orig++) {
 
     // Check for different escape sequences.  Default is to do nothing
@@ -698,8 +697,7 @@ char* Vp_File_Chooser::escape_sequences_insert( char *orig)
 char* Vp_File_Chooser::escape_sequences_remove( char *orig)
 {
   // Loop: Examine pointers to successive characters of the string
-  char c, *cp, *result = orig;
-  int i;
+  char *cp, *result = orig;
   for( cp = orig; (*orig = *cp); cp++, orig++) {
 
     // If this is not an escape sequence, keep going

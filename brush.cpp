@@ -139,6 +139,7 @@ void Brush::clear_now ()
   // (selected - index) == 0 iff currently selected by this brush:
   selected = where(selected-index,selected,0);
   previously_selected = selected;
+  // previously_selected = 0;
 
   // redraw based on changed selection.  Candidate for "pull out method(s)" refactoring?
   pws[1]->color_array_from_selection();
@@ -162,7 +163,7 @@ void Brush::make_widgets(Brush *bw)
   // inside a window, set their child widget's coordinates relative to 
   // their enclosing window's position. 
   int xpos = this->x()+50;
-  int ypos = this->y()+20;
+  int ypos = this->y()+10;
 
   // Fl_Button *b;
 
@@ -230,22 +231,28 @@ void Brush::make_widgets(Brush *bw)
   color_chooser->labelfont(FL_HELVETICA);
   color_chooser->labelsize(10);
 
-  // MCL XXX there should be a "selection" menu: extend, subtract, replace, replace always, invert?
-  add_to_selection = new Fl_Button( xpos+=150, ypos, 20, 20, "extend selection");
-  add_to_selection->align( FL_ALIGN_RIGHT); 
-  add_to_selection->selection_color( FL_BLUE); 
-  add_to_selection->type( FL_TOGGLE_BUTTON);
-  add_to_selection->value( index?0:1);  // all brushes default this to off, except brush 0.
-  add_to_selection->tooltip("toggle clear selection on mouse down");
-
-  clear_now_button = new Fl_Button( xpos, ypos+=25, 20, 20, "clear selection");
+  // MCL Should there be a "selection" menu: clear, replace, intersect (and), add (or), replace always, paint mode, invert...
+  clear_now_button = new Fl_Button( xpos+=150, ypos, 20, 20, "clear selection");
   clear_now_button->align( FL_ALIGN_RIGHT); 
   clear_now_button->selection_color( FL_BLUE); 
   clear_now_button->callback((Fl_Callback*)static_clear_now, this);
   clear_now_button->value( 0);
   clear_now_button->tooltip("de-select all points currently selected by this brush");
 
-  reset_button = new Fl_Button( xpos, ypos+=25, 20, 20, "reset brush");
+  add_to_selection = new Fl_Button( xpos, ypos+=20, 20, 20, "extend selection");
+  add_to_selection->align( FL_ALIGN_RIGHT); 
+  add_to_selection->selection_color( FL_BLUE); 
+  add_to_selection->type( FL_TOGGLE_BUTTON);
+  add_to_selection->value( index?0:1);  // all brushes default this to off, except brush 0.
+  add_to_selection->tooltip("disable smart auto-clear");
+
+  paint = new Fl_Button( xpos, ypos+=20, 20, 20, "paint");
+  paint->align( FL_ALIGN_RIGHT); 
+  paint->selection_color( FL_BLUE); 
+  paint->type( FL_TOGGLE_BUTTON);
+  paint->tooltip("dribble paint (do not erase) when dragging or shift-dragging");
+
+  reset_button = new Fl_Button( xpos, ypos+=20, 20, 20, "reset brush");
   reset_button->align( FL_ALIGN_RIGHT); 
   reset_button->selection_color( FL_BLUE); 
   reset_button->callback((Fl_Callback*)static_reset, this);

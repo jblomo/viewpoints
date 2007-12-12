@@ -1518,4 +1518,17 @@ PDL:
   
 17:06:07 11 Nov 07
 
-Paul says use redmine for open source peorject mgmt.
+Paul S. says use redmine for open source peorject mgmt.   It looks OK, if we have our own (virtual) server.
+
+18:08:27 16 Nov 07
+
+Use the 3 argument form of istream::getline (see http://www.cplusplus.com/reference/iostream/istream/getline.html ) to read tokens using delimiter?  Q: does it stop at EOL even if \n is not the supplied delimiter?  A: no, it does not.  So, we need to read the whole line, then parse based on delim. char.  Should be a std::string function for this.  string::find_first_of() and substr().
+
+Also see Ttokenize() in http://www.faqs.org/docs/Linux-HOWTO/C++Programming-HOWTO.html
+
+17:39:49 23 Nov 07
+
+Delimiter "none" on write file?  What does that mean?
+Save all data, ascii, save selectio info., delimiter comma, enters loop of repeated fileio panels.
+All file save enters infinite panel loop.
+

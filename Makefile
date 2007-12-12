@@ -21,7 +21,7 @@ endif
 # PROFILE		= -pg
 #DEBUG		= -O0 -ggdb -g3 -Wall -Wunused -DBZ_DEBUG -fexceptions
 #DEBUG		= -g -ggdb -g3 -Wall -Wunused -fexceptions
-DEBUG		= -gfull -ggdb -Wall -Wextra -Wunused -Wconversion -fexceptions
+DEBUG		= -gfull -ggdb -Wall -Wunused -Wconversion -fexceptions
 
 
 # compiling on Apple OSX (darwin)
@@ -29,8 +29,8 @@ ifeq ($(platform),Darwin)
 
   # compiling on intel mac
   ifeq ($(hardware),i386)
-       #OPTIM = -O6 -ftree-vectorize -ftree-vectorizer-verbose=0 -Wall -Wconversion -Wno-long-double -ffast-math -fsigned-char -gfull 
-	OPTIM = -O6 -ftree-vectorize -ftree-vectorizer-verbose=0 -Wall -Wconversion -ffast-math -fsigned-char -gfull 
+       	OPTIM = $(DEBUG)
+#	OPTIM = -O6 -ftree-vectorize -ftree-vectorizer-verbose=0 -Wall -Wconversion -ffast-math -fsigned-char -gfull 
 
   # compiling on PowerPC mac
   else
@@ -56,7 +56,7 @@ ifeq ($(platform),Darwin)
 	LDLIBS = -framework AGL -framework OpenGL -framework Carbon -framework ApplicationServices -framework vecLib /usr/local/lib/libgsl.a -lm -lmx -lboost_serialization-d
 
 # for OSX machines where I CAN install things as root... (don't forget to build all libraries as static only)
-	INCPATH = -I/usr/local/include -I/sw/include -I/usr/local/include/boost-1_34/
+	INCPATH = -I/usr/local/include -I/sw/include -I/usr/local/include/boost-1_34_1/
 	LIBPATH	= -L/usr/local/lib -L/sw/lib
 
 else

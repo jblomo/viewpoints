@@ -1953,13 +1953,14 @@ int main( int argc, char **argv)
   // Now we can show the main control panel and all its subpanels
   main_control_panel->show();
 
-  // Step 5: Set pointer to the function to call when the window is idle and 
-  // enter the main event loop
-  // Fl::add_idle( redraw_if_changing);
+  // Step 5: Register functions to call on a reglar basis, when no other
+  // events (mouse, etc.) are waiting to be processed.
+  // do not use Fl::add_idle().  It causes causes a busy-wait loop.
+  // use Fl:add_timeout() instead.
   Fl::add_timeout(0.01, redraw_if_changing);
+  Fl::add_timeout(0.25, cb_manage_plot_window_array);
 
   // Enter the main event loop
-  Fl::add_idle( cb_manage_plot_window_array, 0);
   int result = Fl::run();
 
   gsl_rng_free( vp_gsl_rng);

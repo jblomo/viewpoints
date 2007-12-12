@@ -561,10 +561,10 @@ int vp_color_chooser( const char* name, double& r, double& g, double& b)
       Fl_Widget* o = Fl::readqueue();
       if (!o) break;
       if (o == &ok_button) {
-	r = chooser.r();
-	g = chooser.g();
-	b = chooser.b();
-	return 1;
+        r = chooser.r();
+        g = chooser.g();
+        b = chooser.b();
+        return 1;
       }
       if (o == &window || o == &cancel_button) return 0;
     }

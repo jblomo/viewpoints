@@ -302,8 +302,9 @@ int Plot_Window::handle( int event)
         current_brush =  dynamic_cast <Brush*> (brushes_tab->value());
         assert (current_brush);
 
+        newly_selected(blitz::Range(0,npoints-1)) = 0;
         // extend the selection under the following circumstances, otherwise replace.
-        if (current_brush->add_to_selection->value() ||
+        if (current_brush->add_to_selection->value() || // current_brush->paint->value() || ???
             current_brush != previous_brush ||
             current_plot != previous_plot) {
           previously_selected( blitz::Range(0,npoints-1)) = selected( blitz::Range( 0, npoints-1));
@@ -968,14 +969,28 @@ void Plot_Window::handle_selection ()
   // Identify newly-selected points.
   // XXX could be a bool array?  faster?
   // XXX could use binary search on sorted values.  Much faster?
-  newly_selected( NPTS) = where( 
-    ( vertices( NPTS, 0)>fmaxf( xdown, xtracked) || 
-      vertices( NPTS, 0)<fminf( xdown, xtracked) ||
-      vertices( NPTS, 1)>fmaxf( ydown, ytracked) || 
-      vertices( NPTS, 1)<fminf( ydown, ytracked)),
-    0, 1);
+  Brush  *current_brush = (Brush *)NULL;
+  current_brush =  dynamic_cast <Brush*> (brushes_tab->value());
+  assert (current_brush);
 
-  // then "paint" them with the appropriate integer (index of current brush) 
+  if (current_brush->paint->value()) {
+    newly_selected( NPTS) |= where( 
+      ( vertices( NPTS, 0)>fmaxf( xdown, xtracked) || 
+        vertices( NPTS, 0)<fminf( xdown, xtracked) ||
+        vertices( NPTS, 1)>fmaxf( ydown, ytracked) || 
+        vertices( NPTS, 1)<fminf( ydown, ytracked)),
+      0, 1);
+  } else {
+    newly_selected( NPTS) = where( 
+      ( vertices( NPTS, 0)>fmaxf( xdown, xtracked) || 
+        vertices( NPTS, 0)<fminf( xdown, xtracked) ||
+        vertices( NPTS, 1)>fmaxf( ydown, ytracked) || 
+        vertices( NPTS, 1)<fminf( ydown, ytracked)),
+      0, 1);
+  }
+
+  // then tag them with the appropriate integer (index of current brush) so that later
+  // they'll get sorted correctly and drawn with the correct color and texture.
   Brush *bp = dynamic_cast <Brush*> (brushes_tab->value());
   assert (bp);
   int brush_index = bp->index; 
