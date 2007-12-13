@@ -27,7 +27,7 @@
 //   1) Review and add comments!
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  23-APR-2007
+// Modified: P. R. Gazis  13-DEC-2007
 //***************************************************************************
 
 // Protection to make sure this header is not included twice
@@ -58,8 +58,11 @@ class Control_Panel_Window;
 //   displayed.  There are usually several open at one time.
 //
 // Functions:
+//   Plot_Window() -- Default constructor
 //   Plot_Window( w, h) -- Constructor
 //   initialize() -- Initialization method
+//   serialize( &ar, iFileVersion) -- Perform serialization
+//   load_serialized_parameters( *pw) -- Load params from another window
 //
 //   initialize_VBO() -- Initialize VBO for this window
 //   fill_VBO() -- Fill the VBO for this window
@@ -68,22 +71,35 @@ class Control_Panel_Window;
 //   fill_indexVBOs() -- Fill all index VBOs with the indices of the vertices they should plot.
 //
 //   draw() -- Draw plot
+//   draw_background() -- Draw background
 //   draw_grid() -- Draw grid
+//   draw_selection_information() -- Draw selection information
 //   void draw_axes() -- Draw axes
 //   draw_data_points() -- Draw data points
 //   void draw_center_glyph() -- Draw a cross at the center of a zoom.  Stolen from flashearth.com
 //   void update_linked_transforms() -- Replicate scale and translatation for linked axes
+//   enable_sprites(int) -- Enable sprites
+//   enable_regular_points() -- Enable regular points
+//   enable_antialiased_points() -- Enable anti-aliased points
+//   disable_sprites() -- Diasable sprites
+//   clear_alpha_planes() -- Clear those pesky alpha planes
+//   clear_stencil_buffer() -- Clear stencil buffer
 //
 //   handle( event) -- Main event handler
 //   handle_selection() -- update or change selection based on mouse position
+//   run_timing_test() --
 //
 //   void screen_to_world( xs, ys, x, y) -- Screen to word coords (only works for 2D)
 //   void print_selection_stats() -- print number of points and % of points currently selected
 //
-//   compute_histogram( int) -- Compute histogram bin counts for one variable
-//   compute_histograms () -- Compute both histograms for marginals of 2D plot
-//   draw_histograms() -- Draw histograms
 //
+//   compute_histogram( int) -- Compute histogram bin counts for one variable
+//   draw_x_histogram( bin_counts, nbins);
+//   draw_y_histogram( bin_counts, nbins);
+//   draw_histograms() --
+//   density_1D( a, axis) --
+//
+//   compute_histograms () -- Compute both histograms for marginals of 2D plot
 //   compute_rank(int var_index) create an array of indices that rank order a variable (basically a sort).
 //   normalize() -- Normalize data based on user-selected normalization scheme
 //
@@ -107,11 +123,37 @@ class Control_Panel_Window;
 //     and deselected points when rendered as openGL point sprites.
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  13-JUL-2007
+// Modified: P. R. Gazis  13-DEC-2007
 //***************************************************************************
 class Plot_Window : public Fl_Gl_Window
 {
   protected:
+    // Need this to grant the serialization library access to private member 
+    // variables and functions.
+    friend class boost::serialization::access;
+    
+    // When the class Archive corresponds to an output archive, the &
+    // operator is defined similar to <<.  Likewise, when the class Archive 
+    // is a type of input archive the & operator is defined similar to >>.
+    // It is easiest to define this method inline.
+    int x_save, y_save, w_save, h_save;
+    template<class Archive>
+    void serialize( Archive & ar, const unsigned int /* file_version */)
+    {
+      ar & boost::serialization::make_nvp( "index", index);
+      if( (dynamic_cast<boost::archive::xml_oarchive *> (&ar))) {
+        x_save = x();
+        y_save = y();
+        w_save = w();
+        h_save = h();
+      }
+      else cout << "DIAGNOSTIC: dynamic_cast failed so this must be input" << endl;
+      ar & boost::serialization::make_nvp( "x_save", x_save);
+      ar & boost::serialization::make_nvp( "y_save", y_save);
+      ar & boost::serialization::make_nvp( "w_save", w_save);
+      ar & boost::serialization::make_nvp( "h_save", h_save);
+    }
+
     // If they are available, use vertex buffer objects (VBOs)
     // have we initialized the openGL vertex buffer object?
     int VBOinitialized;
@@ -178,8 +220,10 @@ class Plot_Window : public Fl_Gl_Window
     // Number of plot windows
     static int count; // MCL XXX isn't this the same as nplots?  is it consistent?
   public:
+    Plot_Window();   // Default constructor
     Plot_Window( int w, int h, int new_index);   // Constructor
     void initialize();
+    void load_serialized_parameters( Plot_Window* pw);
     static int active_plot;
 
     // Initialize and fill index VBO for this window

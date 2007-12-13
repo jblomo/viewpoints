@@ -20,7 +20,7 @@
 //   modified by Paul Gazis and Creon Levit for use with viewpoints.
 //
 // Author: Bill Spitzak and others   1998-2005
-// Modified: P. R. Gazis  10-DEC-2007
+// Modified: P. R. Gazis  13-DEC-2007
 //***************************************************************************
 
 // Include header
@@ -39,7 +39,7 @@ Fl_Preferences Vp_File_Chooser::prefs_( Fl_Preferences::USER, "fltk.org", "filec
 const char *Vp_File_Chooser::add_favorites_label = "Add to Favorites";
 const char *Vp_File_Chooser::all_files_label = "All Files (*)";
 const char *Vp_File_Chooser::custom_filter_label = "Custom Filter";
-const char *Vp_File_Chooser::commentLabels_label = "Column labels are included in the header";
+const char *Vp_File_Chooser::commentLabels_label = "Column labels are preceeded by a coment";
 const char *Vp_File_Chooser::commentLabels_tooltip = 
   "Column Labels are included in the last line of the \nheader and begin with a comment character";
 const char *Vp_File_Chooser::delimiter_label = "Delimiter:";
@@ -81,7 +81,7 @@ Vp_File_Chooser::Vp_File_Chooser(
   // Initialize to ASCII mode with no delimiter
   isAscii_ = 1;
   delimiter_char_ = ' ';
-  doCommentLabels_ = 0;
+  doCommentedLabels_ = 0;
   
   // Define pointer to the main double window
   Fl_Double_Window* w;
@@ -294,10 +294,10 @@ Vp_File_Chooser::Vp_File_Chooser(
       // Write Comment Column Labels check button
       { 
         Fl_Check_Button* o = commentLabelsButton = 
-          new Fl_Check_Button( 10, 425, 160, 20, "Column labels are included in the header");
+          new Fl_Check_Button( 10, 425, 160, 20, "Column labels are preceeded by a coment");
           // new Fl_Check_Button( 165, 410, 160, 20, "Comment Labels");
         o->down_box( FL_DOWN_BOX);
-        if( doCommentLabels_ == 0) o->value( 0);
+        if( doCommentedLabels_ == 0) o->value( 0);
         else o->value( 1);
         o->callback( (Fl_Callback*) cb_commentLabelsButton);
         o->tooltip( commentLabels_tooltip);
@@ -613,13 +613,13 @@ void Vp_File_Chooser::directory( const char *directory_in)
 }
 
 //*****************************************************************************
-// Vp_File_Chooser::doCommentLabels( doCommentLabels_in) -- Set mode for use 
+// Vp_File_Chooser::doCommentedLabels( doCommentedLabels_in) -- Set mode for use 
 // of comment characters in line of column labels.
-void Vp_File_Chooser::doCommentLabels( int doCommentLabels_in)
+void Vp_File_Chooser::doCommentedLabels( int doCommentedLabels_in)
 {
-  doCommentLabels_ = doCommentLabels_in;
-  // prefs_.set( "doCommentLabels", doCommentLabels_);
-  // commentLabelsButton->value( doCommentLabels_ != 0);
+  doCommentedLabels_ = doCommentedLabels_in;
+  // prefs_.set( "doCommentedLabels", doCommentedLabels_);
+  // commentLabelsButton->value( doCommentedLabels_ != 0);
 }
 
 //*****************************************************************************
@@ -2067,8 +2067,8 @@ void Vp_File_Chooser::cb_commentLabelsButton( Fl_Check_Button* o, void* v)
 // 'Comment Column Labels' checkbox.  
 void Vp_File_Chooser::cb_commentLabelsButton_i( Fl_Check_Button*, void*)
 {
-  if( commentLabelsButton->value()) doCommentLabels( 1);
-  else doCommentLabels( 0);
+  if( commentLabelsButton->value()) doCommentedLabels( 1);
+  else doCommentedLabels( 0);
 }
 
 //*****************************************************************************

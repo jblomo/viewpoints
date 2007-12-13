@@ -1,7 +1,7 @@
 viewpoints -- Fast interactive linked plotting of large multivariate data sets.
 
-Version: 2.0.2  (Build 210)
-Date: 10 Dec 2007
+Version: 2.0.2  (Build 212)
+Date: 12 Dec 2007
 
 
 Overview:
@@ -77,11 +77,14 @@ The calling sequence for the command line version is:
     data block.  Lines in the header block are indicated by one the comment 
     characters '!', '#', or '%'.  In the absence of comment characters, the 
     header block is assumed to consist of a number of lines specified by the 
-    '--skip_header' command below, with a default value of 1 line.  The 
-    final line of the header contains the attribute names, whitespace 
-    delimited by default (see --delimiter, below).  Successive lines in the 
-    data block contain the numeric attribute values for successive samples, 
-    whitespace delimited.  See the file "sampledata.txt" for an example.
+    '--skip_header' command below, with a default value of 0 lines.  The 
+    first line of the data block contains the attribute names.  By default,
+    this is not preceeded by a comment character and is delimited by
+    whitespace, but this can be controlled from the main menu or by command
+    line arguments (see --delimiter, below).  Successive lines in the data
+    block contain the numeric attribute values for successive samples, 
+    delimited by the delimiter character.  See the file "sampledata.txt" for 
+    an example.
 
   --format=binary [shortcut: -f b]
     Read a binary input file.  The first record of this file consists of a 
@@ -177,7 +180,6 @@ Main menu bar
  File|Open data file         Read data from an input file
  File|Append more data       Append additional samples to the existing data
  File|Merge another file     Merge additional attributes for these samples
- File|Write ASCII file       Write all the current data as an ASCII file
  File|Save all data          Write all data
  File|Save selected data     Write only the currently selected data
  File|Load Configuration     Load some configuration information
@@ -190,6 +192,8 @@ Main menu bar
  View|Reload File            Reload the existing data file
  View|Restore Panels         Restore deleted plot windows
  View|Default Panels         Restore the default polt window configuration
+ Tools|Edit Column Labels    Delete selected column labels
+ Tools|Options               Set some basic options
  Help|Help                   Opens a simple HELP window
  Help|About                  Information about this version
 

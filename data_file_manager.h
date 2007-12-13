@@ -32,7 +32,7 @@
 //      vp.cpp could be consolidated.
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  10-DEC-2007
+// Modified: P. R. Gazis  12-DEC-2007
 //***************************************************************************
 
 // Protection to make sure this header is not included twice
@@ -130,6 +130,7 @@ class Data_File_Manager
       ar & boost::serialization::make_nvp( "dataFileSpec", inFileSpec);
       ar & boost::serialization::make_nvp( "is_ASCII_data", isAsciiInput);
       ar & boost::serialization::make_nvp( "delimiter_char_", delimiter_char_);
+      ar & boost::serialization::make_nvp( "doCommentedLabels_", doCommentedLabels_);
       ar & boost::serialization::make_nvp( "nSkipHeaderLines", nSkipHeaderLines);
       ar & boost::serialization::make_nvp( "isColumnMajor", isColumnMajor);
       ar & boost::serialization::make_nvp( "bad_value_proxy_", bad_value_proxy_);
@@ -161,7 +162,7 @@ class Data_File_Manager
     int isAsciiInput, isAsciiOutput;
     int doAppend, doMerge, writeAllData_;
     int readSelectionInfo_, writeSelectionInfo_;
-    int doCommentLabels_;
+    int doCommentedLabels_;
     int isColumnMajor;
     int isSavedFile_;
 
@@ -196,8 +197,8 @@ class Data_File_Manager
     void directory( string sDirectory_in);
     string input_filespec();
     void input_filespec( string inFileSpecIn);
-    int n_skip_header_lines() { return nSkipHeaderLines;}
-    void n_skip_header_lines( int i) { nSkipHeaderLines = i;}
+    int n_skip_lines() { return nSkipHeaderLines;}
+    void n_skip_lines( int i) { nSkipHeaderLines = i;}
     string output_filespec();
     void output_filespec( string outFileSpecIn);
 

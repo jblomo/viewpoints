@@ -28,7 +28,7 @@
 //      normalization schemes used here and by class Plot_Windows.
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  13-JUL-2007
+// Modified: P. R. Gazis  12-DEC-2007
 //*****************************************************************
 
 // Protection to make sure this header is not included twice
@@ -65,9 +65,10 @@
 //   and manage a plot window
 //
 // Functions:
-//   Control_Panel_Window( w, h) -- Constructor
-//
+//   Control_Panel_Window() -- Default Constructor
+//   Control_Panel_Window( x, y, w, h) -- Constructor
 //   serialize( &ar, iFileVersion) -- Perform serialization
+//   load_serialized_parameters( *cp) -- Load params from another window
 //
 //   maybe_redraw() -- Set redraw flag nicely
 //   make_widgets( *cpw) -- Make widgets for this tab
@@ -84,15 +85,56 @@
 //   This comment also conveys nothing.
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  23-APR-2007
+// Modified: P. R. Gazis  12-DEC-2007
 //*****************************************************************
 class Control_Panel_Window : public Fl_Group
 {
   protected:
+    // Need this to grant the serialization library access to private member 
+    // variables and functions.
+    friend class boost::serialization::access;
+    
+    // When the class Archive corresponds to an output archive, the &
+    // operator is defined similar to <<.  Likewise, when the class Archive 
+    // is a type of input archive the & operator is defined similar to >>.
+    // It is easiest to define this method inline.
+    int ivar_save, jvar_save, kvar_save;
+    int ix_style, jy_style, kz_style;
+    int ix_lock, jy_lock, kz_lock;
+    template<class Archive>
+    void serialize( Archive & ar, const unsigned int /* file_version */)
+    {
+      ar & boost::serialization::make_nvp( "index", index);
+      if( (dynamic_cast<boost::archive::xml_oarchive *> (&ar))) {
+        ivar_save = varindex1->value();
+        jvar_save = varindex2->value();
+        kvar_save = varindex3->value();
+        ix_style = x_normalization_style->value();
+        jy_style = y_normalization_style->value();
+        kz_style = z_normalization_style->value();
+        ix_lock = lock_axis1_button->value();
+        jy_lock = lock_axis2_button->value();
+        kz_lock = lock_axis3_button->value();
+      }
+      else cout << "DIAGNOSTIC: dynamic_cast failed so this must be input" << endl;
+      ar & boost::serialization::make_nvp( "varindex1", ivar_save);
+      ar & boost::serialization::make_nvp( "varindex2", jvar_save);
+      ar & boost::serialization::make_nvp( "varindex3", kvar_save);
+      ar & boost::serialization::make_nvp( "x_normalization_style", ix_style);
+      ar & boost::serialization::make_nvp( "y_normalization_style", jy_style);
+      ar & boost::serialization::make_nvp( "z_normalization_style", kz_style);
+      ar & boost::serialization::make_nvp( "lock_axis1_button", ix_lock);
+      ar & boost::serialization::make_nvp( "lock_axis2_button", jy_lock);
+      ar & boost::serialization::make_nvp( "lock_axis3_button", kz_lock);
+    }
+            
     void maybe_redraw();
 
   public:
+    Control_Panel_Window();
     Control_Panel_Window( int x, int y, int w, int h);
+    void load_serialized_parameters( Control_Panel_Window* cp);
+
     void make_widgets( Control_Panel_Window *cpw);
     void extract_and_redraw();
 

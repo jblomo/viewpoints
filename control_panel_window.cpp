@@ -22,7 +22,7 @@
 // Purpose: Source code for <Control_Panel_Window.h>
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  13-JUL-2007
+// Modified: P. R. Gazis  12-DEC-2007
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -62,12 +62,40 @@ Fl_Menu_Item Control_Panel_Window::normalization_style_menu_items[] = {
 };
 
 //***************************************************************************
+// Control_Panel_Window::Control_Panel_Window() --  Default constructor with
+// no arguments.  Used only for serialization.  Do nothing except call the 
+// constructor for the parent class, Fl_Group, with dummy arguments.
+Control_Panel_Window::Control_Panel_Window() : Fl_Group( 10, 10, 10, 10),
+  index( 0),
+  ivar_save( 0), jvar_save( 0), kvar_save( 0),
+  ix_style( 1), jy_style( 1), kz_style( 1),
+  ix_lock( 0), jy_lock( 0), kz_lock( 0)
+{}
+
+//***************************************************************************
 // Control_Panel_Window::Control_Panel_Window( x, y, w, h) --  Default 
 // constructor.  Do nothing except call the constructor for the parent 
 // class, Fl_Group.
 Control_Panel_Window::Control_Panel_Window(
   int x, int y, int w, int h) : Fl_Group( x, y, w, h)
 {}
+
+//***************************************************************************
+// Control_Panel_Window::load_serialized_ parameters( &cp) -- Load 
+// parameters from dummy object that has been created by serialization.
+void Control_Panel_Window::load_serialized_parameters( Control_Panel_Window* cp)
+{
+  index = cp->index;
+  varindex1->value( cp->ivar_save);
+  varindex2->value( cp->jvar_save);
+  varindex3->value( cp->kvar_save);
+  x_normalization_style->value( cp->ix_style);
+  y_normalization_style->value( cp->jy_style);
+  z_normalization_style->value( cp->kz_style);
+  lock_axis1_button->value( ix_lock);
+  lock_axis2_button->value( jy_lock);
+  lock_axis3_button->value( kz_lock);
+}
 
 //***************************************************************************
 // Control_Panel_Window::broadcast_change (*master_widget) -- Broadcast an 

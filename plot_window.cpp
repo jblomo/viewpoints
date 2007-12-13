@@ -22,7 +22,7 @@
 // Purpose: Source code for <Plot_Window.h>
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  18-NOV-2007
+// Modified: P. R. Gazis  13-DEC-2007
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -86,6 +86,14 @@ void fluctuation(
   const int half_width);
 
 //***************************************************************************
+// Plot_Window::Plot_Window() -- Default constructor, used only in
+// association with serialzation!
+Plot_Window::Plot_Window() : Fl_Gl_Window( 10, 10),
+  x_save( 0), y_save( 0), w_save( 0), h_save( 0),
+  do_reset_view_with_show( 0)
+{}
+
+//***************************************************************************
 // Plot_Window::Plot_Window( w, h) -- Constructor.  Increment count of plot 
 // windows, resize arrays, and set mode.
 Plot_Window::Plot_Window( int w, int h, int new_index) : 
@@ -146,6 +154,18 @@ void Plot_Window::initialize()
   indexVBOsinitialized=0;
   sprites_initialized=0;
 
+}
+
+//***************************************************************************
+// Plot_Window::load_serialized_ parameters( &pw) -- Load parameters from 
+// dummy object that has been created by serialization.
+void Plot_Window::load_serialized_parameters( Plot_Window* pw)
+{
+  index = pw->index;
+  x( pw->x_save);
+  y( pw->y_save);
+  w( pw->w_save);
+  h( pw->h_save);
 }
 
 //***************************************************************************
@@ -664,7 +684,6 @@ void Plot_Window::draw_background ()
   }
 }
 
-
 //***************************************************************************
 // Plot_Window::draw_grid() -- Draw a grid.
 void Plot_Window::draw_grid()
@@ -1009,7 +1028,6 @@ void Plot_Window::handle_selection ()
   color_array_from_selection ();
 }
 
-
 //***************************************************************************
 // Plot_Window::color_array_from_selection() -- Fill the index arrays and 
 // their associated counts.  Each array of indices will be rendered later 
@@ -1035,7 +1053,6 @@ void Plot_Window::color_array_from_selection()
   // assert(sum(number_selected(blitz::Range(0,nplots))) == (unsigned int)npoints);
   indexVBOsfilled = 0;
 }
-
 
 //***************************************************************************
 // Plot_Window::draw_selection_information() -- Draw decorations for the 
@@ -1312,6 +1329,8 @@ void Plot_Window::compute_histograms()
   compute_histogram(1);
 }
 
+//***************************************************************************
+// Plot_Window::draw_x_histogram( bin_counts, nbins) -- Draw x histogram
 void Plot_Window::draw_x_histogram(const blitz::Array<float,1> bin_counts, const int nbins) {
   float x = amin[0];
   float xwidth = (amax[0]-amin[0]) / (float)(nbins);
@@ -1325,6 +1344,8 @@ void Plot_Window::draw_x_histogram(const blitz::Array<float,1> bin_counts, const
   glEnd();
 }
 
+//***************************************************************************
+// Plot_Window::draw_y_histogram( bin_counts, nbins) -- Draw x histogram
 void Plot_Window::draw_y_histogram(const blitz::Array<float,1> bin_counts, const int nbins) {
   float y = amin[1];
   float ywidth = (amax[1]-amin[1]) / (float)(nbins);
@@ -1435,7 +1456,6 @@ void Plot_Window::draw_histograms()
   glPopMatrix();
 }
 
-///////////////pooka//////////////
 //***************************************************************************
 // Plot_Window::density_1D( a, axis) -- Compute marginal density estimate 
 // along axis using equi-width histogram.  Input array a is over-written.
@@ -2049,12 +2069,16 @@ void Plot_Window::clear_selections( Fl_Widget *o)
 
 // Methods to enable drawing with points (as opposed to point sprites)
 
+//***************************************************************************
+// Plot_Window::enable_regular_points() --
 void Plot_Window::enable_regular_points ()
 {
   disable_sprites();
   glDisable( GL_POINT_SMOOTH);
 }
 
+//***************************************************************************
+// Plot_Window::enable_antialiased_points() --
 void Plot_Window::enable_antialiased_points ()
 {
   disable_sprites();
@@ -2241,7 +2265,6 @@ void Plot_Window::fill_indexVBOs()
 // Define global methods.  NOTE: Is it a good idea to do this here rather 
 // than global_definitions.h?
 
-
 //***************************************************************************
 // moving_average( a, indices, half_width) -- Global method to calculate 
 // moving averages of BLITZ arrays
@@ -2270,8 +2293,6 @@ void moving_average(
   for( int i=0; i<npoints; i++)
     a(indices(i)) = tmp(i)/(float)(2*half_width+1);
 }
-
-
 
 //***************************************************************************
 // cummulative_conditional( a, indices, half_width) -- Global method to
@@ -2315,6 +2336,7 @@ void cummulative_conditional(
   for (int i=0; i<npoints; i++) a(indices(i)) = tmp(i);
 }
 
+//***************************************************************************
 // fluctuation: relative difference between a(i) and local average of a.
 // "local" is defined by rank passed in in indices.
 void fluctuation(

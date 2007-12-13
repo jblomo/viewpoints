@@ -35,7 +35,7 @@
 //      vp.cpp could be consolidated.
 //
 // Author: Bill Spitzak and others   1998-2005
-// Modified: P. R. Gazis  10-DEC-2007
+// Modified: P. R. Gazis  13-DEC-2007
 //***************************************************************************
 
 // Protection to make sure this header is not included twice
@@ -215,7 +215,7 @@ using namespace std;
 //    cb_previewButton_i( *, *) -- Callback method for the preview checkbox
 //
 // Author: Bill Spitzak and others   1998-2005
-// Modified: P. R. Gazis  28-NOV-2007
+// Modified: P. R. Gazis  13-DEC-2007
 //***************************************************************************
 class FL_EXPORT Vp_File_Chooser
 {
@@ -291,7 +291,7 @@ class FL_EXPORT Vp_File_Chooser
     int type_;
     int isAscii_;
     int writeSelectionInfo_;
-    int doCommentLabels_;
+    int doCommentedLabels_;
 
     // FLTK windows, boxes, and fields
     Fl_File_Browser *favList;
@@ -342,8 +342,8 @@ class FL_EXPORT Vp_File_Chooser
     void delimiter_show();
     char* directory();
     void directory( const char *directory_in);
-    void doCommentLabels( int doCommentLabels_in);
-    int doCommentLabels() const { return doCommentLabels_;};
+    void doCommentedLabels( int doCommentedLabels_in);
+    int doCommentedLabels() const { return doCommentedLabels_;};
     char* escape_sequences_insert( char *orig);
     char* escape_sequences_remove( char *orig);
     void fileTypeMenu_activate();

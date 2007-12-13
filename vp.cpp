@@ -45,8 +45,10 @@
 //   make_help_view_window( *o) -- Make Help View window
 //   textsize_help_view_widget( *o, *u) -- Change help text size
 //   close_help_window( *o, *u -- Help View window callback
-//   make_main_menu_bar() -- Create main menu bar (unused)
-//   step_help_view_widget( *o, *u) -- Step through the 'Help|Help' window.
+//   make_main_menu_bar() -- Create main menu bar
+//   make_options_window( *o) -- Make Tools|Options window
+//   cb_options_window( *o, *u) -- Process Tools|Options window
+//   step_help_view_widget( *o, *u) -- Step through the Help|Help window.
 //   make_global_widgets() -- Controls for main control panel
 //   change_all_axes( *o) -- Change all axes
 //   npoints_changed( *o) -- Update number of points changed
@@ -60,7 +62,7 @@
 //   reset_selection_arrays() -- Reset selection arrays
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  10-DEC-2007
+// Modified: P. R. Gazis  13-DEC-2007
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -142,9 +144,15 @@ Data_File_Manager dfm;
 Fl_Window *main_control_panel;
 Fl_Scroll *main_scroll;
 Fl_Menu_Bar *main_menu_bar;
+Fl_Window *options_window;
 Fl_Window *about_window;
 Fl_Window *help_view_window;
 Fl_Help_View *help_view_widget;
+
+// Define pointers to widgets for Tools|Options window
+Fl_Check_Button* expertButton;
+Fl_Check_Button* borderlessButton;
+Fl_Input* bad_value_proxy_input;
 
 // Function definitions for the main method
 void usage();
@@ -158,6 +166,8 @@ void create_broadcast_group();
 void manage_plot_window_array( Fl_Widget *o, void* user_data);
 void cb_manage_plot_window_array( void* o);
 void make_main_menu_bar();
+void make_options_window( Fl_Widget *o);
+void cb_options_window( Fl_Widget *o, void* user_data);
 void make_help_view_window( Fl_Widget *o);
 void textsize_help_view_widget( Fl_Widget *o, void* user_data);
 void close_help_window( Fl_Widget *o, void* user_data);
@@ -165,7 +175,6 @@ void step_help_view_widget( Fl_Widget *o, void* user_data);
 void make_global_widgets();
 void change_all_axes( Fl_Widget *o);
 void npoints_changed( Fl_Widget *o);
-// void resize_selection_index_arrays( int nplots_old, int nplots);
 void write_data( Fl_Widget *o, void* user_data);
 void reset_all_plots();
 void read_data( Fl_Widget* o, void* user_data);
@@ -185,55 +194,62 @@ void usage()
   cerr << endl;
   cerr << "Optional arguments:" << endl;
   cerr << "  -b, --borderless            "
-       << "don't show decorations on plot windows" << endl;
+       << "Don't show decorations on plot windows.  NOTE:" << endl
+       << "                              "
+       << "this option may freeze plot windows in place." << endl;
   cerr << "  -B, --no_vbo                "
-       << "don't use openGL vertex buffer objects" << endl;
+       << "Don't use openGL vertex buffer objects.  Try" << endl
+       << "                              "
+       << "this option if problems arise loading VBOs" << endl;
   cerr << "  -c, --cols=NCOLS            "
-       << "startup with this many columns of plot windows," << endl
+       << "Startup with this many columns of plot windows," << endl
        << "                              "
        << "default=2" << endl;
   cerr << "  -d, --delimiter=CHAR        "
-       << "interpret CHAR as a field separator, default is" << endl
+       << "Interpret CHAR as a field separator, default is" << endl
        << "                              "
-       << "whitespace" << endl;
+       << "whitespace." << endl;
   cerr << "  -f, --format={ascii,binary} "
-       << "input file format, default=ascii" << endl;
+       << "Input file format, default=ascii.  NOTE: for ASCII" << endl
+       << "                              "
+       << "files, the data block is assumed to begin with an" << endl
+       << "                              "
+       << "uncommented line that contains column labels" << endl;
   cerr << "  -i, --input_file=FILENAME   "
-       << "read input data from FILENAME" << endl;
+       << "Read input data from FILENAME." << endl;
   cerr << "  -m, --monitors=NSCREENS     "
-       << "try and force output to display across NSCREENS" << endl
+       << "Try and force output to display across NSCREENS" << endl
        << "                              "
-       << "screens if available" << endl;
+       << "screens if available." << endl;
   cerr << "  -M, --missing_values=NUMBER "
-       << "set the value of unreadable, nonnumeric, empty," << endl
+       << "Set the value of unreadable, nonnumeric, empty," << endl
        << "                              "
-       << "or missing data to NUMBER, default=0.0" << endl;
+       << "or missing data to NUMBER, default=0.0." << endl;
   cerr << "  -n, --npoints=NPOINTS       "
-       << "read at most NPOINTS from input file, default is" << endl
+       << "Read at most NPOINTS from input file, default is" << endl
        << "                              "
-       << "min(until_EOF, 2000000)" << endl;
+       << "min(until_EOF, 2000000)." << endl;
   cerr << "  -o, --ordering={rowmajor,columnmajor} " << endl
        << "                              "
-       << "ordering for binary data, default=columnmajor" << endl;
+       << "Ordering for binary data, default=columnmajor." << endl;
   cerr << "  -r, --rows=NROWS            "
-       << "startup with this many rows of plot windows," << endl
+       << "Startup with this many rows of plot windows," << endl
        << "                              "
-       << "default=2" << endl;
-  cerr << "  -s, --skip_header_lines=NLINES " << endl
-       << "                              "
-       << "skip NLINES at start of input file, default=0" << endl;
+       << "default=2." << endl;
+  cerr << "  -s, --skip_lines=NLINES     "
+       << "Skip NLINES at start of input file, default=0." << endl;
   cerr << "  -v, --nvars=NVARS           "
-       << "input has NVARS values per point (only for row" << endl
+       << "Input has NVARS values per point (only for row" << endl
        << "                              "
-       << "major binary data)" << endl;
+       << "major binary data)." << endl;
   cerr << "  -h, --help                  "
-       << "display this message and then exit" << endl;
+       << "Display this message and exit." << endl;
   cerr << "  -x, --expert                "
        << "enable expert mode (bypass confirmations, read" << endl
        << "                              "
        << "from stdin, etc.)" << endl;
   cerr << "  -V, --version               "
-       << "output version information and then exit" << endl;
+       << "Output version information and exit." << endl;
 
   exit( -1);
 }
@@ -246,27 +262,28 @@ void make_help_about_window( Fl_Widget *o)
    
   // Create Help|About window
   Fl::scheme( "plastic");  // optional
-  about_window = new Fl_Window( 300, 200, "About vp");
+  about_window = new Fl_Window( 320, 200, "About vp");
   about_window->begin();
   about_window->selection_color( FL_BLUE);
   about_window->labelsize( 10);
   
   // Write text to box label and align it inside box
-  Fl_Box* output_box = new Fl_Box( 5, 5, 290, 160);
-  output_box->box(FL_SHADOW_BOX);
-  output_box->color(7);
-  output_box->selection_color(52);
-  output_box->labelfont(FL_HELVETICA);
-  output_box->labelsize(15);
-  output_box->align(FL_ALIGN_TOP|FL_ALIGN_CENTER|FL_ALIGN_INSIDE);
-  output_box->copy_label(about_string.c_str());
+  Fl_Box* output_box = new Fl_Box( 5, 5, 310, 160);
+  output_box->box( FL_SHADOW_BOX);
+  output_box->color( 7);
+  output_box->selection_color( 52);
+  output_box->labelfont( FL_HELVETICA);
+  output_box->labelsize( 15);
+  output_box->align( FL_ALIGN_TOP|FL_ALIGN_CENTER|FL_ALIGN_INSIDE);
+  output_box->copy_label( about_string.c_str());
 
   // Invoke a multi-purpose callback function to close window
   Fl_Button* close = new Fl_Button( 200, 170, 60, 25, "&Close");
   close->callback( (Fl_Callback*) close_help_window, about_window);
 
   // Done creating the 'Help|About' window
-  about_window->resizable( about_window);
+  // about_window->resizable( about_window);
+  about_window->resizable( NULL);
   about_window->end();
   about_window->show();
 }
@@ -901,7 +918,8 @@ void make_main_menu_bar()
     (Fl_Callback *) dfm.edit_column_labels);
   main_menu_bar->add( 
     "Tools/Options            ", 0, 
-    (Fl_Callback *) manage_plot_window_array, 0, FL_MENU_INACTIVE);
+    // (Fl_Callback *) make_options_window, 0, FL_MENU_INACTIVE);
+    (Fl_Callback *) make_options_window);
 
   // Add Help menu items
   main_menu_bar->add( 
@@ -923,6 +941,87 @@ void make_main_menu_bar()
   //     (Fl_Menu_Item*) &(main_menu_bar->menu()[i]);
   //   pMenuItem->labelsize(32);
   // }
+}
+
+//***************************************************************************
+// make_options_window( *o) -- Create the 'Tools|Options' window.
+void make_options_window( Fl_Widget *o)
+{
+  if( options_window != NULL) options_window->hide();
+   
+  // Create Tools|Options window
+  Fl::scheme( "plastic");  // optional
+  options_window = new Fl_Window( 300, 200, "Options");
+  options_window->begin();
+  options_window->selection_color( FL_BLUE);
+  options_window->labelsize( 10);
+  
+  // Write text to box label and align it inside box
+  // Fl_Box* options_box = new Fl_Box( 5, 5, 290, 360);
+  // box->box( FL_NO_BOX);
+  // options_window->resizable( box);
+  options_window->resizable( NULL);
+
+  // Expert mode checkbox
+  {
+    Fl_Check_Button* o = expertButton = 
+      new Fl_Check_Button( 10, 10, 150, 20, " Expert Mode");
+      o->down_box( FL_DOWN_BOX);
+      o->value( expert_mode != 0);
+      o->tooltip( "Suppress confirmation windows");
+      // expertButton->callback( (Fl_Callback*) cb_options_window);
+  }
+  // {
+  //   Fl_Check_Button* o = borderlessButton = 
+  //     new Fl_Check_Button( 10, 35, 150, 20, " Borderless option");
+  //     o->down_box( FL_DOWN_BOX);
+  //     o->value( borderless != 0);
+  //     o->tooltip( "Turn off window borders.  WARNING: May\nfreeze windows in place!");
+  // }
+  {
+    Fl_Input* o = bad_value_proxy_input =
+      new Fl_Input( 10, 35, 70, 20, " Bad Value Proxy");
+      o->align( FL_ALIGN_RIGHT);
+      stringstream ss_float;
+      string s_float;
+      ss_float << dfm.bad_value_proxy();
+      ss_float >> s_float;
+      o->value( s_float.c_str());
+      o->tooltip( "Value used for missing or bad data");
+  }
+
+  // Invoke a multi-purpose callback function to process window
+  Fl_Button* ok_button = new Fl_Button( 150, 170, 40, 25, "&OK");
+  ok_button->callback( (Fl_Callback*) cb_options_window, ok_button);
+  Fl_Button* cancel = new Fl_Button( 200, 170, 60, 25, "&Cancel");
+  cancel->callback( (Fl_Callback*) cb_options_window, cancel);
+
+  // Done creating the 'Help|About' window
+  // options_window->resizable( options_window);
+  options_window->resizable( NULL);
+  options_window->end();
+  options_window->show();
+}
+
+//***************************************************************************
+// cb_options_window( *o, *user_data) -- Callback function to process the
+// Options window.  It is assumed that the necessary pointers will be 
+// passed as USER_DATA.  WARNING: No error checking is done on USER_DATA!
+void cb_options_window( Fl_Widget *o, void* user_data)
+{
+  if( user_data == NULL) {
+    options_window->hide();
+    return;
+  }
+
+  if( strcmp( ((Fl_Widget*) user_data)->label(), "&OK") == 0) {
+    expert_mode = expertButton->value();
+    // borderless = borderlessButton->value();
+    // for( int i=0; i<nplots; i++) pws[ i]->border( !borderless);
+    float bad_value_proxy = strtof( bad_value_proxy_input->value(), NULL);
+    dfm.bad_value_proxy( bad_value_proxy);
+  }
+  options_window->hide();
 }
 
 //***************************************************************************
@@ -1270,14 +1369,23 @@ int load_state( Fl_Widget* o)
   std::ifstream inputFileStream( cInFileSpec, std::ios::binary);
   assert( inputFileStream.good());
 
-  // Create and open an archive for input.  As before, this will be
-  // closed when destructors are called
-  boost::archive::xml_iarchive inputArchive( inputFileStream);
-
   // Install most of the load procedure in a try-catch process to protect
   // against corrupt serialization files
   try {
+    // Create and open an archive for input.  As before, this will be
+    // closed when destructors are called
+    boost::archive::xml_iarchive inputArchive( inputFileStream);
 
+    // Begin by checking serialization file version
+    int serialization_file_version = -1;
+    inputArchive >> BOOST_SERIALIZATION_NVP( serialization_file_version);
+    if( current_serialization_version > serialization_file_version) throw 0;
+
+    // Load basic configuration information
+    // float bad_value_proxy;
+    // inputArchive >>  BOOST_SERIALIZATION_NVP( bad_value_proxy);
+    // dfm.bad_value_proxy( bad_value_proxy);
+    
     // Get data file from archive and read it
     inputArchive >> BOOST_SERIALIZATION_NVP( dfm);
     if( dfm.input_filespec().length() <= 0) dfm.create_default_data( 10);
@@ -1302,121 +1410,45 @@ int load_state( Fl_Widget* o)
     // the tab widget and reload the plot window array.
     manage_plot_window_array( o, (void*) "NEW_DATA");
 
-    // Loop: Loop through NPLOTS in a brute force scheme to read control panel 
-    // information from the archive
+    // Read NPLOTS from the archive to make sure it is consistent with the
+    // stored control panel and plot window information.  NOTE: If something
+    // went wrong with MANAGE_PLOT_WINDOW_ARRAY, this could cause problems.
     inputArchive >> BOOST_SERIALIZATION_NVP( nplots);
-    for( int i=0; i<nplots; i++) {
-       
-      // Convert index value to string
-      stringstream ss_i;
-      string s_i;
-      ss_i << i;
-      ss_i >> s_i;
-    
-      // Load control panel settings
-      using boost::serialization::make_nvp;
-      {
-        string sName = "ivar_save_" + s_i;
-        const char *cName = sName.c_str();
-        int iValue;
-        inputArchive & make_nvp( cName, iValue);
-        cps[ i]->varindex1->value( iValue);
-      }
-      {
-        string sName = "jvar_save_" + s_i;
-        const char *cName = sName.c_str();
-        int iValue;
-        inputArchive & make_nvp( cName, iValue);
-        cps[ i]->varindex2->value( iValue);
-      }
-      {
-        string sName = "kvar_save_" + s_i;
-        const char *cName = sName.c_str();
-        int iValue;
-        inputArchive & make_nvp( cName, iValue);
-        cps[ i]->varindex3->value( iValue);
-      }
-      {
-        string sName = "x_normalization_style_" + s_i;
-        const char *cName = sName.c_str();
-        int iValue;
-        inputArchive & make_nvp( cName, iValue);
-        cps[ i]->x_normalization_style->value( iValue);
-      }
-      {
-        string sName = "y_normalization_style_" + s_i;
-        const char *cName = sName.c_str();
-        int iValue;
-        inputArchive & make_nvp( cName, iValue);
-        cps[ i]->y_normalization_style->value( iValue);
-      }
-      {
-        string sName = "z_normalization_style_" + s_i;
-        const char *cName = sName.c_str();
-        int iValue;
-        inputArchive & make_nvp( cName, iValue);
-        cps[ i]->z_normalization_style->value( iValue);
-      }
-      {
-        string sName = "lock_axis1_button_" + s_i;
-        const char *cName = sName.c_str();
-        int iValue;
-        inputArchive & make_nvp( cName, iValue);
-        cps[ i]->lock_axis1_button->value( iValue);
-      }
-      {
-        string sName = "lock_axis2_button_" + s_i;
-        const char *cName = sName.c_str();
-        int iValue;
-        inputArchive & make_nvp( cName, iValue);
-        cps[ i]->lock_axis2_button->value( iValue);
-      }
-      {
-        string sName = "lock_axis3_button_" + s_i;
-        const char *cName = sName.c_str();
-        int iValue;
-        inputArchive & make_nvp( cName, iValue);
-        cps[ i]->lock_axis3_button->value( iValue);
-      }
 
-      // Load plot window positions
-      int x, y, w, h;
-      {
-        string sName = "pws_x_save_" + s_i;
-        const char *cName = sName.c_str();
-        inputArchive & make_nvp( cName, x);
-      }
-      {
-        string sName = "pws_y_save_" + s_i;
-        const char *cName = sName.c_str();
-        inputArchive & make_nvp( cName, y);
-      }
-      pws[ i]->position( x, y);
-      {
-        string sName = "pws_w_save_" + s_i;
-        const char *cName = sName.c_str();
-        inputArchive & make_nvp( cName, w);
-      }
-      {
-        string sName = "pws_h_save_" + s_i;
-        const char *cName = sName.c_str();
-        inputArchive & make_nvp( cName, h);
-      }
-      pws[ i]->size( w, h);
-    }   // End of loop through NPLOTS
+    // Define temporary arrays, load thse with serialization information, then
+    // transfer this information to the actual arrays.  NOTE: This awkward
+    // procedure is imposed by the limitations of the relevant constructors.
+    Control_Panel_Window *cps_input[ MAXPLOTS+1]; 
+    inputArchive >> BOOST_SERIALIZATION_NVP( cps_input);
+    for( int i=0; i<nplots; i++)
+      cps[i]->load_serialized_parameters( cps_input[ i]);
+    Plot_Window *pws_input[ MAXPLOTS+1]; 
+    inputArchive >> BOOST_SERIALIZATION_NVP( pws_input);
+    for( int i=0; i<nplots; i++)
+      pws[i]->load_serialized_parameters( pws_input[ i]);
 
     // Set user_data to indicate that this is a RESIZE operation, then i
     // invoke manage_plot_window( o) to apply configuration.
     manage_plot_window_array( o, (void*) "REFRESH_WINDOWS");
   }
+  catch( int i_thrown) {
+    string sWarning = "";
+    sWarning.append( "WARNING: Configuration file is an older or\n.");
+    sWarning.append( "unsupported version that cannot be loaded");
+    make_confirmation_window( sWarning.c_str(), 1);
+    cerr << "Main::load_state: WARNING, "
+         << "Unsupported version of configuration file" << endl;
+    cerr << "       load_state reports exception (" << i_thrown
+         << ")" << endl;
+  }
   catch( exception &e) {
     string sWarning = "";
-    sWarning.append( "WARNING: Config file may be damaged or obsolete\n.");
-    sWarning.append( "The resulting configuration may be unpredictable");
+    sWarning.append( "WARNING: Configuration file appears to be damaged\n.");
+    sWarning.append( "or obsolete.  Results may be unpredictable");
     make_confirmation_window( sWarning.c_str(), 1);
     cerr << "Main::load_state: WARNING, "
          << "problem loading serialization file" << endl;
-    cerr << "       load_state reports exception (" << e.what()
+    cerr << "      load_state reports exception (" << e.what()
          << ")" << endl;
   }
   
@@ -1518,104 +1550,25 @@ int save_state( Fl_Widget* o)
   // Create archive, which will be closed when destructors are called.
   boost::archive::xml_oarchive outputArchive( outputFileStream);
 
-  // Write class instance to archive
+  // Begin by saving current serialization file version number
+  outputArchive << boost::serialization::make_nvp( 
+    "serialization_file_version", current_serialization_version);
+
+  // Save basic configuration information
+  // int bad_value_proxy = dfm.bad_value_proxy();
+  // outputArchive <<  BOOST_SERIALIZATION_NVP( bad_value_proxy);
+
+  // Write data_file_manager class instance to archive
   outputArchive << BOOST_SERIALIZATION_NVP( dfm);
+
+  // Write plot window array information to archive
   outputArchive << BOOST_SERIALIZATION_NVP( nrows);
   outputArchive << BOOST_SERIALIZATION_NVP( ncols);
-
-  // Brute force scheme to write control panel information to archive
   outputArchive << BOOST_SERIALIZATION_NVP( nplots);
-  for( int i=0; i<nplots; i++) {
 
-    // Convert index value to string
-    stringstream ss_i;
-    string s_i, sName;
-    ss_i << i;
-    ss_i >> s_i;
-
-    // Load control panel settings
-    using boost::serialization::make_nvp;
-    {
-      string sName = "ivar_save_" + s_i;
-      const char *cName = sName.c_str();
-      int iValue = cps[ i]->varindex1->value();
-      outputArchive & make_nvp( cName, iValue);
-    }
-    {
-      string sName = "jvar_save_" + s_i;
-      const char *cName = sName.c_str();
-      int iValue = cps[ i]->varindex2->value();
-      outputArchive & make_nvp( cName, iValue);
-    }
-    {
-      string sName = "kvar_save_" + s_i;
-      const char *cName = sName.c_str();
-      int iValue = cps[ i]->varindex3->value();
-      outputArchive & make_nvp( cName, iValue);
-    }
-    {
-      string sName = "x_normalization_style_" + s_i;
-      const char *cName = sName.c_str();
-      int iValue = cps[ i]->x_normalization_style->value();
-      outputArchive & make_nvp( cName, iValue);
-    }
-    {
-      string sName = "y_normalization_style_" + s_i;
-      const char *cName = sName.c_str();
-      int iValue = cps[ i]->y_normalization_style->value();
-      outputArchive & make_nvp( cName, iValue);
-    }
-    {
-      string sName = "z_normalization_style_" + s_i;
-      const char *cName = sName.c_str();
-      int iValue = cps[ i]->z_normalization_style->value();
-      outputArchive & make_nvp( cName, iValue);
-    }
-    {
-      string sName = "lock_axis1_button_" + s_i;
-      const char *cName = sName.c_str();
-      int iValue = cps[ i]->lock_axis1_button->value();
-      outputArchive & make_nvp( cName, iValue);
-    }
-    {
-      string sName = "lock_axis2_button_" + s_i;
-      const char *cName = sName.c_str();
-      int iValue = cps[ i]->lock_axis2_button->value();
-      outputArchive & make_nvp( cName, iValue);
-    }
-    {
-      string sName = "lock_axis3_button_" + s_i;
-      const char *cName = sName.c_str();
-      int iValue = cps[ i]->lock_axis3_button->value();
-      outputArchive & make_nvp( cName, iValue);
-    }
-
-    // Save plot window positions
-    {
-      string sName = "pws_x_save_" + s_i;
-      const char *cName = sName.c_str();
-      int iValue = pws[ i]->x();
-      outputArchive & make_nvp( cName, iValue);
-    }
-    {
-      string sName = "pws_y_save_" + s_i;
-      const char *cName = sName.c_str();
-      int iValue = pws[ i]->y();
-      outputArchive & make_nvp( cName, iValue);
-    }
-    {
-      string sName = "pws_w_save_" + s_i;
-      const char *cName = sName.c_str();
-      int iValue = pws[ i]->w();
-      outputArchive & make_nvp( cName, iValue);
-    }
-    {
-      string sName = "pws_h_save_" + s_i;
-      const char *cName = sName.c_str();
-      int iValue = pws[ i]->h();
-      outputArchive & make_nvp( cName, iValue);
-    }
-  }
+  // Serialize directly from the relevant arrays
+  outputArchive << BOOST_SERIALIZATION_NVP( cps);
+  outputArchive << BOOST_SERIALIZATION_NVP( pws);
   
   // Report success
   return 1;
@@ -1676,12 +1629,13 @@ int main( int argc, char **argv)
   // XXX: In a perfect world, this should be included with the global 
   // definitions
   about_string = "\n\
-    viewpoints 2.0.2 \n\
+    viewpoints 2.0.3 \n\
     " + string(SVN_VERSION) + "\n\
     \n\
     (c) 2006 M. Creon Levit and Paul R. Gazis   \n\
-        creon.levit@@nasa.gov \n\
-        Paul.R.Gazis@@nasa.gov \n\
+    \n\
+    creon.levit@@nasa.gov \n\
+    Paul.R.Gazis@@nasa.gov \n\
     \n";
 
   // STEP 1: Parse the command line
@@ -1695,7 +1649,7 @@ int main( int argc, char **argv)
     { "format", required_argument, 0, 'f'},
     { "npoints", required_argument, 0, 'n'},
     { "nvars", required_argument, 0, 'v'},
-    { "skip_header_lines", required_argument, 0, 's'},
+    { "skip_lines", required_argument, 0, 's'},
     { "ordering", required_argument, 0, 'o'},
     { "rows", required_argument, 0, 'r'},
     { "cols", required_argument, 0, 'c'},
@@ -1765,8 +1719,8 @@ int main( int argc, char **argv)
       // nSkipHeaderLines: Extract number of header lines to skip at the
       // beginning of the data file
       case 's':
-        dfm.n_skip_header_lines( atoi( optarg));
-        if( dfm.n_skip_header_lines() < 0)  {
+        dfm.n_skip_lines( atoi( optarg));
+        if( dfm.n_skip_lines() < 0)  {
           usage();
           exit( -1);
         }
@@ -1937,7 +1891,8 @@ int main( int argc, char **argv)
   // create_main_control_panel(main_x, main_y, main_w, main_h, "viewpoints -> creon.levit@nasa.gov");
   create_main_control_panel( 
     main_x, main_y, main_w, main_h,
-    "viewpoints -> Creon Levit and Paul Gazis");
+    "viewpoints -> Fast Interactive Visualization");
+    // "viewpoints -> Creon Levit and Paul Gazis");
 
   // Step 4: Call manage_plot_window_array with a NULL argument to
   // initialize the plot window array.  KLUDGE ALERT: argc and argv are
