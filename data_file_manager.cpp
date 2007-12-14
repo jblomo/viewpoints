@@ -19,7 +19,7 @@
 // Purpose: Source code for <data_file_manager.h>
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  12-DEC-2007
+// Modified: P. R. Gazis  14-DEC-2007
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -71,6 +71,7 @@ void Data_File_Manager::initialize()
   bad_value_proxy_ = 0.0;
   isAsciiInput = 1;
   isAsciiOutput = 0;
+  isAsciiData = isAsciiInput;
   doAppend = 0;
   doMerge = 0;
   readSelectionInfo_ = 1;
@@ -81,9 +82,10 @@ void Data_File_Manager::initialize()
 
   isColumnMajor = 1;
   nSkipHeaderLines = 0;  // Number of header lines to skip
-  // nSkipHeaderLines = 1;  // Number of header lines to skip
-  // sDirectory_ = ".";  // Default pathname
+  // sDirectory_ = ".";  // Default pathname -- NOT NEEDED!
   inFileSpec = "";  // Default input filespec
+  outFileSpec = "";
+  dataFileSpec = "";
 
   // Initialize the number of points and variables specified by the command 
   // line arguments.  NOTE: 0 means read to EOF or end of line.
@@ -103,6 +105,9 @@ void Data_File_Manager::initialize()
 // file_chooser window.  Returns 0 if successful.  
 int Data_File_Manager::findInputFile()
 {
+  // Print empty line to console for reasons of aesthetics
+  cout << endl;
+
   // Generate text, file extensions, etc, for this file type.  XXX PRG: Most 
   // of this should be moved to Vp_File_Chooser
   string title;
@@ -127,6 +132,7 @@ int Data_File_Manager::findInputFile()
     new Vp_File_Chooser( 
       cInFileSpec, pattern.c_str(), Vp_File_Chooser::SINGLE, title.c_str());
   file_chooser->isAscii( isAsciiInput);
+  file_chooser->doCommentedLabels( doCommentedLabels_);
 
   // Loop: Select fileSpecs until a non-directory is obtained.  NOTE: If all
   // goes well, this should be handled by the file_chooser object
@@ -210,9 +216,8 @@ int Data_File_Manager::load_data_file( string inFileSpec)
 }
 
 //***************************************************************************
-// Data_File_Manager::load_data_file( inFileSpec) -- Read an ASCII or binary 
-// data file, resize arrays to allocate meomory.  Returns 0 if successful.
-// int Data_File_Manager::load_data_file( string inFileSpecIn) 
+// Data_File_Manager::load_data_file() -- Read an ASCII or binary data file, 
+// resize arrays to allocate meomory.  Returns 0 if successful.
 int Data_File_Manager::load_data_file() 
 {
   // PRG XXX: Would it be possible or desirable to examine the file directly 
@@ -258,7 +263,7 @@ int Data_File_Manager::load_data_file()
   else
     cout << "Data_File_Manager::load_data_file: Finished reading file <" 
          << inFileSpec.c_str() << ">" << endl;
-         
+  
   // Resize the READ_SELECTED array here
   read_selected.resizeAndPreserve( npoints);  
 
@@ -271,7 +276,7 @@ int Data_File_Manager::load_data_file()
   // prevent a crash, then quit before something terrible happens!
   if( nvars <= 1 || npoints <= 1) {
     cerr << " -WARNING: Insufficient data, " << nvars << "x" << npoints
-         << " samples.  Check delimiter setting." << endl;
+         << " samples.\nCheck delimiter character." << endl;
     string sWarning = "";
     sWarning.append( "WARNING: Insufficient number of attributes or samples\n.");
     sWarning.append( "Check delimiter setting.  Generating default data");
@@ -384,7 +389,9 @@ int Data_File_Manager::load_data_file()
   // Refresh edit window, if it exists.
   refresh_edit_column_labels();
 
-  // Set saved file flag and report success
+  // Update dataFileSpec, set saved file flag, and report success
+  dataFileSpec = inFileSpec;
+  isAsciiData = isAsciiInput;
   if( doAppend > 0 | doMerge > 0) isSavedFile_ = 0;
   else isSavedFile_ = 1;
   return 0;
@@ -1151,9 +1158,15 @@ int Data_File_Manager::save_data_file( string outFileSpec)
 // disk.  Returns 0 if successful.
 int Data_File_Manager::save_data_file()
 {
-  if( isAsciiOutput != 1) return write_binary_file_with_headers();
-  else return write_ascii_file_with_headers();
-  isSavedFile_ = 1;
+  int result = 0;
+  if( isAsciiOutput != 1) result = write_binary_file_with_headers();
+  else result = write_ascii_file_with_headers();
+  if( result == 0) {
+    isSavedFile_ = 1;
+    dataFileSpec = outFileSpec;
+    isAsciiData = isAsciiOutput;
+  }
+  return result;
 }
 
 //***************************************************************************

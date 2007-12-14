@@ -101,11 +101,12 @@ class Control_Panel_Window : public Fl_Group
     int ivar_save, jvar_save, kvar_save;
     int ix_style, jy_style, kz_style;
     int ix_lock, jy_lock, kz_lock;
+    // int iTransformStyle;   // See note on transform styles below
     template<class Archive>
     void serialize( Archive & ar, const unsigned int /* file_version */)
     {
       ar & boost::serialization::make_nvp( "index", index);
-      if( (dynamic_cast<boost::archive::xml_oarchive *> (&ar))) {
+      if( (dynamic_cast<boost::archive::xml_oarchive *> (&ar))) {   // Output
         ivar_save = varindex1->value();
         jvar_save = varindex2->value();
         kvar_save = varindex3->value();
@@ -115,8 +116,17 @@ class Control_Panel_Window : public Fl_Group
         ix_lock = lock_axis1_button->value();
         jy_lock = lock_axis2_button->value();
         kz_lock = lock_axis3_button->value();
+
+        // NOTE: This won't work until MAIN::manage_plot_window_array is 
+        // modified to remember tranbform styles.  Also, this code will have 
+        // to be changed whenever transform style buttons are added, 
+        // modified, or removed.
+        // if( fluctuation->value() > 0) iTransformStyle = 3;
+        // else if( sum_vs_difference->value() > 0) iTransformStyle = 2;
+        // else if( cond_prop->value() > 0) iTransformStyle = 1;
+        // else iTransformStyle = 0;
       }
-      else cout << "DIAGNOSTIC: dynamic_cast failed so this must be input" << endl;
+      // else cout << "DIAGNOSTIC: dynamic_cast failed so this must be input" << endl;
       ar & boost::serialization::make_nvp( "varindex1", ivar_save);
       ar & boost::serialization::make_nvp( "varindex2", jvar_save);
       ar & boost::serialization::make_nvp( "varindex3", kvar_save);
@@ -126,6 +136,7 @@ class Control_Panel_Window : public Fl_Group
       ar & boost::serialization::make_nvp( "lock_axis1_button", ix_lock);
       ar & boost::serialization::make_nvp( "lock_axis2_button", jy_lock);
       ar & boost::serialization::make_nvp( "lock_axis3_button", kz_lock);
+      // ar & boost::serialization::make_nvp( "transform_style", iTransformStyle);
     }
             
     void maybe_redraw();

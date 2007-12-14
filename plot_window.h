@@ -27,7 +27,7 @@
 //   1) Review and add comments!
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  13-DEC-2007
+// Modified: P. R. Gazis  23-APR-2007
 //***************************************************************************
 
 // Protection to make sure this header is not included twice
@@ -123,7 +123,7 @@ class Control_Panel_Window;
 //     and deselected points when rendered as openGL point sprites.
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  13-DEC-2007
+// Modified: P. R. Gazis  12-DEC-2007
 //***************************************************************************
 class Plot_Window : public Fl_Gl_Window
 {

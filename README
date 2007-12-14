@@ -1,7 +1,7 @@
 viewpoints -- Fast interactive linked plotting of large multivariate data sets.
 
-Version: 2.0.2  (Build 212)
-Date: 12 Dec 2007
+Version: 2.0.2  (Build 213)
+Date: 14 Dec 2007
 
 
 Overview:
@@ -41,6 +41,16 @@ conists of a line of column label information followed by a block of binary
 data in row- or column-major format.  Note that the line of column labels 
 must NOT be preceded by a comment character unless they are specified by the
 user to be part of the header.
+
+Configuration Files:
+
+Viewpoints can save basic configuration information, such as axis settings, 
+window positions, and the name of the last input or output data file, to a 
+configuration file for later reuse.  Note that this process does not save the
+actual data or selection information itself!  If it did, this could lead to
+unnecessary duplication of the data files.  The user must save any new or
+modified data they wish to associate with a configuration before they save 
+that configuration.
 
 Usage:
 
@@ -180,10 +190,11 @@ Main menu bar
  File|Open data file         Read data from an input file
  File|Append more data       Append additional samples to the existing data
  File|Merge another file     Merge additional attributes for these samples
+ File|Write ASCII file       Write all the current data as an ASCII file
  File|Save all data          Write all data
  File|Save selected data     Write only the currently selected data
- File|Load Configuration     Load some configuration information
- File|Save Configuration     Save some configuration information
+ File|Load Configuration     Load basic configuration information
+ File|Save Configuration     Save basic configuration information
  File|Quit                   Quit
  View|Add Row                Add a row of plot windows
  View|Add Column             Add a column of plot windows
@@ -192,8 +203,6 @@ Main menu bar
  View|Reload File            Reload the existing data file
  View|Restore Panels         Restore deleted plot windows
  View|Default Panels         Restore the default polt window configuration
- Tools|Edit Column Labels    Delete selected column labels
- Tools|Options               Set some basic options
  Help|Help                   Opens a simple HELP window
  Help|About                  Information about this version
 

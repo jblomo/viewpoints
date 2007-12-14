@@ -32,6 +32,18 @@
 //      use tool for exploratory data analysis.  Creon's code reflects a 
 //      strong 'C' heritage.  Paul's code is written in C++ using the 'if 
 //      only it were JAVA' programming style.
+//   2) Functions in the main routine are sufficiently interdependant that it
+//      would be difficult to distribute them among separate objects.  For 
+//      this reason they are left in main().  It would be quite possible to
+//      combine them into a single vp class, but they have been left in 
+//      main() for reasons of simplicity.
+//   3) This code takes advantage of the FLTK graphics toolkit, the BOOST
+//      array package, BOOST serialization, and several other C++ packages.
+//      For the most part, this is straightforward, but use of BOOST 
+//      serialization is complicated by its lack of documentation and its 
+//      assumptions regarding the availability and use of constructors.
+//   4) In addition to BOOST serialization, parts of this code also store
+//      settings via the FLTK FL_Preferences class.
 //
 // Functions:
 //   usage() -- Print help information
@@ -62,7 +74,7 @@
 //   reset_selection_arrays() -- Reset selection arrays
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  13-DEC-2007
+// Modified: P. R. Gazis  14-DEC-2007
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -135,6 +147,10 @@ static const int cp_widget_x = 3, cp_widget_y = tabs_widget_y+20;
 static const int brushes_x = 3, brushes_y = tabs_widget_y+tabs_widget_h+10;
 static const int global_widgets_x = 10;
 
+// Set up preferences
+static Fl_Preferences
+  prefs_( Fl_Preferences::USER, "viewpoints.arc.nasa.gov", "viewpoints");
+
 // Define class to hold data file manager
 Data_File_Manager dfm;
 
@@ -151,7 +167,7 @@ Fl_Help_View *help_view_widget;
 
 // Define pointers to widgets for Tools|Options window
 Fl_Check_Button* expertButton;
-Fl_Check_Button* borderlessButton;
+// Fl_Check_Button* borderlessButton;
 Fl_Input* bad_value_proxy_input;
 
 // Function definitions for the main method
@@ -967,7 +983,7 @@ void make_options_window( Fl_Widget *o)
     Fl_Check_Button* o = expertButton = 
       new Fl_Check_Button( 10, 10, 150, 20, " Expert Mode");
       o->down_box( FL_DOWN_BOX);
-      o->value( expert_mode != 0);
+      o->value( expert_mode == true);
       o->tooltip( "Suppress confirmation windows");
       // expertButton->callback( (Fl_Callback*) cb_options_window);
   }
@@ -1015,7 +1031,9 @@ void cb_options_window( Fl_Widget *o, void* user_data)
   }
 
   if( strcmp( ((Fl_Widget*) user_data)->label(), "&OK") == 0) {
-    expert_mode = expertButton->value();
+    int i_expert_mode = expertButton->value();
+    prefs_.set( "expert_mode", i_expert_mode);
+    expert_mode = ( i_expert_mode != 0);
     // borderless = borderlessButton->value();
     // for( int i=0; i<nplots; i++) pws[ i]->border( !borderless);
     float bad_value_proxy = strtof( bad_value_proxy_input->value(), NULL);
@@ -1363,6 +1381,9 @@ int load_state( Fl_Widget* o)
     return -1;
   }
 
+  // Print empty line to console for reasons of aesthetics
+  cout << endl;
+
   // Create a file stream for input and make sure it exists.  This will
   // be closed when destructors are called.  NOTE: If this ASSERT triggers,
   // something has gone badly wrong in the WHILE loop above.
@@ -1380,11 +1401,6 @@ int load_state( Fl_Widget* o)
     int serialization_file_version = -1;
     inputArchive >> BOOST_SERIALIZATION_NVP( serialization_file_version);
     if( current_serialization_version > serialization_file_version) throw 0;
-
-    // Load basic configuration information
-    // float bad_value_proxy;
-    // inputArchive >>  BOOST_SERIALIZATION_NVP( bad_value_proxy);
-    // dfm.bad_value_proxy( bad_value_proxy);
     
     // Get data file from archive and read it
     inputArchive >> BOOST_SERIALIZATION_NVP( dfm);
@@ -1554,11 +1570,7 @@ int save_state( Fl_Widget* o)
   outputArchive << boost::serialization::make_nvp( 
     "serialization_file_version", current_serialization_version);
 
-  // Save basic configuration information
-  // int bad_value_proxy = dfm.bad_value_proxy();
-  // outputArchive <<  BOOST_SERIALIZATION_NVP( bad_value_proxy);
-
-  // Write data_file_manager class instance to archive
+  // Write class instance to archive
   outputArchive << BOOST_SERIALIZATION_NVP( dfm);
 
   // Write plot window array information to archive
@@ -1620,7 +1632,7 @@ void reset_selection_arrays()
 //   main() -- main routine
 //
 // Author:   Creon Levit   unknown
-// Modified: P. R. Gazis   30-NOV-2006
+// Modified: P. R. Gazis   14-DEC-2006
 //***************************************************************************
 //***************************************************************************
 // Main -- Driver routine
@@ -1629,7 +1641,7 @@ int main( int argc, char **argv)
   // XXX: In a perfect world, this should be included with the global 
   // definitions
   about_string = "\n\
-    viewpoints 2.0.3 \n\
+    viewpoints 2.0.2 \n\
     " + string(SVN_VERSION) + "\n\
     \n\
     (c) 2006 M. Creon Levit and Paul R. Gazis   \n\
@@ -1666,6 +1678,11 @@ int main( int argc, char **argv)
     { "psn_", required_argument, 0, 'p'}, 
     { 0, 0, 0, 0}
   };
+
+  // Extract persistent variables
+  int i_expert_mode;
+  prefs_.get( "expert_mode", i_expert_mode, 0);
+  expert_mode = ( i_expert_mode != 0);
 
   // Initialize the data file manager, just in case, even though this should
   // already have been done by the constructor.

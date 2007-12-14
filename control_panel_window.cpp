@@ -22,7 +22,7 @@
 // Purpose: Source code for <Control_Panel_Window.h>
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  12-DEC-2007
+// Modified: P. R. Gazis  14-DEC-2007
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -95,6 +95,18 @@ void Control_Panel_Window::load_serialized_parameters( Control_Panel_Window* cp)
   lock_axis1_button->value( ix_lock);
   lock_axis2_button->value( jy_lock);
   lock_axis3_button->value( kz_lock);
+
+  // NOTE: This won't work until MAIN::manage_plot_window_array is modified
+  // to remember tranbform styles.  Also, this code will have to be changed 
+  // whenever the transform style buttons are added, modified, or removed.
+  // fluctuation->value(0);
+  // sum_vs_difference->value(0);
+  // cond_prop->value(0);
+  // no_transform->value(1);
+  // if( iTransformStyle == 3) fluctuation->value(1);
+  // else if( iTransformStyle == 2) sum_vs_difference->value(1);
+  // else if( iTransformStyle == 1) cond_prop->value(1);
+  // else no_transform->value(1);
 }
 
 //***************************************************************************

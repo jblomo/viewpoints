@@ -322,7 +322,7 @@ class FL_EXPORT Vp_File_Chooser
     Fl_Round_Button *custom_delimiter;
     Fl_Input* custom_delimiter_input;
 
-    // Static variables
+    // Static variable to hold preferences
     static Fl_Preferences prefs_;
     
   public:

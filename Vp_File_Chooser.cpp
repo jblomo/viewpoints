@@ -34,12 +34,16 @@ static unsigned char idata_new[] = {
   1,128,1,128,255,255,0,0};
 static Fl_Bitmap image_new( idata_new, 16, 16);
 
-// Set File chooser label strings and sort function...
-Fl_Preferences Vp_File_Chooser::prefs_( Fl_Preferences::USER, "fltk.org", "filechooser");
+// Set File chooser preferences
+// Fl_Preferences Vp_File_Chooser::prefs_( Fl_Preferences::USER, "fltk.org", "filechooser");
+Fl_Preferences Vp_File_Chooser::prefs_( 
+  Fl_Preferences::USER, "viewpoints.arc.nasa.gov", "filechooser");
+
+// Set File chooser label strings, tooltips, and sort function...
 const char *Vp_File_Chooser::add_favorites_label = "Add to Favorites";
 const char *Vp_File_Chooser::all_files_label = "All Files (*)";
 const char *Vp_File_Chooser::custom_filter_label = "Custom Filter";
-const char *Vp_File_Chooser::commentLabels_label = "Column labels are preceeded by a coment";
+const char *Vp_File_Chooser::commentLabels_label = "Column labels are preceeded by a comment";
 const char *Vp_File_Chooser::commentLabels_tooltip = 
   "Column Labels are included in the last line of the \nheader and begin with a comment character";
 const char *Vp_File_Chooser::delimiter_label = "Delimiter:";
@@ -618,8 +622,8 @@ void Vp_File_Chooser::directory( const char *directory_in)
 void Vp_File_Chooser::doCommentedLabels( int doCommentedLabels_in)
 {
   doCommentedLabels_ = doCommentedLabels_in;
+  commentLabelsButton->value( doCommentedLabels_ != 0);
   // prefs_.set( "doCommentedLabels", doCommentedLabels_);
-  // commentLabelsButton->value( doCommentedLabels_ != 0);
 }
 
 //*****************************************************************************
@@ -2381,7 +2385,7 @@ void Vp_File_Chooser::cb_okButton_i( Fl_Return_Button*, void*)
 void Vp_File_Chooser::cb_previewButton( Fl_Check_Button* o, void* v)
 {
   ( (Vp_File_Chooser*) 
-    (o->parent()->parent()->parent()->user_data()))->cb_previewButton_i( o, v);
+    (o->parent()->parent()->user_data()))->cb_previewButton_i( o, v);
 }
 
 //*****************************************************************************

@@ -32,7 +32,7 @@
 //      vp.cpp could be consolidated.
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  12-DEC-2007
+// Modified: P. R. Gazis  14-DEC-2007
 //***************************************************************************
 
 // Protection to make sure this header is not included twice
@@ -111,7 +111,7 @@
 //   selected_data( i)-- Set the 'write all data' flag
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  07-DEC-2007
+// Modified: P. R. Gazis  14-DEC-2007
 //***************************************************************************
 class Data_File_Manager
 {
@@ -127,20 +127,22 @@ class Data_File_Manager
     template<class Archive>
     void serialize( Archive & ar, const unsigned int /* file_version */)
     {
-      ar & boost::serialization::make_nvp( "dataFileSpec", inFileSpec);
-      ar & boost::serialization::make_nvp( "is_ASCII_data", isAsciiInput);
+      ar & boost::serialization::make_nvp( "dataFileSpec", dataFileSpec);
+      ar & boost::serialization::make_nvp( "is_ASCII_data", isAsciiData);
       ar & boost::serialization::make_nvp( "delimiter_char_", delimiter_char_);
       ar & boost::serialization::make_nvp( "doCommentedLabels_", doCommentedLabels_);
       ar & boost::serialization::make_nvp( "nSkipHeaderLines", nSkipHeaderLines);
       ar & boost::serialization::make_nvp( "isColumnMajor", isColumnMajor);
       ar & boost::serialization::make_nvp( "bad_value_proxy_", bad_value_proxy_);
+      inFileSpec = dataFileSpec;
+      isAsciiInput = isAsciiData;
     }
 
     void remove_trivial_columns();
     void resize_global_arrays();
 
     // Buffers to hold filespec, pathname, and selection information
-    string sDirectory_, inFileSpec, outFileSpec;
+    string sDirectory_, inFileSpec, outFileSpec, dataFileSpec;
     blitz::Array<int,1> read_selected;
     
     // Define pointers to hold Edit Column Labels window.  These must be
@@ -159,7 +161,7 @@ class Data_File_Manager
 
     // State variables
     int nSkipHeaderLines;
-    int isAsciiInput, isAsciiOutput;
+    int isAsciiInput, isAsciiOutput, isAsciiData;
     int doAppend, doMerge, writeAllData_;
     int readSelectionInfo_, writeSelectionInfo_;
     int doCommentedLabels_;
