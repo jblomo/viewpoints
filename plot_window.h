@@ -27,7 +27,7 @@
 //   1) Review and add comments!
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  23-APR-2007
+// Modified: P. R. Gazis  15-DEC-2007
 //***************************************************************************
 
 // Protection to make sure this header is not included twice
@@ -62,7 +62,9 @@ class Control_Panel_Window;
 //   Plot_Window( w, h) -- Constructor
 //   initialize() -- Initialization method
 //   serialize( &ar, iFileVersion) -- Perform serialization
-//   load_serialized_parameters( *pw) -- Load params from another window
+//   make_state() -- Generate and save state parameters for this window
+//   copy_state( *pw) -- Copy state parameters from another window
+//   load_state() -- Load state parametsr into widgets
 //
 //   initialize_VBO() -- Initialize VBO for this window
 //   fill_VBO() -- Fill the VBO for this window
@@ -91,7 +93,6 @@ class Control_Panel_Window;
 //
 //   void screen_to_world( xs, ys, x, y) -- Screen to word coords (only works for 2D)
 //   void print_selection_stats() -- print number of points and % of points currently selected
-//
 //
 //   compute_histogram( int) -- Compute histogram bin counts for one variable
 //   draw_x_histogram( bin_counts, nbins);
@@ -123,7 +124,7 @@ class Control_Panel_Window;
 //     and deselected points when rendered as openGL point sprites.
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  12-DEC-2007
+// Modified: P. R. Gazis  15-DEC-2007
 //***************************************************************************
 class Plot_Window : public Fl_Gl_Window
 {
@@ -132,26 +133,28 @@ class Plot_Window : public Fl_Gl_Window
     // variables and functions.
     friend class boost::serialization::access;
     
+    // Define state parameters for serialization
+    int x_save, y_save, w_save, h_save;
+
     // When the class Archive corresponds to an output archive, the &
     // operator is defined similar to <<.  Likewise, when the class Archive 
     // is a type of input archive the & operator is defined similar to >>.
     // It is easiest to define this method inline.
-    int x_save, y_save, w_save, h_save;
     template<class Archive>
     void serialize( Archive & ar, const unsigned int /* file_version */)
     {
-      ar & boost::serialization::make_nvp( "index", index);
-      if( (dynamic_cast<boost::archive::xml_oarchive *> (&ar))) {
-        x_save = x();
-        y_save = y();
-        w_save = w();
-        h_save = h();
+      // Use a dynamic_cast to determine if this is an output operation
+      if( (dynamic_cast<boost::archive::xml_oarchive *> (&ar))) make_state();
+
+      // Embed serialization in a try-catch loop so we can pass exceptions
+      try{
+        ar & boost::serialization::make_nvp( "index", index);
+        ar & boost::serialization::make_nvp( "x_save", x_save);
+        ar & boost::serialization::make_nvp( "y_save", y_save);
+        ar & boost::serialization::make_nvp( "w_save", w_save);
+        ar & boost::serialization::make_nvp( "h_save", h_save);
       }
-      else cout << "DIAGNOSTIC: dynamic_cast failed so this must be input" << endl;
-      ar & boost::serialization::make_nvp( "x_save", x_save);
-      ar & boost::serialization::make_nvp( "y_save", y_save);
-      ar & boost::serialization::make_nvp( "w_save", w_save);
-      ar & boost::serialization::make_nvp( "h_save", h_save);
+      catch( exception &e) {}
     }
 
     // If they are available, use vertex buffer objects (VBOs)
@@ -223,7 +226,9 @@ class Plot_Window : public Fl_Gl_Window
     Plot_Window();   // Default constructor
     Plot_Window( int w, int h, int new_index);   // Constructor
     void initialize();
-    void load_serialized_parameters( Plot_Window* pw);
+    void make_state();
+    void copy_state( Plot_Window* pw);
+    void load_state();
     static int active_plot;
 
     // Initialize and fill index VBO for this window

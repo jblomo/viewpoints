@@ -24,10 +24,10 @@
 //
 // General design philosophy:
 //   1) This class is still under development, and member variables are
-//      publis rather than wrapped in access methods
+//      public rather than wrapped in access methods
 //
-// Author: Creon Levit    14-Aug-2007
-// Modified: P. R. Gazis  15-Aug-2007
+// Author: Creon Levit    14-AUG-2007
+// Modified: P. R. Gazis  15-DEC-2007
 //***************************************************************************
 
 // Protection to make sure this header is not included twice
@@ -40,7 +40,7 @@
 #include "global_definitions_vp.h"
 #include "Vp_Color_Chooser.h"
 
-//*****************************************************************
+//***************************************************************************
 // Class: Brush
 //
 // Class definitions:
@@ -51,28 +51,74 @@
 // Purpose: Derived class of Fl_Group to manage brushes
 //
 // Functions:
+//   Brush() -- Default constructor
 //   Brush( int x, int y, int w, int h) -- Constructor
+//   serialize( &ar, iFileVersion) -- Perform serialization
+//   make_state() -- Generate state parameters for this brush
+//   copy_state( *brush_save) -- Copy state parameters from another brush
+//   load_state() -- Load state parameters into widgets
 //
-//   make_widgets( Brush *bw) --
-//   brush_changed() --
-//   change_color() --
+//   make_widgets( Brush *bw) -- Build control panel
+//   brush_changed() -- Redraw bush if it changed
+//   change_color() -- Change color
 //   clear_now() --
-//   reset() --
-//   build_symbol_menu( void) --
+//   reset() -- Reset brush
+//   build_symbol_menu( void) -- Build symbol menu
 //
 // Static functions for access by Fl_Button::callback?
-//   static_brush_changed( Fl_Widget *w, Brush *brush) --
-//   static_change_color( Fl_Widget *w, Brush *brush) --
-//   static_clear_now( Fl_Widget *w, Brush *brush) --
-//   static_reset( Fl_Widget *w, Brush *brush) --
+//   static_brush_changed( Fl_Widget *w, Brush *brush) -- Callback
+//   static_change_color( Fl_Widget *w, Brush *brush) -- Callback
+//   static_clear_now( Fl_Widget *w, Brush *brush) -- Callback
+//   static_reset( Fl_Widget *w, Brush *brush) -- Callback
 //
-// Author: Creon Levit    14-Aug-2007
-// Modified: P. R. Gazis  15-Aug-2007
-//*****************************************************************
+// Author: Creon Levit    14-AUG-2007
+// Modified: P. R. Gazis  15-DEC-2007
+//***************************************************************************
 class Brush : public Fl_Group
 {
+  protected:
+    // Need this to grant the serialization library access to private member 
+    // variables and functions.
+    friend class boost::serialization::access;
+    
+    // Define buffers to save state
+    int brush_symbol_save;
+    float brush_size_save;
+    float alpha_save, cutoff_save, lum1_save, lum2_save;
+    double red_value_save, green_value_save, blue_value_save;
+
+    // When the class Archive corresponds to an output archive, the &
+    // operator is defined similar to <<.  Likewise, when the class Archive 
+    // is a type of input archive the & operator is defined similar to >>.
+    // It is easiest to define this method inline.
+    template<class Archive>
+    void serialize( Archive & ar, const unsigned int /* file_version */)
+    {
+      // Use a dynamic_cast to determine if this is an output operation
+      if( (dynamic_cast<boost::archive::xml_oarchive *> (&ar))) make_state();
+
+      // Embed serialization in a try-catch loop so we can pass exceptions
+      try{
+        ar & boost::serialization::make_nvp( "index", index);
+        ar & boost::serialization::make_nvp( "brush_size", brush_size_save);
+        ar & boost::serialization::make_nvp( "brush_symbol", brush_symbol_save);
+        ar & boost::serialization::make_nvp( "alpha", alpha_save);
+        ar & boost::serialization::make_nvp( "cutoff", cutoff_save);
+        ar & boost::serialization::make_nvp( "luminosity_1", lum1_save);
+        ar & boost::serialization::make_nvp( "luminosity_2", lum2_save);
+        ar & boost::serialization::make_nvp( "red_value", red_value_save);
+        ar & boost::serialization::make_nvp( "green_value", green_value_save);
+        ar & boost::serialization::make_nvp( "blue_value", blue_value_save);
+      }
+      catch( exception &e) {}
+    }
+
   public:
+    Brush();
     Brush( int x, int y, int w, int h);
+    void make_state();
+    void copy_state( Brush* brush_save);
+    void load_state();
 
     // number of brushes created
     static int nbrushes;

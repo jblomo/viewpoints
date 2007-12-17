@@ -22,7 +22,7 @@
 // Purpose: Source code for <Control_Panel_Window.h>
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  14-DEC-2007
+// Modified: P. R. Gazis  15-DEC-2007
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -69,7 +69,9 @@ Control_Panel_Window::Control_Panel_Window() : Fl_Group( 10, 10, 10, 10),
   index( 0),
   ivar_save( 0), jvar_save( 0), kvar_save( 0),
   ix_style( 1), jy_style( 1), kz_style( 1),
-  ix_lock( 0), jy_lock( 0), kz_lock( 0)
+  ix_lock( 0), jy_lock( 0), kz_lock( 0),
+  background_save( 0.0), luminosity_save( 1.0), point_size_save( 0.0),
+  scale_points_save( 0), transform_style_save( 0)
 {}
 
 //***************************************************************************
@@ -81,32 +83,94 @@ Control_Panel_Window::Control_Panel_Window(
 {}
 
 //***************************************************************************
-// Control_Panel_Window::load_serialized_ parameters( &cp) -- Load 
-// parameters from dummy object that has been created by serialization.
-void Control_Panel_Window::load_serialized_parameters( Control_Panel_Window* cp)
+// Control_Panel_Window::make_state( &cp) -- Examine widgets to generate
+// and save state parameters.
+void Control_Panel_Window::make_state()
 {
+  ivar_save = varindex1->value();
+  jvar_save = varindex2->value();
+  kvar_save = varindex3->value();
+  ix_style = x_normalization_style->value();
+  jy_style = y_normalization_style->value();
+  kz_style = z_normalization_style->value();
+  ix_lock = lock_axis1_button->value();
+  jy_lock = lock_axis2_button->value();
+  kz_lock = lock_axis3_button->value();
+  point_size_save = size->value();
+  scale_points_save = scale_points->value();
+  transform_style_save = transform_style_value();
+}
+
+//***************************************************************************
+// Control_Panel_Window::copy_state( &cp) -- Copy state parameters from 
+// another object.
+void Control_Panel_Window::copy_state( Control_Panel_Window* cp)
+{
+  // Copy state parameters
   index = cp->index;
-  varindex1->value( cp->ivar_save);
-  varindex2->value( cp->jvar_save);
-  varindex3->value( cp->kvar_save);
-  x_normalization_style->value( cp->ix_style);
-  y_normalization_style->value( cp->jy_style);
-  z_normalization_style->value( cp->kz_style);
+  ivar_save = cp->ivar_save;
+  jvar_save = cp->jvar_save;
+  kvar_save = cp->kvar_save;
+  ix_style = cp->ix_style;
+  jy_style = cp->jy_style;
+  kz_style = cp->kz_style;
+  ix_lock = ix_lock;
+  jy_lock = jy_lock;
+  kz_lock = kz_lock;
+  point_size_save = cp->point_size_save;
+  scale_points_save = cp->scale_points_save;
+  transform_style_save = cp->transform_style_save;
+}
+
+//***************************************************************************
+// Control_Panel_Window::load_state() -- Load state parameters into widgets.  
+// WARNING: There is no proetction against bad state parameters or the
+// possibility that this might be a default object without widgets.
+void Control_Panel_Window::load_state()
+{
+  varindex1->value( ivar_save);
+  varindex2->value( jvar_save);
+  varindex3->value( kvar_save);
+  x_normalization_style->value( ix_style);
+  y_normalization_style->value( jy_style);
+  z_normalization_style->value( kz_style);
   lock_axis1_button->value( ix_lock);
   lock_axis2_button->value( jy_lock);
   lock_axis3_button->value( kz_lock);
+  size->value( point_size_save);
+  scale_points->value( scale_points_save);
+  transform_style_value( transform_style_save);
+}
 
-  // NOTE: This won't work until MAIN::manage_plot_window_array is modified
-  // to remember tranbform styles.  Also, this code will have to be changed 
-  // whenever the transform style buttons are added, modified, or removed.
-  // fluctuation->value(0);
-  // sum_vs_difference->value(0);
-  // cond_prop->value(0);
-  // no_transform->value(1);
-  // if( iTransformStyle == 3) fluctuation->value(1);
-  // else if( iTransformStyle == 2) sum_vs_difference->value(1);
-  // else if( iTransformStyle == 1) cond_prop->value(1);
-  // else no_transform->value(1);
+//***************************************************************************
+// Control_Panel_Window::transform_style_value() -- Examine the relevant 
+// widgets to get the y-axis tranform style.  NOTE: this code will have to 
+// be changed whenever the transform style buttons are added, modified, or 
+// removed.
+int Control_Panel_Window::transform_style_value()
+{
+  if( fluctuation->value() > 0) return 3;
+  else if( sum_vs_difference->value(0) > 0) return 2;
+  else if( cond_prop->value() > 0) return 1;
+  else return 0;
+  return 0;
+}
+
+//***************************************************************************
+// Control_Panel_Window::tranform_style_access( tranform_style_in) -- Set 
+// the relevant widgets to set the y-axis tranform style.  NOTE: This code 
+// will have to be changed whenever the transform style buttons are added, 
+// modified, or removed.
+void Control_Panel_Window::transform_style_value( int transform_style_in)
+{
+  fluctuation->value(0);
+  sum_vs_difference->value(0);
+  cond_prop->value(0);
+  no_transform->value(0);
+  if( transform_style_in == 3) fluctuation->value(1);
+  else if( transform_style_in == 2) sum_vs_difference->value(1);
+  else if( transform_style_in == 1) cond_prop->value(1);
+  else no_transform->value(1);
 }
 
 //***************************************************************************

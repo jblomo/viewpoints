@@ -21,8 +21,8 @@
 //
 // Purpose: Source code for <brush.h>
 //
-// Author: Creon Levit    14-Aug-2007
-// Modified: P. R. Gazis  07-NOV-2007
+// Author: Creon Levit    14-AUG-2007
+// Modified: P. R. Gazis  15-DEC-2007
 //***************************************************************************
 
 // Include the necessary system and 3rd party header files
@@ -51,13 +51,27 @@ const GLdouble Brush::initial_colors[NBRUSHES][4] = {
 int Brush::nbrushes = 0;
 
 //***************************************************************************
-// Brush::Brush( x, y, w, h) --  Default constructor.
+// Control_Panel_Window::Control_Panel_Window() --  Default constructor with
+// no arguments.  Used only for serialization.  Do nothing except call the 
+// constructor for the parent class, Fl_Group, with dummy arguments.
+Brush::Brush() : Fl_Group( 10, 10, 10, 10),
+  index( 0),
+  brush_symbol_save( 0), brush_size_save( 0),
+  alpha_save( 1.0), cutoff_save( 0.0), lum1_save( 0.2), lum2_save( 1.0),
+  red_value_save( 1.0), green_value_save( 0), blue_value_save( 0)
+{}
+
+//***************************************************************************
+// Brush::Brush( x, y, w, h) --  Constructor.  Set parameters and tab shape, 
+// invoke the make_widgets() method to generate the control panel
 Brush::Brush(int x, int y, int w, int h) : Fl_Group( x, y, w, h)
 {
+  // Set parametera
   index = nbrushes++;
   count = 0;
   previous_symbol = 0;
 
+  // Set tab shape
   if( index > 0) {
     label( "@circle");
     labelsize( 15);
@@ -65,10 +79,13 @@ Brush::Brush(int x, int y, int w, int h) : Fl_Group( x, y, w, h)
   else {
     label( "@square");
   }
-  
+
+  // Invoke make_widgets() method to generate the control panel, then end
+  // the group
   make_widgets(this);
   end();
 
+  // Set colors and clear focos
   double c[3] = {
     Brush::initial_colors[index][0],
     Brush::initial_colors[index][1],
@@ -76,10 +93,60 @@ Brush::Brush(int x, int y, int w, int h) : Fl_Group( x, y, w, h)
   color_chooser->rgb(c[0], c[1], c[2]);
   labelcolor(fl_rgb_color((uchar)(c[0]*255), (uchar)(c[1]*255), (uchar)(c[2]*255)));
   clear_visible_focus();
+
   // XXX someday a brush's tab's label will show a colored image of the brush's current symbol...
   // XXX (probably after we switch to FLTK 2)
   // image(symbol_images[0]);
   // int fl_draw_pixmap(char **data, int X, int Y, Fl_Color = FL_GRAY)
+}
+
+//***************************************************************************
+// Brush::make_state() -- Examine widgets to generate and store state
+// parameters.
+void Brush::make_state()
+{
+  brush_size_save = pointsize->value();
+  brush_symbol_save = symbol_menu->value();
+  alpha_save = alpha->value();
+  cutoff_save = cutoff->value();
+  lum1_save = lum1->value();
+  lum2_save = lum2->value();
+  red_value_save = color_chooser->r();
+  green_value_save = color_chooser->g();
+  blue_value_save = color_chooser->b();
+}
+
+//***************************************************************************
+// Brush::copy_state( &brush_save) -- Copy state parameters from another
+// object that has been created by serialization.
+void Brush::copy_state( Brush* brush_save)
+{
+  // Copy state parameters
+  index = brush_save->index;
+  brush_size_save = brush_save->brush_size_save;
+  brush_symbol_save = brush_save->brush_symbol_save;
+  alpha_save = brush_save->alpha_save;
+  cutoff_save = brush_save->cutoff_save;
+  lum1_save = brush_save->lum1_save;
+  lum2_save = brush_save->lum2_save;
+  red_value_save = brush_save->red_value_save;
+  green_value_save = brush_save->green_value_save;
+  blue_value_save = brush_save->blue_value_save;
+}
+  
+//***************************************************************************
+// Brush::load_state() -- Load state parameters into widgets.  WARNING: 
+// There is no proetction against bad state parameters or the possibility 
+// that this might be a default object without widgets.
+void Brush::load_state()
+{
+  pointsize->value( brush_size_save);
+  symbol_menu->value( brush_symbol_save);
+  alpha->value( alpha_save);
+  cutoff->value( cutoff_save);
+  lum1->value( lum1_save);
+  lum2->value( lum2_save);
+  color_chooser->rgb( red_value_save, green_value_save, blue_value_save);
 }
 
 //***************************************************************************

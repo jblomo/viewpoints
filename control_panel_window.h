@@ -28,7 +28,7 @@
 //      normalization schemes used here and by class Plot_Windows.
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  12-DEC-2007
+// Modified: P. R. Gazis  15-DEC-2007
 //*****************************************************************
 
 // Protection to make sure this header is not included twice
@@ -68,11 +68,16 @@
 //   Control_Panel_Window() -- Default Constructor
 //   Control_Panel_Window( x, y, w, h) -- Constructor
 //   serialize( &ar, iFileVersion) -- Perform serialization
-//   load_serialized_parameters( *cp) -- Load params from another window
+//   make_state() -- Generate and save state parameters for this window
+//   copy_state( *cp) -- Copy state parameters from another window
+//   load_state() -- Load state parameters into widgets
 //
 //   maybe_redraw() -- Set redraw flag nicely
 //   make_widgets( *cpw) -- Make widgets for this tab
 //   extract_and_redraw() -- extract a variable, renormalize it, etc.
+//
+//   transform_style_value() -- Get y-axis transform style
+//   transform_style_value( transform_style_in) -- Set y-axis transform style
 //
 // Static functions for access by Fl_Button::callback
 //   choose_color_selected( *w, *cpw) -- Color of selected points
@@ -85,7 +90,7 @@
 //   This comment also conveys nothing.
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  12-DEC-2007
+// Modified: P. R. Gazis  15-DEC-2007
 //*****************************************************************
 class Control_Panel_Window : public Fl_Group
 {
@@ -94,61 +99,62 @@ class Control_Panel_Window : public Fl_Group
     // variables and functions.
     friend class boost::serialization::access;
     
+    // Define state parameters used by serialization
+    int ivar_save, jvar_save, kvar_save;
+    int ix_style, jy_style, kz_style;
+    int ix_lock, jy_lock, kz_lock;
+    float background_save, luminosity_save, point_size_save;
+    int scale_points_save;
+    int transform_style_save;
+
     // When the class Archive corresponds to an output archive, the &
     // operator is defined similar to <<.  Likewise, when the class Archive 
     // is a type of input archive the & operator is defined similar to >>.
     // It is easiest to define this method inline.
-    int ivar_save, jvar_save, kvar_save;
-    int ix_style, jy_style, kz_style;
-    int ix_lock, jy_lock, kz_lock;
-    // int iTransformStyle;   // See note on transform styles below
     template<class Archive>
     void serialize( Archive & ar, const unsigned int /* file_version */)
     {
-      ar & boost::serialization::make_nvp( "index", index);
-      if( (dynamic_cast<boost::archive::xml_oarchive *> (&ar))) {   // Output
-        ivar_save = varindex1->value();
-        jvar_save = varindex2->value();
-        kvar_save = varindex3->value();
-        ix_style = x_normalization_style->value();
-        jy_style = y_normalization_style->value();
-        kz_style = z_normalization_style->value();
-        ix_lock = lock_axis1_button->value();
-        jy_lock = lock_axis2_button->value();
-        kz_lock = lock_axis3_button->value();
+      // Use a dynamic_cast to determine if this is an output operation.
+      // If it is, then call make_state() to set the state parameters
+      if( (dynamic_cast<boost::archive::xml_oarchive *> (&ar))) make_state();
 
-        // NOTE: This won't work until MAIN::manage_plot_window_array is 
-        // modified to remember tranbform styles.  Also, this code will have 
-        // to be changed whenever transform style buttons are added, 
-        // modified, or removed.
-        // if( fluctuation->value() > 0) iTransformStyle = 3;
-        // else if( sum_vs_difference->value() > 0) iTransformStyle = 2;
-        // else if( cond_prop->value() > 0) iTransformStyle = 1;
-        // else iTransformStyle = 0;
+      // Embed serialization in a try-catch loop so we can pass exceptions
+      try{
+        ar & boost::serialization::make_nvp( "index", index);
+        ar & boost::serialization::make_nvp( "varindex1", ivar_save);
+        ar & boost::serialization::make_nvp( "varindex2", jvar_save);
+        ar & boost::serialization::make_nvp( "varindex3", kvar_save);
+        ar & boost::serialization::make_nvp( "x_normalization_style", ix_style);
+        ar & boost::serialization::make_nvp( "y_normalization_style", jy_style);
+        ar & boost::serialization::make_nvp( "z_normalization_style", kz_style);
+        ar & boost::serialization::make_nvp( "lock_axis1_button", ix_lock);
+        ar & boost::serialization::make_nvp( "lock_axis2_button", jy_lock);
+        ar & boost::serialization::make_nvp( "lock_axis3_button", kz_lock);
+        ar & boost::serialization::make_nvp( "background", background_save);
+        ar & boost::serialization::make_nvp( "luminosity", luminosity_save);
+        ar & boost::serialization::make_nvp( "point_size", point_size_save);
+        ar & boost::serialization::make_nvp( "scale_points", scale_points_save);
+        ar & boost::serialization::make_nvp( "transform_style", transform_style_save);
       }
-      // else cout << "DIAGNOSTIC: dynamic_cast failed so this must be input" << endl;
-      ar & boost::serialization::make_nvp( "varindex1", ivar_save);
-      ar & boost::serialization::make_nvp( "varindex2", jvar_save);
-      ar & boost::serialization::make_nvp( "varindex3", kvar_save);
-      ar & boost::serialization::make_nvp( "x_normalization_style", ix_style);
-      ar & boost::serialization::make_nvp( "y_normalization_style", jy_style);
-      ar & boost::serialization::make_nvp( "z_normalization_style", kz_style);
-      ar & boost::serialization::make_nvp( "lock_axis1_button", ix_lock);
-      ar & boost::serialization::make_nvp( "lock_axis2_button", jy_lock);
-      ar & boost::serialization::make_nvp( "lock_axis3_button", kz_lock);
-      // ar & boost::serialization::make_nvp( "transform_style", iTransformStyle);
+      catch( exception &e) {}
     }
-            
+    
     void maybe_redraw();
 
   public:
     Control_Panel_Window();
     Control_Panel_Window( int x, int y, int w, int h);
-    void load_serialized_parameters( Control_Panel_Window* cp);
+    void make_state();
+    void copy_state( Control_Panel_Window* cp);
+    void load_state();
 
     void make_widgets( Control_Panel_Window *cpw);
     void extract_and_redraw();
 
+    // Access functions
+    int transform_style_value();
+    void transform_style_value( int transform_style_in);
+    
     // Static functions for access by Fl Widget callbacks
     static void broadcast_change( Fl_Widget *global_widget);
     static void static_extract_and_redraw( Fl_Widget *w, Control_Panel_Window *cpw)

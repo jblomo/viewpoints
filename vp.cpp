@@ -74,7 +74,7 @@
 //   reset_selection_arrays() -- Reset selection arrays
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  14-DEC-2007
+// Modified: P. R. Gazis  15-DEC-2007
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -167,7 +167,6 @@ Fl_Help_View *help_view_widget;
 
 // Define pointers to widgets for Tools|Options window
 Fl_Check_Button* expertButton;
-// Fl_Check_Button* borderlessButton;
 Fl_Input* bad_value_proxy_input;
 
 // Function definitions for the main method
@@ -555,6 +554,8 @@ void manage_plot_window_array( Fl_Widget *o, void* user_data)
     else if( strncmp( widgetTitle, "Reload F", 8) == 0) {
       thisOperation = REFRESH_WINDOWS;
       do_restore_settings = 1;
+      // Reset brushes because load resets brush sizes
+      for( int j=0; j<NBRUSHES; j++) brushes[j]->reset();
     }
     else if( strncmp( widgetTitle, "Restore", 7) == 0) {
       thisOperation = REFRESH_WINDOWS;
@@ -611,48 +612,28 @@ void manage_plot_window_array( Fl_Widget *o, void* user_data)
   int nplots_save = nplots;
   if( thisOperation == INITIALIZE) nplots_save = 0;
 
-  // Save positions of the existing plot window.  QUESTION: are these array 
-  // declarations safe on all compilers when NPLOTS_SAVE = 0?
-  int pws_x_save[ nplots_save];
-  int pws_y_save[ nplots_save];
-  int pws_w_save[ nplots_save];
-  int pws_h_save[ nplots_save];
+  // Save positions of the existing plot window.  NOTE: This must be an 
+  // array rather than apointer array to invoke the default constructor
+  Plot_Window pws_save[ MAXPLOTS+1];
   cout << "manage_plot_window_array: saving information for " << nplots_save 
        << " windows" << endl;
   for( int i=0; i<nplots_save; i++) {
-    pws_x_save[ i] = pws[ i]->x();
-    pws_y_save[ i] = pws[ i]->y();
-    pws_w_save[ i] = pws[ i]->w();
-    pws_h_save[ i] = pws[ i]->h();
-    
-    // DIAGNOSTIC
-    // cout << "  window[ " << i << "/" << nplots_save
-    //      << "]: ( " << pws_x_save[ i]
-    //      << ", " << pws_y_save[ i]
-    //      << ", " << pws_w_save[ i]
-    //      << ", " << pws_h_save[ i] << ")" << endl;
+    pws[i]->make_state();
+    pws_save[i].copy_state( pws[i]);
   }
   
-  // Save old axis and normalization information
-  int ivar_save[ nplots_save];
-  int jvar_save[ nplots_save];
-  int kvar_save[ nplots_save];
-  int x_normalization_style_save[ nplots_save];
-  int y_normalization_style_save[ nplots_save];
-  int z_normalization_style_save[ nplots_save];
-  int x_axis_locked[ nplots_save];
-  int y_axis_locked[ nplots_save];
-  int z_axis_locked[ nplots_save];
+  // Save old axis, normalization, and transform style information
+  Control_Panel_Window cps_save[ MAXPLOTS+1];
   for( int i=0; i<nplots_save; i++) {
-    ivar_save[ i] = cps[i]->varindex1->value();
-    jvar_save[ i] = cps[i]->varindex2->value();
-    kvar_save[ i] = cps[i]->varindex3->value();
-    x_normalization_style_save[ i] = cps[i]->x_normalization_style->value();
-    y_normalization_style_save[ i] = cps[i]->y_normalization_style->value();
-    z_normalization_style_save[ i] = cps[i]->z_normalization_style->value();
-    x_axis_locked[ i] = cps[i]->lock_axis1_button->value();
-    y_axis_locked[ i] = cps[i]->lock_axis2_button->value();
-    z_axis_locked[ i] = cps[i]->lock_axis3_button->value();
+    cps[i]->make_state();
+    cps_save[i].copy_state( cps[i]);
+  }
+  
+  // Save old brush information
+  Brush brushes_save[ NBRUSHES];
+  for( int i=0; i<NBRUSHES; i++) {
+    brushes[i]->make_state();
+    brushes_save[i].copy_state( brushes[i]);
   }
 
   // Recalculate number of plots
@@ -756,25 +737,29 @@ void manage_plot_window_array( Fl_Widget *o, void* user_data)
     }
     else Plot_Window::upper_triangle_incr( ivar, jvar, nvars);
 
-    // If there has been an explicit request to restore plot window settings, 
-    // or if the number of plots has changed, restore those settings.  Then
+    // If there has been an explicit request to restore plot window settings 
+    // or the number of plots has changed, restore those settings.  Then
     // generate any new settings that may be required.
     if( do_restore_settings != 0 ||
         nplots != nplots_old && i<nplots_old) {
-      cps[i]->varindex1->value( ivar_save[i]);  
-      cps[i]->varindex2->value( jvar_save[i]);
-      cps[i]->varindex3->value( kvar_save[i]);
-      cps[i]->x_normalization_style->value( x_normalization_style_save[i]);  
-      cps[i]->y_normalization_style->value( y_normalization_style_save[i]);  
-      cps[i]->z_normalization_style->value( z_normalization_style_save[i]);  
-      cps[i]->lock_axis1_button->value( x_axis_locked[i]);  
-      cps[i]->lock_axis2_button->value( y_axis_locked[i]);  
-      cps[i]->lock_axis3_button->value( z_axis_locked[i]);  
+      cps[i]->copy_state( &cps_save[i]);
+      cps[i]->load_state();
     } 
     else {
       cps[i]->varindex1->value(ivar);  
       cps[i]->varindex2->value(jvar);  
       cps[i]->varindex3->value(nvars);  
+    }
+
+    // KLUDGE: If there has been an explicit request to restore plot window 
+    // settings or the number of plots has changed, restore the brush 
+    // settings, but only do this once.  
+    // XXX PRG: This seems unreliable.  Is there a better place to put this?
+    if( i==0 && (do_restore_settings != 0 || nplots != nplots_old)) {
+      for( int j=0; j<NBRUSHES; j++) {
+        brushes[i]->copy_state( &brushes_save[i]);
+        brushes[i]->load_state();
+      }
     }
 
     // If this is an INITIALIZE, REFRESH_WINDOWS, or NEW_DATA operation, 
@@ -806,8 +791,10 @@ void manage_plot_window_array( Fl_Widget *o, void* user_data)
         strncmp( widgetTitle, "Reload", 6) == 0 ||
         strncmp( widgetTitle, "Restore", 7) == 0) {
       for( int i=0; i<nplots_save; i++) {
-        pws[ i]->position( pws_x_save[ i], pws_y_save[ i]);
-        pws[ i]->size( pws_w_save[ i], pws_h_save[ i]);
+        // pws[ i]->position( pws_x_save[ i], pws_y_save[ i]);
+        // pws[ i]->size( pws_w_save[ i], pws_h_save[ i]);
+        pws[ i]->copy_state( &pws_save[i]);
+        pws[ i]->load_state();
         
         // DIAGNOSTIC
         // cout << "  window[ " << i << "/" << nplots_old
@@ -862,7 +849,8 @@ void cb_manage_plot_window_array( void* o)
 
   // NOTE: We need some way to revise the window scales.  Is there also
   // some way to avoid chosing random axes from the reduced set?
-  
+  // for( int i=0; i<nplots; i++) pws[i]->extract_data_points();
+
   // KLUDGE: make manage_plot_window_array think it's called from a menu.  
   // manage_plot_window_array( main_menu_bar, (void*) "REFRESH_WINDOWS");
   manage_plot_window_array( main_menu_bar, (void*) "NEW_DATA");
@@ -982,28 +970,20 @@ void make_options_window( Fl_Widget *o)
   {
     Fl_Check_Button* o = expertButton = 
       new Fl_Check_Button( 10, 10, 150, 20, " Expert Mode");
-      o->down_box( FL_DOWN_BOX);
-      o->value( expert_mode == true);
-      o->tooltip( "Suppress confirmation windows");
-      // expertButton->callback( (Fl_Callback*) cb_options_window);
+    o->down_box( FL_DOWN_BOX);
+    o->value( expert_mode == true);
+    o->tooltip( "Suppress confirmation windows");
   }
-  // {
-  //   Fl_Check_Button* o = borderlessButton = 
-  //     new Fl_Check_Button( 10, 35, 150, 20, " Borderless option");
-  //     o->down_box( FL_DOWN_BOX);
-  //     o->value( borderless != 0);
-  //     o->tooltip( "Turn off window borders.  WARNING: May\nfreeze windows in place!");
-  // }
   {
     Fl_Input* o = bad_value_proxy_input =
       new Fl_Input( 10, 35, 70, 20, " Bad Value Proxy");
-      o->align( FL_ALIGN_RIGHT);
-      stringstream ss_float;
-      string s_float;
-      ss_float << dfm.bad_value_proxy();
-      ss_float >> s_float;
-      o->value( s_float.c_str());
-      o->tooltip( "Value used for missing or bad data");
+    o->align( FL_ALIGN_RIGHT);
+    stringstream ss_float;
+    string s_float;
+    ss_float << dfm.bad_value_proxy();
+    ss_float >> s_float;
+    o->value( s_float.c_str());
+    o->tooltip( "Value used for missing or bad data");
   }
 
   // Invoke a multi-purpose callback function to process window
@@ -1034,8 +1014,6 @@ void cb_options_window( Fl_Widget *o, void* user_data)
     int i_expert_mode = expertButton->value();
     prefs_.set( "expert_mode", i_expert_mode);
     expert_mode = ( i_expert_mode != 0);
-    // borderless = borderlessButton->value();
-    // for( int i=0; i<nplots; i++) pws[ i]->border( !borderless);
     float bad_value_proxy = strtof( bad_value_proxy_input->value(), NULL);
     dfm.bad_value_proxy( bad_value_proxy);
   }
@@ -1307,7 +1285,9 @@ void read_data( Fl_Widget* o, void* user_data)
 
 //***************************************************************************
 // load_state( o) -- Use BOOST serialization to load a saved state from an
-// XML archive.
+// XML archive.  NOTE: Since BOOST reads these as sequential files rather
+// than XML, the order and number of the load and save operations is 
+// extremely important, and this noted explicetly in the comments below.
 int load_state( Fl_Widget* o)
 {
   // Extract directory from the Data_File_Manager class to initialize the 
@@ -1397,12 +1377,12 @@ int load_state( Fl_Widget* o)
     // closed when destructors are called
     boost::archive::xml_iarchive inputArchive( inputFileStream);
 
-    // Begin by checking serialization file version
+    // STEP 1/8) Begin by checking serialization file version
     int serialization_file_version = -1;
     inputArchive >> BOOST_SERIALIZATION_NVP( serialization_file_version);
     if( current_serialization_version > serialization_file_version) throw 0;
     
-    // Get data file from archive and read it
+    // STEP 2/8) Get data file from archive and read it
     inputArchive >> BOOST_SERIALIZATION_NVP( dfm);
     if( dfm.input_filespec().length() <= 0) dfm.create_default_data( 10);
     else {
@@ -1416,8 +1396,8 @@ int load_state( Fl_Widget* o)
     default_pointsize = max( 1.0, 6.0 - log10f( (float) npoints));
     Brush::set_sizes(default_pointsize);
   
-    // Read configuration information from archive.  NOTE: This must be done
-    // before the first call to MANAGE_PLOT_WINDOW_ARRAY!
+    // STEPS 3/8 and 4/8) Read configuration information from archive.  
+    // NOTE: Must be done before first call to MANAGE_PLOT_WINDOW_ARRAY!
     inputArchive >> BOOST_SERIALIZATION_NVP( nrows);
     inputArchive >> BOOST_SERIALIZATION_NVP( ncols);
 
@@ -1426,23 +1406,37 @@ int load_state( Fl_Widget* o)
     // the tab widget and reload the plot window array.
     manage_plot_window_array( o, (void*) "NEW_DATA");
 
-    // Read NPLOTS from the archive to make sure it is consistent with the
-    // stored control panel and plot window information.  NOTE: If something
-    // went wrong with MANAGE_PLOT_WINDOW_ARRAY, this could cause problems.
+    // STEP 5/8) Read NPLOTS from the archive to make sure it is consistent 
+    // with the stored control panel and plot window information.  NOTE: If 
+    // something went wrong with MANAGE_PLOT_WINDOW_ARRAY, this could cause 
+    // problems.
     inputArchive >> BOOST_SERIALIZATION_NVP( nplots);
 
-    // Define temporary arrays, load thse with serialization information, then
-    // transfer this information to the actual arrays.  NOTE: This awkward
-    // procedure is imposed by the limitations of the relevant constructors.
+    // STEPS 6/8 and 7/8) Define temporary arrays, load these with 
+    // serialization information, then transfer this information to the 
+    // actual arrays.  NOTE: This awkward procedure is imposed by the 
+    // limitations of the constructors for these classes.
     Control_Panel_Window *cps_input[ MAXPLOTS+1]; 
     inputArchive >> BOOST_SERIALIZATION_NVP( cps_input);
-    for( int i=0; i<nplots; i++)
-      cps[i]->load_serialized_parameters( cps_input[ i]);
+    for( int i=0; i<nplots; i++) {
+      cps[i]->copy_state( cps_input[ i]);
+      cps[i]->load_state();
+    }
     Plot_Window *pws_input[ MAXPLOTS+1]; 
     inputArchive >> BOOST_SERIALIZATION_NVP( pws_input);
-    for( int i=0; i<nplots; i++)
-      pws[i]->load_serialized_parameters( pws_input[ i]);
+    for( int i=0; i<nplots; i++) {
+      pws[i]->copy_state( pws_input[ i]);
+      pws[i]->load_state();
+    }
 
+    // STEP 8/8) Do the same thing for brushes
+    Brush *brushes_input[ NBRUSHES];
+    inputArchive >> BOOST_SERIALIZATION_NVP( brushes_input);
+    for( int i=0; i<NBRUSHES; i++) {
+      brushes[i]->copy_state( brushes_input[ i]);
+      brushes[i]->load_state();
+    }
+        
     // Set user_data to indicate that this is a RESIZE operation, then i
     // invoke manage_plot_window( o) to apply configuration.
     manage_plot_window_array( o, (void*) "REFRESH_WINDOWS");
@@ -1456,6 +1450,7 @@ int load_state( Fl_Widget* o)
          << "Unsupported version of configuration file" << endl;
     cerr << "       load_state reports exception (" << i_thrown
          << ")" << endl;
+    manage_plot_window_array( main_menu_bar, (void*) "NEW_DATA");
   }
   catch( exception &e) {
     string sWarning = "";
@@ -1466,6 +1461,7 @@ int load_state( Fl_Widget* o)
          << "problem loading serialization file" << endl;
     cerr << "      load_state reports exception (" << e.what()
          << ")" << endl;
+    manage_plot_window_array( main_menu_bar, (void*) "NEW_DATA");
   }
   
   // Refresh display
@@ -1477,7 +1473,9 @@ int load_state( Fl_Widget* o)
 
 //***************************************************************************
 // save_state( o) -- Use BOOST serialization to save the current state to an 
-// XML archive.
+// XML archive.  NOTE: Since BOOST reads these as sequential files rather
+// than XML, the order and number of the load and save operations is 
+// extremely important, and tis noted explicetly in the comments below.
 int save_state( Fl_Widget* o)
 {
   // Extract directory from the Data_File_Manager class to initialize the 
@@ -1566,21 +1564,25 @@ int save_state( Fl_Widget* o)
   // Create archive, which will be closed when destructors are called.
   boost::archive::xml_oarchive outputArchive( outputFileStream);
 
-  // Begin by saving current serialization file version number
+  // STEP 1/8) Begin by saving current serialization file version number
   outputArchive << boost::serialization::make_nvp( 
     "serialization_file_version", current_serialization_version);
 
-  // Write class instance to archive
+  // STEP 2/8) Write class instance to archive
   outputArchive << BOOST_SERIALIZATION_NVP( dfm);
 
-  // Write plot window array information to archive
+  // STEPS 3/8, 4/8, and 5/8) Write plot window array information to 
+  // archive
   outputArchive << BOOST_SERIALIZATION_NVP( nrows);
   outputArchive << BOOST_SERIALIZATION_NVP( ncols);
   outputArchive << BOOST_SERIALIZATION_NVP( nplots);
 
-  // Serialize directly from the relevant arrays
+  // STEPS 6/8 and 7/8) Serialize directly from the relevant arrays
   outputArchive << BOOST_SERIALIZATION_NVP( cps);
   outputArchive << BOOST_SERIALIZATION_NVP( pws);
+
+  // STEP 8/8) Do the same thing for brushes
+  outputArchive << BOOST_SERIALIZATION_NVP( brushes);
   
   // Report success
   return 1;
@@ -1641,7 +1643,7 @@ int main( int argc, char **argv)
   // XXX: In a perfect world, this should be included with the global 
   // definitions
   about_string = "\n\
-    viewpoints 2.0.2 \n\
+    viewpoints 2.0.3 \n\
     " + string(SVN_VERSION) + "\n\
     \n\
     (c) 2006 M. Creon Levit and Paul R. Gazis   \n\
@@ -1927,10 +1929,14 @@ int main( int argc, char **argv)
 
   // Step 5: Register functions to call on a reglar basis, when no other
   // events (mouse, etc.) are waiting to be processed.
-  // do not use Fl::add_idle().  It causes causes a busy-wait loop.
+  // Do not use Fl::add_idle().  It causes causes a busy-wait loop.
   // use Fl:add_timeout() instead.
   Fl::add_timeout(0.01, redraw_if_changing);
-  Fl::add_timeout(0.25, cb_manage_plot_window_array);
+
+  // For some reason, add_timout doesn't seem to work.  But add_check 
+  // seems to avoid the problem with the busy-wait loop
+  // Fl::add_timeout(0.25, cb_manage_plot_window_array);
+  Fl::add_check( cb_manage_plot_window_array);
 
   // Enter the main event loop
   int result = Fl::run();

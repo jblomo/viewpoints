@@ -22,7 +22,7 @@
 // Purpose: Source code for <Plot_Window.h>
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  12-DEC-2007
+// Modified: P. R. Gazis  15-DEC-2007
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -89,18 +89,19 @@ void fluctuation(
 // Plot_Window::Plot_Window() -- Default constructor, used only in
 // association with serialzation!
 Plot_Window::Plot_Window() : Fl_Gl_Window( 10, 10),
+  index( 0),
   x_save( 0), y_save( 0), w_save( 0), h_save( 0),
   do_reset_view_with_show( 0)
 {}
 
 //***************************************************************************
 // Plot_Window::Plot_Window( w, h) -- Constructor.  Increment count of plot 
-// windows, resize arrays, and set mode.
+// windows, resize arrays, and set mode.  This constructor sets a flag to
+// tell the package to show the windows as part on a RESET_VIEW operation.
 Plot_Window::Plot_Window( int w, int h, int new_index) : 
-  Fl_Gl_Window( w, h),
-  do_reset_view_with_show( 0) // MCL XXX: Huh?? Paul?
+  Fl_Gl_Window( w, h), do_reset_view_with_show( 0)
 {
-  // Update count and invoke initialzation method
+  // Set flag, update count, and invoke initialzation method
   count++;
   index = new_index;
   initialize();
@@ -157,15 +158,40 @@ void Plot_Window::initialize()
 }
 
 //***************************************************************************
-// Plot_Window::load_serialized_ parameters( &pw) -- Load parameters from 
-// dummy object that has been created by serialization.
-void Plot_Window::load_serialized_parameters( Plot_Window* pw)
+// Plot_Window::make_state() -- Examine widgets to generate and save state
+// parameters.
+void Plot_Window::make_state()
+{
+  x_save = x();
+  y_save = y();
+  w_save = w();
+  h_save = h();
+}
+
+//***************************************************************************
+// Plot_Window::copy_state( &pw) -- Copy state parameters from another 
+// object that has been created by serialization.
+void Plot_Window::copy_state( Plot_Window* pw)
 {
   index = pw->index;
-  x( pw->x_save);
-  y( pw->y_save);
-  w( pw->w_save);
-  h( pw->h_save);
+  x_save = pw->x_save;
+  y_save = pw->y_save;
+  w_save = pw->w_save;
+  h_save = pw->h_save;
+}
+
+//***************************************************************************
+// Plot_Window::load_state() -- Load state parameters into widgets.  
+// WARNING: There is no proetction against bad state parameters or the
+// possibility that this might be a default object without widgets.
+void Plot_Window::load_state()
+{
+  // x( x_save);
+  // y( y_save);
+  // w( w_save);
+  // h( h_save);
+  position( x_save, y_save);
+  size( w_save, h_save);
 }
 
 //***************************************************************************
@@ -595,7 +621,6 @@ void Plot_Window::reset_view()
 // Plot_Window::draw() -- Main draw method that calls others.
 void Plot_Window::draw() 
 {
-
   DEBUG (cout << "in draw: " << xcenter << " " << ycenter << " " << xscale << " " << yscale << " " << wmin[0] << " " << wmax[0] << endl);
 
   // the valid() property can avoid reinitializing matrix for 
@@ -979,11 +1004,9 @@ void Plot_Window::print_selection_stats ()
 // selection by calling draw_selection_information().
 void Plot_Window::handle_selection ()
 {
-
   blitz::Range NPTS( 0, npoints-1);  
 
-  if (xdown==xtracked && ydown==ytracked)
-    return;
+  if (xdown==xtracked && ydown==ytracked) return;
 
   // Identify newly-selected points.
   // XXX could be a bool array?  faster?
@@ -2143,8 +2166,8 @@ void Plot_Window::enable_sprites(int sprite)
 }
 
 //***************************************************************************
-// clear_alpha_planes() -- Those filthy alpha planes!  It seems that no matter 
-// how hard you try, you just can't keep them clean!
+// Plot_Window::clear_alpha_planes() -- Those filthy alpha planes!  It seems 
+// that no matter how hard you try, you just can't keep them clean!
 void Plot_Window::clear_alpha_planes()
 {
   glColorMask( GL_FALSE, GL_FALSE, GL_FALSE, GL_TRUE);
@@ -2153,6 +2176,8 @@ void Plot_Window::clear_alpha_planes()
   glColorMask( GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 }
 
+//***************************************************************************
+// Plot_Window::clear_stencil_buffer() -- Clear the stebcil buffer
 void Plot_Window::clear_stencil_buffer()
 {
 #if 0

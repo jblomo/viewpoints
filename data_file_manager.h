@@ -127,13 +127,17 @@ class Data_File_Manager
     template<class Archive>
     void serialize( Archive & ar, const unsigned int /* file_version */)
     {
-      ar & boost::serialization::make_nvp( "dataFileSpec", dataFileSpec);
-      ar & boost::serialization::make_nvp( "is_ASCII_data", isAsciiData);
-      ar & boost::serialization::make_nvp( "delimiter_char_", delimiter_char_);
-      ar & boost::serialization::make_nvp( "doCommentedLabels_", doCommentedLabels_);
-      ar & boost::serialization::make_nvp( "nSkipHeaderLines", nSkipHeaderLines);
-      ar & boost::serialization::make_nvp( "isColumnMajor", isColumnMajor);
-      ar & boost::serialization::make_nvp( "bad_value_proxy_", bad_value_proxy_);
+      // Embed serialization in a try-catch loop so we can pass exceptions
+      try{
+        ar & boost::serialization::make_nvp( "dataFileSpec", dataFileSpec);
+        ar & boost::serialization::make_nvp( "is_ASCII_data", isAsciiData);
+        ar & boost::serialization::make_nvp( "delimiter_char_", delimiter_char_);
+        ar & boost::serialization::make_nvp( "doCommentedLabels_", doCommentedLabels_);
+        ar & boost::serialization::make_nvp( "nSkipHeaderLines", nSkipHeaderLines);
+        ar & boost::serialization::make_nvp( "isColumnMajor", isColumnMajor);
+        ar & boost::serialization::make_nvp( "bad_value_proxy_", bad_value_proxy_);
+      }
+      catch( exception &e) {}
       inFileSpec = dataFileSpec;
       isAsciiInput = isAsciiData;
     }

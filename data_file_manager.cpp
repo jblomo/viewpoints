@@ -1417,17 +1417,20 @@ void Data_File_Manager::delete_labels( Fl_Widget *o, void* user_data)
     return;
   }
 
-  // Move and resize data
+  // Move and resize data.  NOTE: What about ranked points used to perform
+  // scaling and normalization?
   blitz::Range NPOINTS( 0, npoints-1);
   int ivar = 0;
   for( int i=0; i<nvars; i++) {
     if( edit_labels_widget->checked(i+1) <= 0) {
       points( ivar, NPOINTS) = points( i, NPOINTS);
+      // ranked_points( ivar, NPOINTS) = ranked_points( i, NPOINTS);
       ivar++;
     }
   }
   nvars = ivar;
   points.resizeAndPreserve( nvars, npoints);
+  // ranked_points.resize( nvars, npoints);
 
   // Update column labels
   ivar = 0;
