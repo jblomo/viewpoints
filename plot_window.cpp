@@ -1555,8 +1555,6 @@ int Plot_Window::normalize(
   float tmin = min(where(inrange,a(NPTS), MAXFLOAT));
   float tmax = max(where(inrange,a(NPTS),-MAXFLOAT));
 #else // CHECK_FOR_NANS_IN_NORMALIZATION
-  float tmin = a(a_rank(0));
-  float tmax = a(a_rank(npoints-1));
   blitz::Array<float, 1> tmp(npoints);
 #endif // CHECK_FOR_NANS_IN_NORMALIZATION
 
@@ -1569,26 +1567,27 @@ int Plot_Window::normalize(
     return 1;
 
   case Control_Panel_Window::NORMALIZATION_MINMAX:
-    amin[axis_index] = tmin;
-    amax[axis_index] = tmax;
+    amin[axis_index] = tmin[axis_index];
+    amax[axis_index] = tmax[axis_index];
     return 1;
 
   // All positive data fits in window, zero at "left" of axis.
   case Control_Panel_Window::NORMALIZATION_ZEROMAX: 
     amin[axis_index] = 0.0;
-    amax[axis_index] = tmax;
+    amax[axis_index] = tmax[axis_index];
     return 1;
 
   // All data fits in window w/zero at center of axis
   case Control_Panel_Window::NORMALIZATION_MAXABS:  
-    tmax = fmaxf(fabsf(tmin),fabsf(tmax));
-    if( tmax != 0.0) {
-      amin[axis_index] = -tmax;
-      amax[axis_index] = tmax;
+    float tmaxabs = fmaxf(fabsf(tmin[axis_index]),fabsf(tmax[axis_index]));
+    if( tmaxabs != 0.0) {
+      amin[axis_index] = -tmaxabs;
+      amax[axis_index] = tmaxabs;
     }
     return 1;
 
   // Median at center of axis, axis extends to include at least 99% of data
+  // MCL XXX behaves incorrectly with axis offsets
   case Control_Panel_Window::NORMALIZATION_TRIM_1E2:
   {
     float trim = 1e-2;
@@ -1598,6 +1597,7 @@ int Plot_Window::normalize(
   }
 
   // Median at center of axis, axis extends to include at least 99.9% of data
+  // MCL XXX behaves incorrectly with axis offsets
   case Control_Panel_Window::NORMALIZATION_TRIM_1E3:
   {
     float trim = 1e-3;
@@ -1607,6 +1607,7 @@ int Plot_Window::normalize(
   }
 
   // Mean at center of axis, axis extends to +/- 3*sigma
+  // MCL XXX behaves incorrectly with axis offsets
   case Control_Panel_Window::NORMALIZATION_THREESIGMA:  
     mu = mean(a(NPTS));
     sigma = sqrt((1.0/(float)npoints)*sum(pow2(a(NPTS)-mu)));
@@ -1619,7 +1620,7 @@ int Plot_Window::normalize(
 
   // Log of negative numbers get assigned a value of zero.
   case Control_Panel_Window::NORMALIZATION_LOG10: 
-    if( tmin <= 0.0) {
+    if( tmin[axis_index] <= 0.0) {
       cerr << "Warning: "
            << "attempted to take logarithms of nonpositive "
            << " numbers. Their logs were set to zero." 
@@ -1631,6 +1632,7 @@ int Plot_Window::normalize(
     return 1;
 
   // Simple sigmoid, (-inf,0,+inf) -> (-1,0,+1)
+  // MCL XXX behaves incorrectly with axis offsets
   case Control_Panel_Window::NORMALIZATION_SQUASH: 
     a(NPTS) = a(NPTS)/(1+abs(a(NPTS)));
     amin[axis_index] = a(a_rank(0));
@@ -1639,6 +1641,7 @@ int Plot_Window::normalize(
 
   // Replace each value with its rank, equal values get sequential rank
   // according to original input order
+  // MCL XXX behaves incorrectly with axis offsets
   case Control_Panel_Window::NORMALIZATION_RANK:
     for( int i=0; i<npoints; i++) {
       a( a_rank(i)) = (float)(i+1);
@@ -1648,6 +1651,7 @@ int Plot_Window::normalize(
     return 1;
       
   // Replace each value with its rank, equal values get equal rank
+  // MCL XXX behaves incorrectly with axis offsets
   case Control_Panel_Window::NORMALIZATION_PARTIAL_RANK:
   {
     partial_rank = 1.0;
@@ -1668,6 +1672,7 @@ int Plot_Window::normalize(
   }
       
   // Gaussianize the data, mapping the old median to 0 in the new Gaussian N(0,1).
+  // MCL XXX behaves incorrectly with axis offsets
   case Control_Panel_Window::NORMALIZATION_GAUSSIANIZE: 
     for( int i=0; i<npoints; i++) {
       a( a_rank(i)) = (1.0/5.0) * (float)gsl_cdf_ugaussian_Pinv((double)(float(i+1) / (float)(npoints+2)));
@@ -1741,6 +1746,16 @@ void Plot_Window::compute_rank(int var_index)
 // MCL XXX this routine (and others) could be refactored to loop over the axes
 // instead of having so much code replicated for each axis.
 //
+// MCL XXX this routine needs to be split into separate routines that:
+//  1) change one (or more) of the axes for a plot
+//  2) change the normalization of an axis (or axes) but only when necessary
+//  3) change the axis "offset(s)" when ploting when necessary
+//  4) keep track of the ranked version of (potentially offset) axes.
+// This will not only make the code cleaner, but is necessary to avoid spurious
+// renormalizations (which waste time), spurious calls to reset_view() (which
+// can change the view for no good reason) and breakage in the rank-dependent
+// normalizations and transformations when operating on an axis with offset != 0.
+// Also, offsets should get reset to zero when an axis is changed.
 int Plot_Window::extract_data_points ()
 {
   // Get the labels for the plot's axes
@@ -1758,39 +1773,50 @@ int Plot_Window::extract_data_points ()
 
   // Order data to prepare for normalization and scaling and 
   // report progress
-  cout << "Plot_Window::extract_data_points: plot[ " 
-       << row << ", " << column << "]" <<endl;
-  cout << " pre-normalization: " << endl;
-
+  if (be_verbose) {
+    cout << "Plot_Window::extract_data_points: plot[ " 
+         << row << ", " << column << "]" <<endl;
+    cout << " pre-normalization: " << endl;
+  }
   // Rank points by x-axis value
   compute_rank(axis0);
   x_rank.reference(ranked_points(axis0, NPTS));
-  cout << "  x-axis( " << xlabel
-       << "): min[ " << x_rank( 0) << "] = "
-       << points( axis0, x_rank( 0))
-       << ", max[ " << x_rank( npoints-1) << "] = "
-       << points( axis0, x_rank( npoints-1)) << endl;
-  
+  tmin[0] = points( axis0, x_rank( 0));
+  tmax[0] = points( axis0, x_rank( npoints-1));
+  if (be_verbose) {
+    cout << "  x-axis( " << xlabel
+         << "): min[ " << x_rank( 0) << "] = "
+         << tmin[0]
+         << ", max[ " << x_rank( npoints-1) << "] = "
+         << tmax[0] << endl;
+  }
   // Rank points by y-axis value
   compute_rank(axis1);
   y_rank.reference(ranked_points(axis1, NPTS));
-  cout << "  y-axis( " << ylabel
-       << "): min[ " << y_rank( 0) << "] = "
-       << points( axis1, y_rank( 0))
-       << ", max[ " << y_rank( npoints-1) << "] = "
-       << points( axis1, y_rank( npoints-1)) << endl;
-  
+  tmin[1] = points( axis1, y_rank( 0));
+  tmax[1] = points( axis1, y_rank( npoints-1));
+  if (be_verbose) {
+    cout << "  y-axis( " << ylabel
+         << "): min[ " << y_rank( 0) << "] = "
+         << tmin[1]
+         << ", max[ " << y_rank( npoints-1) << "] = "
+         << tmax[1] << endl;
+  }
   // If z-axis was specified, rank points by z-axis value
   if( axis2 != nvars) {
     compute_rank(axis2);
     z_rank.reference(ranked_points(axis2, NPTS));
-    cout << "  z-axis( " << zlabel
-         << "): min[ " << z_rank( 0) << "] = "
-         << points( axis2, z_rank( 0))
-         << ", max[ " << z_rank( npoints-1) << "] = "
-         << points( axis2, z_rank( npoints-1)) << endl;
+    tmin[2] = points( axis2, z_rank( 0));
+    tmax[2] = points( axis2, z_rank( npoints-1));
+    if (be_verbose) {
+      cout << "  z-axis( " << zlabel
+           << "): min[ " << z_rank( 0) << "] = "
+           << tmin[2]
+           << ", max[ " << z_rank( npoints-1) << "] = "
+           << tmax[2] << endl;
+    }
   }
-  cout << endl;
+  if (be_verbose) cout << endl;
 
   // OpenGL vertices, vertex arrays, and VBOs need to have their x, y, and z coordinates
   // interleaved i.e. stored in adjacent memory locations:  x[0],y[0],z[0],x[1],y[1],z[1],.....
@@ -1804,68 +1830,74 @@ int Plot_Window::extract_data_points ()
   // using aliases to the vertex data.  Since the vertex data are copies (not aliases) of the
   // original uncorrupted points() data, this works out fine.
 
-  // copy (via assignment) the appropriate columns of points() data to corresponding components of vertex() array
-  vertices( NPTS, 0) = points( axis0, NPTS);  
-  vertices( NPTS, 1) = points( axis1, NPTS);
-  // if z-axis is set to "-nothing-" (which it is, by default), then all z=0.
-  if( axis2 == nvars)
-    vertices( NPTS, 2) = 0.0;
-  else
-    vertices( NPTS, 2) = points( axis2, NPTS);
+  // MCL XXX - there is no need to copy and normalize all axes if only one has changed... Oh, well...
 
+  // copy (via assignment) the appropriate columns of points() data to corresponding components of vertex() array,
+  // with circular offset(s), if requested (experimental).
+  int delta = (int)cp->offset[0]->value();
+  if (delta == 0) {
+    vertices( NPTS, 0) = points( axis0, NPTS);
+  } else {
+    if (delta > 0) {
+      vertices (blitz::Range(0,npoints-(delta+1)), 0) = points (axis0, blitz::Range(delta,npoints-1));
+      vertices (blitz::Range(npoints-delta,npoints-1), 0) = points (axis0, blitz::Range(0,delta-1));
+    } else {
+      // delta < 0
+      delta = -delta;
+      vertices (blitz::Range(delta,npoints-1), 0) = points (axis0, blitz::Range(0,npoints-(delta+1)));
+      vertices (blitz::Range(0,delta-1), 0) = points (axis0, blitz::Range(npoints-delta,npoints-1));
+    }
+  }
+  delta = (int)cp->offset[1]->value();
+  if (delta == 0) {
+    vertices( NPTS, 1) = points( axis1, NPTS);
+  } else {
+    if (delta > 0) {
+      vertices (blitz::Range(0,npoints-(delta+1)), 1) = points (axis1, blitz::Range(delta,npoints-1));
+      vertices (blitz::Range(npoints-delta,npoints-1), 1) = points (axis1, blitz::Range(0,delta-1));
+    } else {
+      // delta < 0
+      delta = -delta;
+      vertices (blitz::Range(delta,npoints-1), 1) = points (axis1, blitz::Range(0,npoints-(delta+1)));
+      vertices (blitz::Range(0,delta-1), 1) = points (axis1, blitz::Range(npoints-delta,npoints-1));
+    }
+  }
+
+  // if z-axis is set to "-nothing-" (which it is, by default), then all z=0.
+  if( axis2 == nvars)    {
+    vertices( NPTS, 2) = 0.0;
+  } else {
+    // MCL XXX offset not supported for z axis (yet).
+    vertices( NPTS, 2) = points( axis2, NPTS);
+  }
+  
   // create aliases to newly copied vertex data for normalization & transformation.
   blitz::Array<float,1> xpoints = vertices( NPTS, 0); 
   blitz::Array<float,1> ypoints = vertices( NPTS, 1);
   blitz::Array<float,1> zpoints = vertices( NPTS, 2);
 
-  // Apply the normalize() method to normalize and scale the x-axis data 
-  // and report results
-  cout << " post-normalization: " << endl;
+  // Apply the normalize() method to normalize and scale the plot's data 
   (void) normalize( xpoints, x_rank, cp->x_normalization_style->value(), 0);
-  cout << "  x-axis( " << xlabel
-       << "): min[ " << x_rank( 0) << "] = "
-       << points( axis0, x_rank( 0))
-       << ", max[ " << x_rank( npoints-1) << "] = "
-       << points( axis0, x_rank( npoints-1)) << endl;
-    
-  // Normalize and scale the y-axis
   (void) normalize( ypoints, y_rank, cp->y_normalization_style->value(), 1);
-  cout << "  y-axis( " << ylabel
-       << "): min[ " << y_rank( 0) << "] = "
-       << points( axis1, y_rank( 0))
-       << ", max[ " << y_rank( npoints-1) << "] = "
-       << points( axis1, y_rank( npoints-1)) << endl;
-
-  // Normalize and scale the z-axis, if any
   if( axis2 != nvars) {
     (void) normalize( zpoints, z_rank, cp->z_normalization_style->value(), 2);
-    cout << "  z-axis( " << zlabel
-         << "): min[ " << z_rank( 0) << "] = "
-         << points( axis2, z_rank( 0))
-         << ", max[ " << z_rank( npoints-1) << "] = "
-         << points( axis2, z_rank( npoints-1)) << endl;
-  }
-  else {
+  } else {
     amin[2] = -1.0;
     amax[2] = +1.0;
   }
-  cout << endl;
 
   // VBO will have to be updated to hold the new vertices in draw_data_points(), 
   // so we set a flag.  We can't update the VBO now, since we can't call openGL 
   // functions from within an fltk callback.
   VBOfilled = false;
 
-  // Apply data transformations, if any are active.
+  // Apply 2D data transformations, if any are active.
   (void) transform_2d();
-  // Since we're showing new data, make sure none of it gets clipped.
-  reset_view();
 
-  // XXX need to refactor this.  This is needed to make sure the
-  // scale marks on the axis are updated
-  // XXX MCL well, maybe not needed anymore?
-  // screen_to_world( -1, -1, wmin[0], wmin[1]);
-  // screen_to_world( +1, +1, wmax[0], wmax[1]);
+  // Since we're showing new data, make sure none of it gets clipped.
+  // MCL XXX - this should be done on a per-axis basis and only when necessary
+  // and not at all when simply changeing an axis offset.
+  reset_view();
 
   compute_histograms();
   return 1;

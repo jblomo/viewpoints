@@ -263,6 +263,10 @@ void usage()
        << "enable expert mode (bypass confirmations, read" << endl
        << "                              "
        << "from stdin, etc.)" << endl;
+  cerr << "  -O, --verbose               "
+       << "enable verbOse output" << endl
+       << "                              "
+       << "from stdin, etc.)" << endl;
   cerr << "  -V, --version               "
        << "Output version information and exit." << endl;
 
@@ -1675,6 +1679,7 @@ int main( int argc, char **argv)
     { "no_vbo", no_argument, 0, 'B'},
     { "help", no_argument, 0, 'h'},
     { "expert", no_argument, 0, 'x'},
+    { "verbose", no_argument, 0, 'O'},
     { "version", no_argument, 0, 'V'},
 		// Apple OS X "provides" this next argument when any program invoked by clicking on its icon
     { "psn_", required_argument, 0, 'p'}, 
@@ -1827,6 +1832,11 @@ int main( int argc, char **argv)
       // turn on expert mode
       case 'x':
         expert_mode = true;
+        break;
+
+      // enable verbose output
+      case 'O':
+        be_verbose = true;
         break;
 
      // show version information (managed by svn), and exit

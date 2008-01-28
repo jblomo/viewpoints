@@ -408,8 +408,25 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   c->callback( (Fl_Callback*)static_extract_and_redraw, this);
   c->tooltip("choose normalization and/or scaling for z-axis");
  
+  // offset controls for "delay map"-like tricks.
+  ypos += 25;
+  offset[0] = new Fl_Value_Input_Spin (xpos, ypos, subwidth-15, 20, "offset");
+  offset[0]->range(-(npoints-1),(npoints-1));
+  offset[0]->soft(false);
+  offset[0]->step(1);
+  offset[0]->box(FL_EMBOSSED_BOX);
+  offset[0]->buttonssize(25);
+  offset[0]->callback((Fl_Callback*)static_extract_and_redraw, this);
+  offset[1] = new Fl_Value_Input_Spin (xpos+subwidth, ypos, subwidth-15, 20);
+  offset[1]->range(-(npoints-1),(npoints-1));
+  offset[1]->soft(false);
+  offset[1]->step(1);
+  offset[1]->box(FL_EMBOSSED_BOX);
+  offset[1]->buttonssize(25);
+  offset[1]->callback((Fl_Callback*)static_extract_and_redraw, this);
+
   // histogram controls
-  ypos += 35;    
+  ypos += 25;    
 
   // label for row of histogram menus
   b = new Fl_Button (xpos, ypos, 45, 25, "histog");
@@ -443,7 +460,7 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   show_histogram[2]->deactivate();
 
   // one label for row of bin count sliders
-  b = new Fl_Button (xpos, ypos+=25, 45, 25, "N bins");
+  b = new Fl_Button (xpos, ypos+=20, 45, 25, "N bins");
   b->labelsize(14);
   b->align(FL_ALIGN_LEFT);
   b->box(FL_NO_BOX);
@@ -464,7 +481,7 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   nbins_slider[2]->deactivate();
     
   // one label for row of histogram height sliders
-  b = new Fl_Button (xpos, ypos+=25, 45, 25, "bin ht");
+  b = new Fl_Button (xpos, ypos+=20, 45, 25, "bin ht");
   b->labelsize(14);
   b->align(FL_ALIGN_LEFT);
   b->box(FL_NO_BOX);
@@ -486,7 +503,7 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   ypos += 15;
 
   // Background color slider
-  Bkg = new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, cpw->w()-60, 20, "Bkg");
+  Bkg = new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, cpw->w()-60, 20, "bkgrnd");
   Bkg->align(FL_ALIGN_LEFT);
   Bkg->step(0.0001);
   Bkg->bounds(0.0,1.0);
@@ -495,7 +512,7 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   Bkg->tooltip("change background brightness");
 
   // Luminance for this plot
-  lum = new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, cpw->w()-60, 20, "lum");
+  lum = new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, cpw->w()-60, 20, "lumin");
   lum->align(FL_ALIGN_LEFT);
   lum->step(0.0001);
   lum->bounds(0.0,2.0);
@@ -504,7 +521,7 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   lum->tooltip("adjust luminance for all points");
 
   // overall pointsize scale for this plot
-  size = new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, cpw->w()-115, 20, "psize");
+  size = new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, cpw->w()-115, 20, "pntsiz");
   size->align(FL_ALIGN_LEFT);
   size->step(0.0001);
   size->bounds(-4.0,4.0);
@@ -520,7 +537,7 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   scale_points->tooltip("scale all points when zooming");
 
   // Rotation (and spin) slider
-  rot_slider = new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, cpw->w()-115, 20, "rot");
+  rot_slider = new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, cpw->w()-115, 20, "rotate");
   rot_slider->align(FL_ALIGN_LEFT);
   rot_slider->callback((Fl_Callback*)replot, this);
   rot_slider->value(0.0);

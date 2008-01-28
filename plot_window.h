@@ -235,7 +235,10 @@ class Plot_Window : public Fl_Gl_Window
     void initialize_indexVBO(int);
     void fill_indexVBO(int);
 
-    // min and max for data's bounding box in x, y, and z;
+    // true min and max of the data before normalization and transformation
+    float tmin[3], tmax[3];
+
+    // min and max for normalized data's bounding box in x, y, and z;
     float amin[3], amax[3];
     // data values at edges of "window"
     // (the X and Y axes lines bound the left and bottom edges of this "window")

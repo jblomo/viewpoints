@@ -78,6 +78,8 @@ GLOBAL bool use_VBOs INIT(true);
 
 GLOBAL bool expert_mode INIT(false);
 
+GLOBAL bool be_verbose INIT(false);
+
 // Define blitz::Arrays to hold raw and ranked (sorted) data arrays.  Used 
 // extensively in many classes, so for reasons of simplicity and clarity, 
 // these are left global

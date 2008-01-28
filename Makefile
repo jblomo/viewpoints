@@ -29,8 +29,8 @@ ifeq ($(platform),Darwin)
 
   # compiling on intel mac
   ifeq ($(hardware),i386)
-       	OPTIM = $(DEBUG)
-#	OPTIM = -O6 -ftree-vectorize -ftree-vectorizer-verbose=0 -Wall -Wconversion -ffast-math -fsigned-char -gfull 
+#      	OPTIM = $(DEBUG)
+	OPTIM = -O6 -ftree-vectorize -ftree-vectorizer-verbose=0 -Wall -Wconversion -ffast-math -fsigned-char -gfull 
 
   # compiling on PowerPC mac
   else
