@@ -132,11 +132,14 @@
 #include <FL/Fl_Multiline_Output.H>
 #include <FL/Fl_Help_View.H>
 
-// flews (FLTK extension) extras.  On the primary Windows system, these should 
+// flews widgets build on FLTK.  On the primary Windows system, these should 
 // be located in c:\devusr\flews as described above
 #include <FL/Fl_flews.h>
 #include <FL/Fl_Value_Slider_Input.H>
-#include "Fl_Hor_Value_Slider_Input.H"  // my modified flews slider
+
+// local vp modifications to flews widgets
+#include "Fl_Hor_Value_Slider_Input.H"  // modified flews slider
+#include "Vp_Value_Input_Spin.H" // modified flews spinner
 
 // Make provisions for PRG's new file chooser
 #include "Vp_File_Chooser.h"

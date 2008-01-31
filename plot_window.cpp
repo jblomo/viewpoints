@@ -1539,23 +1539,53 @@ int Plot_Window::transform_2d()
   return 1;
 }
 
+// MCL XXX This should really be a templated function for blitz::Array<T, int rank>
+// Doing it this way has to be faster than dst(i) = src((i+delta+npoints)%npoints) right?
+void circular_shift (blitz::Array<float,1> dst, blitz::Array<float,1> src, const int shift)
+{
+  int delta = 0;
+  if (shift == 0) {
+    dst = src;
+    return;
+  } else if (shift > 0) {
+    delta=shift;
+    dst (blitz::Range(0,npoints-(delta+1))) = src (blitz::Range(delta,npoints-1));
+    dst (blitz::Range(npoints-delta,npoints-1), 0) = src (blitz::Range(0,delta-1));
+    return;
+  } else {
+    // shift < 0
+    delta=-shift;
+    dst (blitz::Range(0,delta-1)) = src (blitz::Range(npoints-delta,npoints-1));
+    dst (blitz::Range(delta,npoints-1)) = src (blitz::Range(0,npoints-(delta+1)));
+    return;
+  }
+}
+
 //***************************************************************************
-// Plot_Window::normalize( a, a_rank, style, axis_index) --  Apply
+// Plot_Window::normalize( a, a_rank0, style, axis_index) --  Apply
 // normalization of the requested style.
 int Plot_Window::normalize(
   blitz::Array<float,1> a, 
-  blitz::Array<int,1> a_rank, 
+  blitz::Array<int,1> a_rank0, 
   int style, int axis_index)
 {
   blitz::Range NPTS(0,npoints-1);
+
+  int delta = (int)cp->offset[axis_index]->value();
+  // a_rank holds either the shifted rank indices, or unshifted when delta==0
+  // necessary for exotic normalizations and/or (time)-shifted data.
+  blitz::Array<int,1> a_rank(NPTS);
+  if (delta == 0) {
+    a_rank.reference(a_rank0);
+  } else {
+    a_rank = (a_rank0 + npoints - delta) % npoints;
+  }
 
 #ifdef CHECK_FOR_NANS_IN_NORMALIZATION
   blitz::Array<int,1> inrange(npoints);
   inrange = where( ((a(NPTS) < MAXFLOAT) && (a(NPTS) > -MAXFLOAT)), 1, 0);
   float tmin = min(where(inrange,a(NPTS), MAXFLOAT));
   float tmax = max(where(inrange,a(NPTS),-MAXFLOAT));
-#else // CHECK_FOR_NANS_IN_NORMALIZATION
-  blitz::Array<float, 1> tmp(npoints);
 #endif // CHECK_FOR_NANS_IN_NORMALIZATION
 
   float mu,sigma,partial_rank;
@@ -1587,22 +1617,20 @@ int Plot_Window::normalize(
     return 1;
 
   // Median at center of axis, axis extends to include at least 99% of data
-  // MCL XXX behaves incorrectly with axis offsets
   case Control_Panel_Window::NORMALIZATION_TRIM_1E2:
   {
     float trim = 1e-2;
-    amin[axis_index] = a( a_rank((int) ((0.0 + (0.5*trim))*npoints)));
-    amax[axis_index] = a( a_rank((int) ((1.0 - (0.5*trim))*npoints)));
+    amin[axis_index] = a(a_rank((int) ((0.0 + (0.5*trim))*npoints)));
+    amax[axis_index] = a(a_rank((int) ((1.0 - (0.5*trim))*npoints)));
     return 1;
   }
 
   // Median at center of axis, axis extends to include at least 99.9% of data
-  // MCL XXX behaves incorrectly with axis offsets
   case Control_Panel_Window::NORMALIZATION_TRIM_1E3:
   {
     float trim = 1e-3;
-    amin[axis_index] = a( a_rank((int) ((0.0 + (0.5*trim))*npoints)));
-    amax[axis_index] = a( a_rank((int)((1.0 - (0.5*trim))*npoints)));
+    amin[axis_index] = a(a_rank((int) ((0.0 + (0.5*trim))*npoints)));
+    amax[axis_index] = a(a_rank((int) ((1.0 - (0.5*trim))*npoints)));
     return 1;
   }
 
@@ -1632,7 +1660,6 @@ int Plot_Window::normalize(
     return 1;
 
   // Simple sigmoid, (-inf,0,+inf) -> (-1,0,+1)
-  // MCL XXX behaves incorrectly with axis offsets
   case Control_Panel_Window::NORMALIZATION_SQUASH: 
     a(NPTS) = a(NPTS)/(1+abs(a(NPTS)));
     amin[axis_index] = a(a_rank(0));
@@ -1641,17 +1668,15 @@ int Plot_Window::normalize(
 
   // Replace each value with its rank, equal values get sequential rank
   // according to original input order
-  // MCL XXX behaves incorrectly with axis offsets
   case Control_Panel_Window::NORMALIZATION_RANK:
     for( int i=0; i<npoints; i++) {
-      a( a_rank(i)) = (float)(i+1);
+      a(a_rank(i)) = (float)(i+1);
     }
     amin[axis_index] = 1.0;
     amax[axis_index] = (float)(npoints);
     return 1;
       
   // Replace each value with its rank, equal values get equal rank
-  // MCL XXX behaves incorrectly with axis offsets
   case Control_Panel_Window::NORMALIZATION_PARTIAL_RANK:
   {
     partial_rank = 1.0;
@@ -1672,10 +1697,9 @@ int Plot_Window::normalize(
   }
       
   // Gaussianize the data, mapping the old median to 0 in the new Gaussian N(0,1).
-  // MCL XXX behaves incorrectly with axis offsets
   case Control_Panel_Window::NORMALIZATION_GAUSSIANIZE: 
     for( int i=0; i<npoints; i++) {
-      a( a_rank(i)) = (1.0/5.0) * (float)gsl_cdf_ugaussian_Pinv((double)(float(i+1) / (float)(npoints+2)));
+      a(a_rank(i)) = (1.0/5.0) * (float)gsl_cdf_ugaussian_Pinv((double)(float(i+1) / (float)(npoints+2)));
     }
     amin[axis_index] = -1.0;
     amax[axis_index] = +1.0;
@@ -1737,6 +1761,8 @@ void Plot_Window::compute_rank(int var_index)
     return;
   }
 }
+
+
 
 //***************************************************************************
 // Plot_Window::extract_data_points() -- Extract column labels and data for a 
@@ -1834,33 +1860,18 @@ int Plot_Window::extract_data_points ()
 
   // copy (via assignment) the appropriate columns of points() data to corresponding components of vertex() array,
   // with circular offset(s), if requested (experimental).
+  // MCL XXX need to do away with axis0, axis1, and axis2 & replace with axis_index[].
   int delta = (int)cp->offset[0]->value();
   if (delta == 0) {
     vertices( NPTS, 0) = points( axis0, NPTS);
   } else {
-    if (delta > 0) {
-      vertices (blitz::Range(0,npoints-(delta+1)), 0) = points (axis0, blitz::Range(delta,npoints-1));
-      vertices (blitz::Range(npoints-delta,npoints-1), 0) = points (axis0, blitz::Range(0,delta-1));
-    } else {
-      // delta < 0
-      delta = -delta;
-      vertices (blitz::Range(delta,npoints-1), 0) = points (axis0, blitz::Range(0,npoints-(delta+1)));
-      vertices (blitz::Range(0,delta-1), 0) = points (axis0, blitz::Range(npoints-delta,npoints-1));
-    }
+    circular_shift (vertices(NPTS,0), points(axis0,NPTS), delta);
   }
   delta = (int)cp->offset[1]->value();
   if (delta == 0) {
     vertices( NPTS, 1) = points( axis1, NPTS);
   } else {
-    if (delta > 0) {
-      vertices (blitz::Range(0,npoints-(delta+1)), 1) = points (axis1, blitz::Range(delta,npoints-1));
-      vertices (blitz::Range(npoints-delta,npoints-1), 1) = points (axis1, blitz::Range(0,delta-1));
-    } else {
-      // delta < 0
-      delta = -delta;
-      vertices (blitz::Range(delta,npoints-1), 1) = points (axis1, blitz::Range(0,npoints-(delta+1)));
-      vertices (blitz::Range(0,delta-1), 1) = points (axis1, blitz::Range(npoints-delta,npoints-1));
-    }
+    circular_shift (vertices(NPTS,1), points(axis1,NPTS), delta);
   }
 
   // if z-axis is set to "-nothing-" (which it is, by default), then all z=0.

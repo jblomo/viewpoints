@@ -324,7 +324,6 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   varindex1->clear_visible_focus();
   varindex1->callback( (Fl_Callback*)static_extract_and_redraw, this);
   varindex1->tooltip("select variable for this plot's x-axis");
-  varindex1->when(FL_WHEN_RELEASE);
 
   // Y-axis variable selection menu
   varindex2 = new Fl_Choice (xpos+subwidth, ypos, subwidth-15, 25, "Y axis");
@@ -335,7 +334,6 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   varindex2->clear_visible_focus();
   varindex2->callback( (Fl_Callback*)static_extract_and_redraw, this);
   varindex2->tooltip("select variable for this plot's y-axis");
-  varindex2->when(FL_WHEN_RELEASE|FL_WHEN_CHANGED);
 
   // Z-axis variable selection menu
   varindex3 = new Fl_Choice (xpos+2*subwidth, ypos, subwidth-15, 25, "Z axis");
@@ -410,20 +408,21 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
  
   // offset controls for "delay map"-like tricks.
   ypos += 25;
-  offset[0] = new Fl_Value_Input_Spin (xpos, ypos, subwidth-15, 20, "offset");
-  offset[0]->range(-(npoints-1),(npoints-1));
-  offset[0]->soft(false);
-  offset[0]->step(1);
-  offset[0]->box(FL_EMBOSSED_BOX);
-  offset[0]->buttonssize(25);
-  offset[0]->callback((Fl_Callback*)static_extract_and_redraw, this);
-  offset[1] = new Fl_Value_Input_Spin (xpos+subwidth, ypos, subwidth-15, 20);
-  offset[1]->range(-(npoints-1),(npoints-1));
-  offset[1]->soft(false);
-  offset[1]->step(1);
-  offset[1]->box(FL_EMBOSSED_BOX);
-  offset[1]->buttonssize(25);
-  offset[1]->callback((Fl_Callback*)static_extract_and_redraw, this);
+  for (int i=0; i<3; i++) {
+    offset[i] = new Vp_Value_Input_Spin (xpos+i*subwidth, ypos, subwidth-25, 20);
+    offset[i]->range(-(npoints-1),(npoints-1));
+    offset[i]->soft(false);
+    offset[i]->step(1);
+    offset[i]->box(FL_PLASTIC_UP_BOX);
+    offset[i]->buttonssize(20);
+    offset[i]->textsize(11);
+    offset[i]->callback((Fl_Callback*)static_extract_and_redraw, this);
+  }
+
+  offset[0]->label("offset");
+  offset[0]->tooltip("plot X [ i+offset ] instead of X [ i ]");
+  offset[1]->tooltip("plot Y [ i+offset ] instead of Y [ i ]");
+  offset[2]->deactivate();
 
   // histogram controls
   ypos += 25;    
