@@ -1,3 +1,26 @@
+// viewpoints - interactive linked scatterplots and more.
+// copyright 2005 Creon Levit and Paul Gazis, all rights reserved.
+//***************************************************************************
+// File name: Vp_Value_Input_Spin
+//
+// Class definitions:
+//   Vp_Value_Input_Spin -- Input spinner for Creon Levit's viewpoints
+//
+// Classes referenced:
+//   Various FLTK classes
+//
+// Required packages: none
+//
+// Compiler directives:
+//   Requires WIN32 to be defined
+//
+// Purpose: Source code for <Vp_Value_Input_Spin.h>
+//
+// Author: Bill Spitzak and others   1998-2005
+// Modified: Creon Levitt  31-Jan-2008
+//***************************************************************************
+// modified version of Fl_Value_Input_Spin by creon
+
 #ifndef FLTK_1_0_COMPAT
 #define FLTK_1_0_COMPAT
 #endif
@@ -9,10 +32,47 @@
 #include "Vp_Value_Input_Spin.H"
 #include <FL/fl_draw.H>
 
-
+// Static variable used by value_damage()
 static char hack_o_rama;
 
-void Vp_Value_Input_Spin::input_cb(Fl_Widget*, void* v) {
+//*****************************************************************************
+// Vp_Value_Input_Spin::Vp_Value_Input_Spin( x, y, w, h, l) -- Constructor.
+Vp_Value_Input_Spin::Vp_Value_Input_Spin(
+  int x, int y, int w, int h, const char* l)
+  : Fl_Valuator(x,y,w,h,l), input(x, y, w, h, 0)
+{
+  soft_ = 0;
+  if (input.parent())  // defeat automatic-add
+    ((Fl_Group*)input.parent())->remove(input);
+  input.parent((Fl_Group *)this); // kludge!
+  input.callback(input_cb, this);
+  input.when(FL_WHEN_CHANGED);
+  selection_color(input.selection_color());
+  align(FL_ALIGN_LEFT);
+  box(input.box());
+  value_damage();
+  buttonssize(15);
+  ix=x;
+  iy=y; 
+  drag=0;
+  indrag=0;
+  sldrag=0;
+  mouseobj = 0;
+  deltadir=0;
+  delta=0;
+}
+
+//*****************************************************************************
+// Vp_Value_Input_Spin::~Vp_Value_Input_Spin() -- Destructor.
+Vp_Value_Input_Spin::~Vp_Value_Input_Spin()
+{
+  Fl::remove_timeout(repeat_callback, this);
+}
+
+//*****************************************************************************
+// Vp_Value_Input_Spin::input_cb( Fl_Widget*, void* v) -- Callback
+void Vp_Value_Input_Spin::input_cb(Fl_Widget*, void* v) 
+{
   Vp_Value_Input_Spin& t = *(Vp_Value_Input_Spin*)v;
   double nv;
   if (t.step()>=1.0) nv = strtol(t.input.value(), 0, 0);
@@ -24,8 +84,10 @@ void Vp_Value_Input_Spin::input_cb(Fl_Widget*, void* v) {
   hack_o_rama = 0;
 }
 
-void Vp_Value_Input_Spin::draw() {
-
+//*****************************************************************************
+// Vp_Value_Input_Spin::draw() -- Draw widget
+void Vp_Value_Input_Spin::draw()
+{
   int sxx = x(), syy = y(), sww = w(), shh = h(); 
   sxx += sww - buttonssize(); sww = buttonssize();
   Fl_Boxtype box1 = FL_BORDER_FRAME;
@@ -76,13 +138,18 @@ void Vp_Value_Input_Spin::draw() {
   clear_damage();  
 }
  
-
-void Vp_Value_Input_Spin::resize(int X, int Y, int W, int H) {
+//*****************************************************************************
+// Vp_Value_Input_Spin::resize( X, Y, W, H) -- Resize widget
+void Vp_Value_Input_Spin::resize(int X, int Y, int W, int H)
+{
    input.resize(X,Y,W,H);
    Fl_Valuator::resize(X,Y,W,H);
 }
 
-void Vp_Value_Input_Spin::value_damage() {
+//*****************************************************************************
+// Vp_Value_Input_Spin::value_damage() --
+void Vp_Value_Input_Spin::value_damage()
+{
   if (hack_o_rama) return;
   char buf[128];
   format(buf);
@@ -90,7 +157,10 @@ void Vp_Value_Input_Spin::value_damage() {
   input.mark(input.position()); // turn off selection highlight
 }
 
-void Vp_Value_Input_Spin::repeat_callback(void* v) {
+//*****************************************************************************
+// Vp_Value_Input_Spin::repeat_callback( v) --
+void Vp_Value_Input_Spin::repeat_callback(void* v)
+{
   Vp_Value_Input_Spin* b = (Vp_Value_Input_Spin*)v;
   if (b->mouseobj) {
     Fl::add_timeout(.01, repeat_callback, b);
@@ -98,7 +168,10 @@ void Vp_Value_Input_Spin::repeat_callback(void* v) {
   }
 }
 
-void Vp_Value_Input_Spin::increment_cb() {
+//*****************************************************************************
+// Vp_Value_Input_Spin::increment_cb() -- Callback for increment
+void Vp_Value_Input_Spin::increment_cb()
+{
   if (!mouseobj) return;
   delta+=deltadir;
   double v;
@@ -111,7 +184,10 @@ void Vp_Value_Input_Spin::increment_cb() {
   handle_drag(soft()?softclamp(v):clamp(v));
 }
 
-int Vp_Value_Input_Spin::handle(int event) {
+//*****************************************************************************
+// Vp_Value_Input_Spin::handle( event) -- Event handler
+int Vp_Value_Input_Spin::handle( int event)
+{
   double v;
   int olddelta;
   int mx = Fl::event_x();
@@ -212,32 +288,4 @@ int Vp_Value_Input_Spin::handle(int event) {
     input.type(step()>=1.0 ? FL_INT_INPUT : FL_FLOAT_INPUT);
     return 1;
   }
-}
-
-Vp_Value_Input_Spin::~Vp_Value_Input_Spin() {
-  Fl::remove_timeout(repeat_callback, this);
-}
-
-Vp_Value_Input_Spin::Vp_Value_Input_Spin(int x, int y, int w, int h, const char* l)
-: Fl_Valuator(x,y,w,h,l), input(x, y, w, h, 0) {
-
-  soft_ = 0;
-  if (input.parent())  // defeat automatic-add
-    ((Fl_Group*)input.parent())->remove(input);
-  input.parent((Fl_Group *)this); // kludge!
-  input.callback(input_cb, this);
-  input.when(FL_WHEN_CHANGED);
-  selection_color(input.selection_color());
-  align(FL_ALIGN_LEFT);
-  box(input.box());
-  value_damage();
-  buttonssize(15);
-  ix=x;
-  iy=y; 
-  drag=0;
-  indrag=0;
-  sldrag=0;
-  mouseobj = 0;
-  deltadir=0;
-  delta=0;
 }

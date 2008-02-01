@@ -247,6 +247,10 @@ below.
  <td>scale</td><td>Normalization scheme for that axis</td>
 </tr>
 <tr>
+ <td>offset</td><td>Offset data by +/-i points along this axis.  Note that this control<br>
+ is a spinner rather than a slider.</td>
+</tr>
+<tr>
  <td align="TOP">histog</td>
  <td>Show histograms along that axis.  'Marginal/Selection/Conditional'<br>
  corresponds to 'All points/Selected points/Fraction selected'</td>
@@ -271,14 +275,14 @@ below.
 </tr>
 <tr>
  <td valign="TOP">rot</td>
- <td>rotation angle in 3D about the y-axis.&nbsp;&nbsp;NOTE: to take<br>
- advantage of this feature one must first select something<br>
- for the 3rd axis to display.</td>
+ <td>rotation angle in 3D about the y-axis.&nbsp;&nbsp;NOTE: to take advantage<br>
+ of this feature, one must first select something for the 3rd axis<br>
+ to display.</td>
 </tr>
 <tr>
  <td valign="TOP">spin</td>
- <td>continuous rotation about the y-axis.&nbsp;&nbsp;NOTE: to start<br>
- this, you may have to give the <em>rot</em> slider a twitch.</td>
+ <td>continuous rotation about the y-axis.&nbsp;&nbsp;NOTE: to start this, you<br>
+ may have to give the <em>rot</em> slider a twitch.</td>
 </tr>
 <tr>
  <td>reset view</td><td>Reset rotation and other display params</td>
@@ -321,14 +325,16 @@ below.
 </tr>
 <tr>
  <td valign="TOP">rank(y|x)</td>
- <td>Rank points by y-value within a sliding bin of x-values.<br>
- The width of this bin is controlled by changing the number, <br>
- N bins, of histogram bins.</td>
+ <td>Plot <em>x</em> vs the rank of <em>y</em> for a range about that <em>x</em> 
+ (e.g., rank points<br>
+ within a sliding bin of <em>x</em>-values by their value in <em>y</em>.  The width of<br>
+ this bin is controlled the number of histogram bins, N bins.)</td>
 </tr>
 <tr>
  <td valign="TOP">fluc(y|x)</td>
- <td>Rank points by variation in y-value within a sliding bin of<br>
- x-values.</td>
+ <td>Plot <em>x</em> vs the deviation in <em>y</em> for a range about that <em>x</em> 
+ (e.g., rank<br>
+ points within a sliding bin of <em>x</em>-values by their variation in <em>y</em>.)</td>
 </tr>
 </table>
 </p>

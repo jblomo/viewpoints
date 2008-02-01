@@ -1609,12 +1609,14 @@ int Plot_Window::normalize(
 
   // All data fits in window w/zero at center of axis
   case Control_Panel_Window::NORMALIZATION_MAXABS:  
+  {
     float tmaxabs = fmaxf(fabsf(tmin[axis_index]),fabsf(tmax[axis_index]));
     if( tmaxabs != 0.0) {
       amin[axis_index] = -tmaxabs;
       amax[axis_index] = tmaxabs;
     }
     return 1;
+  }
 
   // Median at center of axis, axis extends to include at least 99% of data
   case Control_Panel_Window::NORMALIZATION_TRIM_1E2:

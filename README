@@ -1,7 +1,7 @@
 viewpoints -- Fast interactive linked plotting of large multivariate data sets.
 
-Version: 2.0.3  (Build 214)
-Date: 15 Dec 2007
+Version: 2.0.4  (Build 217)
+Date: 31 Jan 2008
 
 
 Overview:
@@ -244,6 +244,8 @@ Controls in the control panels:
  X, Y, and Z axis       Attribute to be displayed in that axis
  locked                 Lock an axis so it won't change
  scale                  Normalization scheme for that axis
+ offset                 Offset data by +/-i points along this axis.  Note 
+                        that this is a spinner rather than a slider.
  histog                 Show histograms along that axis.  
                         'Marginal/Selection/Conditional' corresponds to 
                         'All points/Selected points/Fraction selected'
@@ -271,11 +273,13 @@ Controls in the control panels:
  grid                   Show grid
  identity               plot y vs x
  sum vs. diff plot      plot (x+y) vs. (x-y)
- rank(y|x)              Rank points by y-value within a sliding bin of x-
-                        values.  The width of this bin is controlled by 
-                        changing the number, N bins, of histogram bins.
- fluc(y|x)              Rank points by variation in y-value within a sliding 
-                        bin of x-values.
+ rank(y|x)              Plot x vs the rank of y for a range about that x  (e.g., 
+                        rank points within a sliding bin of x-values by their 
+                        value in y.  The width of this bin is controlled the 
+                        number of histogram bins, N bins.)
+ fluc(y|x)              Plot x vs the deviation in y for a range about that x
+                        (e.g., rank points within a sliding bin of x-values by 
+                        their variation in y.)
 
  Tabbed control panels for individual brushes
  control                action
