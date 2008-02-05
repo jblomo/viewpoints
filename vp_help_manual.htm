@@ -26,6 +26,7 @@
 &nbsp;&nbsp;&nbsp;<a href="#Main_Control_Panel">Main Control Panel</a><br>
 <a href="#Normalization_Schemes">Normalization Schemes</a><br>
 <a href="#Command_Shortcuts_In_Plot_Windows">Command Shortcuts in Plot Windows</a><br>
+<a href="#Notes_And_Warnings">Notes and Warnings</a><br>
 <a href="#Compatibility_Issues">Compatibility Issues</a><br>
 <br>
 
@@ -496,6 +497,46 @@ while the window manager focus is on a plot window:
 </table>
 </p>
 
+<a name="Notes_And_Warnings"></a>
+<h3>Notes and warnings:
+
+<p>
+The current release of the 'viewpoints' package (version 2.0.4, build 218) 
+is still a development version.  While every effort has been make to ensure 
+that it will work -- or fail gracefully if it doesn't -- it still has many 
+rough edges.  Some of these are described below.  These issues will all be 
+addressed in future releases.
+<\p>
+
+<p>
+1) If you drag a window over the main control panel, the main control panel
+may need to be refreshed.  This can be accomplished by resizing it.
+
+<p>
+2) The Load and Save Configuration commands are a comparatively new feature,
+and save basic session information.  They may not work on every system.  
+Also, there is not, as yet, any guarantee that old configuration files will
+be upward-compatible with new versions of viewpoints.
+<\p>
+
+<p>
+3) The Edit Column Labels tool is also a new feature, and is not guaranteed
+to preserve axis or scaling information.  In the current release, it can only
+delete labels.  Column labels of ASCII files can be renamed via by using an
+editor in a conventional fashion.  Small binary files can be saved to ASCII 
+and edited.  For large binary files, it is possible, with difficulty, to 
+rename labels by saving a small portion of the file as ASCII, editing this, 
+reloading it, and appending the remainding portion of the original binary file.
+<\p>
+
+<a name="Compatibility_Issues"></a>
+<p>
+<b>Compatibility:</b> The Linux version has been tested on Fedora
+Core 4 while the MacOS versions have been tested on MacOS 10.4.8 on G4,
+G5 and intel macs.  The Windows version should run on any recent
+system with the necessary functionality from OpenGL 1.2 through 1.6.  
+It will not run on older systems that are restricted to OpenGL 1.1.
+</p>
 
 <p>
 Please note that <b><em>Viewpoints</em> (vp)</b> is in development.
@@ -518,14 +559,6 @@ it if you could acknowledge this project in the relevant publications.
 Thank you.
 </p>
 
-<a name="Compatibility_Issues"></a>
-<p>
-<b>Compatibility:</b> The Linux version has been tested on Fedora
-Core 4 while the MacOS versions have been tested on MacOS 10.4.8 on G4,
-G5 and intel macs.  The Windows version should run on any recent
-system with the necessary functionality from OpenGL 1.2 through 1.6.  
-It will not run on older systems that are restricted to OpenGL 1.1.
-</p>
 
 </body>
 </html>

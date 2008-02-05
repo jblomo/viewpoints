@@ -20,7 +20,7 @@
 //   3) Consider putting these variables into a NAMESPACE?
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  13-DEC-2007
+// Modified: P. R. Gazis  05-FEB-2008
 //***************************************************************************
 
 #ifndef VP_GLOBAL_DEFINITIONS_VP_H
@@ -167,7 +167,7 @@ GLOBAL Brush *brushes[NBRUSHES];  // MCL XXX this should be a static c++ vector 
 
 //# Make absolutely certain SVN_VERSION is defined
 #ifdef __WIN32__
-  #define SVN_VERSION "Windows revision 217"
+  #define SVN_VERSION "Windows revision 218"
 #endif
 #ifndef SVN_VERSION
   #define SVN_VERSION "unknown_version"

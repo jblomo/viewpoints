@@ -74,7 +74,7 @@
 //   reset_selection_arrays() -- Reset selection arrays
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  15-DEC-2007
+// Modified: P. R. Gazis  05-FEB-2008
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -193,6 +193,7 @@ void npoints_changed( Fl_Widget *o);
 void write_data( Fl_Widget *o, void* user_data);
 void reset_all_plots();
 void read_data( Fl_Widget* o, void* user_data);
+int load_initial_state( string configFileSpec);
 int load_state( Fl_Widget* o);
 int save_state( Fl_Widget* o);
 void redraw_if_changing( void *dummy);
@@ -220,6 +221,8 @@ void usage()
        << "Startup with this many columns of plot windows," << endl
        << "                              "
        << "default=2" << endl;
+  cerr << "  -C, --config_file=FILENAME  "
+       << "Read saved configuration from FILENAME." << endl;
   cerr << "  -d, --delimiter=CHAR        "
        << "Interpret CHAR as a field separator, default is" << endl
        << "                              "
@@ -264,9 +267,7 @@ void usage()
        << "                              "
        << "from stdin, etc.)" << endl;
   cerr << "  -O, --verbose               "
-       << "enable verbOse output" << endl
-       << "                              "
-       << "from stdin, etc.)" << endl;
+       << "enable verbOse output with more diagnostics." << endl;
   cerr << "  -V, --version               "
        << "Output version information and exit." << endl;
 
@@ -513,13 +514,15 @@ void manage_plot_window_array( Fl_Widget *o, void* user_data)
   else if( (pMenu_ = dynamic_cast <Fl_Menu_*> (o))) {
     thisOperation = REFRESH_WINDOWS;
     nplots_old = nplots;
-
-    // Get widget title and user data, and make absolutely sure that the
-    // latter isn't NULL
-    strcpy( widgetTitle, ((Fl_Menu_*) o)->text());
+  
+    // Get widget title and user data, and make absolutely sure that these
+    // aren't NULL
+    strcpy( widgetTitle, "");
     strcpy( userData, "");
+    if( ((Fl_Menu_*) o)->text() != NULL) 
+      strcpy( widgetTitle, ((Fl_Menu_*) o)->text());
     if( user_data != NULL) strcpy( userData, (char*) user_data);
-
+  
     // Examine widget title and user data to determine behavior on a case by
     // case basis for reasons of clarity
     if( strncmp( userData, "NEW_DATA", 8) == 0) {
@@ -565,7 +568,7 @@ void manage_plot_window_array( Fl_Widget *o, void* user_data)
       thisOperation = REFRESH_WINDOWS;
       do_restore_settings = 1;
     }
-
+  
     // When reading new data, invoke Fl_Gl_Window.hide() (instead of the 
     // destructor!) to destroy all plot windows along with their context, 
     // including VBOs.  Then set nplots_old to zero because we'll need to
@@ -1288,6 +1291,128 @@ void read_data( Fl_Widget* o, void* user_data)
 }
 
 //***************************************************************************
+// load_initial_state( configFileSpec) -- Use BOOST serialization to load 
+// the initial saved state from an XML archive.  NOTE: For reasons related
+// to the configuration filespec and manage_plot_window_array, this must be 
+// handled differently from the ordinary load_state operation.  NOTE: Since 
+// BOOST reads configuration files as sequential files rather than XML, the 
+// order and number of the load and save operations is extremely important, 
+// and this noted explicetly in the comments below.
+int load_initial_state( string configFileSpec)
+{
+  // Create dummy menu for calls to manage_plot_window_array.  Instantiate
+  // an actual object to avoid potential dangers of pointers.
+  Fl_Menu_Bar dummy_menu( 0, 0, 1, 1);
+
+  // Create a file stream for input and make sure it exists.  This will
+  // be closed when destructors are called.  NOTE: If this ASSERT triggers,
+  // something has gone badly wrong in the WHILE loop above.
+  std::ifstream inputFileStream( configFileSpec.c_str(), std::ios::binary);
+  assert( inputFileStream.good());
+
+  // Install most of the load procedure in a try-catch process to protect
+  // against corrupt serialization files
+  try {
+    // Create and open an archive for input.  As before, this will be
+    // closed when destructors are called
+    boost::archive::xml_iarchive inputArchive( inputFileStream);
+
+    // STEP 1/8) Begin by checking serialization file version
+    int serialization_file_version = -1;
+    inputArchive >> BOOST_SERIALIZATION_NVP( serialization_file_version);
+    if( current_serialization_version > serialization_file_version) throw 0;
+    
+    // STEP 2/8) Get data file from archive and read it
+    inputArchive >> BOOST_SERIALIZATION_NVP( dfm);
+    if( dfm.input_filespec().length() <= 0) dfm.create_default_data( 10);
+    else {
+      if( dfm.load_data_file() != 0) dfm.create_default_data( 10);
+      else 
+        cout << "Loaded " << npoints
+             << " samples with " << nvars << " fields" << endl;
+    }
+
+    // Fewer points -> bigger starting default_pointsize
+    default_pointsize = max( 1.0, 6.0 - log10f( (float) npoints));
+    Brush::set_sizes(default_pointsize);
+  
+    // STEPS 3/8 and 4/8) Read configuration information from archive.  
+    // NOTE: Must be done before first call to MANAGE_PLOT_WINDOW_ARRAY!
+    inputArchive >> BOOST_SERIALIZATION_NVP( nrows);
+    inputArchive >> BOOST_SERIALIZATION_NVP( ncols);
+
+    // Set user_data for this widget to indicate that this is a NEW_DATA 
+    // operation, then invoke MANAGE_PLOT_WINDOW_ARRAY to clear children of 
+    // the tab widget and reload the plot window array.
+    // manage_plot_window_array( o, (void*) "NEW_DATA");
+    manage_plot_window_array( &dummy_menu, (void*) "NEW_DATA");
+
+    // STEP 5/8) Read NPLOTS from the archive to make sure it is consistent 
+    // with the stored control panel and plot window information.  NOTE: If 
+    // something went wrong with MANAGE_PLOT_WINDOW_ARRAY, this could cause 
+    // problems.
+    inputArchive >> BOOST_SERIALIZATION_NVP( nplots);
+
+    // STEPS 6/8 and 7/8) Define temporary arrays, load these with 
+    // serialization information, then transfer this information to the 
+    // actual arrays.  NOTE: This awkward procedure is imposed by the 
+    // limitations of the constructors for these classes.
+    Control_Panel_Window *cps_input[ MAXPLOTS+1]; 
+    inputArchive >> BOOST_SERIALIZATION_NVP( cps_input);
+    for( int i=0; i<nplots; i++) {
+      cps[i]->copy_state( cps_input[ i]);
+      cps[i]->load_state();
+    }
+    Plot_Window *pws_input[ MAXPLOTS+1]; 
+    inputArchive >> BOOST_SERIALIZATION_NVP( pws_input);
+    for( int i=0; i<nplots; i++) {
+      pws[i]->copy_state( pws_input[ i]);
+      pws[i]->load_state();
+    }
+
+    // STEP 8/8) Do the same thing for brushes
+    Brush *brushes_input[ NBRUSHES];
+    inputArchive >> BOOST_SERIALIZATION_NVP( brushes_input);
+    for( int i=0; i<NBRUSHES; i++) {
+      brushes[i]->copy_state( brushes_input[ i]);
+      brushes[i]->load_state();
+    }
+        
+    // Set user_data to indicate that this is a RESIZE operation, then i
+    // invoke manage_plot_window( o) to apply configuration.
+    // manage_plot_window_array( o, (void*) "REFRESH_WINDOWS");
+    manage_plot_window_array( &dummy_menu, (void*) "REFRESH_WINDOWS");
+  }
+  catch( int i_thrown) {
+    string sWarning = "";
+    sWarning.append( "WARNING: Configuration file is an older or\n.");
+    sWarning.append( "unsupported version that cannot be loaded");
+    make_confirmation_window( sWarning.c_str(), 1);
+    cerr << "Main::load_initial_state: WARNING, "
+         << "Unsupported version of configuration file" << endl;
+    cerr << "       load_initial_state reports exception (" << i_thrown
+         << ")" << endl;
+    // manage_plot_window_array( main_menu_bar, (void*) "NEW_DATA");
+    manage_plot_window_array( &dummy_menu, (void*) "NEW_DATA");
+  }
+  catch( exception &e) {
+    string sWarning = "";
+    sWarning.append( "WARNING: Configuration file appears to be damaged\n.");
+    sWarning.append( "or obsolete.  Results may be unpredictable");
+    make_confirmation_window( sWarning.c_str(), 1);
+    cerr << "Main::load_initial_state: WARNING, "
+         << "problem loading serialization file" << endl;
+    cerr << "      load_initial_state reports exception (" << e.what()
+         << ")" << endl;
+    // manage_plot_window_array( main_menu_bar, (void*) "NEW_DATA");
+    manage_plot_window_array( &dummy_menu, (void*) "NEW_DATA");
+  }
+  
+  // Report success
+  return 1;
+}
+
+//***************************************************************************
 // load_state( o) -- Use BOOST serialization to load a saved state from an
 // XML archive.  NOTE: Since BOOST reads these as sequential files rather
 // than XML, the order and number of the load and save operations is 
@@ -1673,6 +1798,7 @@ int main( int argc, char **argv)
     { "cols", required_argument, 0, 'c'},
     { "monitors", required_argument, 0, 'm'},
     { "input_file", required_argument, 0, 'i'},
+    { "config_file", required_argument, 0, 'C'},
     { "missing_values", required_argument, 0, 'M'},
     { "delimiter", required_argument, 0, 'd'},
     { "borderless", no_argument, 0, 'b'},
@@ -1701,11 +1827,12 @@ int main( int argc, char **argv)
   // process does NOT effect arc and argv in any way.
   int c;
   string inFileSpec = "";
+  string configFileSpec = "";
   char delimiter_char_ = ' ';
   while( 
     ( c = getopt_long_only( 
         argc, argv, 
-        "f:n:v:s:o:r:c:m:i:M:d:bBhxVp", long_options, NULL)) != -1) {
+        "f:n:v:s:o:r:c:m:i:C:M:d:bBhxOVp", long_options, NULL)) != -1) {
   
     // Examine command-line options and extract any optional arguments
     switch( c) {
@@ -1814,9 +1941,14 @@ int main( int argc, char **argv)
         }
         break;
 
-      // inputfile: Extract data filespec
+      // input_file: Extract data filespec
       case 'i':
         inFileSpec.append( optarg);
+        break;
+
+      // config_file: Extract data filespec
+      case 'C':
+        configFileSpec.append( optarg);
         break;
 
       // borders: Turn off window manager borders on plot windows
@@ -1868,7 +2000,8 @@ int main( int argc, char **argv)
 
   // If no data file was specified, but there was at least one argument 
   // in the command line, assume the last argument is the filespec.
-  if( inFileSpec.length() <= 0 && argc > 1) inFileSpec.append( argv[ argc-1]);
+  if( inFileSpec.length() <= 0 && configFileSpec.length() <= 0 && argc > 1)
+    inFileSpec.append( argv[ argc-1]);
 
   // Increment pointers to the optional arguments to get the last argument.
   argc -= optind;
@@ -1947,6 +2080,9 @@ int main( int argc, char **argv)
   // seems to avoid the problem with the busy-wait loop
   // Fl::add_timeout(0.25, cb_manage_plot_window_array);
   Fl::add_check( cb_manage_plot_window_array);
+
+  // Load initial configuration if one was specified
+  if( configFileSpec.length() > 0) load_initial_state( configFileSpec);
 
   // Enter the main event loop
   int result = Fl::run();

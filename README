@@ -1,7 +1,7 @@
 viewpoints -- Fast interactive linked plotting of large multivariate data sets.
 
-Version: 2.0.4  (Build 217)
-Date: 31 Jan 2008
+Version: 2.0.4  (Build 218)
+Date: 05 Feb 2008
 
 
 Overview:
@@ -123,6 +123,10 @@ The calling sequence for the command line version is:
     the code will assume that the final token in the command line is the 
     input filespec.
 
+  --config_file=<filespec> [shortcut: -C <filespec>]
+    Filespec of a saved configuration file.  NOTE: If this parameter is 
+    specified, it will override any input filespec.
+
   --borderless [shortcut: -b]
     Attempt to maximize plot windows' usable area by removing window manager 
     decorations.  Note: this seems to cause problems with keyboard shortcuts 
@@ -159,6 +163,9 @@ The calling sequence for the command line version is:
     graphics card or if the graphics are inconsistent or very slow.  May be
     useful if you are attempting to look at huge datasets.
 
+  --verbose [shortcut -O]
+    print verbose output with additional diagnostics
+    
   --version [shortcut -V]
     print version information and then exit.
     
@@ -335,7 +342,7 @@ randomize               Randomize
 
 Notes and warnings:
 
-The current release of the 'viewpoints' package (version 2.0.2, build 208) is 
+The current release of the 'viewpoints' package (version 2.0.4, build 218) is 
 still a development version.  While every effort has been make to ensure that 
 it will work -- or fail gracefully if it doesn't -- it still has many rough 
 edges.  Some of these are described below.  These issues will all be 
