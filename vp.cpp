@@ -1739,6 +1739,7 @@ void redraw_if_changing( void *dummy)
 // reset_selection_arrays() -- Reset selection arrays to 'unselected'.
 void reset_selection_arrays()
 {
+  inside_footprint = 0;
   newly_selected = 0;
   selected = 0;
   previously_selected = 0;

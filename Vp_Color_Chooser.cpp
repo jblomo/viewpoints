@@ -448,10 +448,10 @@ Vp_Color_Chooser::Vp_Color_Chooser(int X, int Y, int W, int H, const char* L)
   : Fl_Group(0,0,195,115,L),
     huebox(0,0,115,115),
     valuebox(115,0,20,115),
-    choice(140,0,55,25),
-    rvalue(140,30,55,25),
-    gvalue(140,60,55,25),
-    bvalue(140,90,55,25),
+    choice(140,0,45,25),
+    rvalue(140,30,45,25),
+    gvalue(140,60,45,25),
+    bvalue(140,90,45,25),
     resize_box(0,0,115,115)
 {
   end();
@@ -473,7 +473,7 @@ Vp_Color_Chooser::Vp_Color_Chooser(int X, int Y, int W, int H, const char* L)
   bvalue.textsize(10);
   choice.callback(mode_cb);
   choice.box(FL_NO_BOX);
-  choice.textfont(FL_HELVETICA_BOLD);
+  choice.textfont(FL_HELVETICA);
   choice.textsize(11);
   choice.clear_visible_focus();
 }

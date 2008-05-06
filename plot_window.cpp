@@ -1015,20 +1015,37 @@ void Plot_Window::handle_selection ()
   current_brush =  dynamic_cast <Brush*> (brushes_tab->value());
   assert (current_brush);
 
+  
+  // switch (current_brush->footprint->value()) {
+
+  enum footprint {BRUSH_BOX, BRUSH_CIRCLE};
+  footprint xxx = BRUSH_BOX;
+  switch (xxx) {
+  case BRUSH_BOX:
+    inside_footprint(NPTS) =
+      where( ( vertices( NPTS, 0)>fmaxf( xdown, xtracked) || 
+               vertices( NPTS, 0)<fminf( xdown, xtracked) ||
+               vertices( NPTS, 1)>fmaxf( ydown, ytracked) || 
+               vertices( NPTS, 1)<fminf( ydown, ytracked)),
+             0, 1);
+    break;
+  case BRUSH_CIRCLE:
+    {
+      float xs = xscale*w(), ys=yscale*h();
+      float dist2 = pow2((xtracked-xdown)*xs) + pow2((ytracked-ydown)*ys);
+      inside_footprint(NPTS) =
+        where( ( (pow2((vertices(NPTS,0)-xdown)*xs) + pow2((vertices(NPTS,1)-ydown)*ys)) > dist2),
+               0, 1);
+    }
+    break;
+  default:
+    assert(!"Impossible brush footprint");
+  }
+
   if (current_brush->paint->value()) {
-    newly_selected( NPTS) |= where( 
-      ( vertices( NPTS, 0)>fmaxf( xdown, xtracked) || 
-        vertices( NPTS, 0)<fminf( xdown, xtracked) ||
-        vertices( NPTS, 1)>fmaxf( ydown, ytracked) || 
-        vertices( NPTS, 1)<fminf( ydown, ytracked)),
-      0, 1);
+    newly_selected( NPTS) |= inside_footprint(NPTS);
   } else {
-    newly_selected( NPTS) = where( 
-      ( vertices( NPTS, 0)>fmaxf( xdown, xtracked) || 
-        vertices( NPTS, 0)<fminf( xdown, xtracked) ||
-        vertices( NPTS, 1)>fmaxf( ydown, ytracked) || 
-        vertices( NPTS, 1)<fminf( ydown, ytracked)),
-      0, 1);
+    newly_selected( NPTS) = inside_footprint(NPTS);
   }
 
   // then tag them with the appropriate integer (index of current brush) so that later

@@ -89,11 +89,13 @@ GLOBAL blitz::Array<int,1> ranked;    // flag: 1->column is ranked, 0->not
 
 // Define blitz::Arrays to flag selected points.  As with the raw data, these 
 // are left global for simplicity and clarity.
-// newly_selected -- true iff point is in newly selected set
-// selected -- Index?  True if point is selected in any window
-// previously_selected -- true iff selected before mouse went down
+// inside_footprint -- true for points that lie inside the footprint of the brush.
+// newly_selected -- true iff point is in newly selected set.
+// selected -- index of the brush that most recently selected the point, or 0.
+// previously_selected -- index of the brush that previously selected the point
 // nselected -- number of points currently selected
 // saved_selection -- saves the old selection when "inverting", so we can go back.
+GLOBAL blitz::Array<int,1> inside_footprint;
 GLOBAL blitz::Array<int,1> newly_selected;
 GLOBAL blitz::Array<int,1> selected;
 GLOBAL blitz::Array<int,1> previously_selected;

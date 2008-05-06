@@ -1434,7 +1434,7 @@ void Data_File_Manager::delete_labels( Fl_Widget *o, void* user_data)
 
   // Update column labels
   ivar = 0;
-  for( int i=0; i<column_labels.size(); i++) {
+  for( unsigned int i=0; i<column_labels.size(); i++) {
     if( edit_labels_widget->checked(i+1) <= 0) {
       column_labels[ ivar] = column_labels[ i];
       ivar++;
@@ -1548,6 +1548,7 @@ void Data_File_Manager::resize_global_arrays()
   ranked = 0;
   
   // Resize and reinitialize selection related arrays and flags.
+  inside_footprint.resize( npoints);
   newly_selected.resize( npoints);
   selected.resize( npoints);
   previously_selected.resize( npoints);

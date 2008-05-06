@@ -288,7 +288,7 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   // inside a window, set their child widget's coordinates relative to 
   // their enclosing window's position. 
   int xpos = this->x()+50;
-  int ypos = this->y()+20;
+  int ypos = this->y()+15;
 
   Fl_Button *b;
   // Fl_Round_Button *rb;
@@ -299,8 +299,38 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   xpos = 50;
   int subwidth=105;  // ~1/3 of (width - extra room)
 
+  // one label for row of axis labels & axis lock buttons
+  b = new Fl_Button (xpos, ypos-2, 65, 25, "lock");
+  b->labelsize(14);
+  b->align(FL_ALIGN_LEFT);
+  b->box(FL_NO_BOX);
+
+  // Lock x-axis button
+  lock_axis1_button = b = new Fl_Button(xpos+0*subwidth+40, ypos, 20, 20, "X ");
+  b->align(FL_ALIGN_LEFT);
+  b->type(FL_TOGGLE_BUTTON); 
+  b->selection_color(FL_BLUE);
+  b->value(0);
+  b->tooltip("make this plot's x axis immune from 'change axis' events");
+
+  // Lock y-axis button
+  lock_axis2_button = b = new Fl_Button(xpos+1*subwidth+40, ypos, 20, 20, "Y ");
+  b->align(FL_ALIGN_LEFT);
+  b->type(FL_TOGGLE_BUTTON); 
+  b->selection_color(FL_BLUE);
+  b->value(0);
+  b->tooltip("make this plot's y axis immune from 'change axis' events");
+
+  // Lock z-axis button
+  lock_axis3_button = b = new Fl_Button(xpos+2*subwidth+40, ypos, 20, 20, "Z ");
+  b->align(FL_ALIGN_LEFT);
+  b->type(FL_TOGGLE_BUTTON); 
+  b->selection_color(FL_BLUE);
+  b->value(0);
+  b->tooltip("make this plot's z axis immune from 'change axis' events");
+
   // label for row of variable chooser menus
-  b = new Fl_Button (xpos, ypos+=5, 45, 25, ""); // cleaner look with nothing here?
+  b = new Fl_Button (xpos, ypos+=25, 45, 25, "plot"); // cleaner look with nothing here?
   b->labelsize(14);
   b->align(FL_ALIGN_LEFT);
   b->box(FL_NO_BOX);
@@ -316,8 +346,7 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   varindex_menu_items[nvars+1].label(0);
 
   // X-axis variable selection menu
-  varindex1 = new Fl_Choice (xpos, ypos, subwidth-15, 25, "X axis");
-  varindex1->align(FL_ALIGN_TOP);
+  varindex1 = new Fl_Choice (xpos, ypos, subwidth-15, 25);
   varindex1->textsize(12);
   varindex1->copy( varindex_menu_items);
   varindex1->mode( nvars, FL_MENU_INACTIVE);  // disable "--nothing--" as a choice for axis1
@@ -326,8 +355,7 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   varindex1->tooltip("select variable for this plot's x-axis");
 
   // Y-axis variable selection menu
-  varindex2 = new Fl_Choice (xpos+subwidth, ypos, subwidth-15, 25, "Y axis");
-  varindex2->align(FL_ALIGN_TOP);
+  varindex2 = new Fl_Choice (xpos+subwidth, ypos, subwidth-15, 25);
   varindex2->textsize(12);
   varindex2->copy( varindex_menu_items);
   varindex2->mode( nvars, FL_MENU_INACTIVE);  // disable "--nothing--" as a choice for axis2
@@ -336,41 +364,13 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   varindex2->tooltip("select variable for this plot's y-axis");
 
   // Z-axis variable selection menu
-  varindex3 = new Fl_Choice (xpos+2*subwidth, ypos, subwidth-15, 25, "Z axis");
-  varindex3->align(FL_ALIGN_TOP);
+  varindex3 = new Fl_Choice (xpos+2*subwidth, ypos, subwidth-15, 25);
   varindex3->textsize(12);
   varindex3->copy( varindex_menu_items);
   varindex3->value(nvars);  // initially, axis3 == "-nothing-"
   varindex3->clear_visible_focus();
   varindex3->callback( (Fl_Callback*)static_extract_and_redraw, this);
   varindex3->tooltip("select variable for this plot's z-axis");
-
-  // one label for row of lock axis buttons
-  b = new Fl_Button (xpos, ypos+=25, 65, 25, "locked");
-  b->labelsize(14);
-  b->align(FL_ALIGN_LEFT);
-  b->box(FL_NO_BOX);
-
-  // Lock x-axis button
-  lock_axis1_button = b = new Fl_Button(xpos+0*subwidth, ypos, 20, 20);
-  b->type(FL_TOGGLE_BUTTON); 
-  b->selection_color(FL_BLUE);
-  b->value(0);
-  b->tooltip("make this plot's x axis immune from 'change axis' events'");
-
-  // Lock y-axis button
-  lock_axis2_button = b = new Fl_Button(xpos+1*subwidth, ypos, 20, 20);
-  b->type(FL_TOGGLE_BUTTON); 
-  b->selection_color(FL_BLUE);
-  b->value(0);
-  b->tooltip("make this plot's y axis immune from 'change axis' events'");
-
-  // Lock z-axis button
-  lock_axis3_button = b = new Fl_Button(xpos+2*subwidth, ypos, 20, 20);
-  b->type(FL_TOGGLE_BUTTON); 
-  b->selection_color(FL_BLUE);
-  b->value(0);
-  b->tooltip("make this plot's z axis immune from 'change axis' events'");
 
   // label for row of normalization menus
   b = new Fl_Button (xpos, ypos+=25, 45, 25, "scale");
@@ -611,7 +611,7 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   b->tooltip("toggle visibility of all points");
 
   // Button (2,2): Show deselected points
-  show_deselected_points = b = new Fl_Button(xpos, ypos+=25, 20, 20, " unselected");
+  show_deselected_points = b = new Fl_Button(xpos, ypos+=25, 20, 20, "unselected");
   b->callback((Fl_Callback*)static_maybe_redraw, this);
   b->align(FL_ALIGN_RIGHT); 
   b->type(FL_TOGGLE_BUTTON); 

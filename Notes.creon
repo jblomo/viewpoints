@@ -1532,3 +1532,15 @@ Delimiter "none" on write file?  What does that mean?
 Save all data, ascii, save selectio info., delimiter comma, enters loop of repeated fileio panels.
 All file save enters infinite panel loop.
 
+00:29:53 06 Feb 08
+
+Paul's -C option:
+
+histograms don't get saved
+rank norm no save?
+
+07:46:50 04 Mar 08
+
+According to: http://developer.apple.com/documentation/GraphicsImaging/Conceptual/OpenGL-MacProgGuide/opengl_performance/chapter_13_section_2.html#//apple_ref/doc/uid/TP40001987-CH213-SW12
+
+Retrieve Error Information Only When Debugging... During development, it's crucial that your code contains error checking routines, not only for the standard OpenGL calls, but for the Apple-specific functions provided by the AGL and CGL APIs.  If you are developing a performance-critical application, you'll want to retrieve error information in the debugging phase. When you deploy your application you'll want to remove the error-retrieval information for all but the most critical cases. If you retrieve error codes and strings for frequently-called functions, you'll cause performance to slow down.

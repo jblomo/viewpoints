@@ -243,8 +243,25 @@ void Brush::make_widgets(Brush *bw)
   pointsize->callback((Fl_Callback*)static_brush_changed, this);
   pointsize->tooltip("change symbol size for this brush");
 
+  // reset all parameters for this brush
+  reset_button = new Fl_Button( xpos+pointsize->w()+85, ypos, 20, 20, "reset brush");
+  reset_button->align( FL_ALIGN_LEFT); 
+  reset_button->selection_color( FL_BLUE); 
+  reset_button->callback((Fl_Callback*)static_reset, this);
+  reset_button->value( 0);
+  reset_button->tooltip("restore default parameters for this brush");
+
+  // Alpha slider
+  alpha = new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, bw->w()-155, 20, "alpha");
+  alpha->align(FL_ALIGN_LEFT);
+  alpha->callback((Fl_Callback*)static_brush_changed, this);
+  alpha->step(0.0001);
+  alpha->bounds(0.0,1.0);
+  alpha->value(1.0);
+  alpha->tooltip("change opacity of this brush");
+
   // symbol types menu for this brush
-  symbol_menu = new Fl_Choice(xpos+pointsize->w()+45, ypos, 60, 20);
+  symbol_menu = new Fl_Choice(xpos+alpha->w()+45, ypos, 60, 20);
   // call a method to do the dirty work of setting up all the glyphs for the symbols menu.
   build_symbol_menu ();
   symbol_menu->textsize(12);
@@ -256,15 +273,6 @@ void Brush::make_widgets(Brush *bw)
   symbol_menu->value(0);
   symbol_menu->callback( (Fl_Callback*)static_brush_changed, this);
   symbol_menu->tooltip("select symbol for this brush");
-
-  // Alpha slider
-  alpha = new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, bw->w()-155, 20, "alpha");
-  alpha->align(FL_ALIGN_LEFT);
-  alpha->callback((Fl_Callback*)static_brush_changed, this);
-  alpha->step(0.0001);
-  alpha->bounds(0.0,1.0);
-  alpha->value(1.0);
-  alpha->tooltip("change opacity of this brush");
 
   // Alpha cutoff slider
   cutoff = new Fl_Hor_Value_Slider_Input( xpos, ypos+=25, bw->w()-155, 20, "cutoff");
@@ -293,13 +301,13 @@ void Brush::make_widgets(Brush *bw)
   lum2->value(1.0);
   lum2->tooltip("change accumulated luminosity when overplotting this brush");
 
-  color_chooser = new Vp_Color_Chooser(xpos-25, ypos+=25, 150, 75, ""); // XXX do not remove the "".
+  color_chooser = new Vp_Color_Chooser(xpos-35, ypos+=25, 150, 75, ""); // XXX do not remove the "".
   color_chooser->callback((Fl_Callback*)static_change_color, this);
   color_chooser->labelfont(FL_HELVETICA);
   color_chooser->labelsize(10);
 
   // MCL Should there be a "selection" menu: clear, replace, intersect (and), add (or), replace always, paint mode, invert...
-  clear_now_button = new Fl_Button( xpos+=150, ypos, 20, 20, "clear selection");
+  clear_now_button = new Fl_Button( xpos+=110, ypos, 20, 20, "clear selection");
   clear_now_button->align( FL_ALIGN_RIGHT); 
   clear_now_button->selection_color( FL_BLUE); 
   clear_now_button->callback((Fl_Callback*)static_clear_now, this);
@@ -319,10 +327,4 @@ void Brush::make_widgets(Brush *bw)
   paint->type( FL_TOGGLE_BUTTON);
   paint->tooltip("dribble paint (do not erase) when dragging or shift-dragging");
 
-  reset_button = new Fl_Button( xpos, ypos+=20, 20, 20, "reset brush");
-  reset_button->align( FL_ALIGN_RIGHT); 
-  reset_button->selection_color( FL_BLUE); 
-  reset_button->callback((Fl_Callback*)static_reset, this);
-  reset_button->value( 0);
-  reset_button->tooltip("restore default parameters for this brush");
 }
