@@ -1,9 +1,16 @@
-download the latest fltk-1.1.x from http://fltk.org/software.php
+Step 1
+
+download the latest stable fltk-1.1.x from http://fltk.org/software.php
+  (vp does not yet work with fltk 1.3 or fltk 2.0)
 expand
 cd
-./configure --enable-quartz
+./configure 
+  (use "./configure --enable-quartz" on mac)
 make
 sudo make install
+
+
+Step 2
 
 download flews from http://dbarrero.tripod.com/software/flews-0.3.tar.gz
 expand
@@ -15,6 +22,9 @@ make
   If you want to test flews, edit the flews makefile to have the correct locations
 sudo make install
 
+
+Step 3
+
 download the latest bltiz from http://sourceforge.net/project/showfiles.php?group_id=63961
 expand
 ./configure
@@ -22,17 +32,37 @@ make lib
 make check-testsuite  (see if all tests pass)
 sudo make install
 
+
+Step 4
+
 download the lastest gsl from ftp://ftp.gnu.org/gnu/gsl/
 ./configure --disable-shared
 make
 make check  (see if all tests pass)
 sudo make install
 
-svn -checkout (or -update) latest vp sources from svn+ssh://trotsky.arc.nasa.gov/export/home/creon/Repository/vp
-edit makefile for appropriate machine/OS/debugging combination
+
+Step 5
+
+Download and install boost, see: http://www.boost.org/doc/libs/1_35_0/more/getting_started/unix-variants.html
+Since vp uses the boost serialization library, you do have to build boost.  The "header only" libraries are not adequate.
+
+
+Step 6
+
+svn -checkout (or -update) latest vp sources from http://svn2.assembla.com/svn/viewpoints
+edit your makefile for appropriate machine/OS/debugging combination
 make
 
+
+Step 7
+
 test vp
+
+
+Step 8
+
+Do some real work.
 
 
 

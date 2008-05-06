@@ -1,14 +1,21 @@
 viewpoints -- Fast interactive linked plotting of large multivariate data sets.
 
-Version: 2.0.4  (Build 218)
-Date: 05 Feb 2008
+Creon Levit <Creon.Levit@nasa.gov>   and    Paul Gazis <Paul.R.Gazis@nasa.gov>
+
+Preface:
+
+Please let us know how viewpoints helps you. Did it enable you to solve a
+problem?  To make a discovery?  To find an error?  To generate a
+figure for a paper?  The more we know that viewpoints is useful, the
+more time we'll spend working on it.  
 
 
 Overview:
 
-The archives on this site contains the executable, documentation, a sample 
-data file with examples, and any dynamic link libraries (dlls) that may be 
-required for the 'viewpoints' (vp) package for Linux, Mac OSX, and Windows.  
+Each archive on this site contains the executable, documentation, a
+sample data file with examples, and (for MS Windows) any dynamic link
+libraries (dlls) that may be required for viewpoints (vp).
+
 The contents of these archives are listed below:
 
 File                Comments
@@ -76,9 +83,9 @@ If you don't care about running it from the command line, ignore the above.
 You can just double-click on the viewpoints.app icon to start it up.
 
 
-The calling sequence for the command line version is:
+The invocation for the command line version is:
 
- vp [optional arguments] inputfile
+ vp [optional arguments] [optional inputfile]
 
  the optional arguments are:
 
