@@ -1,7 +1,7 @@
 Step 1
 
-download the latest stable fltk-1.1.x from http://fltk.org/software.php
-  (vp does not yet work with fltk 1.3 or fltk 2.0)
+download the latest stable fltk-1.3 from http://fltk.org/software.php
+  (vp does not work with fltk 2.0)
 expand
 cd
 ./configure 

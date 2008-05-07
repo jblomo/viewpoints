@@ -60,7 +60,7 @@
     1) Consider using gnu standard coding style, or fltk standard coding style?
     2) No tabs allowed - only spaces.
 
-21. "invert selection" tice does not correctly restore slections in multiple colors
+21. "invert selection" twice does not correctly restore slections in multiple colors
     *fixed*
 
 22. aborts on all OSs should produce backtraces? (they do on OSX)
@@ -73,13 +73,13 @@
 
 25. iconifying or minimizing the control panel should iconify/minimize all plot windows.
 
-26. a plot's selected set should be cleared when focus returns to a plot widow and a new selection is started (if "add to selection") not enabled.
+26. a plot's selected set should be cleared when focus returns to a plot window and a new selection is started (if "add to selection") not enabled.
 
-27. each plot should start off with a separate selection color (at least for the first few plots where we make selections).
+27. each plot should start off with a separate selection color? (at least for the first few plots where we make selections).
 
-28. when ranking, (optionally) jitter equally ranked values.  Or (optinally) give them the same rank.
+28. when ranking, (optionally) jitter equally ranked values.  Or (optionally) give them the same rank (latter is fixed)
 
-29. 3D rotation screws up selection boxes.  need 3d screen-to-world
+29. 3D rotation screws up selection boxes.  need 3d screen-to-world.
 
 30. UI is haphazard.
 
@@ -87,10 +87,10 @@
 
 32. histograms and axis and labels should move with 3d rotations.
 
-33. rocking mode.
+33. 3D rocking mode.
 
 24. npoints slider should be integer
-    *fixed* (rmeoved npoints)
+    *fixed* (removed npoints)
 
 25. Kill selection crashes on mac
     *fixed*

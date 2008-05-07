@@ -1770,11 +1770,17 @@ void reset_selection_arrays()
 // Main -- Driver routine
 int main( int argc, char **argv)
 {
-  // XXX: In a perfect world, this should be included with the global 
+  ostringstream fltk_version_ss;
+  fltk_version_ss << Fl::version();
+  
+  // XXX: In a more perfect world, this should be included with the global 
   // definitions
+
   about_string = "\n\
     viewpoints 2.0.4 \n\
     " + string(SVN_VERSION) + "\n\
+    \n\
+    using fltk version (major + 0.01*minor): " + fltk_version_ss.str() + "\n\
     \n\
     (c) 2006 M. Creon Levit and Paul R. Gazis   \n\
     \n\

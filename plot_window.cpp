@@ -656,7 +656,8 @@ void Plot_Window::draw()
     angle = cp->rot_slider->value();
   glRotatef(angle, 0.0, 1.0, 0.1);
   glScalef (xscale, yscale, zscale);
-  magnification = ((xscale+yscale)/2.0) / initial_scale;
+  //magnification = ((xscale+yscale)/2.0) / initial_scale;
+  magnification = sqrt(xscale*yscale) / initial_scale;
   glTranslatef (-xcenter, -ycenter, -zcenter);
   glTranslatef (-xzoomcenter, -yzoomcenter, -zzoomcenter);
 
@@ -1222,13 +1223,13 @@ void Plot_Window::draw_data_points()
         glStencilOp (GL_KEEP, GL_KEEP, GL_REPLACE);
       }
 
-      // Set the pointsize for this brush (hard limit from 1 to 50 or 100)
+      // Set the pointsize for this brush (hard limit from 1 to 100)
       // note this is a combination of the brush's size and per-plot scaling
-      float size_scaling = powf(2.0, cp->size->value());
-      float size = min(max(brush->pointsize->value()*size_scaling, 1.0),50.0);
+      float size = brush->pointsize->value() * powf(2.0, cp->size->value());
       if (cp->scale_points->value()) {
-        size = min(sqrt(magnification)*size, 100.0f);
+        size = magnification*size;
       }
+      size = min(max(size,1.0F),100.0F);
 
       // alpa cutoff, usefull for soft brushes on light backgrounds.  This should perhaps
       // be per plot instead of per brush, or better yet it should go away.
@@ -2083,8 +2084,17 @@ void Plot_Window::invert_selection ()
     // save "true" selection
     saved_selection = selected;
 
-    // create something like an inverse in its place
-    selected = where(selected, 0, 1);
+    // create something like an inverse in its place:
+    //  paint nonselected points with current brush index, unless
+    //  current brush is 0, in which case paint them with 1.
+    Brush  *current_brush = (Brush *)NULL;
+    current_brush =  dynamic_cast <Brush*> (brushes_tab->value());
+    assert (current_brush);
+    if (current_brush->index != 0) {
+      selected = where(selected, 0, current_brush->index);
+    } else {
+      selected = where(selected, 0, 1);
+    }
     selection_is_inverted = true;
     // cout << "selection inverted" << endl;
   } 
