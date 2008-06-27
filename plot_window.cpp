@@ -1231,10 +1231,13 @@ void Plot_Window::draw_data_points()
       }
       size = min(max(size,1.0F),100.0F);
 
-      // alpa cutoff, usefull for soft brushes on light backgrounds.  This should perhaps
+      // alpa cutoff, useful for soft brushes on light backgrounds.  This should perhaps
       // be per plot instead of per brush, or better yet it should go away.
       glAlphaFunc(GL_GREATER, brush->cutoff->value());
       
+      //is this brush drawing are we drawing points, or point_sprites, or line strips?
+      GLenum element_mode = GL_POINTS;
+
       // Set the sprite for this brush - the symbol used for plotting points.
       current_sprite = brush->symbol_menu->value();
       assert ((current_sprite >= 0) && (current_sprite < NSYMBOLS));
@@ -1243,12 +1246,10 @@ void Plot_Window::draw_data_points()
         enable_regular_points();
         glPointSize(size);
         break;
-#if 0 // this should be executed based on run-time test iff GL_POINT_SPRITE is absent.
       case 1:
-        enable_antialiased_points();
-        glPointSize(size);
+        element_mode = GL_LINE_STRIP;
+        glLineWidth(size);
         break;
-#endif
       default:
         enable_sprites(current_sprite);
         glPointSize(size+2); // sprites cover fewer pixels, in general
@@ -1270,9 +1271,9 @@ void Plot_Window::draw_data_points()
       // then render the points
       if (use_VBOs) {
         assert (VBOinitialized && VBOfilled && indexVBOsinitialized && indexVBOsfilled) ;
+
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, MAXPLOTS+1+brush_index); 
-        glDrawElements( GL_POINTS, (GLsizei)count, GL_UNSIGNED_INT, BUFFER_OFFSET(0));
-        // glDrawRangeElements( GL_POINTS, 0, npoints, count, GL_UNSIGNED_INT, BUFFER_OFFSET(0)); // why not use this, instead?
+        glDrawElements( element_mode, (GLsizei)count, GL_UNSIGNED_INT, BUFFER_OFFSET(0)); // would it bee faster to use glDrawRangeElements() ?
         // make sure we succeeded 
         CHECK_GL_ERROR("drawing points from VBO");
       }
@@ -1280,8 +1281,7 @@ void Plot_Window::draw_data_points()
         // Create an alias to slice
         blitz::Array<unsigned int, 1> tmpArray = indices_selected(brush_index, blitz::Range(0,npoints-1));
         unsigned int *indices = (unsigned int *) (tmpArray.data());
-        // glDrawElements( GL_POINTS, count, GL_UNSIGNED_INT, indices);
-        glDrawRangeElements( GL_POINTS, 0, npoints, count, GL_UNSIGNED_INT, indices);
+        glDrawRangeElements( element_mode, 0, npoints, count, GL_UNSIGNED_INT, indices);
       }
     }
   }
@@ -1295,6 +1295,8 @@ void Plot_Window::draw_data_points()
   if (current_sprite > 0) {
     disable_sprites();
   }
+  glLineWidth(1);
+
 #ifdef ALPHA_TEXTURE
   glDisable(GL_ALPHA_TEST);
 #endif // ALPHA_TEXTURE

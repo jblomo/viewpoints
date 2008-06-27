@@ -1281,7 +1281,7 @@ Libraries to add:
   http://fltk.org/links.php?V96+Q   table widget for text view.  Up to 2 billion rows!  (may be obsolete)
   http://www.seriss.com/people/erco/fltk/Fl_Table/screenshots.html  new table. Can it hadle big data?
   http://www.osc.edu/archive/FLU/ spinner and cancellable progress meter
-  quaternio trackball rotations
+  quaternion trackball rotations
 
 Also add:
   readouts for:

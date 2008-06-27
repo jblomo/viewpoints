@@ -154,7 +154,8 @@ void Brush::load_state()
 void Brush::brush_changed()
 {
   // pointsize of 1 is too small to see symbols, but OK for standard GL points
-  if (previous_symbol == 0 && symbol_menu->value() != 0) {
+  // symbol==0 is regular points, symbol==1 is lines
+  if (previous_symbol <= 1 && symbol_menu->value() > 1) {
     if (pointsize->value() < 3) {
       pointsize->value(3);
     }

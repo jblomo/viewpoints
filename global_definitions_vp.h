@@ -62,7 +62,7 @@ GLOBAL int nplots INIT(nrows*ncols);  // Default number of plot windows
 
 // number of symbols avaliable for plotting (i.e. number of textures available 
 // for points sprites) and also the number of symbols in the symbols_menu.
-#define NSYMBOLS 53
+#define NSYMBOLS 54
 
 // Set the maximum number of columns and rows
 #define MAXVARS 400  // Maximum number of columns
