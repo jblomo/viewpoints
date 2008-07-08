@@ -239,10 +239,10 @@ below.
  <th align="LEFT">Control</th><th align="LEFT">Action</th>
 </tr>
 <tr>
- <td>X, Y, and Z axis</td><td>Attribute to be displayed in that axis</td>
+ <td>lock X, Y, or Z</td><td>Lock axis so it won't change when invoking "change axes"</td>
 </tr>
 <tr>
- <td>locked</td><td>Lock an axis so it won't change when invoking "change axes"</td>
+ <td>plot</td><td>Attribute to be displayed in that axis</td>
 </tr>
 <tr>
  <td>scale</td><td>Normalization scheme for that axis</td>
@@ -263,19 +263,19 @@ below.
  <td>bin ht</td><td>height of histogram bins for that axis</td>
 </tr>
 <tr>
- <td>Bkg</td><td>background color (try bkg=0.5, lum2=0.2)</td>
+ <td>bkgrnd</td><td>background color (try bkg=0.5, lum2=0.2)</td>
 </tr>
 <tr>
- <td>lum</td><td>successive brightness increase for overplotting</td>
+ <td>lumin</td><td>luminosity for all points</td>
 </tr>
 <tr>
- <td>psize</td><td>default size of unselected points</td>
+ <td>pntsize</td><td>default size of unselected points</td>
 </tr>
 <tr>
- <td>scale</td><td>Scale point sizes along with axes</td>
+ <td>Scale</td><td>Scale point sizes along with axes</td>
 </tr>
 <tr>
- <td valign="TOP">rot</td>
+ <td valign="TOP">rotate</td>
  <td>rotation angle in 3D about the y-axis.&nbsp;&nbsp;NOTE: to take advantage<br>
  of this feature, one must first select something for the 3rd axis<br>
  to display.</td>
@@ -305,12 +305,6 @@ below.
 </tr>
 <tr>
  <td>axes</td><td>Show axes</td>
-</tr>
-<tr>
- <td>labels</td><td>Show axes labels</td>
-</tr>
-<tr>
- <td>scales</td><td>Show axes scales</td>
 </tr>
 <tr>
  <td>ticks</td><td>Show tic marks</td>
@@ -350,28 +344,34 @@ below.
  <td>size</td><td>size of this brush, in pixels</td>
 </tr>
 <tr>
- <td>sym</td><td>symbol used by this brush</td>
+ <td>reset brush</td><td>reset this brush</td>
 </tr>
 <tr>
  <td>Alpha</td><td>point opacity</td>
 </tr>
 <tr>
- <td>lum1</td><td>successive brightness increase for overplotting</td>
+ <td>symb</td><td>symbol used by this brush</td>
 </tr>
 <tr>
- <td>lum2</td><td>successive brightness increase for overplotting</td>
+ <td>cutoff</td><td>alpha cutoff for this brush</td>
+</tr>
+<tr>
+ <td>lum1</td><td>initial luminosity for this brush</td>
+</tr>
+<tr>
+ <td>lum2</td><td>accumulated luminosity when overplotting this brush</td>
 </tr>
 <tr>
  <td>Color chart</td><td>Color controls for this brush</td>
 </tr>
 <tr>
- <td>extend selection</td><td>combine successive selections with this brush</td>
-</tr>
-<tr>
  <td>clear selection</td><td>clear successive selection for this brush</td>
 </tr>
 <tr>
- <td>reset brush</td><td>reset this brush</td>
+ <td>extend selection</td><td>combine successive selections with this brush</td>
+</tr>
+<tr>
+ <td>paint</td><td>'dribble paint' while dragging the selection box</td>
 </tr>
 </table>
 </p>

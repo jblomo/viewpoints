@@ -22,7 +22,7 @@
 // Purpose: Source code for <Plot_Window.h>
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  15-DEC-2007
+// Modified: P. R. Gazis  08-JUL-2008
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -34,6 +34,7 @@
 // Include associated headers and source code
 #include "plot_window.h"
 #include "control_panel_window.h"
+#include "sprite_textures.h"
 #include "brush.h"
 
 // experimental
@@ -75,6 +76,8 @@ int Plot_Window::indexVBOsfilled = 0;
 
 // Declarations for global methods defined and used by class Plot_Window.
 // NOTE: Is it a good idea to do this here rather than global_definitions.h?
+void circular_shift(
+  blitz::Array<float,1> dst, blitz::Array<float,1> src, const int shift);
 void moving_average( 
   blitz::Array<float,1> a, const blitz::Array<int,1> indices, 
   const int half_width);
@@ -87,7 +90,7 @@ void fluctuation(
 
 //***************************************************************************
 // Plot_Window::Plot_Window() -- Default constructor, used only in
-// association with serialzation!
+// association with serialization!
 Plot_Window::Plot_Window() : Fl_Gl_Window( 10, 10),
   index( 0),
   x_save( 0), y_save( 0), w_save( 0), h_save( 0),
@@ -108,8 +111,8 @@ Plot_Window::Plot_Window( int w, int h, int new_index) :
 }
 
 //***************************************************************************
-// Plot_Window::initialize -- Initialize window parameters.  Set flags, set 
-// set framebufer modes, set up openGL context.
+// Plot_Window::initialize() -- Initialize window parameters.  Set flags, 
+// set set framebuffer modes, set up openGL context.
 void Plot_Window::initialize()
 {
   do_reset_view_with_show = 0;
@@ -159,7 +162,7 @@ void Plot_Window::initialize()
 
 //***************************************************************************
 // Plot_Window::make_state() -- Examine widgets to generate and save state
-// parameters.
+// parameters.  Used only by the serialize method.
 void Plot_Window::make_state()
 {
   x_save = x();
@@ -186,6 +189,7 @@ void Plot_Window::copy_state( Plot_Window* pw)
 // possibility that this might be a default object without widgets.
 void Plot_Window::load_state()
 {
+  // For some reason this doesn't work, so use position and size instead.
   // x( x_save);
   // y( y_save);
   // w( w_save);
@@ -563,9 +567,9 @@ void Plot_Window::redraw_one_plot ()
 // Plot_Window::reset_view() -- Reset pan, zoom, and angle.
 void Plot_Window::reset_view()
 {
-  // XXX this, and so much else, needs to be cleaned up, generalized to any & all axes.
-  // every possible c-style array should be replaced in viewpoints with a std::vector or
-  // a boost::array.
+  // XXX this, and so much else, needs to be cleaned up, generalized to any 
+  // and all axes.  In particular, every possible c-style array should be 
+  // replaced in viewpoints with a std::vector or a boost::array.
    for (int i=0; i<3; i++) {
      wmin[i] = amin[i];
      wmax[i] = amax[i];
@@ -608,9 +612,9 @@ void Plot_Window::reset_view()
   reset_selection_box ();
   needs_redraw = 1;
 
-  // Make sure the window is visible and resizable.  NOTE: For some reason, it
-  // is necessary to turn this off when a new plot window array is created or 
-  // the windows will not be resizable!
+  // Make sure the window is visible and resizable.  NOTE: For some reason, 
+  // it is necessary to turn this off when a new plot window array is 
+  // created or the windows will not be resizable!
   if( do_reset_view_with_show & !visible()) {
     this->show();
     this->resizable( this);
@@ -669,11 +673,11 @@ void Plot_Window::draw()
     draw_grid();
   }
 
-  if (use_VBOs) {
-    if (!VBOinitialized) initialize_VBO();
-    if (!VBOfilled) fill_VBO();
-    if (!indexVBOsinitialized) initialize_indexVBOs();
-    if (!indexVBOsfilled) fill_indexVBOs();
+  if( use_VBOs) {
+    if( !VBOinitialized) initialize_VBO();
+    if( !VBOfilled) fill_VBO();
+    if( !indexVBOsinitialized) initialize_indexVBOs();
+    if( !indexVBOsfilled) fill_indexVBOs();
   }
 
   draw_data_points();
@@ -686,9 +690,11 @@ void Plot_Window::draw()
   draw_background ();
 }
 
-// If the background is anything besides black, draw it.  Last.
-// Why last?  Because we always blend against a black background initially so
-// that the overplotting comes out OK.  Other backgrounds would interfere.
+//***************************************************************************
+// Plot_Window::draw_background() --  If the background is anything besides 
+// black, draw it.  Last.  Why last?  Because we always blend against a 
+// black background initially so that the overplotting comes out OK.  Other 
+// backgrounds would interfere.
 void Plot_Window::draw_background ()
 {
   if( cp->dont_clear->value() == 0) {
@@ -827,9 +833,8 @@ void Plot_Window::draw_axes()
 
       glEnd();
 
-      // draw axes labels
+      // Draw axes labels.  Scope is restricted so we can reuse 'b'?
       {
-        
         // offset for axis labels values. b<1 -> inwards, 
         // b>1 -> outwards, b==1 -> on axis.
         float b = 2; 
@@ -1057,11 +1062,13 @@ void Plot_Window::handle_selection ()
   if (mask_out_deselected->value() && brush_index>0) {
     // MCL this should be called "and with selection" or some such.
     selected( NPTS) = where( newly_selected( NPTS) && selected(NPTS), brush_index, previously_selected( NPTS));
-  } else if (mask_out_deselected->value() && brush_index==0) {
+  } 
+  else if (mask_out_deselected->value() && brush_index==0) {
     // MCL XXX this is a bogus hack to implement an "inverse" brush that deselects everything outside of it,
     // and leaves unchanged whatever is inside it.  Invoke using brush zero while "mask_out_deselected" is turned on.
     selected( NPTS) = where( !newly_selected( NPTS), brush_index, previously_selected( NPTS));
-  } else {
+  } 
+  else {
     selected( NPTS) = where( newly_selected( NPTS), brush_index, previously_selected( NPTS));
   }
 
@@ -1079,9 +1086,11 @@ void Plot_Window::handle_selection ()
 //
 void Plot_Window::color_array_from_selection()
 {
-  for (int i=0; i<NBRUSHES; i++) {
+  // Loop: initialize brush counts to zero
+  for( int i=0; i<NBRUSHES; i++) {
     brushes[i]->count = 0;
   }
+
   // Loop: Examine successive points to fill the index arrays and their
   // associated counts
   int set, count=0;
@@ -1157,53 +1166,60 @@ void Plot_Window::draw_data_points()
     if (!VBOfilled) fill_VBO();
 
     glVertexPointer (3, GL_FLOAT, 0, BUFFER_OFFSET(0));
-  } else {
+  }
+  else {
     glVertexPointer (3, GL_FLOAT, 0, (GLfloat *)vertices.data()); 
   }
 
   // set the blending mode for this plot
   int blending_mode = cp->blend_menu->value();
-  switch (blending_mode) {
-  case Control_Panel_Window::BLEND_OVERPLOT:
-    glBlendFunc(GL_ONE, GL_ZERO);
-    break;
-  case Control_Panel_Window::BLEND_OVERPLOT_WITH_ALPHA:
-    glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA,GL_SRC_ALPHA,GL_ONE_MINUS_DST_COLOR);
-    break;
-  case Control_Panel_Window::BLEND_BRUSHES_SEPARATELY:
-    glEnable(GL_STENCIL_TEST);
-    clear_stencil_buffer();
-    clear_alpha_planes();
-    glBlendFunc(GL_SRC_ALPHA, GL_DST_ALPHA);
-    break; 
-  case Control_Panel_Window::BLEND_ALL_BRUSHES:
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE);	// very good when compositing on black bkg w/ALPHA_TEXTURE #defined
-    break;
+  switch( blending_mode) {
+    case Control_Panel_Window::BLEND_OVERPLOT:
+      glBlendFunc(GL_ONE, GL_ZERO);
+      break;
+    
+    case Control_Panel_Window::BLEND_OVERPLOT_WITH_ALPHA:
+      glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA,GL_SRC_ALPHA,GL_ONE_MINUS_DST_COLOR);
+      break;
+    
+    case Control_Panel_Window::BLEND_BRUSHES_SEPARATELY:
+      glEnable(GL_STENCIL_TEST);
+      clear_stencil_buffer();
+      clear_alpha_planes();
+      glBlendFunc(GL_SRC_ALPHA, GL_DST_ALPHA);
+      break; 
+    
+    case Control_Panel_Window::BLEND_ALL_BRUSHES:
+      glBlendFunc(GL_SRC_ALPHA, GL_ONE);	// very good when compositing on black bkg w/ALPHA_TEXTURE #defined
+      break;
+    
 #if 0
-  case Control_Panel_Window::BLEND_ALL2:
-    glBlendFunc(GL_SRC_ALPHA, GL_DST_ALPHA); // old default, use with ALPHA_TEXTURE #undefined
-    break;
-  case Control_Panel_Window::BLEND_ALL3:
-    // next is almost right for bending against light backgrounds with ALPHA_TEXTURE #defined
-    // and it is OK (but not as good as the above with ALPHA_TEXTURE #undefined) for black backgrounds.
-    // needs glAlphaFunc(GL_GREATER, 0.5);
-    glBlendFuncSeparate(GL_SRC_COLOR, GL_DST_ALPHA, GL_SRC_ALPHA, GL_ONE);  
-    break;
+    case Control_Panel_Window::BLEND_ALL2:
+      glBlendFunc(GL_SRC_ALPHA, GL_DST_ALPHA); // old default, use with ALPHA_TEXTURE #undefined
+      break;
+    
+    case Control_Panel_Window::BLEND_ALL3:
+      // next is almost right for bending against light backgrounds with ALPHA_TEXTURE #defined
+      // and it is OK (but not as good as the above with ALPHA_TEXTURE #undefined) for black backgrounds.
+      // needs glAlphaFunc(GL_GREATER, 0.5);
+      glBlendFuncSeparate(GL_SRC_COLOR, GL_DST_ALPHA, GL_SRC_ALPHA, GL_ONE);  
+      break;
 #endif
-  default:
-    assert (!"Impossible blending mode");
-    break;
+
+    default:
+      assert (!"Impossible blending mode");
+      break;
   }
 
   // Loop: Draw points for each brush, using that brush's properties.
-
   int first_brush=0, brush_step=+1;
 
   // we draw brushes in reverse order iff we are using stencil buffers to blend separately
   if (blending_mode == Control_Panel_Window::BLEND_BRUSHES_SEPARATELY) {
     first_brush=NBRUSHES-1; brush_step=-1;
   }
-    
+
+  // Loop: Draw successive brished in reverse order    
   for( int brush_num=0, brush_index=first_brush; brush_num<NBRUSHES; brush_num++, brush_index+=brush_step) {
 
     // don't draw nonselected points (brush[0]) if we are hiding nonselected points in this plot
@@ -1242,18 +1258,18 @@ void Plot_Window::draw_data_points()
       current_sprite = brush->symbol_menu->value();
       assert ((current_sprite >= 0) && (current_sprite < NSYMBOLS));
       switch (current_sprite) {
-      case 0:
-        enable_regular_points();
-        glPointSize(size);
-        break;
-      case 1:
-        element_mode = GL_LINE_STRIP;
-        glLineWidth(size);
-        break;
-      default:
-        enable_sprites(current_sprite);
-        glPointSize(size+2); // sprites cover fewer pixels, in general
-        break;
+        case 0:
+          enable_regular_points();
+          glPointSize(size);
+          break;
+        case 1:
+          element_mode = GL_LINE_STRIP;
+          glLineWidth(size);
+          break;
+        default:
+          enable_sprites(current_sprite);
+          glPointSize(size+2); // sprites cover fewer pixels, in general
+          break;
       }
 
       // set the color for this set of points
@@ -1285,6 +1301,7 @@ void Plot_Window::draw_data_points()
       }
     }
   }
+  
   // potentially turn off various gl state variables that are specific to this routine.
   if (z_bufferring_enabled) {
     glDisable( GL_DEPTH_TEST);
@@ -1330,8 +1347,8 @@ void Plot_Window::compute_histogram( int axis)
   }
 
   // Get number of bins, initialize arrays, and set range
-  int nbins = (int)(exp2(cp->nbins_slider[axis]->value()));
-  if (nbins <= 0) return;
+  int nbins = (int) (exp2(cp->nbins_slider[axis]->value()));
+  if( nbins <= 0) return;
   blitz::Range BINS( 0, nbins-1);
   counts( BINS, axis) = 0.0;
 
@@ -1344,6 +1361,7 @@ void Plot_Window::compute_histogram( int axis)
   assert (bp);
   int brush_index = bp->index; 
 
+  // Loop: sum over successive points to load histogram arrays
   for( int i=0; i<npoints; i++) {
     float x = vertices( i, axis);
     // MCL XXX presently, weighting is based on the z-axis variable.  Weighting variable should really be a pulldown of is own.
@@ -1374,7 +1392,9 @@ void Plot_Window::compute_histograms()
 
 //***************************************************************************
 // Plot_Window::draw_x_histogram( bin_counts, nbins) -- Draw x histogram
-void Plot_Window::draw_x_histogram(const blitz::Array<float,1> bin_counts, const int nbins) {
+void Plot_Window::draw_x_histogram(
+  const blitz::Array<float,1> bin_counts, const int nbins)
+{
   float x = amin[0];
   float xwidth = (amax[0]-amin[0]) / (float)(nbins);
   glBegin( GL_LINE_STRIP);
@@ -1389,7 +1409,9 @@ void Plot_Window::draw_x_histogram(const blitz::Array<float,1> bin_counts, const
 
 //***************************************************************************
 // Plot_Window::draw_y_histogram( bin_counts, nbins) -- Draw x histogram
-void Plot_Window::draw_y_histogram(const blitz::Array<float,1> bin_counts, const int nbins) {
+void Plot_Window::draw_y_histogram(
+  const blitz::Array<float,1> bin_counts, const int nbins)
+{
   float y = amin[1];
   float ywidth = (amax[1]-amin[1]) / (float)(nbins);
   glBegin( GL_LINE_STRIP);
@@ -1502,7 +1524,7 @@ void Plot_Window::draw_histograms()
 //***************************************************************************
 // Plot_Window::density_1D( a, axis) -- Compute marginal density estimate 
 // along axis using equi-width histogram.  Input array a is over-written.
-void Plot_Window::density_1D (blitz::Array<float,1> a, const int axis)
+void Plot_Window::density_1D( blitz::Array<float,1> a, const int axis)
 {
   // need to compute (but not necessarily display) the x-axis histogram if 
   // its not already there.
@@ -1557,28 +1579,6 @@ int Plot_Window::transform_2d()
     wmax[i] = amax[i] = max(vertices(NPTS,i));
   }
   return 1;
-}
-
-// MCL XXX This should really be a templated function for blitz::Array<T, int rank>
-// Doing it this way has to be faster than dst(i) = src((i+delta+npoints)%npoints) right?
-void circular_shift (blitz::Array<float,1> dst, blitz::Array<float,1> src, const int shift)
-{
-  int delta = 0;
-  if (shift == 0) {
-    dst = src;
-    return;
-  } else if (shift > 0) {
-    delta=shift;
-    dst (blitz::Range(0,npoints-(delta+1))) = src (blitz::Range(delta,npoints-1));
-    dst (blitz::Range(npoints-delta,npoints-1), 0) = src (blitz::Range(0,delta-1));
-    return;
-  } else {
-    // shift < 0
-    delta=-shift;
-    dst (blitz::Range(0,delta-1)) = src (blitz::Range(npoints-delta,npoints-1));
-    dst (blitz::Range(delta,npoints-1)) = src (blitz::Range(0,npoints-(delta+1)));
-    return;
-  }
 }
 
 //***************************************************************************
@@ -1732,6 +1732,7 @@ int Plot_Window::normalize(
   {
     // this is crufty because gsl doesn't know about 1D arrays with non-unit strides.
     blitz::Array<float,1> acopy = a;
+
     // initialize the temporary indices to be sequential.  
     blitz::firstIndex ident;   
     blitz::Array<int,1> tmp_indices(npoints);
@@ -1752,11 +1753,11 @@ int Plot_Window::normalize(
 }
 
 //***************************************************************************
-// Plot_Window::compute_rank() -- Order data for normalization and generation 
-// of histograms
+// Plot_Window::compute_rank() -- Order data for normalization and for the
+// generation of histograms
 void Plot_Window::compute_rank(int var_index)
 {
-  if (ranked(var_index)) {
+  if( ranked( var_index)) {
     // We have a rank "cache hit"
     return; 
   }
@@ -1767,14 +1768,14 @@ void Plot_Window::compute_rank(int var_index)
     // So this next statement just creates a new view of the rhs.
     blitz::Array<int,1> a_ranked_indices = ranked_points(var_index, NPTS); 
     
-    // initializealize the ranked indices to be sequential.  The sort (following) will
-    // permute them into the correct order.
+    // initializealize the ranked indices to be sequential.  The sort that
+    // follows will permute them into the correct order.
     blitz::firstIndex ident;    // MCL XXX don't we have a global holding this?
     a_ranked_indices = ident;
 
     // the sort method myCompare() needs a global alias (tmp_points) to the 
-    // array data holding the sort key.  We can't use the copy contructor here 
-    // since tmp_points was constructed in pre-main.
+    // array data holding the sort key.  We can't use the copy contructor 
+    // here since tmp_points was constructed in pre-main.
     // Lucky for us, blitz provides the reference() method for this purpose.
     tmp_points.reference(points(var_index, NPTS));
     int *lo = a_ranked_indices.data(), *hi = lo + npoints;
@@ -1783,8 +1784,6 @@ void Plot_Window::compute_rank(int var_index)
     return;
   }
 }
-
-
 
 //***************************************************************************
 // Plot_Window::extract_data_points() -- Extract column labels and data for a 
@@ -1826,6 +1825,7 @@ int Plot_Window::extract_data_points ()
          << row << ", " << column << "]" <<endl;
     cout << " pre-normalization: " << endl;
   }
+  
   // Rank points by x-axis value
   compute_rank(axis0);
   x_rank.reference(ranked_points(axis0, NPTS));
@@ -1949,30 +1949,26 @@ void Plot_Window::upper_triangle_incr( int &i, int &j, const int n)
 {
   i++;
   j++;
-  if (i==n && j==n) 
-    {
-      i = 0;
-      j = 1;
-    }
-  else if (j==n) 
-    {
-      int d = j-i;
-      d++;
-      i = 0;
-      j = d;
-      if (j>=n) 
-        {
-          i = n-1;
-          j = 0;
-        }
-    }
-  else if (i==n) 
-    {
-      int d = i-j;
-      d--;
-      i = d;
+  if (i==n && j==n) {
+    i = 0;
+    j = 1;
+  }
+  else if (j==n) {
+    int d = j-i;
+    d++;
+    i = 0;
+    j = d;
+    if (j>=n) {
+      i = n-1;
       j = 0;
     }
+  }
+  else if (i==n) {
+    int d = i-j;
+    d--;
+    i = d;
+    j = 0;
+  }
   assert( i >= 0);
   assert( j >= 0);
   assert( i < n);
@@ -2143,13 +2139,15 @@ void Plot_Window::initialize_selection()
   for( int i=0; i<nplots; i++) {
     pws[i]->reset_selection_box();
   }
+  
   // all points start out unselected (i.e. rendered using brush[0]);
   brushes[0]->count = npoints; 
+  
   // no other brushes render anything to start out.
   for (int i=1; i<NBRUSHES; i++) {
     brushes[i]->count = 0;
   }
-  reset_selection_arrays ();
+  reset_selection_arrays();
 }
 
 //***************************************************************************
@@ -2164,6 +2162,7 @@ void Plot_Window::clear_selections( Fl_Widget *o)
 }
 
 
+//***************************************************************************
 // Methods to enable drawing with points (as opposed to point sprites)
 
 //***************************************************************************
@@ -2188,13 +2187,78 @@ void Plot_Window::enable_antialiased_points ()
 // Initialize variables and state for use with point sprites
 
 //***************************************************************************
-// Plot_Window::initialize_sprites() -- Invoke OpenGL routines to initialize
-// sprites
+// Plot_Window::make_sprite_textures() -- Define an array of pointers to data 
+// that defines the textures for rendering with "symbols" (i.e. point sprites, 
+// as opposed to rendering with vanilla openGL points.)
+void Plot_Window::make_sprite_textures()
+{
+  // Define sprite textures associated with symbols
+  spriteData[0] = (GLubyte *) Sprite_Textures::idata_0;   // not used - no sprite active
+  spriteData[1] = (GLubyte *) Sprite_Textures::idata_18;  // not used - GL_LINE_STRIP
+  spriteData[2] = (GLubyte *) Sprite_Textures::idata_1;
+  spriteData[3] = (GLubyte *) Sprite_Textures::idata_2;
+  spriteData[4] = (GLubyte *) Sprite_Textures::idata_3;
+  spriteData[5] = (GLubyte *) Sprite_Textures::idata_4;
+  spriteData[6] = (GLubyte *) Sprite_Textures::idata_5;
+  spriteData[7] = (GLubyte *) Sprite_Textures::idata_6;
+  spriteData[8] = (GLubyte *) Sprite_Textures::idata_7;
+  spriteData[9] = (GLubyte *) Sprite_Textures::idata_8;
+  spriteData[10] = (GLubyte *) Sprite_Textures::idata_9;
+  spriteData[11] = (GLubyte *) Sprite_Textures::idata_10;
+  spriteData[12] = (GLubyte *) Sprite_Textures::idata_11;
+  spriteData[13] = (GLubyte *) Sprite_Textures::idata_12;
+  spriteData[14] = (GLubyte *) Sprite_Textures::idata_13;
+  spriteData[15] = (GLubyte *) Sprite_Textures::idata_14;
+  spriteData[16] = (GLubyte *) Sprite_Textures::idata_18;
+  spriteData[17] = (GLubyte *) Sprite_Textures::idata_19;
+
+  // Define sprite textures associated aith numbers and letters  
+  spriteData[18] = (GLubyte *) Sprite_Textures::idata_osaka_21;
+  spriteData[19] = (GLubyte *) Sprite_Textures::idata_osaka_22;
+  spriteData[20] = (GLubyte *) Sprite_Textures::idata_osaka_23;
+  spriteData[21] = (GLubyte *) Sprite_Textures::idata_osaka_24;
+  spriteData[22] = (GLubyte *) Sprite_Textures::idata_osaka_25;
+  spriteData[23] = (GLubyte *) Sprite_Textures::idata_osaka_26;
+  spriteData[24] = (GLubyte *) Sprite_Textures::idata_osaka_27;
+  spriteData[25] = (GLubyte *) Sprite_Textures::idata_osaka_28;
+  spriteData[26] = (GLubyte *) Sprite_Textures::idata_osaka_29;
+  spriteData[27] = (GLubyte *) Sprite_Textures::idata_osaka_30;
+  spriteData[28] = (GLubyte *) Sprite_Textures::idata_osaka_38;
+  spriteData[29] = (GLubyte *) Sprite_Textures::idata_osaka_39;
+  spriteData[30] = (GLubyte *) Sprite_Textures::idata_osaka_40;
+  spriteData[31] = (GLubyte *) Sprite_Textures::idata_osaka_41;
+  spriteData[32] = (GLubyte *) Sprite_Textures::idata_osaka_42;
+  spriteData[33] = (GLubyte *) Sprite_Textures::idata_osaka_43;
+  spriteData[34] = (GLubyte *) Sprite_Textures::idata_osaka_44;
+  spriteData[35] = (GLubyte *) Sprite_Textures::idata_osaka_45;
+  spriteData[36] = (GLubyte *) Sprite_Textures::idata_osaka_46;
+  spriteData[37] = (GLubyte *) Sprite_Textures::idata_osaka_47;
+  spriteData[38] = (GLubyte *) Sprite_Textures::idata_osaka_48;
+  spriteData[39] = (GLubyte *) Sprite_Textures::idata_osaka_49;
+  spriteData[40] = (GLubyte *) Sprite_Textures::idata_osaka_50;
+  spriteData[41] = (GLubyte *) Sprite_Textures::idata_osaka_51;
+  spriteData[42] = (GLubyte *) Sprite_Textures::idata_osaka_52;
+  spriteData[43] = (GLubyte *) Sprite_Textures::idata_osaka_53;
+  spriteData[44] = (GLubyte *) Sprite_Textures::idata_osaka_54;
+  spriteData[45] = (GLubyte *) Sprite_Textures::idata_osaka_55;
+  spriteData[46] = (GLubyte *) Sprite_Textures::idata_osaka_56;
+  spriteData[47] = (GLubyte *) Sprite_Textures::idata_osaka_57;
+  spriteData[48] = (GLubyte *) Sprite_Textures::idata_osaka_58;
+  spriteData[49] = (GLubyte *) Sprite_Textures::idata_osaka_59;
+  spriteData[50] = (GLubyte *) Sprite_Textures::idata_osaka_60;
+  spriteData[51] = (GLubyte *) Sprite_Textures::idata_osaka_61;
+  spriteData[52] = (GLubyte *) Sprite_Textures::idata_osaka_62;
+  spriteData[53] = (GLubyte *) Sprite_Textures::idata_osaka_63;
+}
+
+//***************************************************************************
+// Plot_Window::initialize_sprites() -- Invoke OpenGL routines and static
+// member function make_sprite_textures to initialize sprites
 void Plot_Window::initialize_sprites()
 {
   glEnable( GL_TEXTURE_2D);
   glGenTextures( NSYMBOLS, spriteTextureID);
-  make_sprite_textures ();
+  make_sprite_textures();
   for (int i=0; i<NSYMBOLS; i++) {
 #ifdef ALPHA_TEXTURE
     GLfloat rgb2rgba[16] = {
@@ -2251,7 +2315,7 @@ void Plot_Window::clear_alpha_planes()
 }
 
 //***************************************************************************
-// Plot_Window::clear_stencil_buffer() -- Clear the stebcil buffer
+// Plot_Window::clear_stencil_buffer() -- Clear the stencil buffer
 void Plot_Window::clear_stencil_buffer()
 {
 #if 0
@@ -2271,6 +2335,7 @@ void Plot_Window::disable_sprites()
   glDisable( GL_TEXTURE_2D);
   glDisable( GL_POINT_SPRITE);
 }
+
 
 //***************************************************************************
 // Define methods to use vertex buffer objects (VBOs)
@@ -2360,9 +2425,36 @@ void Plot_Window::fill_indexVBOs()
   }
 }
 
+
 //***************************************************************************
 // Define global methods.  NOTE: Is it a good idea to do this here rather 
 // than global_definitions.h?
+
+//***************************************************************************
+// circular_shift( dst, src, shift) -- global method to shift data.
+// MCL XXX This should really be a templated function for blitz::Array<T, int rank>
+// Doing it this way has to be faster than dst(i) = src((i+delta+npoints)%npoints) right?
+void circular_shift( blitz::Array<float,1> dst, blitz::Array<float,1> src, const int shift)
+{
+  int delta = 0;
+  if (shift == 0) {
+    dst = src;
+    return;
+  }
+  else if (shift > 0) {
+    delta=shift;
+    dst (blitz::Range(0,npoints-(delta+1))) = src (blitz::Range(delta,npoints-1));
+    dst (blitz::Range(npoints-delta,npoints-1), 0) = src (blitz::Range(0,delta-1));
+    return;
+  }
+  else {
+    // shift < 0
+    delta=-shift;
+    dst (blitz::Range(0,delta-1)) = src (blitz::Range(npoints-delta,npoints-1));
+    dst (blitz::Range(delta,npoints-1)) = src (blitz::Range(0,npoints-(delta+1)));
+    return;
+  }
+}
 
 //***************************************************************************
 // moving_average( a, indices, half_width) -- Global method to calculate 
@@ -2467,4 +2559,3 @@ void fluctuation(
   // Loop: Unpermute and return in a
   for (int i=0; i<npoints; i++) a(indices(i)) = tmp(i);
 }
-

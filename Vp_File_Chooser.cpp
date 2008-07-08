@@ -20,7 +20,7 @@
 //   modified by Paul Gazis and Creon Levit for use with viewpoints.
 //
 // Author: Bill Spitzak and others   1998-2005
-// Modified: P. R. Gazis  13-DEC-2007
+// Modified: P. R. Gazis  08-JUL-2008
 //***************************************************************************
 
 // Include header
@@ -434,6 +434,11 @@ Vp_File_Chooser::Vp_File_Chooser(
   int iPreview;
   prefs_.get( "preview", iPreview, 1);
   preview( iPreview);
+  
+  // Set up commented labels state and box
+  int iDoCommentedLabels;
+  prefs_.get( "doCommentedLabels", iDoCommentedLabels, 1);
+  doCommentedLabels( iDoCommentedLabels);
 }
 
 //*****************************************************************************
@@ -623,7 +628,7 @@ void Vp_File_Chooser::doCommentedLabels( int doCommentedLabels_in)
 {
   doCommentedLabels_ = doCommentedLabels_in;
   commentLabelsButton->value( doCommentedLabels_ != 0);
-  // prefs_.set( "doCommentedLabels", doCommentedLabels_);
+  prefs_.set( "doCommentedLabels", doCommentedLabels_);
 }
 
 //*****************************************************************************

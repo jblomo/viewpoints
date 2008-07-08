@@ -22,7 +22,7 @@
 // Purpose: Source code for <Control_Panel_Window.h>
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  15-DEC-2007
+// Modified: P. R. Gazis  08-JUL-2008
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -38,12 +38,12 @@
 // Set static data members for class Control_Panel_Window::
 //
 
-// Array of menu items for axis selection menus.
+// Define an array of menu items for the axis selection menus.
 // This gets filled with strings naming the axes (later, after they're read in)
 // and with their respective indices (as user_data).
 Fl_Menu_Item Control_Panel_Window::varindex_menu_items[ MAXVARS+2] = { Fl_Menu_Item()};
 
-// Array of menu items for normalization style menus.
+// Define an array of menu items for the normalization style menus.
 Fl_Menu_Item Control_Panel_Window::normalization_style_menu_items[] = {
   { "none",         0, 0, (void *) NORMALIZATION_NONE,         0, 0, 0, 0, 0},
   { "minmax",       0, 0, (void *) NORMALIZATION_MINMAX,       0, 0, 0, 0, 0},
@@ -84,7 +84,7 @@ Control_Panel_Window::Control_Panel_Window(
 
 //***************************************************************************
 // Control_Panel_Window::make_state( &cp) -- Examine widgets to generate
-// and save state parameters.
+// and save state parameters.  Used only by the serialize method.
 void Control_Panel_Window::make_state()
 {
   ivar_save = varindex1->value();
@@ -124,8 +124,8 @@ void Control_Panel_Window::copy_state( Control_Panel_Window* cp)
 
 //***************************************************************************
 // Control_Panel_Window::load_state() -- Load state parameters into widgets.  
-// WARNING: There is no proetction against bad state parameters or the
-// possibility that this might be a default object without widgets.
+// WARNING: There is no protection against bad state parameters or the
+// possibility that this might be a default object without any widgets.
 void Control_Panel_Window::load_state()
 {
   varindex1->value( ivar_save);
@@ -146,7 +146,7 @@ void Control_Panel_Window::load_state()
 // Control_Panel_Window::transform_style_value() -- Examine the relevant 
 // widgets to get the y-axis tranform style.  NOTE: this code will have to 
 // be changed whenever the transform style buttons are added, modified, or 
-// removed.
+// removed!
 int Control_Panel_Window::transform_style_value()
 {
   if( fluctuation->value() > 0) return 3;
@@ -160,7 +160,7 @@ int Control_Panel_Window::transform_style_value()
 // Control_Panel_Window::tranform_style_access( tranform_style_in) -- Set 
 // the relevant widgets to set the y-axis tranform style.  NOTE: This code 
 // will have to be changed whenever the transform style buttons are added, 
-// modified, or removed.
+// modified, or removed!
 void Control_Panel_Window::transform_style_value( int transform_style_in)
 {
   fluctuation->value(0);
@@ -189,12 +189,11 @@ void Control_Panel_Window::broadcast_change (Fl_Widget *master_widget)
   const int widget_index = master_panel->find(master_widget);
   assert( widget_index >= 0 && widget_index < master_panel->children());
 
-  // Loop: Apply operation defined by the master widget to 
-  // succesive windows
-  for (int i=0; i<nplots; i++)
-  {
-    // Define a pointer to the relevant widget in this window and
-    // verify that it exists
+  // Loop: Apply operation defined by the master widget to successive windows
+  for (int i=0; i<nplots; i++) {
+
+    // Define a pointer to the relevant widget in this window and verify 
+    // that it exists
     Fl_Widget *slave_widget = cps[i]->child(widget_index);
     assert( slave_widget);
     
@@ -212,49 +211,51 @@ void Control_Panel_Window::broadcast_change (Fl_Widget *master_widget)
     // all sort of things.....  Or we could take a stab at refactoring the
     // repetitive parts of the following code using templates.
     
-    // If the master widget is a button then set the slave's value using
+    // If the master widget is a Button then set the slave's value using
     // the master's value.
     {
       Fl_Button *mp, *sp;
-      if( (mp = dynamic_cast <Fl_Button*> (master_widget)) && (sp = dynamic_cast <Fl_Button*> (slave_widget)))
-      {
+      if( ( mp = dynamic_cast <Fl_Button*> (master_widget)) && 
+          ( sp = dynamic_cast <Fl_Button*> (slave_widget))) {
         sp->value(mp->value());
       }
     }
 
-    // See previous comment
+    // If the master widget is a Valuator then set the slave's value using
+    // the master's value.
     {
       Fl_Valuator *mp, *sp;
-      if( (mp = dynamic_cast <Fl_Valuator*> (master_widget)) && (sp = dynamic_cast <Fl_Valuator*> (slave_widget)))
-      {
+      if( ( mp = dynamic_cast <Fl_Valuator*> (master_widget)) && 
+          ( sp = dynamic_cast <Fl_Valuator*> (slave_widget))) {
         sp->value(mp->value());
       }
     }
 
-    // See previous comment
+    // If the master widget is a Choice then set the slave's value using
+    // the master's value.
     {
       Fl_Choice *mp, *sp;
-      if( (mp = dynamic_cast <Fl_Choice*> (master_widget)) && (sp = dynamic_cast <Fl_Choice*> (slave_widget)))
-      {
+      if( ( mp = dynamic_cast <Fl_Choice*> (master_widget)) && 
+          ( sp = dynamic_cast <Fl_Choice*> (slave_widget))) {
         sp->copy(mp->menu());  // necessary when there is per menu item state info (for FL_MENU_TOGGLE, etc)
         sp->value(mp->value());
       }
     }
 
-    // See previous comment
+    // If the master widget is a Menu Button then set the slave's value using
+    // the master's value.
     {
       Fl_Menu_Button *mp, *sp;
-      if( (mp = dynamic_cast <Fl_Menu_Button*> (master_widget)) && (sp = dynamic_cast <Fl_Menu_Button*> (slave_widget)))
-      {
+      if( ( mp = dynamic_cast <Fl_Menu_Button*> (master_widget)) && 
+          ( sp = dynamic_cast <Fl_Menu_Button*> (slave_widget))) {
         sp->copy(mp->menu());  // necessary when there is per menu item state info (for FL_MENU_TOGGLE, etc)
         sp->value(mp->value());
       }
     }
 
-    // If the slave widget has a callback function defined, call the
+    // If the slave widget has a callback function defined, then call the
     // callback (since the slave widget's value() may have just been updated).
-    if( slave_widget->callback())
-    {
+    if( slave_widget->callback()) {
       // cout << ".. doing callback for widget " << widget_index 
       //      << " in panel " << i << endl;
       slave_widget->do_callback( slave_widget, cps[i]);
@@ -263,7 +264,7 @@ void Control_Panel_Window::broadcast_change (Fl_Widget *master_widget)
 }
 
 //***************************************************************************
-// Control_Panel_Window::maybe_draw() -- Check plot window to see if they 
+// Control_Panel_Window::maybe_draw() -- Check plot windows to see if they 
 // need to be redrawn.
 void Control_Panel_Window::maybe_redraw() 
 {
@@ -294,7 +295,7 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   // Fl_Round_Button *rb;
   Fl_Choice *c;
 
-  // the following portion of the panel deals with axes and their properties
+  // The following portion of the panel deals with axes and their properties
 
   xpos = 50;
   int subwidth=105;  // ~1/3 of (width - extra room)
@@ -329,13 +330,13 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   b->value(0);
   b->tooltip("make this plot's z axis immune from 'change axis' events");
 
-  // label for row of variable chooser menus
+  // Label for row of variable chooser menus
   b = new Fl_Button (xpos, ypos+=25, 45, 25, "plot"); // cleaner look with nothing here?
   b->labelsize(14);
   b->align(FL_ALIGN_LEFT);
   b->box(FL_NO_BOX);
 
-  // dynamically build the variables (axes selection) menu(s).
+  // Dynamically build the variables (axes selection) menu(s).
   // cout << "starting axes menu build, nvars = " << nvars << endl;
   for( int i=0; i<=nvars; i++) {
     // cout << "label " << i 
@@ -386,7 +387,6 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   c->clear_visible_focus();
   c->callback( (Fl_Callback*)static_extract_and_redraw, this);
   c->tooltip("choose normalization and/or scaling for x-axis");
-
 
   // Y-axis normalization and scaling menu
   y_normalization_style = c = new Fl_Choice( xpos+subwidth, ypos, subwidth-15, 25);
@@ -571,11 +571,11 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   b->selection_color(FL_BLUE); 
   b->tooltip("toggle z-buffering for this plot");
 
-  // blending menu for this plot
+  // Draw blending menu for this plot
   Fl_Menu_Item blend_menu_items[] = {
     {"overplot",                               0, 0, (void *)BLEND_OVERPLOT,            0, 0, 0, 0, 0},
     {"overplot with alpha",                    0, 0, (void *)BLEND_OVERPLOT_WITH_ALPHA, 0, 0, 0, 0, 0},
-    {"luminance blend each brush sepratately", 0, 0, (void *)BLEND_BRUSHES_SEPARATELY,  0, 0, 0, 0, 0},
+    {"luminance blend each brush separately",  0, 0, (void *)BLEND_BRUSHES_SEPARATELY,  0, 0, 0, 0, 0},
     {"luminance blend all brushes",            0, 0, (void *)BLEND_ALL_BRUSHES,         0, 0, 0, 0, 0},
     {0}
   };
@@ -699,5 +699,4 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   
   transform_style->end();
   no_transform->setonly();
-
 }

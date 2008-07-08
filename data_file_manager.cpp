@@ -19,7 +19,7 @@
 // Purpose: Source code for <data_file_manager.h>
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  14-DEC-2007
+// Modified: P. R. Gazis  08-JUL-2008
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -32,7 +32,7 @@
 #include "data_file_manager.h"
 #include "plot_window.h"
 
-// These should not be necessary
+// These includes should not be necessary and have been commented out
 // #include "Vp_File_Chooser.H"   // PRG's new file chooser
 // #include "Vp_File_Chooser.cpp"   // PRG's new file chooser
 
@@ -99,10 +99,10 @@ void Data_File_Manager::initialize()
 
 //***************************************************************************
 // Data_File_Manager::findInputFile() -- Query user to find the input file.
-// Class Vp_File_Chooser is used in preference to the Vp_File_Chooser method 
+// Class Vp_File_Chooser is used in preference to a Vp_File_Chooser method 
 // to obtain access to member functions such as directory() and to allow the 
-// possibility of a derived class with additional controls in the 
-// file_chooser window.  Returns 0 if successful.  
+// possibility of a derived class with additional controls in the window.  
+// Returns 0 if successful.  
 int Data_File_Manager::findInputFile()
 {
   // Print empty line to console for reasons of aesthetics
@@ -132,7 +132,9 @@ int Data_File_Manager::findInputFile()
     new Vp_File_Chooser( 
       cInFileSpec, pattern.c_str(), Vp_File_Chooser::SINGLE, title.c_str());
   file_chooser->isAscii( isAsciiInput);
-  file_chooser->doCommentedLabels( doCommentedLabels_);
+  
+  // Comment this out to use the value file_chooser provides
+  // file_chooser->doCommentedLabels( doCommentedLabels_);
 
   // Loop: Select fileSpecs until a non-directory is obtained.  NOTE: If all
   // goes well, this should be handled by the file_chooser object
@@ -177,7 +179,8 @@ int Data_File_Manager::findInputFile()
     return -1;
   }
 
-  // Query Vp_File_Chooser object to get file type and delimiter character
+  // Query Vp_File_Chooser object to get the file type, delimiter character,
+  // and usage of a comment character with the column label information
   if( file_chooser->isAscii() != 0) isAsciiInput = 1;
   else isAsciiInput = 0;
   delimiter_char_ = file_chooser->delimiter_char();
@@ -368,7 +371,7 @@ int Data_File_Manager::load_data_file()
   // will invoke reset_selection_arrays()
   resize_global_arrays();
 
-  // If this selction information was found or this was a merge operation, 
+  // If this selection information was found or this was a merge operation, 
   // load saved selections in READ_SELECTED into the SELECTED array.
   if( readSelectionInfo_ || doMerge) {
     selected( blitz::Range( 0, npoints-1)) = 
@@ -1217,9 +1220,8 @@ int Data_File_Manager::write_ascii_file_with_headers()
     // "default" floatfield format.  This causes integers to be written
     // as integers, floating point as floating point, and numbers with
     // large or small magnitude as scientific. 
-    // floats.
-    os.precision(8); 
-    os.unsetf (ios::scientific); // force floatfield to default
+    os.precision( 8); 
+    os.unsetf( ios::scientific); // force floatfield to default
     int rows_written = 0;
     for( int irow = 0; irow < npoints; irow++) {
       if( writeAllData_ != 0 || selected( irow) > 0) {
@@ -1530,19 +1532,19 @@ void Data_File_Manager::resize_global_arrays()
 {
   blitz::Range NPTS( 0, npoints-1);
   
-  // done elsewhere, if necessary:
+  // Commented out because this is done elsewhere, if necessary:
   // points.resizeAndPreserve(nvars,npoints);  
   
-  // If line numbers are to be included as another field (column) of data array, create them
-  // as the last column.
-  if (include_line_number) {
+  // If line numbers are to be included as another field (column) of data 
+  // array, create them as the last column.
+  if( include_line_number) {
     for (int i=0; i<npoints; i++) {
       points(nvars-1,i) = (float)(i+1);
     }
   }
   
-  // Resize and reinitialize list of ranked points to reflect the fact that no
-  // ranking has been done.
+  // Resize and reinitialize list of ranked points to reflect the fact that 
+  // no ranking has been done.
   ranked_points.resize( nvars, npoints);
   ranked.resize( nvars);
   ranked = 0;

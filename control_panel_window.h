@@ -1,6 +1,6 @@
 // viewpoints - interactive linked scatterplots and more.
 // copyright 2005 Creon Levit and Paul Gazis, all rights reserved.
-//*****************************************************************
+//***************************************************************************
 // File name: control_panel_window.h
 //
 // Class definitions:
@@ -24,19 +24,19 @@
 //   viewpoints
 //
 // General design philosophy:
-//   1) This might be a good place to consolidate references to
+//   1) This might be a good place to consolidate references to 
 //      normalization schemes used here and by class Plot_Windows.
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  15-DEC-2007
-//*****************************************************************
+// Modified: P. R. Gazis  08-JUL-2008
+//***************************************************************************
 
 // Protection to make sure this header is not included twice
 #ifndef CONTROL_PANEL_WINDOW_H
 #define CONTROL_PANEL_WINDOW_H 1
 
-// Include the extra BOOST library required to split SERIALIZE 
-// into SAVE and LOAD
+// Comment out #include to include the extra BOOST library required to split 
+// SERIALIZE into SAVE and LOAD
 // #include <boost/serialization/split_member.hpp>
 
 // Include the necessary include libraries
@@ -45,14 +45,11 @@
 // Include globals
 #include "global_definitions_vp.h"
 
-// Declare class Plot_Window here so it can be referenced
-// class Plot_Window;
-
 // Include associated headers and source code.  NOTE: not needed if
 // this class has already been declared
 #include "plot_window.h"
 
-//*****************************************************************
+//***************************************************************************
 // Class: Control_Panel_Window
 //
 // Class definitions:
@@ -90,13 +87,13 @@
 //   This comment also conveys nothing.
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  15-DEC-2007
-//*****************************************************************
+// Modified: P. R. Gazis  08-JUL-2008
+//***************************************************************************
 class Control_Panel_Window : public Fl_Group
 {
   protected:
-    // Need this to grant the serialization library access to private member 
-    // variables and functions.
+    // Need this declaration to grant the serialization library access to 
+    // private member variables and functions.
     friend class boost::serialization::access;
     
     // Define state parameters used by serialization
@@ -110,7 +107,7 @@ class Control_Panel_Window : public Fl_Group
     // When the class Archive corresponds to an output archive, the &
     // operator is defined similar to <<.  Likewise, when the class Archive 
     // is a type of input archive the & operator is defined similar to >>.
-    // It is easiest to define this method inline.
+    // It is easiest to define this serialize method inline.
     template<class Archive>
     void serialize( Archive & ar, const unsigned int /* file_version */)
     {

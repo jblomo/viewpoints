@@ -74,7 +74,7 @@
 //   reset_selection_arrays() -- Reset selection arrays
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  05-FEB-2008
+// Modified: P. R. Gazis  08-JUL-2008
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -235,6 +235,10 @@ void usage()
        << "uncommented line that contains column labels" << endl;
   cerr << "  -i, --input_file=FILENAME   "
        << "Read input data from FILENAME." << endl;
+  cerr << "  -L, --commented_labels      "
+       << "Expect the line that contains column labels to" << endl
+       << "                              "
+       << "begin with a comment character." << endl;
   cerr << "  -m, --monitors=NSCREENS     "
        << "Try and force output to display across NSCREENS" << endl
        << "                              "
@@ -282,13 +286,13 @@ void make_help_about_window( Fl_Widget *o)
    
   // Create Help|About window
   Fl::scheme( "plastic");  // optional
-  about_window = new Fl_Window( 320, 200, "About vp");
+  about_window = new Fl_Window( 360, 220, "About vp");
   about_window->begin();
   about_window->selection_color( FL_BLUE);
   about_window->labelsize( 10);
   
   // Write text to box label and align it inside box
-  Fl_Box* output_box = new Fl_Box( 5, 5, 310, 160);
+  Fl_Box* output_box = new Fl_Box( 5, 5, 350, 180);
   output_box->box( FL_SHADOW_BOX);
   output_box->color( 7);
   output_box->selection_color( 52);
@@ -298,7 +302,7 @@ void make_help_about_window( Fl_Widget *o)
   output_box->copy_label( about_string.c_str());
 
   // Invoke a multi-purpose callback function to close window
-  Fl_Button* close = new Fl_Button( 200, 170, 60, 25, "&Close");
+  Fl_Button* close = new Fl_Button( 240, 190, 60, 25, "&Close");
   close->callback( (Fl_Callback*) close_help_window, about_window);
 
   // Done creating the 'Help|About' window
@@ -1764,7 +1768,7 @@ void reset_selection_arrays()
 //   main() -- main routine
 //
 // Author:   Creon Levit   unknown
-// Modified: P. R. Gazis   14-DEC-2006
+// Modified: P. R. Gazis   08-JUL-2008
 //***************************************************************************
 //***************************************************************************
 // Main -- Driver routine
@@ -1777,7 +1781,7 @@ int main( int argc, char **argv)
   // definitions
 
   about_string = "\n\
-    viewpoints 2.0.4 \n\
+    viewpoints 2.1.0 \n\
     " + string(SVN_VERSION) + "\n\
     \n\
     using fltk version (major + 0.01*minor): " + fltk_version_ss.str() + "\n\
@@ -1811,6 +1815,7 @@ int main( int argc, char **argv)
     { "borderless", no_argument, 0, 'b'},
     { "no_vbo", no_argument, 0, 'B'},
     { "help", no_argument, 0, 'h'},
+    { "commented_labels", no_argument, 0, 'L'},
     { "expert", no_argument, 0, 'x'},
     { "verbose", no_argument, 0, 'O'},
     { "version", no_argument, 0, 'V'},
@@ -1839,7 +1844,7 @@ int main( int argc, char **argv)
   while( 
     ( c = getopt_long_only( 
         argc, argv, 
-        "f:n:v:s:o:r:c:m:i:C:M:d:bBhxOVp", long_options, NULL)) != -1) {
+        "f:n:v:s:o:r:c:m:i:C:M:d:bBhLxOVp", long_options, NULL)) != -1) {
   
     // Examine command-line options and extract any optional arguments
     switch( c) {
@@ -1968,6 +1973,11 @@ int main( int argc, char **argv)
         use_VBOs = false;
         break;
 
+      // enable verbose output
+      case 'L':
+        dfm.do_commented_labels( 1);
+        break;
+
       // turn on expert mode
       case 'x':
         expert_mode = true;
@@ -2026,8 +2036,8 @@ int main( int argc, char **argv)
   assert( nrows*ncols <= MAXPLOTS);
   nplots = nrows*ncols;
 
-  // STEP 2: Read the data file create a 10-d default data set if the read 
-  // attempt fails
+  // STEP 2: Read the data file or create a 10-D default data set if the 
+  // read attempt fails
   if( inFileSpec.length() <= 0) dfm.create_default_data( 10);
   else {
     dfm.input_filespec( inFileSpec);
@@ -2057,11 +2067,9 @@ int main( int argc, char **argv)
   const int main_y = top_frame+top_safe;
 
   // Create the main control panel window
-  // create_main_control_panel(main_x, main_y, main_w, main_h, "viewpoints -> creon.levit@nasa.gov");
   create_main_control_panel( 
     main_x, main_y, main_w, main_h,
     "viewpoints -> Fast Interactive Visualization");
-    // "viewpoints -> Creon Levit and Paul Gazis");
 
   // Step 4: Call manage_plot_window_array with a NULL argument to
   // initialize the plot window array.  KLUDGE ALERT: argc and argv are
@@ -2072,7 +2080,8 @@ int main( int argc, char **argv)
 
   // Invoke Plot_Window::initialize_selection to clear the random selection 
   // that can occur when vp is initialized on some Linux systems.  
-  Plot_Window::initialize_selection();
+  if( dfm.read_selection_info() != 1)
+    Plot_Window::initialize_selection();
 
   // Now we can show the main control panel and all its subpanels
   main_control_panel->show();
@@ -2081,7 +2090,7 @@ int main( int argc, char **argv)
   // events (mouse, etc.) are waiting to be processed.
   // Do not use Fl::add_idle().  It causes causes a busy-wait loop.
   // use Fl:add_timeout() instead.
-  Fl::add_timeout(0.01, redraw_if_changing);
+  Fl::add_timeout( 0.01, redraw_if_changing);
 
   // For some reason, add_timout doesn't seem to work.  But add_check 
   // seems to avoid the problem with the busy-wait loop

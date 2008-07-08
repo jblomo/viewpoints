@@ -27,7 +27,7 @@
 //   1) Review and add comments!
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  15-DEC-2007
+// Modified: P. R. Gazis  08-JUL-2008
 //***************************************************************************
 
 // Protection to make sure this header is not included twice
@@ -40,7 +40,8 @@
 // Include globals
 #include "global_definitions_vp.h"
 
-// Declare class control_panel_window here so it can be referenced
+// Declare class Control_Panel_Window so it can be used for definitions of
+// member variables of this class
 class Control_Panel_Window;
 
 //***************************************************************************
@@ -55,7 +56,7 @@ class Control_Panel_Window;
 // Purpose: Derived class of Fl_Gl_Window to construct, draw, and manage a 
 //   plot window.  The Plot_Window class is subclass of an ftlk openGL window 
 //   that also handles certain keyboard and mouse events.  It is where data is
-//   displayed.  There are usually several open at one time.
+//   displayed.  There will usually be several open at one time.
 //
 // Functions:
 //   Plot_Window() -- Default constructor
@@ -124,13 +125,13 @@ class Control_Panel_Window;
 //     and deselected points when rendered as openGL point sprites.
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  15-DEC-2007
+// Modified: P. R. Gazis  08-JUL-2008
 //***************************************************************************
 class Plot_Window : public Fl_Gl_Window
 {
   protected:
-    // Need this to grant the serialization library access to private member 
-    // variables and functions.
+    // Need this declaration to grant the serialization library access to 
+    // private member variables and functions.
     friend class boost::serialization::access;
     
     // Define state parameters for serialization
@@ -139,7 +140,7 @@ class Plot_Window : public Fl_Gl_Window
     // When the class Archive corresponds to an output archive, the &
     // operator is defined similar to <<.  Likewise, when the class Archive 
     // is a type of input archive the & operator is defined similar to >>.
-    // It is easiest to define this method inline.
+    // It is easiest to define this serialize method inline.
     template<class Archive>
     void serialize( Archive & ar, const unsigned int /* file_version */)
     {
@@ -202,7 +203,7 @@ class Plot_Window : public Fl_Gl_Window
     float xcenter, ycenter, zcenter;
     float xscale, yscale, zscale;
     float initial_scale;
-	// approximately how much we've scaled this plot since it was first displayed
+    // approximately how much we've scaled this plot since it was first displayed
     float magnification;
     float xzoomcenter, yzoomcenter, zzoomcenter;
     float xdown, ydown, xtracked, ytracked;
@@ -222,6 +223,7 @@ class Plot_Window : public Fl_Gl_Window
 
     // Number of plot windows
     static int count; // MCL XXX isn't this the same as nplots?  is it consistent?
+
   public:
     Plot_Window();   // Default constructor
     Plot_Window( int w, int h, int new_index);   // Constructor
@@ -246,7 +248,9 @@ class Plot_Window : public Fl_Gl_Window
 
     // openGL vertices of points to be plotted
     blitz::Array<float,2> vertices;
-    // indices of points when ranked according to their x, y, or z coordinate respectively
+
+    // indices of points when ranked according to their x, y, or z coordinate 
+    // respectively
     blitz::Array<int,1> x_rank, y_rank, z_rank;
 
     // constants for histogramming
@@ -321,9 +325,9 @@ class Plot_Window : public Fl_Gl_Window
     static GLubyte* spriteData[NSYMBOLS];
 
     // Buffers to hold sprite (texture image) data
-    static const GLsizei spriteWidth = 64, spriteHeight = 64, spriteDepth=4;
+    static const GLsizei spriteWidth = 64, spriteHeight = 64, spriteDepth = 4;
     static const GLsizei spriteSize = spriteWidth*spriteHeight;
-    static void make_sprite_textures(void);
+    static void make_sprite_textures( void);
 
     // The GLContextshared by all Plot_Windows
     static void *global_GLContext; 

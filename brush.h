@@ -23,11 +23,11 @@
 // Purpose: Brush class for Creon Levit's viewpoints
 //
 // General design philosophy:
-//   1) This class is still under development, and member variables are
-//      public rather than wrapped in access methods
+//   1) This class is still under development and member variables are
+//      left public rather than wrapped in access methods
 //
 // Author: Creon Levit    14-AUG-2007
-// Modified: P. R. Gazis  15-DEC-2007
+// Modified: P. R. Gazis  08-JUL-2008
 //***************************************************************************
 
 // Protection to make sure this header is not included twice
@@ -72,13 +72,13 @@
 //   static_reset( Fl_Widget *w, Brush *brush) -- Callback
 //
 // Author: Creon Levit    14-AUG-2007
-// Modified: P. R. Gazis  15-DEC-2007
+// Modified: P. R. Gazis  08-JUL-2008
 //***************************************************************************
 class Brush : public Fl_Group
 {
   protected:
-    // Need this to grant the serialization library access to private member 
-    // variables and functions.
+    // Need this declaration to grant the serialization library access to 
+    // private member variables and functions.
     friend class boost::serialization::access;
     
     // Define buffers to save state
@@ -90,7 +90,7 @@ class Brush : public Fl_Group
     // When the class Archive corresponds to an output archive, the &
     // operator is defined similar to <<.  Likewise, when the class Archive 
     // is a type of input archive the & operator is defined similar to >>.
-    // It is easiest to define this method inline.
+    // It is easiest to define this serialize method inline.
     template<class Archive>
     void serialize( Archive & ar, const unsigned int /* file_version */)
     {
@@ -165,13 +165,71 @@ class Brush : public Fl_Group
     static void static_reset( Fl_Widget *w, Brush *brush)
     { brush->reset(); }
 
-    // points, round points, crosses, etc.
+    // Symbol menu with points, round points, crosses, etc.
     Fl_Choice *symbol_menu;
     static Fl_Menu_Item symbol_menu_items[];
     static Fl_Pixmap* symbol_images[];
-    void build_symbol_menu (void);
+    void build_symbol_menu( void);
     int previous_symbol;
+    
+    // Static member Fl_Pixmap objects to hold pixel maps of symbols
+    static Fl_Pixmap image_0;
+    static Fl_Pixmap image_line;
+    static Fl_Pixmap image_1;
+    static Fl_Pixmap image_2;
+    static Fl_Pixmap image_3;
+    static Fl_Pixmap image_4;
+    static Fl_Pixmap image_5;
+    static Fl_Pixmap image_6;
+    static Fl_Pixmap image_7;
+    static Fl_Pixmap image_8;
+    static Fl_Pixmap image_9;
+    static Fl_Pixmap image_10;
+    static Fl_Pixmap image_11;
+    static Fl_Pixmap image_12;
+    static Fl_Pixmap image_13;
+    static Fl_Pixmap image_14;
+    static Fl_Pixmap image_18;
+    static Fl_Pixmap image_19;
 
+    // Static member Fl_Pixmap objects to hold pixel maps of numbers and 
+    // letters
+    static Fl_Pixmap image_osaka_21;
+    static Fl_Pixmap image_osaka_22;
+    static Fl_Pixmap image_osaka_23;
+    static Fl_Pixmap image_osaka_24;
+    static Fl_Pixmap image_osaka_25;
+    static Fl_Pixmap image_osaka_26;
+    static Fl_Pixmap image_osaka_27;
+    static Fl_Pixmap image_osaka_28;
+    static Fl_Pixmap image_osaka_29;
+    static Fl_Pixmap image_osaka_30;
+    static Fl_Pixmap image_osaka_38;
+    static Fl_Pixmap image_osaka_39;
+    static Fl_Pixmap image_osaka_40;
+    static Fl_Pixmap image_osaka_41;
+    static Fl_Pixmap image_osaka_42;
+    static Fl_Pixmap image_osaka_43;
+    static Fl_Pixmap image_osaka_44;
+    static Fl_Pixmap image_osaka_45;
+    static Fl_Pixmap image_osaka_46;
+    static Fl_Pixmap image_osaka_47;
+    static Fl_Pixmap image_osaka_48;
+    static Fl_Pixmap image_osaka_49;
+    static Fl_Pixmap image_osaka_50;
+    static Fl_Pixmap image_osaka_51;
+    static Fl_Pixmap image_osaka_52;
+    static Fl_Pixmap image_osaka_53;
+    static Fl_Pixmap image_osaka_54;
+    static Fl_Pixmap image_osaka_55;
+    static Fl_Pixmap image_osaka_56;
+    static Fl_Pixmap image_osaka_57;
+    static Fl_Pixmap image_osaka_58;
+    static Fl_Pixmap image_osaka_59;
+    static Fl_Pixmap image_osaka_60;
+    static Fl_Pixmap image_osaka_61;
+    static Fl_Pixmap image_osaka_62;
+    static Fl_Pixmap image_osaka_63;
 };
 
 #endif   // BRUSH_H

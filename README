@@ -61,7 +61,7 @@ that configuration.
 
 Usage:
 
-In its current form (Version 2.0.2, build 208) 'viewpoints' is run either by 
+In its current form (Version 2.1.0, build 224) 'viewpoints' is run either by 
 clicking on the 'vp' icon or from the command line in the directory in which 
 it has been installed or to which a path is available.  When viewpoints is 
 run from the icon, it will come up with an array of default data.  When it is
@@ -129,6 +129,12 @@ The invocation for the command line version is:
     Filespec of the input file.  NOTE: if this parameter is not specified, 
     the code will assume that the final token in the command line is the 
     input filespec.
+
+  --commented_labels [shortcut -L]
+    Assume that column labels are contained in the last commented line 
+    before the data block -- i.e., the last line of the header block.
+    Default behavior is to read column labels from the first (uncommented) 
+    line of the data block.
 
   --config_file=<filespec> [shortcut: -C <filespec>]
     Filespec of a saved configuration file.  NOTE: If this parameter is 
@@ -255,8 +261,8 @@ Controls in the control panels:
  Tabbed control panels for individual windows:
  control                action
  --------------------   ----------
- X, Y, and Z axis       Attribute to be displayed in that axis
- locked                 Lock an axis so it won't change
+ lock X, Y, or Z        Lock axis so it won't change
+ plot                   Attribute to be displayed in that axis
  scale                  Normalization scheme for that axis
  offset                 Offset data by +/-i points along this axis.  Note 
                         that this is a spinner rather than a slider.
@@ -265,11 +271,11 @@ Controls in the control panels:
                         'All points/Selected points/Fraction selected'
  N bins                 number (log) of histogram bins for that axis
  bin ht                 height of histogram bins for that axis
- Bkg                    background color (try bkg=0.5, lum2=0.2)
- lum                    successive brightness increase for overplotting
- psize                  default size of unselected points
- scale points           Scale point sizes along with axes
- rot                    rotation angle in 3D about the y-axis.  NOTE: to take
+ bkgrnd                 background color (try bkg=0.5, lum2=0.2)
+ lumin                  luminosity for all points
+ pntsize                default size of unselected points
+ scale                  Scale point sizes along with axes
+ rotate                 rotation angle in 3D about the y-axis.  NOTE: to take
                         advantage of this feature one must first select 
                         something for the Z-axis to display.
  spin                   continuous rotation about the y-axis.  NOTE: to start
@@ -281,8 +287,6 @@ Controls in the control panels:
  points                 Show data points
  unselected             Show unselected data points
  axes                   Show axes
- labels                 Show axes labels
- scales                 Show axes scales
  ticks                  Show tic marks
  grid                   Show grid
  identity               plot y vs x
@@ -299,15 +303,15 @@ Controls in the control panels:
  control                action
  --------------------   ----------
  size                   size of this brush, in pixels
- sym                    symbol used by this brush
+ reset brush            reset this brush
  Alpha                  point opacity
+ symbol                 symbol used by this brush
  lum1                   successive brightness increase for overplotting
  lum2                   successive brightness increase for overplotting
  Color chart            Color controls for this brush
  extend selection       combine successive selections with this brush
  clear selection        clear successive selection for this brush
- reset brush            reset this brush
-
+ paint                  'dribble paint' while dragging the selection box
   
  Main control panel
  control                 action
@@ -349,7 +353,7 @@ randomize               Randomize
 
 Notes and warnings:
 
-The current release of the 'viewpoints' package (version 2.0.4, build 218) is 
+The current release of the 'viewpoints' package (version 2.1.0, build 224) is 
 still a development version.  While every effort has been make to ensure that 
 it will work -- or fail gracefully if it doesn't -- it still has many rough 
 edges.  Some of these are described below.  These issues will all be 
@@ -358,8 +362,8 @@ addressed in future releases.
 1) If you drag a window over the main control panel, the main control panel
 may need to be refreshed.  This can be accomplished by resizing it.
 
-2) There is, as yet, no 'print' command.  Needless to say, this capability 
-will be added as soon as possible!
+2) There is, as yet, no 'print' command, but images can be saved for use in
+   a conventional fashion using the relevant OS commands.
 
 3) The Load and Save Configuration commands are a comparatively new feature,
 and save basic session information.  They may not work on every system.  

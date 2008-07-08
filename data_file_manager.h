@@ -31,8 +31,14 @@
 //      code to read headers and the calls to Fl_File_Chooser here and in 
 //      vp.cpp could be consolidated.
 //
+// Future plans:
+//   1) Replace the vectors of strings column_labels, old_column labels, 
+//      etc. (defined in global_definitions_vp.h) with anaogous vectors of 
+//      Column_Info objects that contain labels, a 'contains ASCII values'
+//      flag, and a lookup table to relate indices to ASCII values.
+//
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  14-DEC-2007
+// Modified: P. R. Gazis  08-JUL-2008
 //***************************************************************************
 
 // Protection to make sure this header is not included twice
@@ -103,27 +109,30 @@
 //   column_major( i) -- Set column major flag
 //   do_append() -- Get append flag
 //   do_append( i) -- Set append flag
+//   do_commented_labels() -- Get 'commented labels' flag
+//   do_commented_labels( i) -- Set 'commented labels' flag
 //   do_merge() -- Get append flag
 //   do_merge( i) -- Set merge flag
 //   needs_restore_panels() -- Get flag
 //   needs_restore_panels( i) -- Set flag
+//   read_selection_info() -- Get the 'read selections' flag
 //   write_all_data() -- Get the 'write all data' flag
 //   selected_data( i)-- Set the 'write all data' flag
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  14-DEC-2007
+// Modified: P. R. Gazis  08-JUL-2008
 //***************************************************************************
 class Data_File_Manager
 {
   protected:
-    // Need this to grant the serialization library access to private member 
-    // variables and functions.
+    // Need this declaration to grant the serialization library access to 
+    // private member variables and functions.
     friend class boost::serialization::access;
        
     // When the class Archive corresponds to an output archive, the &
     // operator is defined similar to <<.  Likewise, when the class Archive 
     // is a type of input archive the & operator is defined similar to >>.
-    // It is easiest to define this method inline.
+    // It is easiest to define this serialize method inline.
     template<class Archive>
     void serialize( Archive & ar, const unsigned int /* file_version */)
     {
@@ -156,8 +165,8 @@ class Data_File_Manager
     static int needs_restore_panels_;
 
     // Delimiter for files, e.g. ',' for CSV.  Default is whitespace.  Note 
-    // that missing values can be specified in asci input file as long as the 
-    // delimiter is not whitespace, e.g. 1,2,3,,5,,,8,9,10
+    // that missing values can be specified in asci input file as long as 
+    // the delimiter is not whitespace, e.g. 1,2,3,,5,,,8,9,10
     char delimiter_char_;
 
     // Value assigned to unreadable/nonnumeric/empty/missing values:
@@ -220,12 +229,15 @@ class Data_File_Manager
     void column_major( int i) { isColumnMajor = (i==1);}
     int do_append() { return doAppend;}
     void do_append( int i) { doAppend = (i==1);}
+    int do_commented_labels() { return doCommentedLabels_;}
+    void do_commented_labels( int i) { doCommentedLabels_ = (i==1);}
     int do_merge() { return doMerge;}
     void do_merge( int i) { doMerge = (i==1);}
     int is_saved_file() { return isSavedFile_;}
     void is_saved_file( int i) { isSavedFile_ = i;}
     int needs_restore_panels() { return needs_restore_panels_;}
     void needs_restore_panels( int i) {needs_restore_panels_ = i;}
+    int read_selection_info() { return readSelectionInfo_;}
     int write_all_data() { return writeAllData_;}
     void write_all_data( int i) { writeAllData_ = (i==1);}
         
