@@ -24,7 +24,7 @@
 //   pow2 ( x) -- x*x
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  18-NOV-2007
+// Modified: P. R. Gazis  09-JUL-2008
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -36,15 +36,19 @@
 //***************************************************************************
 // make_confirmation_window( text, mode) -- Make and manage the confirmation 
 // window.  Result of 1,0,-1 => Yes, No, Cancel.
-int make_confirmation_window( const char* text, int nButtons)
+int make_confirmation_window( const char* text, int nButtons, int nLines)
 {
   // Destroy any existing window
   // MCL XXX rule #2: "Compile cleanly at high warning levels." 
   if( confirmation_window != NULL) confirmation_window->hide();
-  
+
+  // Generate dimensions
+  int nHeight = 30 * nLines;
+
   // Create the confirmation window
   Fl::scheme( "plastic");  // optional
-  confirmation_window = new Fl_Window( 400, 70, "Confirmation Window");
+  // confirmation_window = new Fl_Window( 400, 70, "Confirmation Window");
+  confirmation_window = new Fl_Window( 400, 10+nHeight, "Confirmation Window");
   confirmation_window->begin();
   confirmation_window->selection_color( FL_BLUE);
   confirmation_window->labelsize( 10);
@@ -54,7 +58,7 @@ int make_confirmation_window( const char* text, int nButtons)
   sMessage.append( text);
 
   // Write text to box label and align it inside box
-  Fl_Box* output_box = new Fl_Box( 5, 5, 390, 60, sMessage.c_str());
+  Fl_Box* output_box = new Fl_Box( 5, 5, 390, nHeight, sMessage.c_str());
   // output_box->box( FL_SHADOW_BOX);
   output_box->box( FL_NO_BOX);
   output_box->color( 7);
@@ -64,9 +68,9 @@ int make_confirmation_window( const char* text, int nButtons)
   output_box->align( FL_ALIGN_TOP|FL_ALIGN_CENTER|FL_ALIGN_INSIDE);
 
   // Define buttons and invoke callback functions to handle them
-  Fl_Button* yes_button = new Fl_Button( 90, 40, 60, 25, "&Yes");
-  Fl_Button* no_button = new Fl_Button( 170, 40, 60, 25, "&No");
-  Fl_Button* cancel_button = new Fl_Button( 250, 40, 60, 25, "&Cancel");
+  Fl_Button* yes_button = new Fl_Button( 90, nHeight-20, 60, 25, "&Yes");
+  Fl_Button* no_button = new Fl_Button( 170, nHeight-20, 60, 25, "&No");
+  Fl_Button* cancel_button = new Fl_Button( 250, nHeight-20, 60, 25, "&Cancel");
 
   // Revise format if this is not the three-button mode
   if( nButtons == 1) {

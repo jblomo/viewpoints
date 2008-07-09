@@ -74,7 +74,7 @@
 //   reset_selection_arrays() -- Reset selection arrays
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  08-JUL-2008
+// Modified: P. R. Gazis  09-JUL-2008
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -1301,10 +1301,10 @@ void read_data( Fl_Widget* o, void* user_data)
 // handled differently from the ordinary load_state operation.  NOTE: Since 
 // BOOST reads configuration files as sequential files rather than XML, the 
 // order and number of the load and save operations is extremely important, 
-// and this noted explicetly in the comments below.
+// and this is noted explictly in the comments below.
 int load_initial_state( string configFileSpec)
 {
-  // Create dummy menu for calls to manage_plot_window_array.  Instantiate
+  // Create dummy menu for use with manage_plot_window_array.  Instantiate 
   // an actual object to avoid potential dangers of pointers.
   Fl_Menu_Bar dummy_menu( 0, 0, 1, 1);
 
@@ -1321,10 +1321,10 @@ int load_initial_state( string configFileSpec)
     // closed when destructors are called
     boost::archive::xml_iarchive inputArchive( inputFileStream);
 
-    // STEP 1/8) Begin by checking serialization file version
-    int serialization_file_version = -1;
+    // STEP 1/8) Begin by checking the serialization file version to see if 
+    // it's supported
     inputArchive >> BOOST_SERIALIZATION_NVP( serialization_file_version);
-    if( current_serialization_version > serialization_file_version) throw 0;
+    if( serialization_file_version < last_supported_serialization_version) throw 0;
     
     // STEP 2/8) Get data file from archive and read it
     inputArchive >> BOOST_SERIALIZATION_NVP( dfm);
@@ -1389,29 +1389,49 @@ int load_initial_state( string configFileSpec)
   }
   catch( int i_thrown) {
     string sWarning = "";
-    sWarning.append( "WARNING: Configuration file is an older or\n.");
+    sWarning.append( "WARNING: Configuration file is an older or\n");
     sWarning.append( "unsupported version that cannot be loaded");
     make_confirmation_window( sWarning.c_str(), 1);
     cerr << "Main::load_initial_state: WARNING, "
          << "Unsupported version of configuration file" << endl;
     cerr << "       load_initial_state reports exception (" << i_thrown
          << ")" << endl;
+
     // manage_plot_window_array( main_menu_bar, (void*) "NEW_DATA");
     manage_plot_window_array( &dummy_menu, (void*) "NEW_DATA");
+    return 0;
   }
   catch( exception &e) {
     string sWarning = "";
-    sWarning.append( "WARNING: Configuration file appears to be damaged\n.");
-    sWarning.append( "or obsolete.  Results may be unpredictable");
-    make_confirmation_window( sWarning.c_str(), 1);
+    sWarning.append( "WARNING: load_initial_state reports an exception.\n");
+    sWarning.append( "Configuration file appears to be damaged or\n");
+    sWarning.append( "obsolete.  Results may be unpredictable");
+    make_confirmation_window( sWarning.c_str(), 1, 3);
     cerr << "Main::load_initial_state: WARNING, "
          << "problem loading serialization file" << endl;
     cerr << "      load_initial_state reports exception (" << e.what()
          << ")" << endl;
+
     // manage_plot_window_array( main_menu_bar, (void*) "NEW_DATA");
     manage_plot_window_array( &dummy_menu, (void*) "NEW_DATA");
+    return 0;
   }
   
+  // If this is an older serialization file, query the user to determine if
+  // they wish to resave it as a newer version
+  if( serialization_file_version < current_serialization_version) {
+    string sWarning = "";
+    sWarning.append( "WARNING: Configuration file appears to be an\n");
+    sWarning.append( "older version that is only partially supported.\n");
+    sWarning.append( "Do you wish to resave a new version?");
+
+    // Note the use of &dummy_menu to make save_state( *o) work
+    // make_confirmation_window( sWarning.c_str(), 1, 3);
+    if( make_confirmation_window( sWarning.c_str(), 3, 3) == 1) {
+      save_state( &dummy_menu);
+    }
+  }
+
   // Report success
   return 1;
 }
@@ -1510,10 +1530,10 @@ int load_state( Fl_Widget* o)
     // closed when destructors are called
     boost::archive::xml_iarchive inputArchive( inputFileStream);
 
-    // STEP 1/8) Begin by checking serialization file version
-    int serialization_file_version = -1;
+    // STEP 1/8) Begin by checking the serialization file version to see if 
+    // it's supported
     inputArchive >> BOOST_SERIALIZATION_NVP( serialization_file_version);
-    if( current_serialization_version > serialization_file_version) throw 0;
+    if( serialization_file_version < last_supported_serialization_version) throw 0;
     
     // STEP 2/8) Get data file from archive and read it
     inputArchive >> BOOST_SERIALIZATION_NVP( dfm);
@@ -1576,29 +1596,47 @@ int load_state( Fl_Widget* o)
   }
   catch( int i_thrown) {
     string sWarning = "";
-    sWarning.append( "WARNING: Configuration file is an older or\n.");
-    sWarning.append( "unsupported version that cannot be loaded");
+    sWarning.append( "WARNING: Configuration file is an older or\n");
+    sWarning.append( "unsupported version that cannot be loaded.");
     make_confirmation_window( sWarning.c_str(), 1);
     cerr << "Main::load_state: WARNING, "
          << "Unsupported version of configuration file" << endl;
     cerr << "       load_state reports exception (" << i_thrown
          << ")" << endl;
+
     manage_plot_window_array( main_menu_bar, (void*) "NEW_DATA");
+    return 0;
   }
   catch( exception &e) {
     string sWarning = "";
-    sWarning.append( "WARNING: Configuration file appears to be damaged\n.");
-    sWarning.append( "or obsolete.  Results may be unpredictable");
-    make_confirmation_window( sWarning.c_str(), 1);
+    sWarning.append( "WARNING: load_state reports an exception.\n'");
+    sWarning.append( "Configuration file appears to be damaged\n");
+    sWarning.append( "or obsolete.  Results may be unpredictable.");
+    make_confirmation_window( sWarning.c_str(), 1, 3);
     cerr << "Main::load_state: WARNING, "
          << "problem loading serialization file" << endl;
     cerr << "      load_state reports exception (" << e.what()
          << ")" << endl;
+
     manage_plot_window_array( main_menu_bar, (void*) "NEW_DATA");
+    return 0;
   }
   
   // Refresh display
   // manage_plot_window_array( o,  (void*) "Resize");
+
+  // If this is an older serialization file, query the user to determine if
+  // they wish to resave it as a newer version
+  if( serialization_file_version < current_serialization_version) {
+    string sWarning = "";
+    sWarning.append( "WARNING: Configuration file appears to be an\n");
+    sWarning.append( "older version that is only partially supported.\n");
+    sWarning.append( "Do you wish to resave a new version?");
+
+    if( make_confirmation_window( sWarning.c_str(), 3, 3) == 1) {
+      save_state( o);
+    }
+  }
 
   // Report success
   return 1;
@@ -2103,6 +2141,7 @@ int main( int argc, char **argv)
   // Enter the main event loop
   int result = Fl::run();
 
+  // Free the gsl random number generator
   gsl_rng_free( vp_gsl_rng);
   return result;
 }

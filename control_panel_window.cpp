@@ -22,7 +22,7 @@
 // Purpose: Source code for <Control_Panel_Window.h>
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  08-JUL-2008
+// Modified: P. R. Gazis  09-JUL-2008
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -38,9 +38,9 @@
 // Set static data members for class Control_Panel_Window::
 //
 
-// Define an array of menu items for the axis selection menus.
-// This gets filled with strings naming the axes (later, after they're read in)
-// and with their respective indices (as user_data).
+// Define an array of menu items for the axis selection menus.  This will 
+// get filled with strings naming the axes (later, after they're read in)
+// and their respective indices (as user_data).
 Fl_Menu_Item Control_Panel_Window::varindex_menu_items[ MAXVARS+2] = { Fl_Menu_Item()};
 
 // Define an array of menu items for the normalization style menus.
@@ -83,8 +83,9 @@ Control_Panel_Window::Control_Panel_Window(
 {}
 
 //***************************************************************************
-// Control_Panel_Window::make_state( &cp) -- Examine widgets to generate
-// and save state parameters.  Used only by the serialize method.
+// Control_Panel_Window::make_state( &cp) -- Examine widgets to generate and
+// store state parameters.  Used only by the serialize method.  Note that 
+// this does not axctually save parameters to the configuration file.
 void Control_Panel_Window::make_state()
 {
   ivar_save = varindex1->value();
@@ -99,6 +100,7 @@ void Control_Panel_Window::make_state()
   point_size_save = size->value();
   scale_points_save = scale_points->value();
   transform_style_save = transform_style_value();
+  blend_style_save = blend_style_value();
 }
 
 //***************************************************************************
@@ -120,6 +122,7 @@ void Control_Panel_Window::copy_state( Control_Panel_Window* cp)
   point_size_save = cp->point_size_save;
   scale_points_save = cp->scale_points_save;
   transform_style_save = cp->transform_style_save;
+  blend_style_save = cp->blend_style_save;
 }
 
 //***************************************************************************
@@ -140,6 +143,7 @@ void Control_Panel_Window::load_state()
   size->value( point_size_save);
   scale_points->value( scale_points_save);
   transform_style_value( transform_style_save);
+  blend_style_value( blend_style_save);
 }
 
 //***************************************************************************
@@ -157,7 +161,7 @@ int Control_Panel_Window::transform_style_value()
 }
 
 //***************************************************************************
-// Control_Panel_Window::tranform_style_access( tranform_style_in) -- Set 
+// Control_Panel_Window::tranform_style_value( tranform_style_in) -- Set 
 // the relevant widgets to set the y-axis tranform style.  NOTE: This code 
 // will have to be changed whenever the transform style buttons are added, 
 // modified, or removed!
@@ -171,6 +175,33 @@ void Control_Panel_Window::transform_style_value( int transform_style_in)
   else if( transform_style_in == 2) sum_vs_difference->value(1);
   else if( transform_style_in == 1) cond_prop->value(1);
   else no_transform->value(1);
+}
+
+//***************************************************************************
+// Control_Panel_Window::blend_style_value() -- Examine the relevant widget 
+// to get the alpha-blending style.  NOTE: this code will have to be changed 
+// whenever the alpha-blending menu is changed!
+int Control_Panel_Window::blend_style_value()
+{
+  if( blend_menu->value() == BLEND_OVERPLOT) return 0;
+  else if( blend_menu->value() == BLEND_OVERPLOT_WITH_ALPHA) return 1;
+  else if( blend_menu->value() == BLEND_BRUSHES_SEPARATELY) return 2;
+  else if( blend_menu->value() == BLEND_ALL_BRUSHES) return 3;
+  else if( blend_menu->value() == BLEND_ALL2) return 4;
+  else if( blend_menu->value() == BLEND_ALL3) return 5;
+  else return 0;
+  return 0;
+}
+
+//***************************************************************************
+// Control_Panel_Window::blend_style_value( blend_style_in) -- Set the 
+// relevant widgets to set the alpha-blending.  NOTE: this code will have to 
+// be changed whenever the alpha-blending menu is changed!
+void Control_Panel_Window::blend_style_value( int blend_style_in)
+{
+  if( 0 <= blend_style_in && blend_style_in <= 5)
+    blend_menu->value( blend_style_in);
+  else blend_menu->value( 2);
 }
 
 //***************************************************************************

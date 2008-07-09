@@ -20,7 +20,7 @@
 //   3) Consider putting these variables into a NAMESPACE?
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  08-JUL-2008
+// Modified: P. R. Gazis  09-JUL-2008
 //***************************************************************************
 
 #ifndef VP_GLOBAL_DEFINITIONS_VP_H
@@ -169,23 +169,26 @@ GLOBAL Brush *brushes[NBRUSHES];  // MCL XXX this should be a static c++ vector 
 
 //# Make absolutely certain SVN_VERSION is defined
 #ifdef __WIN32__
-  #define SVN_VERSION "Windows revision 224"
+  #define SVN_VERSION "Windows revision 225"
 #endif
 #ifndef SVN_VERSION
   #define SVN_VERSION "unknown_version"
 #endif
 
-// Define global to hold serialization version
-GLOBAL int current_serialization_version INIT(-100);
+// Define global to hold serialization version.  These must be made global
+// so they will be available to serialization methods for different classes
+GLOBAL int current_serialization_version INIT(225);
+GLOBAL int last_supported_serialization_version INIT(-100);
+GLOBAL int serialization_file_version INIT(-1);
 
 // Define pointers to hold confirmation window
 GLOBAL Fl_Window *confirmation_window;
 
-// persistant state for gsl random number generator (Mersenne Twister)
-GLOBAL gsl_rng * vp_gsl_rng;
+// Persistant state for gsl random number generator (Mersenne Twister)
+GLOBAL gsl_rng *vp_gsl_rng;
 
 // Global function definitions
-GLOBAL int make_confirmation_window( const char* text, int nButtons = 3);
+GLOBAL int make_confirmation_window( const char* text, int nButtons = 3, int nLines = 2);
 GLOBAL void reset_selection_arrays();
 
 //***************************************************************************

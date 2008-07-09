@@ -28,7 +28,7 @@
 //      normalization schemes used here and by class Plot_Windows.
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  08-JUL-2008
+// Modified: P. R. Gazis  09-JUL-2008
 //***************************************************************************
 
 // Protection to make sure this header is not included twice
@@ -75,6 +75,8 @@
 //
 //   transform_style_value() -- Get y-axis transform style
 //   transform_style_value( transform_style_in) -- Set y-axis transform style
+//   blend_style_value() -- Get the alpha-blending style
+//   blend_style_value( blend_style_in) -- Set the alpha-blending style
 //
 // Static functions for access by Fl_Button::callback
 //   choose_color_selected( *w, *cpw) -- Color of selected points
@@ -87,7 +89,7 @@
 //   This comment also conveys nothing.
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  08-JUL-2008
+// Modified: P. R. Gazis  09-JUL-2008
 //***************************************************************************
 class Control_Panel_Window : public Fl_Group
 {
@@ -103,6 +105,7 @@ class Control_Panel_Window : public Fl_Group
     float background_save, luminosity_save, point_size_save;
     int scale_points_save;
     int transform_style_save;
+    int blend_style_save;
 
     // When the class Archive corresponds to an output archive, the &
     // operator is defined similar to <<.  Likewise, when the class Archive 
@@ -113,10 +116,15 @@ class Control_Panel_Window : public Fl_Group
     {
       // Use a dynamic_cast to determine if this is an output operation.
       // If it is, then call make_state() to set the state parameters
-      if( (dynamic_cast<boost::archive::xml_oarchive *> (&ar))) make_state();
+      int isOutput = 0;
+      if( (dynamic_cast<boost::archive::xml_oarchive *> (&ar))) {
+        isOutput = 1;
+        make_state();
+      }
 
       // Embed serialization in a try-catch loop so we can pass exceptions
       try{
+        // Variables specified in the original configuration files
         ar & boost::serialization::make_nvp( "index", index);
         ar & boost::serialization::make_nvp( "varindex1", ivar_save);
         ar & boost::serialization::make_nvp( "varindex2", jvar_save);
@@ -132,6 +140,14 @@ class Control_Panel_Window : public Fl_Group
         ar & boost::serialization::make_nvp( "point_size", point_size_save);
         ar & boost::serialization::make_nvp( "scale_points", scale_points_save);
         ar & boost::serialization::make_nvp( "transform_style", transform_style_save);
+        
+        // Because fields in the configuration files are read in the order 
+        // in which they occur, version-dependant variables must be dealt 
+        // with in chronological order.
+        if( serialization_file_version < 225 && isOutput == 0)  // r225, 09-JUL-2008
+          blend_style_save = 2;
+        else
+          ar & boost::serialization::make_nvp( "blend_style", blend_style_save);
       }
       catch( exception &e) {}
     }
@@ -151,6 +167,8 @@ class Control_Panel_Window : public Fl_Group
     // Access functions
     int transform_style_value();
     void transform_style_value( int transform_style_in);
+    int blend_style_value();
+    void blend_style_value( int blend_style_in);
     
     // Static functions for access by Fl Widget callbacks
     static void broadcast_change( Fl_Widget *global_widget);
@@ -199,6 +217,7 @@ class Control_Panel_Window : public Fl_Group
               *y_normalization_style, 
               *z_normalization_style;
 
+    // Define enumeration to hold normalization style menu
     enum normalization_style {
       NORMALIZATION_NONE = 0,
       NORMALIZATION_MINMAX,
@@ -216,21 +235,23 @@ class Control_Panel_Window : public Fl_Group
     };
     static Fl_Menu_Item normalization_style_menu_items[];
 
+    // Define an array of menu items for the axis selection menus.
     static Fl_Menu_Item varindex_menu_items[]; 
 
+    // Define enumeration to hold blend menu.
     Fl_Choice *blend_menu;
     enum blend_styles {
-        BLEND_OVERPLOT = 0,
-        BLEND_OVERPLOT_WITH_ALPHA,
-        BLEND_BRUSHES_SEPARATELY,
-        BLEND_ALL_BRUSHES,
-        BLEND_ALL2,
-        BLEND_ALL3
+      BLEND_OVERPLOT = 0,
+      BLEND_OVERPLOT_WITH_ALPHA,
+      BLEND_BRUSHES_SEPARATELY,
+      BLEND_ALL_BRUSHES,
+      BLEND_ALL2,
+      BLEND_ALL3
     };
 
-    // Pointer to and index of the plot window associated with 
-    // this control panel tab.  Each plot window has the same 
-    // color and index as its associated control panel tab.
+    // Pointer to and index of the plot window associated with this control
+    // panel tab.  Each plot window has the same color and index as its 
+    // associated control panel tab.
     Plot_Window *pw;
     int index;  
 };
