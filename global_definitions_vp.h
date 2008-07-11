@@ -20,7 +20,7 @@
 //   3) Consider putting these variables into a NAMESPACE?
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  09-JUL-2008
+// Modified: P. R. Gazis  10-JUL-2008
 //***************************************************************************
 
 #ifndef VP_GLOBAL_DEFINITIONS_VP_H
@@ -106,9 +106,14 @@ GLOBAL bool selection_is_inverted INIT(false);
 // Temporary array (reference) for use with qsort
 GLOBAL blitz::Array<float,1> tmp_points;
 
-// Define vector of strings to hold variable names.  Used extensively by the
-// main routine and class Control_Panel_Window
-GLOBAL std::vector<std::string> column_labels; 
+// Need to include class definitions for Column_Info so we can define a vector
+// of Column_Info objects to hold column labels and associated info.  This is
+// used extensively by the data_file_manager, comntrol_panel_window, and
+// plot_window classes.  NOTE: As of 10-JUL-2008, this has been moved to class 
+// Data_File_Manager
+// Class Column_Info;
+// #include "column_info.h"
+// GLOBAL std::vector<Column_Info> column_info; 
 
 // Global toggle between scale histogram & scale view :-(
 GLOBAL int scale_histogram INIT(0);
@@ -133,6 +138,10 @@ GLOBAL Fl_Repeat_Button *change_all_axes_button;
 GLOBAL Fl_Button *link_all_axes_button;
 GLOBAL Fl_Button *reload_plot_window_array_button;
 GLOBAL Fl_Button *read_data_button;
+
+// Define class Data_File_Manager (must use pointer with incomplete def'n)
+class Data_File_Manager;
+GLOBAL Data_File_Manager *pdfm;
 
 // Declare classes Control_Panel_Window and Plot_Window here so they can be 
 // referenced
@@ -169,7 +178,7 @@ GLOBAL Brush *brushes[NBRUSHES];  // MCL XXX this should be a static c++ vector 
 
 //# Make absolutely certain SVN_VERSION is defined
 #ifdef __WIN32__
-  #define SVN_VERSION "Windows revision 225"
+  #define SVN_VERSION "Windows revision 226"
 #endif
 #ifndef SVN_VERSION
   #define SVN_VERSION "unknown_version"

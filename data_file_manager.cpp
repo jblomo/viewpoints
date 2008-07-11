@@ -19,7 +19,7 @@
 // Purpose: Source code for <data_file_manager.h>
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  08-JUL-2008
+// Modified: P. R. Gazis  11-JUL-2008
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -30,11 +30,15 @@
 
 // Include associated headers and source code
 #include "data_file_manager.h"
+#include "column_info.h"
 #include "plot_window.h"
 
 // These includes should not be necessary and have been commented out
 // #include "Vp_File_Chooser.H"   // PRG's new file chooser
 // #include "Vp_File_Chooser.cpp"   // PRG's new file chooser
+
+// Be sure to define the static data member to hold column info
+std::vector<Column_Info> Data_File_Manager::column_info;
 
 // Set static data members for class Data_File_Manager::
 string Data_File_Manager::SELECTION_LABEL = "SELECTION_BY_VP";
@@ -235,13 +239,13 @@ int Data_File_Manager::load_data_file()
   // column labels in temporary buffers
   int old_npoints=0, old_nvars=0;
   blitz::Array<float,2> old_points;
-  std::vector<std::string> old_column_labels; 
+  std::vector<Column_Info> old_column_info; 
   if( doAppend > 0 || doMerge > 0) {
     old_nvars = points.rows();
     old_npoints = points.columns();
     old_points.resize( points.shape());
     old_points = points;
-    old_column_labels = column_labels;
+    old_column_info = column_info;
   }
 
   // Initialize READ_SELECTED here
@@ -311,7 +315,7 @@ int Data_File_Manager::load_data_file()
       points = old_points;
       nvars = points.rows();
       npoints = points.columns();
-      column_labels = old_column_labels;
+      column_info = old_column_info;
     }
     else if( doAppend > 0) {
       int all_npoints = npoints + old_npoints;
@@ -325,7 +329,7 @@ int Data_File_Manager::load_data_file()
 
       points = old_points;
       npoints = all_npoints;
-      column_labels = old_column_labels;
+      column_info = old_column_info;
     }
     else {
       int all_nvars = nvars + old_nvars;
@@ -340,16 +344,16 @@ int Data_File_Manager::load_data_file()
       nvars = all_nvars;
 
       // Add to list of column labels
-      old_column_labels.pop_back();
-      for(unsigned int i=0; i<column_labels.size(); i++) {
-        old_column_labels.push_back( column_labels[ i]);
+      old_column_info.pop_back();
+      for( unsigned int i=0; i<column_info.size(); i++) {
+        old_column_info.push_back( column_info[ i]);
       }
-      column_labels = old_column_labels;
+      column_info = old_column_info;
     }
 
     // Free memory in case this isn't handled by the compiler.
     old_points.free();
-    old_column_labels.erase( old_column_labels.begin(), old_column_labels.end());
+    old_column_info.erase( old_column_info.begin(), old_column_info.end());
   }
 
   // If we read a different number of points then we anticipated, we resize 
@@ -382,15 +386,15 @@ int Data_File_Manager::load_data_file()
   // If selection information was found, edit the vector of column labels to
   // remove the selection label, SELECTION_LABEL.
   if( readSelectionInfo_) {
-    vector<string>::iterator pTarget = column_labels.end();
+    vector<Column_Info>::iterator pTarget = column_info.end();
     pTarget--;
     pTarget--;
     if( include_line_number) pTarget--;
-    column_labels.erase( pTarget);
+    column_info.erase( pTarget);
   }
 
   // Refresh edit window, if it exists.
-  refresh_edit_column_labels();
+  refresh_edit_column_info();
 
   // Update dataFileSpec, set saved file flag, and report success
   dataFileSpec = inFileSpec;
@@ -401,14 +405,14 @@ int Data_File_Manager::load_data_file()
 }
 
 //***************************************************************************
-// Data_File_Manager::extract_column_labels( sLine, doDefault) -- Extract or
+// Data_File_Manager::extract_column_info( sLine, doDefault) -- Extract or
 // generate column labels and selection flag
-int Data_File_Manager::extract_column_labels( string sLine, int doDefault)
+int Data_File_Manager::extract_column_info( string sLine, int doDefault)
 {
   // Initialize the column labels
   int nLabels = 0;
   nvars = 0;
-  column_labels.erase( column_labels.begin(), column_labels.end());
+  column_info.erase( column_info.begin(), column_info.end());
 
   // If requested, examine the line, count the number of values, and use this
   // information to generate a set of default column labels.
@@ -424,6 +428,7 @@ int Data_File_Manager::extract_column_labels( string sLine, int doDefault)
     // files must be handled differently
     std::stringstream ss( sLine);
     std::string buf;
+    Column_Info column_info_buf;
     if( delimiter_char_ == ' ') {
       while( ss >> buf) {
         nvars++;
@@ -431,7 +436,8 @@ int Data_File_Manager::extract_column_labels( string sLine, int doDefault)
         (void) sprintf( cbuf, "%d", nvars);
         buf = "Column_";
         buf.append( cbuf);
-        column_labels.push_back( buf);
+        column_info_buf.label = string( buf);
+        column_info.push_back( column_info_buf);
       }
     }
     else { 
@@ -441,10 +447,11 @@ int Data_File_Manager::extract_column_labels( string sLine, int doDefault)
         (void) sprintf( cbuf, "%d", nvars);
         buf = "Column_";
         buf.append( cbuf);
-        column_labels.push_back( buf);
+        column_info_buf.label = string( buf);
+        column_info.push_back( column_info_buf);
       }
     }
-    nvars = column_labels.size();
+    nvars = column_info.size();
     cout << " -Generated " << nvars 
          << " default column labels." << endl;
   }
@@ -463,8 +470,12 @@ int Data_File_Manager::extract_column_labels( string sLine, int doDefault)
     // necessary to trim whitespace and verify character-delimited labels.
     std::stringstream ss( sLine);
     std::string buf;
+    Column_Info column_info_buf;
     if( delimiter_char_ == ' ')
-      while( ss >> buf) column_labels.push_back(buf);
+      while( ss >> buf) {
+        column_info_buf.label = string( buf);
+        column_info.push_back( column_info_buf);
+      }
     else {
       while( getline( ss, buf, delimiter_char_)) {
         string::size_type notwhite = buf.find_first_not_of( " ");
@@ -472,19 +483,20 @@ int Data_File_Manager::extract_column_labels( string sLine, int doDefault)
         notwhite = buf.find_last_not_of( " ");
         buf.erase( notwhite+1);
         if( buf.size() <= 0) buf = "Dummy";
-        column_labels.push_back( buf);
+        column_info_buf.label = string( buf);
+        column_info.push_back( column_info_buf);
       }
     }
 
-    nvars = column_labels.size();
+    nvars = column_info.size();
     cout << " -Extracted " << nvars << " column labels." << endl;
   }
 
   // If there were more than NVARS_CMD_LINE variables in the file, truncate 
   // the vector of column labels, reset NVARS, and warn the user.
   if( nvars_cmd_line > 0 && nvars > nvars_cmd_line) {
-    column_labels.erase( column_labels.begin()+nvars_cmd_line, column_labels.end());
-    nvars = column_labels.size();
+    column_info.erase( column_info.begin()+nvars_cmd_line, column_info.end());
+    nvars = column_info.size();
     cerr << " -WARNING: Too many variables, truncated list to " << nvars 
          << " column labels." << endl;
   }
@@ -513,15 +525,18 @@ int Data_File_Manager::extract_column_labels( string sLine, int doDefault)
        << " fields (columns) per record (row)" << endl;
 
   // If requested, add a column to contain line numbers
+  Column_Info column_info_buf;
   if( include_line_number) {
-    column_labels.push_back( string( "-line number-"));
+    column_info_buf.label = string( "-line number-");
+    column_info.push_back( column_info_buf);
   }
   
   // Add a final column label that says 'nothing'.
-  column_labels.push_back( string( "-nothing-"));
+  column_info_buf.label = string( "-nothing-");
+  column_info.push_back( column_info_buf);
 
   // Report label information
-  nLabels = column_labels.size();
+  nLabels = column_info.size();
   cout << " -Read " << nLabels << "/" << nLabels;
   if( delimiter_char_ == ' ') cout << " whitespace-delimited ";
   else if( delimiter_char_ == ',') cout << " comma-delimited ";
@@ -532,20 +547,20 @@ int Data_File_Manager::extract_column_labels( string sLine, int doDefault)
   // will misbehave if some column label is more than 80 characters long.
   cout << "  ";
   int nLineLength = 4;
-  for( unsigned int i=0; i < column_labels.size(); i++ ) {
-    nLineLength += 2+column_labels[ i].length();
+  for( unsigned int i=0; i < column_info.size(); i++ ) {
+    nLineLength += 2+(column_info[ i].label).length();
     if( nLineLength > 80) {
       cout << endl << "  ";
-      nLineLength = 4 + column_labels[ i].length();
+      nLineLength = 4 + (column_info[ i].label).length();
     }
-    cout << "  " << column_labels[ i];
+    cout << "  " << column_info[ i].label;
   }
   cout << endl;
 
   // Check last column labels to see if it is the selection label,
   // SELECTION_LABEL
   readSelectionInfo_ = 0;
-  if( column_labels[ nvars-1].compare( 0, SELECTION_LABEL.size(), SELECTION_LABEL) == 0) {
+  if( (column_info[nvars-1].label).compare( 0, SELECTION_LABEL.size(), SELECTION_LABEL) == 0) {
     readSelectionInfo_ = 1;
     cout << "   -Read selection info-" << endl;
   }
@@ -619,11 +634,11 @@ int Data_File_Manager::read_ascii_file_with_headers()
   // of default column labels.  Otherwise examine the LASTHEADERLINE buffer 
   // to extract column labels.
   int nLabels = 0;
-  if( doCommentedLabels_ == 0) nLabels = extract_column_labels( line, 0);
+  if( doCommentedLabels_ == 0) nLabels = extract_column_info( line, 0);
   else {
     if( nHeaderLines == 0 || lastHeaderLine.length() == 0)
-      nLabels = extract_column_labels( line, 1);
-    else nLabels = extract_column_labels( lastHeaderLine, 0);
+      nLabels = extract_column_info( line, 1);
+    else nLabels = extract_column_info( lastHeaderLine, 0);
   }
 
   // If there were problems, close file and quit
@@ -846,7 +861,7 @@ int Data_File_Manager::read_binary_file_with_headers()
   // Inovke the EXTRACT_COLUMN_LABEL method to extract column labels,
   // then reset the delimiter character
   int nLabels = 0;
-  nLabels = extract_column_labels( line, 0);
+  nLabels = extract_column_info( line, 0);
   delimiter_char_ = saved_delimiter_char_;
   
   // Report status to the console
@@ -1209,9 +1224,9 @@ int Data_File_Manager::write_ascii_file_with_headers()
     char first_char = ' ';
     if( doCommentedLabels_) first_char = '!';
     for( int i=0; i < nvars_out; i++ ) {
-      if( i == 0) os << first_char << setw( 12) << column_labels[ i];
-      else os << delimiter_char_ << " " << setw( 13) << column_labels[ i];
-      // else os << " " << setw( 13) << column_labels[ i];
+      if( i == 0) os << first_char << setw( 12) << column_info[ i].label;
+      else os << delimiter_char_ << " " << setw( 13) << column_info[ i].label;
+      // else os << " " << setw( 13) << column_info[ i].label;
     }
     if( writeSelectionInfo_ != 0) os << delimiter_char_ << " " << SELECTION_LABEL;
     os << endl;
@@ -1281,10 +1296,10 @@ int Data_File_Manager::write_binary_file_with_headers()
     // Loop: Write tab-delimited column labels to the header.  Each label is
     // followed by a space to make sure the file can be read by older versions 
     // of viewpoints.
-    // for( int i=0; i < nvars_out; i++ ) os << column_labels[ i] << " ";
+    // for( int i=0; i < nvars_out; i++ ) os << column_info[ i].label << " ";
     // if( writeSelectionInfo_ != 0) os << "selection";
     for( int i=0; i < nvars_out; i++ ) {
-      os << column_labels[ i] << " ";;
+      os << column_info[ i].label << " ";
       if( i<nvars-1) os << '\t';
     }
     if( writeSelectionInfo_ != 0) os << '\t' << " " << SELECTION_LABEL;
@@ -1321,29 +1336,33 @@ int Data_File_Manager::write_binary_file_with_headers()
 }
 
 //***************************************************************************
-// Data_File_Manager::edit_column_labels( *o) -- Static function to handle
-// Edit column labels
-void Data_File_Manager::edit_column_labels( Fl_Widget *o)
+// Data_File_Manager::edit_column_info( *o) -- Static function to wrap the
+// callback function, edit_column_info, that builds and manages the 
+// 'Tools|Edit Column Labels' window.
+void Data_File_Manager::edit_column_info( Fl_Widget *o)
 {
   // DIAGNOSTIC
-  cout << endl << "DIAGNOSTIC: Called Data_File_Manager::edit_column_labels" << endl;
+  cout << endl << "DIAGNOSTIC: Called Data_File_Manager::edit_column_info" << endl;
 
-  // edit_column_labels_i( o);
+  // Old attempts to trace back the right number of generations
+  // edit_column_info_i( o);
   // ( (Data_File_Manager*)
-  //  (o->parent()->parent()->user_data()))->edit_column_labels_i( o);
+  //  (o->parent()->parent()->user_data()))->edit_column_info_i( o);
   // ( (Data_File_Manager*)
-  //  (o->parent()->parent()))->edit_column_labels_i( o);
-  ( (Data_File_Manager*)
-   (o->parent()))->edit_column_labels_i( o);
+  //  (o->parent()->parent()))->edit_column_info_i( o);
+
+  // Be sure to trace back the right number of generations
+  ((Data_File_Manager*)(o->parent()))->edit_column_info_i( o);
 }
 
 //***************************************************************************
-// Data_File_Manager::edit_column_labels_i( *o) -- Edit column labels
-void Data_File_Manager::edit_column_labels_i( Fl_Widget *o)
+// Data_File_Manager::edit_column_info_i( *o) -- Callback function that
+// builds and manages the 'Tools|Edit Column Labels' window window.
+void Data_File_Manager::edit_column_info_i( Fl_Widget *o)
 {
   if( edit_labels_window != NULL) edit_labels_window->hide();
 
-  // Create Tools|Edit Column Labels window
+  // Create the 'Tools|Edit Column Labels' window
   Fl::scheme( "plastic");  // optional
   edit_labels_window = new Fl_Window( 250, 305, "Edit Column Labels");
   edit_labels_window->begin();
@@ -1367,7 +1386,7 @@ void Data_File_Manager::edit_column_labels_i( Fl_Widget *o)
   edit_labels_widget->textsize( 12);
   
   // Load column labels into browser
-  refresh_edit_column_labels();
+  refresh_edit_column_info();
 
   // Invoke callback function to delete labels
   Fl_Button* delete_button = new Fl_Button( 10, 270, 100, 25, "&Delete labels");
@@ -1384,19 +1403,21 @@ void Data_File_Manager::edit_column_labels_i( Fl_Widget *o)
 }
 
 //***************************************************************************
-// Data_File_Manager::refresh_edit_column_labels() -- Make sure edit window
+// Data_File_Manager::refresh_edit_column_info() -- Make sure edit window
 // exists, then refresh list of column labels
-void Data_File_Manager::refresh_edit_column_labels()
+void Data_File_Manager::refresh_edit_column_info()
 {
   if( edit_labels_window == NULL) return;
   edit_labels_widget->clear();
   for( int i=0; i<nvars; i++)
-    edit_labels_widget->add( column_labels[ i].c_str());
+    edit_labels_widget->add( (column_info[ i].label).c_str());
 }
 
 //***************************************************************************
-// Data_File_Manager::delete_labels( *o, *user_data) -- Callback to delete
-// labels
+// Data_File_Manager::delete_labels( *o, *user_data) -- Callback function to 
+// delete columns and their associated labels.  NOTE: Since data and labels
+// are stored in separate structures, it is important to be careful that
+// their contents remain consistent!
 void Data_File_Manager::delete_labels( Fl_Widget *o, void* user_data)
 {
   // DIAGNOSTIC
@@ -1404,12 +1425,12 @@ void Data_File_Manager::delete_labels( Fl_Widget *o, void* user_data)
        << edit_labels_widget->nchecked() << "/"
        << edit_labels_widget->nitems() << " items" << endl;
   for( int i=0; i<nvars; i++) {
-    cout << "Label[ " << i << "]: (" << column_labels[i] << ") ";
+    cout << "Label[ " << i << "]: (" << column_info[i].label << ") ";
     if( edit_labels_widget->checked(i+1)) cout << "CHECKED";
     cout << endl;
   }
 
-  // If nothing was checked then quit
+  // If no boxes were checked then quit
   int nChecked = edit_labels_widget->nchecked();
   int nRemain = nvars - nChecked;
   if( nChecked <= 0) return;
@@ -1419,37 +1440,69 @@ void Data_File_Manager::delete_labels( Fl_Widget *o, void* user_data)
     return;
   }
 
-  // Move and resize data.  NOTE: What about ranked points used to perform
-  // scaling and normalization?
+  // Check the dimensions of the data array and vector of Column_Info
+  // objects to make sure we began with one more column label ('-nothing')
+  // than the number of variables.
+  int nColumnInfos = column_info.size();
+  if( nColumnInfos != nvars+1) {
+     cerr << "WARNING: Data_File_Manager::delete_labels was called with " 
+          << nColumnInfos
+          << " columns and a final label of (" 
+          << (column_info[nColumnInfos].label).c_str()
+          << ") but only " << nvars << " attributes" << endl;
+  }
+  
+  // Move and resize data and column labels.  Do this inside the same loop 
+  // to reduce the chance of doing it wrong.  NOTE: What should be done with
+  // the array of ranked points used to perform scaling and normalization?
   blitz::Range NPOINTS( 0, npoints-1);
   int ivar = 0;
   for( int i=0; i<nvars; i++) {
     if( edit_labels_widget->checked(i+1) <= 0) {
       points( ivar, NPOINTS) = points( i, NPOINTS);
+      Column_Info column_info_buf;  // Why is this necessary?
+      column_info_buf = column_info[i];
+      column_info[ivar] = column_info_buf;
       // ranked_points( ivar, NPOINTS) = ranked_points( i, NPOINTS);
       ivar++;
     }
   }
   nvars = ivar;
   points.resizeAndPreserve( nvars, npoints);
+  column_info.resize( nvars);
+  Column_Info column_info_buf;
+  column_info_buf.label = string( "-nothing-");
+  column_info.push_back( column_info_buf);
   // ranked_points.resize( nvars, npoints);
 
-  // Update column labels
-  ivar = 0;
-  for( unsigned int i=0; i<column_labels.size(); i++) {
-    if( edit_labels_widget->checked(i+1) <= 0) {
-      column_labels[ ivar] = column_labels[ i];
-      ivar++;
-    }
+  // Check the dimensions of the data array and vector of Column_Info
+  // objects to make sure we finished with one more column label 
+  // ('-nothing') than the number of variables.
+  nColumnInfos = column_info.size();
+  if( nColumnInfos != nvars+1) {
+     cerr << "WARNING: Data_File_Manager::delete_labels finished with " 
+          << nColumnInfos
+          << " columns and a final label of (" 
+          << (column_info[nColumnInfos].label).c_str()
+          << ") but only " << nvars << " attributes" << endl;
   }
-  column_labels.resize( ivar);
+  
+  // Clear and update menu
   edit_labels_widget->clear();
   for( int i=0; i<nvars; i++)
-    edit_labels_widget->add( column_labels[ i].c_str());
+    edit_labels_widget->add( (column_info[ i].label).c_str());
 
   // Set flag so the idle callback, cb_manage_plot_window_array, in MAIN 
   // will know to do a Restore Panels operation!
   needs_restore_panels_ = 1;
+
+  // ANOTHER DIAGNOSTIC
+  // cout << "Data_File_Manager::delete_labels: finished with "
+  //      << edit_labels_widget->nitems() << " items" << endl;
+  // for( int i=0; i<nvars; i++) {
+  //   cout << "Label[ " << i << "]: (" << column_info[i].label << ") ";
+  //   cout << endl;
+  // }
 
   // DIAGNOSTIC
   cout << "Data_File_Manager::delete_labels: finished with "
@@ -1485,10 +1538,10 @@ void Data_File_Manager::remove_trivial_columns()
   while( current < nvars-1) {
     if( blitz::all( points(current,NPTS) == points(current,0))) {
       cout << "skipping trivial column " 
-           << column_labels[ current] << endl;
+           << column_info[ current].label << endl;
       for( int j=current; j<nvars-1; j++) {
         points( j, NPTS) = points( j+1, NPTS);
-        column_labels[ j] = column_labels[ j+1];
+        column_info[ j] = column_info[ j+1];
       }
       removed_columns.push_back( iRemoved);
       nvars--;
@@ -1507,19 +1560,19 @@ void Data_File_Manager::remove_trivial_columns()
     cout << "Removed " << nvars_save - nvars << " columns:";
     for( unsigned int i=0; i<removed_columns.size(); i++) {
       int nLineLength = 8;
-      nLineLength += 1+column_labels[ i].length();
+      nLineLength += 1+(column_info[ i].label).length();
       if( nLineLength > 80) {
         cout << endl << "   ";
-        nLineLength = 2 + column_labels[ i].length();
+        nLineLength = 2 + (column_info[ i].label).length();
       }
-      cout << " " << column_labels[ i];
+      cout << " " << column_info[ i].label;
     }
     cout << endl;
     
     // Resize array and report results
-    // XXX need to trim column_labels to size nvars+1 
+    // XXX need to trim column_info to size nvars+1 
     points.resizeAndPreserve( nvars, npoints);
-    column_labels[ nvars] = string( "-nothing-");
+    column_info[ nvars].label = string( "-nothing-");
     cout << "new data array has " << nvars
          << " columns." << endl;
   }
@@ -1571,27 +1624,30 @@ void Data_File_Manager::create_default_data( int nvars_in)
 
   // Loop: Initialize and load the column labels, including the final label 
   // that says 'nothing'.
-  column_labels.erase( column_labels.begin(), column_labels.end());
+  column_info.erase( column_info.begin(), column_info.end());
+  Column_Info column_info_buf;
   for( int i=0; i<nvars; i++) {
     ostringstream buf;
     buf << "default_"
         << setw( 3) << setfill( '0')
         << i
         << setfill( ' ') << " ";
-    column_labels.push_back( buf.str());
+    column_info_buf.label = string( buf.str());
+    column_info.push_back( column_info_buf);
   }
-  column_labels.push_back( string( "-nothing-"));
+  column_info_buf.label = string( "-nothing-");
+  column_info.push_back( column_info_buf);
 
-  // Report colum labels
+  // Report column labels
   cout << " -column_labels:";
   int nLineLength = 17;
-  for( unsigned int i=0; i < column_labels.size(); i++ ) {
-    nLineLength += 1+column_labels[ i].length();
+  for( unsigned int i=0; i < column_info.size(); i++ ) {
+    nLineLength += 1+(column_info[ i].label).length();
     if( nLineLength > 80) {
       cout << endl << "   ";
-      nLineLength = 4 + column_labels[ i].length();
+      nLineLength = 4 + (column_info[ i].label).length();
     }
-    cout << " " << column_labels[ i];
+    cout << " " << column_info[ i].label;
   }
   cout << endl;
   cout << " -Generated default header with " << nvars

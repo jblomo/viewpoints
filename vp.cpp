@@ -74,7 +74,7 @@
 //   reset_selection_arrays() -- Reset selection arrays
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  09-JUL-2008
+// Modified: P. R. Gazis  10-JUL-2008
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -930,7 +930,7 @@ void make_main_menu_bar()
   // Add Tools menu items
   main_menu_bar->add( 
     "Tools/Edit Column Labels ", 0, 
-    (Fl_Callback *) dfm.edit_column_labels);
+    (Fl_Callback *) dfm.edit_column_info);
   main_menu_bar->add( 
     "Tools/Options            ", 0, 
     // (Fl_Callback *) make_options_window, 0, FL_MENU_INACTIVE);
@@ -1806,7 +1806,7 @@ void reset_selection_arrays()
 //   main() -- main routine
 //
 // Author:   Creon Levit   unknown
-// Modified: P. R. Gazis   08-JUL-2008
+// Modified: P. R. Gazis   10-JUL-2008
 //***************************************************************************
 //***************************************************************************
 // Main -- Driver routine
@@ -1868,8 +1868,10 @@ int main( int argc, char **argv)
   expert_mode = ( i_expert_mode != 0);
 
   // Initialize the data file manager, just in case, even though this should
-  // already have been done by the constructor.
+  // already have been done by the constructor, then set global pointer for 
+  // by everyone.
   dfm.initialize();
+  pdfm = &dfm;
 
   // Loop: Invoke GETOPT_LONG to parse successive command-line arguments 
   // (Windows version of GETOPT_LONG is implemented in LIBGW32).  NOTES: 1) 

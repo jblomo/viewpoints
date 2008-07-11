@@ -32,6 +32,7 @@
 #include "global_definitions_vp.h"
 
 // Include associated headers and source code
+#include "data_file_manager.h"
 #include "plot_window.h"
 #include "control_panel_window.h"
 #include "sprite_textures.h"
@@ -1810,10 +1811,15 @@ int Plot_Window::extract_data_points ()
   int axis1 = (int)(cp->varindex2->mvalue()->user_data());
   int axis2 = (int)(cp->varindex3->mvalue()->user_data());
 
-  xlabel = column_labels[ axis0];
-  ylabel = column_labels[ axis1];
-  if( axis2 != nvars) zlabel = column_labels[ axis2];
+  xlabel = pdfm->column_label(axis0);
+  ylabel = pdfm->column_label(axis1);
+  if( axis2 != nvars) zlabel = pdfm->column_label(axis2);
   else zlabel = "";
+
+  // xlabel = column_info[ axis0].label;
+  // ylabel = column_info[ axis1].label;
+  // if( axis2 != nvars) zlabel = column_info[ axis2].label;
+  // else zlabel = "";
   
   // Define a Range operator with which to extract subarrays
   blitz::Range NPTS( 0, npoints-1);

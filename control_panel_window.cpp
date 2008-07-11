@@ -32,6 +32,7 @@
 #include "global_definitions_vp.h"
 
 // Include associated headers and source code
+#include "data_file_manager.h"
 #include "plot_window.h"
 #include "control_panel_window.h"
 
@@ -371,8 +372,9 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   // cout << "starting axes menu build, nvars = " << nvars << endl;
   for( int i=0; i<=nvars; i++) {
     // cout << "label " << i 
-    //      << " = " << column_labels[i].c_str() << endl;
-    varindex_menu_items[i].label((const char *)(column_labels[i].c_str()));
+    //      << " = " << (column_info[i].label).c_str() << endl;
+    // varindex_menu_items[i].label((const char *) ((column_info[i].label).c_str()));
+    varindex_menu_items[i].label( (const char *) (pdfm->column_label(i)).c_str());
     varindex_menu_items[i].user_data((void *)i);
   }
   varindex_menu_items[nvars+1].label(0);

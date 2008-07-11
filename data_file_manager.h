@@ -32,13 +32,11 @@
 //      vp.cpp could be consolidated.
 //
 // Future plans:
-//   1) Replace the vectors of strings column_labels, old_column labels, 
-//      etc. (defined in global_definitions_vp.h) with anaogous vectors of 
-//      Column_Info objects that contain labels, a 'contains ASCII values'
-//      flag, and a lookup table to relate indices to ASCII values.
+//   1) Extend the Column_Info objects to contain label, a 'contains ASCII 
+//      values' flag, and a lookup table to relate indices to ASCII values.
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  08-JUL-2008
+// Modified: P. R. Gazis  10-JUL-2008
 //***************************************************************************
 
 // Protection to make sure this header is not included twice
@@ -50,6 +48,10 @@
 
 // Include globals
 #include "global_definitions_vp.h"
+
+// Need access to Column_Info class definitions here so we can declare it as
+// a member variable rather than just a pointer
+#include "column_info.h"
 
 //***************************************************************************
 // Class: Data_File_Manager
@@ -72,7 +74,7 @@
 //   findInputFile() -- Query user to find input file
 //   load_data_file( inFileSpec) -- Load and initialize data
 //   load_data_file() -- Load and initialize data
-//   extract_column_labels( sLine, doDefault) -- Extract column labels
+//   extract_column_info( sLine, doDefault) -- Extract column labels
 //   read_ascii_file_with_headers() -- Read ASCII
 //   read_binary_file_with_headers() -- Read binary
 //   create_default_data( nvars_in) -- Create default data
@@ -82,9 +84,9 @@
 //   write_ascii_file_with_headers() -- Write ASCII file
 //   write_binary_file_with_headers() -- Write binary file
 //
-//   edit_column_labels_i( *o) -- Static wrapper for edit_column_labels
-//   edit_column_labels( *o) -- Maintain Edit Column Labels window
-//   refresh_edit_column_labels() -- Refresh labels of edit window
+//   edit_column_info_i( *o) -- Static wrapper for edit_column_info
+//   edit_column_info( *o) -- Maintain Edit Column Labels window
+//   refresh_edit_column_info() -- Refresh labels of edit window
 //   delete_labels( *o, *u) -- Static callback to delete labels
 //   close_edit_labels_window( *o, *u) -- Static callback to close window
 //
@@ -98,6 +100,7 @@
 //
 //   bad_value_proxy() -- Get bad value proxy
 //   bad_value_proxy( f) -- Set bad value proxy
+//   column_label( i) -- Get column label
 //   delimiter_char() -- Get delimiter character
 //   delimiter_char( c) -- Set delimiter character
 //   inFileSpec() -- Get input filespec
@@ -120,7 +123,7 @@
 //   selected_data( i)-- Set the 'write all data' flag
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  08-JUL-2008
+// Modified: P. R. Gazis  10-JUL-2008
 //***************************************************************************
 class Data_File_Manager
 {
@@ -172,6 +175,10 @@ class Data_File_Manager
     // Value assigned to unreadable/nonnumeric/empty/missing values:
     float bad_value_proxy_;
 
+    // Member variable to hold column information must be declared static
+    // for use with static member functions
+    static std::vector<Column_Info> column_info;
+    
     // State variables
     int nSkipHeaderLines;
     int isAsciiInput, isAsciiOutput, isAsciiData;
@@ -189,7 +196,7 @@ class Data_File_Manager
     int findInputFile();
     int load_data_file( string inFileSpec);
     int load_data_file();
-    int extract_column_labels( string sLine, int doDefault);
+    int extract_column_info( string sLine, int doDefault);
     int read_ascii_file_with_headers();
     int read_binary_file_with_headers();
     void create_default_data( int nvars_in);
@@ -201,9 +208,9 @@ class Data_File_Manager
     int write_binary_file_with_headers();
 
     // Column label edit window methods
-    static void edit_column_labels( Fl_Widget *o);
-    void edit_column_labels_i( Fl_Widget *o);
-    void refresh_edit_column_labels();
+    static void edit_column_info( Fl_Widget *o);
+    void edit_column_info_i( Fl_Widget *o);
+    void refresh_edit_column_info();
     static void delete_labels( Fl_Widget *o, void* user_data);
     static void close_edit_labels_window( Fl_Widget *o, void* user_data);
     
@@ -219,6 +226,7 @@ class Data_File_Manager
 
     float bad_value_proxy() { return bad_value_proxy_;}
     void bad_value_proxy( float f) { bad_value_proxy_ = f;}
+    string column_label( int i) { return column_info[i].label;}
     char delimiter_char() { return delimiter_char_;}
     void delimiter_char( char c) { delimiter_char_ = c;}
     int ascii_input() { return isAsciiInput;}
