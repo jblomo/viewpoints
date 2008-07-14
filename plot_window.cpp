@@ -1288,7 +1288,6 @@ void Plot_Window::draw_data_points()
       // then render the points
       if (use_VBOs) {
         assert (VBOinitialized && VBOfilled && indexVBOsinitialized && indexVBOsfilled) ;
-
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, MAXPLOTS+1+brush_index); 
         glDrawElements( element_mode, (GLsizei)count, GL_UNSIGNED_INT, BUFFER_OFFSET(0)); // would it bee faster to use glDrawRangeElements() ?
         // make sure we succeeded 
@@ -1559,7 +1558,7 @@ int Plot_Window::transform_2d()
     tmp1 = vertices(NPTS,0);
     tmp2 = vertices(NPTS,1);
     vertices(NPTS,0) = (sqrt(2.0)/2.0) * (tmp1 + tmp2);
-    vertices(NPTS,1) = (sqrt(2.0)/2.0) * (tmp1 - tmp2);
+    vertices(NPTS,1) = (sqrt(2.0)/2.0) * (tmp2 - tmp1);
   }
   else if( cp->cond_prop->value()) {
     blitz::Array <float,1> tmp1(npoints);

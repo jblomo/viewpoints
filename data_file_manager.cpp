@@ -1235,8 +1235,9 @@ int Data_File_Manager::write_ascii_file_with_headers()
     // "default" floatfield format.  This causes integers to be written
     // as integers, floating point as floating point, and numbers with
     // large or small magnitude as scientific. 
-    os.precision( 8); 
-    os.unsetf( ios::scientific); // force floatfield to default
+    // floats.
+    os.precision(14); 
+    os.unsetf (ios::scientific); // force floatfield to default
     int rows_written = 0;
     for( int irow = 0; irow < npoints; irow++) {
       if( writeAllData_ != 0 || selected( irow) > 0) {
