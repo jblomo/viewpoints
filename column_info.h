@@ -26,7 +26,7 @@
 //   1) This is inteded for use as a mamber class of data_file_manager
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  11-JUL-2008
+// Modified: P. R. Gazis  16-JUL-2008
 //***************************************************************************
 
 // Protection to make sure this header is not included twice
@@ -60,12 +60,19 @@
 //   free() -- Clear buffers
 //   copy( inputInfo) -- Copy column info
 //
+//   add_value( string sToken) -- Update list of ASCII values
+//   update_ascii_values_and_data() -- Update ascii_values table and data
+//
+//
+//   index() -- Access function to get index
+//
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  11-JUL-2008
+// Modified: P. R. Gazis  16-JUL-2008
 //***************************************************************************
 class Column_Info
 {
   protected:
+    int jvar_;
 
   public:
     Column_Info();
@@ -77,10 +84,18 @@ class Column_Info
     // Functions to initialize, copy, and deallocate lists
     void free();
     void copy( const Column_Info& inputInfo);
+
+    // Functions to update lists
+    int add_value( string sToken);
+    int update_ascii_values_and_data( int j);
+
+    // Acces functions
+    int index() { return jvar_;}
+    string ascii_value( int j);
     
     string label;
     int hasASCII;
-    std::vector <std::string> ascii_values;
+    std::map<std::string,int> ascii_values_;
 };
 
 #endif   // COLUMN_INFO_H

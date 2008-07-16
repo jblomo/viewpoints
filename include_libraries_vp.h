@@ -25,7 +25,7 @@
 //   1) Add comments and get this code to run under Windows.
 //
 // Author: Creon Levit     2005-2006
-// Modified: P. R. Gazis   07-DEC-2007
+// Modified: P. R. Gazis   14-JUL-2008
 //***************************************************************************
 
 // Protection to make sure this header is not included twice
@@ -104,6 +104,7 @@
 #include <fstream>
 #include <sstream>
 #include <vector>
+#include <map>
 #include <string>
 #include <algorithm>
 #include <typeinfo>

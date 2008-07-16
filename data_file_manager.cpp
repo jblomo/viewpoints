@@ -19,7 +19,7 @@
 // Purpose: Source code for <data_file_manager.h>
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  11-JUL-2008
+// Modified: P. R. Gazis  16-JUL-2008
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -405,11 +405,12 @@ int Data_File_Manager::load_data_file()
 }
 
 //***************************************************************************
-// Data_File_Manager::extract_column_info( sLine, doDefault) -- Extract or
-// generate column labels and selection flag
-int Data_File_Manager::extract_column_info( string sLine, int doDefault)
+// Data_File_Manager::extract_column_labels( sLine, doDefault) -- Generate 
+// or extract column labels and selection flag and store them in the static 
+// member vector of Column_Info objects
+int Data_File_Manager::extract_column_labels( string sLine, int doDefault)
 {
-  // Initialize the column labels
+  // Initialize the satic member vector of Column_Info objects
   int nLabels = 0;
   nvars = 0;
   column_info.erase( column_info.begin(), column_info.end());
@@ -422,10 +423,10 @@ int Data_File_Manager::extract_column_info( string sLine, int doDefault)
     // LINE string with spaces
     if( delimiter_char_ != '\t') replace( sLine.begin(), sLine.end(), '\t', ' ');
 
-    // Loop: Insert the LINE string into a stream, define a buffer, read 
-    // and count successive tokens, generate default column labels, and 
-    // report results.  NOTE: whitespace-delimited and character-delimited
-    // files must be handled differently
+    // Loop: Insert the LINE string into a stream, define a buffer, read and
+    // count successive tokens, generate default column labels and load the 
+    // vector of Column_Info objects, and report results.  NOTE: whitespace-
+    // and character-delimited files must be handled differently
     std::stringstream ss( sLine);
     std::string buf;
     Column_Info column_info_buf;
@@ -456,7 +457,7 @@ int Data_File_Manager::extract_column_info( string sLine, int doDefault)
          << " default column labels." << endl;
   }
 
-  // ...otherwise, examine the line to extract column labels.
+  // ...otherwise, examine the input line to extract column labels.
   else {
 
     // Discard the leading comment character, if any, of the SLINE string.
@@ -464,8 +465,8 @@ int Data_File_Manager::extract_column_info( string sLine, int doDefault)
     if( sLine.find_first_of( "!#%") == 0) sLine.erase( 0, 1);
 
     // Loop: Insert the SLINE string into a stream, define a buffer, read 
-    // successive labels into the buffer, then load them into the array of 
-    // column labels and report results.  NOTE: whitespace-delimited and 
+    // successive labels into the buffer, then load them into the vector of 
+    // Column_Info objects, and report results.  NOTE: whitespace- and 
     // character-delimited labels must be handled differently.  Also, it is
     // necessary to trim whitespace and verify character-delimited labels.
     std::stringstream ss( sLine);
@@ -487,13 +488,12 @@ int Data_File_Manager::extract_column_info( string sLine, int doDefault)
         column_info.push_back( column_info_buf);
       }
     }
-
     nvars = column_info.size();
     cout << " -Extracted " << nvars << " column labels." << endl;
   }
 
   // If there were more than NVARS_CMD_LINE variables in the file, truncate 
-  // the vector of column labels, reset NVARS, and warn the user.
+  // the vector of Column_Info objects, reset NVARS, and warn the user.
   if( nvars_cmd_line > 0 && nvars > nvars_cmd_line) {
     column_info.erase( column_info.begin()+nvars_cmd_line, column_info.end());
     nvars = column_info.size();
@@ -501,9 +501,9 @@ int Data_File_Manager::extract_column_info( string sLine, int doDefault)
          << " column labels." << endl;
   }
 
-  // Examine the number of column labels that remain.  If it is too low or 
-  // high, report error, close input file, and quit.  Otherwise report 
-  // success.
+  // Examine the number of Column_Info objects that remain.  If it is too 
+  // low or high, report error, close input file, and quit.  Otherwise 
+  // report success.
   if( nvars <= 1) {
     cerr << " -WARNING, insufficient number of columns, "
          << "check for correct delimiter character"
@@ -543,8 +543,8 @@ int Data_File_Manager::extract_column_info( string sLine, int doDefault)
   else cout << " custom-delimited ";
   cout << "column_labels:" << endl;
 
-  // Clever formatting to keep line lengths under control.  NOTE: This
-  // will misbehave if some column label is more than 80 characters long.
+  // Clever output formatting to keep line lengths under control.  NOTE: 
+  // This will misbehave if some label is more than 80 characters long.
   cout << "  ";
   int nLineLength = 4;
   for( unsigned int i=0; i < column_info.size(); i++ ) {
@@ -557,8 +557,8 @@ int Data_File_Manager::extract_column_info( string sLine, int doDefault)
   }
   cout << endl;
 
-  // Check last column labels to see if it is the selection label,
-  // SELECTION_LABEL
+  // Check last column to see if it is the selection label, SELECTION_LABEL,
+  // defined in <global_definitions.vp.h>
   readSelectionInfo_ = 0;
   if( (column_info[nvars-1].label).compare( 0, SELECTION_LABEL.size(), SELECTION_LABEL) == 0) {
     readSelectionInfo_ = 1;
@@ -567,6 +567,104 @@ int Data_File_Manager::extract_column_info( string sLine, int doDefault)
   
   // Return number of labels
   return nLabels;
+}
+
+//***************************************************************************
+// Data_File_Manager::extract_column_types( sLine) -- Examine a line of data
+// to determine which columns contain ASCII values.  NOTE: This should be 
+// consolidated with some other method to avoid duplicate code.
+int Data_File_Manager::extract_column_types( string sLine)
+{
+  // If the delimiter character is not a tab, replace tabs with spaces
+  if( delimiter_char_ != '\t')
+    replace( sLine.begin(), sLine.end(), '\t', ' ');
+
+  // Loop: Insert the string into a stream and read it
+  std::stringstream ss( sLine); 
+  unsigned isBadData = 0;
+  string sToken;
+  double xValue;
+  for( int j=0; j<nvars; j++) {
+    
+    // Get the next word.  NOTE: whitespace-delimited and character-
+    // delimited files must be handled differently.  PROBLEM: This may not 
+    // handle missing values correctly, if at all.
+    if( delimiter_char_ == ' ') ss >> sToken;
+    else {
+      std::string buf;
+      getline( ss, buf, delimiter_char_);
+        
+      // Check for missing data
+      string::size_type notwhite = buf.find_first_not_of( " ");
+      buf.erase( 0, notwhite);
+      notwhite = buf.find_last_not_of( " ");
+      buf.erase( notwhite+1);
+      if( buf.size() <= 0) sToken = string( "BAD_VALUE_PROXY");
+      else {
+        stringstream bufstream;
+        bufstream << buf;
+        bufstream >> sToken;
+      }
+    }
+
+    // Issue warning and quit if this line doesn't contain enough data
+    if( ss.eof() && j<nvars-1) {
+      cerr << " -WARNING, extract_column_types reports "
+           << "not enough data on first line!" << endl
+           << "  skipping entire line." << endl;
+      isBadData = 1;
+      break;
+    }
+
+    // Issue warning and quit if this line contains unreadable data.  NOTE:
+    // This should never happen, because error flags were cleared above.
+    if( !ss.good() && j<nvars-1) {
+      cerr << " -WARNING, extract_column_types reports unreadable data "
+           << "(binary or ASCII?) on first line at column " << j+1
+           << "," << endl
+           << "  skipping entire line." << endl;
+      isBadData = 1;
+      break;
+    }
+    
+    // DIAGNOSTIC
+    // cout << " (" << xToken.c_str() << ")";
+
+    // Attempt to use strod and examine values and pointers to determine if 
+    // token can be parsed as a double.  This code doesn't work
+    // int hasASCII = 0;
+    // char **cEnd;
+    // char cToken[80];
+    // double xTest = std::strtod( sToken.c_str(), cEnd);
+    // if( xValue == 0 && cEnd != &(sToken.c_str())) hasASCII = 1;
+    // else hasASCII = 0;
+    
+    // Convert token to a stringstream and try to read it to determine if it
+    // can be parsed as a double.  If the stringstream >> operator returns 0, 
+    // the read failed and the token couldn't be parsed.  WARNING: It remains
+    // to be determined if this works on all compilers!
+    int hasASCII = 0;
+    std::istringstream inpStream( sToken);
+    double inpValue = 0.0;
+    if( inpStream >> inpValue) hasASCII = 0;
+    else hasASCII = 1;
+
+    // Load information into the vector of Column_Info objects
+    column_info[ j].hasASCII = hasASCII;
+  }
+
+  // DIAGNOSTIC
+  // cout << endl;
+  
+  // DIAGNOSTIC
+  // cout << "data_file_manager::extract_column_types: " << endl;
+  // for( int j=0; j<nvars; j++) cout << " " << setw( 6) << j;
+  // cout << endl;
+  // for( int j=0; j<nvars; j++) {
+  //   if( column_info[ j].hasASCII != 0) cout << "  ASCII";
+  //   else cout << "    Num";
+  // }
+  // cout << endl;
 }
 
 //***************************************************************************
@@ -591,8 +689,8 @@ int Data_File_Manager::read_ascii_file_with_headers()
   }
 
 
-  // STEP 2: Read and discard the header block, saving the last line of the
-  // header in the LASTHEADERLINE buffer
+  // STEP 2: Read and discard the header block, but save the last line of 
+  // the header in the LASTHEADERLINE buffer
 
   // Loop: Read successive lines to find and store the last line of the 
   // header block. NOTE: Since tellg() and seekg() don't seem to work 
@@ -601,7 +699,7 @@ int Data_File_Manager::read_ascii_file_with_headers()
   std::string line = "";
   std::string lastHeaderLine = "";
   int nRead = 0, nHeaderLines = 0;
-  for( int i = 0; i < MAX_HEADER_LINES; i++) {
+  for( int iLine = 0; iLine < MAX_HEADER_LINES; iLine++) {
     if( inFile.eof() != 0) break;
     (void) getline( inFile, line, '\n');
     nRead++;
@@ -614,7 +712,7 @@ int Data_File_Manager::read_ascii_file_with_headers()
     
     // If this line is supposed to be skipped or if it begins with a comment 
     // character, skip it and update the LASTHEADERLINE buffer
-    if( i < nSkipHeaderLines || 
+    if( iLine < nSkipHeaderLines || 
         line.length() == 0 || line.find_first_of( "!#%") == 0) {
       lastHeaderLine = line;
       nHeaderLines++;
@@ -626,19 +724,19 @@ int Data_File_Manager::read_ascii_file_with_headers()
        << " header lines." << endl;
 
 
-  // STEP 3: Generate column labels from LASTHEADERLINE if it is full.
-  // Otherwise generate default label names.
+  // STEP 3: Get column labels.  If LASTHEADERLINE is full, use this to 
+  // generate column labels.  Otherwise generate default column labels.
 
   // If no header lines were found or the LASTHEADERLINE buffer is empty, 
   // count the number of values in the first line of data to generate a set 
   // of default column labels.  Otherwise examine the LASTHEADERLINE buffer 
   // to extract column labels.
   int nLabels = 0;
-  if( doCommentedLabels_ == 0) nLabels = extract_column_info( line, 0);
+  if( doCommentedLabels_ == 0) nLabels = extract_column_labels( line, 0);
   else {
     if( nHeaderLines == 0 || lastHeaderLine.length() == 0)
-      nLabels = extract_column_info( line, 1);
-    else nLabels = extract_column_info( lastHeaderLine, 0);
+      nLabels = extract_column_labels( line, 1);
+    else nLabels = extract_column_labels( lastHeaderLine, 0);
   }
 
   // If there were problems, close file and quit
@@ -647,9 +745,12 @@ int Data_File_Manager::read_ascii_file_with_headers()
     return 1;
   }
 
-  // Now we know the number of variables, NVARS, so if we know the number of 
-  // points (e.g. from the command line, we can size the main points array 
-  // once and for all, and not waste memory.
+
+  // STEP 4: Read the data block
+  
+  // Now we know the number of variables, NVARS, so if we also know the 
+  // number of points (e.g. from the command line, we can size the main 
+  // points array once and for all, and not waste memory.
   if( npoints_cmd_line > 0) npoints = npoints_cmd_line;
   else npoints = MAXPOINTS;
   if( include_line_number) {
@@ -662,11 +763,12 @@ int Data_File_Manager::read_ascii_file_with_headers()
   }
   
   // Loop: Read successive lines from the file
-  int nSkip = 0, i = 0;
+  int nSkip = 0;
+  int nLines = 0;
   unsigned uFirstLine = 0;
   if( doCommentedLabels_) uFirstLine = 1;
   int nTestCycle = 0, nUnreadableData = 0;
-  while( !inFile.eof() && i<npoints) {
+  while( !inFile.eof() && nLines<npoints) {
   
     // Get the next line, check for EOF, and increment accounting information
     if( !uFirstLine) {
@@ -674,7 +776,7 @@ int Data_File_Manager::read_ascii_file_with_headers()
       if( inFile.eof()) break;  // Break here to make accounting work right
       nRead++;
     }
-    
+
     // Skip blank lines and comment lines
     if( line.length() == 0 || line.find_first_of( "!#%") == 0) {
       nSkip++;
@@ -684,6 +786,11 @@ int Data_File_Manager::read_ascii_file_with_headers()
     uFirstLine = 0;
     nTestCycle++;
     
+    // Invoke member function to examine the first line of data to identify 
+    // columns that contain ASCII values and load this information into the 
+    // vector of column_info objects
+    if( nLines == 0) extract_column_types( line);
+    
     // If the delimiter character is not a tab, replace tabs with spaces
     if( delimiter_char_ != '\t')
       replace( line.begin(), line.end(), '\t', ' ');
@@ -691,13 +798,18 @@ int Data_File_Manager::read_ascii_file_with_headers()
     // Loop: Insert the string into a stream and read it
     std::stringstream ss( line); 
     unsigned isBadData = 0;
-    double x;
+    double xValue;
+    string sToken;
     for( int j=0; j<nvars; j++) {
     
-      // Get the next word.  NOTE: whitespace-delimited and character-
-      // delimited files must be handled differently.
+      // Read the next word as double or a string, depending on whether or
+      // not this column contains ASCII values.  NOTE: whitespace-delimited 
+      // and character-delimited files must be handled differently.
       // PROBLEM: This isn't handling missing values correctly
-      if( delimiter_char_ == ' ') ss >> x;
+      if( delimiter_char_ == ' ') {
+        if( column_info[j].hasASCII == 0) ss >> xValue;
+        else ss >> sToken;
+      }
       else {
         std::string buf;
         getline( ss, buf, delimiter_char_);
@@ -707,11 +819,12 @@ int Data_File_Manager::read_ascii_file_with_headers()
         buf.erase( 0, notwhite);
         notwhite = buf.find_last_not_of( " ");
         buf.erase( notwhite+1);
-        if( buf.size() <= 0) x = bad_value_proxy_;
+        if( buf.size() <= 0) xValue = bad_value_proxy_;
         else {
           stringstream bufstream;
           bufstream << buf;
-          bufstream >> x;
+          if( column_info[j].hasASCII == 0) bufstream >> xValue;
+          else bufstream >> sToken;
         }
       }
 
@@ -730,14 +843,21 @@ int Data_File_Manager::read_ascii_file_with_headers()
       // replace these with a default value and clear the error flags.
       if( !readSelectionInfo_ || j < nvars-1) {
         if( !ss) {
-          points(j,i) = bad_value_proxy_;
+          points(j,nLines) = bad_value_proxy_;
           ss.clear();
         }
-        else points(j,i) = (float) x;
+        else {
+             
+          // If this is numerical data, load it directly, otherwise invoke
+          // the member function of Column_Info to determine the order in
+          // which ASCII values appeared and load that order as data.
+          if( column_info[j].hasASCII == 0) points(j,nLines) = (float) xValue;
+          else points(j,nLines) = column_info[j].add_value( sToken);
+        }
       }
       else {
         if( !ss) ss.clear();
-        else read_selected( i) = (int) x;
+        else read_selected( nLines) = (int) xValue;
       }
       
       // Check for unreadable data and flag this line to be skipped.  NOTE:
@@ -755,7 +875,7 @@ int Data_File_Manager::read_ascii_file_with_headers()
 
     // Loop: Check for bad data flags and flag this line to be skipped
     for( int j=0; j<nvars; j++) {
-      if( points(j,i) < -90e99) {
+      if( points(j,nLines) < -90e99) {
         cerr << " -WARNING, bad data flag (<-90e99) at line " << nRead
              << ", column " << j << " - skipping entire line\n";
         isBadData = 1;
@@ -767,7 +887,7 @@ int Data_File_Manager::read_ascii_file_with_headers()
     if( nTestCycle >= MAX_NTESTCYCLES) {
       if( nUnreadableData >= MAX_NUNREADABLELINES) {
         cerr << " -ERROR: " << nUnreadableData << " out of " << nTestCycle
-             << " lines of unreadable data at line " << i+1 << endl;
+             << " lines of unreadable data at line " << nLines+1 << endl;
         sErrorMessage = "Too much unreadable data in an ASCII file";
         return 1;
       }
@@ -777,22 +897,71 @@ int Data_File_Manager::read_ascii_file_with_headers()
     // DIAGNOSTIC: Report parsed contents of this line
     // cout << "line[ " << i << "]:";
     // for( int j=0; j<nvars; j++) {
-    //   cout << " " << points( j, i);
+    //   cout << " " << points( j, nLines);
     // }
     // cout << endl;
     
     // If data were good, increment the number of lines
     if( !isBadData) {
-      i++;
-      if( (i+1)%10000 == 0) cerr << "  Read " << i+1 << " lines." << endl;
+      nLines++;
+      if( (nLines+1)%10000 == 0) cerr << "  Read " << nLines+1 << " lines." << endl;
     }
   }
+
+  // DIAGNOSTIC: Examine column_info
+  // cout << "data_file_manager::read_ascii_data: Column Information" << endl;
+  // for( int j = 0; j < nvars; j++) {
+  //   if( column_info[j].hasASCII>0) {
+  //     cout << "column[" << j << "]:";
+  //     for( 
+  //       map<string,int>::iterator iter = (column_info[j].ascii_values_).begin();
+  //       iter != (column_info[j].ascii_values_).end(); iter++) {
+  //       cout << " (" << (iter->first).c_str() << "," << (iter->second) << ")";
+  //     }
+  //     cout << endl;
+  //   }
+  // }  
   
+  // Loop: Examine the vector of Column_Info objects to alphabetize ASCII 
+  // values and renumber the data.
+  int nReordered = 0;
+  for( int j=0; j<nvars; j++) {
+    if( column_info[j].update_ascii_values_and_data(j) >=0) nReordered++;
+  }
+
+  // DIAGNOSTIC: Examine column_info again
+  // cout << "data_file_manager::read_ascii_data: Updated column Information" << endl;
+  // for( int j = 0; j < nvars; j++) {
+  //   if( column_info[j].hasASCII>0) {
+  //     cout << "column[" << j << "]:";
+  //     for( 
+  //       map<string,int>::iterator iter = (column_info[j].ascii_values_).begin();
+  //       iter != (column_info[j].ascii_values_).end(); iter++) {
+  //       cout << " (" << (iter->first).c_str() << "," << (iter->second) << ")";
+  //     }
+  //     cout << endl;
+  //   }
+  // }
+
+  // DIAGNOSTIC: Exercise access functions
+  // for( int j=0; j<nvars; j++) {
+  //   cout << "*COLUMN[ " << j << "]:";
+  //   if( is_ascii_column(j) == 0) cout << " Numerical";
+  //   else {
+  //     for( int i=0; i<n_ascii_values(j); i++) {
+  //       string sPooka = ascii_value(j,i);
+  //       int iPooka = ascii_value_index(j,sPooka);
+  //       cout << " (" << sPooka.c_str() << "," << iPooka << ")";
+  //     }
+  //   }
+  //   cout << endl;
+  // }
+
 
   // STEP 5: Update NVARS and NPOINTS, report results of the read operation 
   // to the console, close input file, and report success
   if( readSelectionInfo_ != 0) nvars = nvars-1;
-  npoints = i;
+  npoints = nLines;
 
   cout << " -Finished reading " << nvars << "x" << npoints
        << " data block with ";
@@ -800,7 +969,7 @@ int Data_File_Manager::read_ascii_file_with_headers()
   else cout << " added column of ";
   cout << "selection information." << endl;
   cout << "  " << nHeaderLines 
-       << " header + " << i 
+       << " header + " << nLines 
        << " good data + " << nSkip 
        << " skipped lines = " << nRead << " total." << endl;
   inFile.close();
@@ -858,10 +1027,10 @@ int Data_File_Manager::read_binary_file_with_headers()
     delimiter_char_ = '\t';
   }
 
-  // Inovke the EXTRACT_COLUMN_LABEL method to extract column labels,
+  // Invoke the extract_column_labels method to extract column labels,
   // then reset the delimiter character
   int nLabels = 0;
-  nLabels = extract_column_info( line, 0);
+  nLabels = extract_column_labels( line, 0);
   delimiter_char_ = saved_delimiter_char_;
   
   // Report status to the console
@@ -1232,19 +1401,23 @@ int Data_File_Manager::write_ascii_file_with_headers()
     os << endl;
     
     // Loop: Write successive ASCII records to the data block using the
-    // "default" floatfield format.  This causes integers to be written
-    // as integers, floating point as floating point, and numbers with
-    // large or small magnitude as scientific. 
-    // floats.
-    os.precision(14); 
-    os.unsetf (ios::scientific); // force floatfield to default
+    // "default" floatfield format.  This causes integers to be written as
+    // integers, floating point as floating point, and numbers with large or 
+    // small magnitude as scientific floats. 
+    os.precision( 14); 
+    os.unsetf( ios::scientific); // force floatfield to default
     int rows_written = 0;
     for( int irow = 0; irow < npoints; irow++) {
       if( writeAllData_ != 0 || selected( irow) > 0) {
         for( int jcol = 0; jcol < nvars_out; jcol++) {
           // if( jcol > 0) os << " ";
           if( jcol > 0) os << delimiter_char_ << " ";
-          os << points( jcol, irow);
+          
+          // Process numerical and ASCII values differently
+          if( column_info[jcol].hasASCII == 0) os << points( jcol, irow);
+          else {
+            os << column_info[jcol].ascii_value( (int) points( jcol, irow));
+          }
         }
         if( writeSelectionInfo_ != 0) os << delimiter_char_ << " " << selected( irow);
         os << endl;
@@ -1673,6 +1846,29 @@ void Data_File_Manager::create_default_data( int nvars_in)
   // Report results
   cout << "Generated default data with " << npoints 
        << " points and " << nvars << " variables" << endl;
+}
+
+
+//***************************************************************************
+// Data_File_Manager::ascii_value( jcol, ival) -- Get ASCII value ival for
+// column jcol.
+string Data_File_Manager::ascii_value( int jcol, int ival)
+{
+  if( column_info[jcol].hasASCII == 0) return string( "NUMERIC_VALUE_VP");
+  if( 0>jcol || jcol >= nvars) return string( "BAD_COLUMN_INDEX_VP");
+  return column_info[jcol].ascii_value(ival);
+}
+
+//***************************************************************************
+// Data_File_Manager::ascii_value_index( jcol, sToken) -- Index of sToken in
+// column jcol.  String is passed by value for efficiency.
+int Data_File_Manager::ascii_value_index( int jcol, string &sToken)
+{
+  if( column_info[jcol].hasASCII == 0) return -1;
+  if( 0>jcol || jcol >= nvars) return -1;
+  map<string,int>::iterator iter = (column_info[jcol].ascii_values_).find(sToken);
+  if( iter != (column_info[jcol].ascii_values_).end()) return iter->second;
+  return -1;
 }
 
 //***************************************************************************

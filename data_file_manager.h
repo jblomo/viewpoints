@@ -36,7 +36,7 @@
 //      values' flag, and a lookup table to relate indices to ASCII values.
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  10-JUL-2008
+// Modified: P. R. Gazis  16-JUL-2008
 //***************************************************************************
 
 // Protection to make sure this header is not included twice
@@ -74,7 +74,9 @@
 //   findInputFile() -- Query user to find input file
 //   load_data_file( inFileSpec) -- Load and initialize data
 //   load_data_file() -- Load and initialize data
-//   extract_column_info( sLine, doDefault) -- Extract column labels
+//   extract_column_labels( sLine, doDefault) -- Extract column labels
+//   extract_column_type( sLine) -- Extract column types
+//   reorder_ascii_values() -- Alphabetize ascii values
 //   read_ascii_file_with_headers() -- Read ASCII
 //   read_binary_file_with_headers() -- Read binary
 //   create_default_data( nvars_in) -- Create default data
@@ -108,6 +110,8 @@
 //   ascii_input( i) -- Set ASCII input flag
 //   ascii_output() -- Get ASCII output flag
 //   ascii_output( i) -- Set ASCII output flag
+//   ascii_value( jcol, ivalue) -- ASCII value ival for column jcol
+//   ascii_value_index( jcol, sToken) -- Index is sToken in clumn jcol
 //   column_major() -- Get column major flag
 //   column_major( i) -- Set column major flag
 //   do_append() -- Get append flag
@@ -116,6 +120,10 @@
 //   do_commented_labels( i) -- Set 'commented labels' flag
 //   do_merge() -- Get append flag
 //   do_merge( i) -- Set merge flag
+//   is_ascii_column( jcol) -- Does this column have ASCII values?
+//   is_saved_file() -- Get the 'saved file' flag
+//   is_saved_file( i) -- Set the 'saved file' flag
+//   n_ascii_values( jcol) -- Get number of ASCII valuies in colum jcol
 //   needs_restore_panels() -- Get flag
 //   needs_restore_panels( i) -- Set flag
 //   read_selection_info() -- Get the 'read selections' flag
@@ -123,7 +131,7 @@
 //   selected_data( i)-- Set the 'write all data' flag
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  10-JUL-2008
+// Modified: P. R. Gazis  16-JUL-2008
 //***************************************************************************
 class Data_File_Manager
 {
@@ -196,7 +204,8 @@ class Data_File_Manager
     int findInputFile();
     int load_data_file( string inFileSpec);
     int load_data_file();
-    int extract_column_info( string sLine, int doDefault);
+    int extract_column_labels( string sLine, int doDefault);
+    int extract_column_types( string sLine);
     int read_ascii_file_with_headers();
     int read_binary_file_with_headers();
     void create_default_data( int nvars_in);
@@ -233,6 +242,8 @@ class Data_File_Manager
     void ascii_input( int i) { isAsciiInput = (i==1);}
     int ascii_output() { return isAsciiOutput;}
     void ascii_output( int i) { isAsciiOutput = (i==1);}
+    string ascii_value( int jcol, int ival);
+    int ascii_value_index( int jcol, string &sToken);
     int column_major() { return isColumnMajor;}
     void column_major( int i) { isColumnMajor = (i==1);}
     int do_append() { return doAppend;}
@@ -241,8 +252,10 @@ class Data_File_Manager
     void do_commented_labels( int i) { doCommentedLabels_ = (i==1);}
     int do_merge() { return doMerge;}
     void do_merge( int i) { doMerge = (i==1);}
+    int is_ascii_column( int jcol) { return column_info[jcol].hasASCII;}
     int is_saved_file() { return isSavedFile_;}
     void is_saved_file( int i) { isSavedFile_ = i;}
+    int n_ascii_values( int jcol) { return (column_info[jcol].ascii_values_).size();}
     int needs_restore_panels() { return needs_restore_panels_;}
     void needs_restore_panels( int i) {needs_restore_panels_ = i;}
     int read_selection_info() { return readSelectionInfo_;}

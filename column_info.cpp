@@ -21,7 +21,7 @@
 // Purpose: Source code for <column_info.h>
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  11-JUL-2008
+// Modified: P. R. Gazis  16-JUL-2008
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -35,19 +35,20 @@
 
 //***************************************************************************
 // Column_Info::Column_Info() --  Default constructor clears everything.
-Column_Info::Column_Info() : 
-  label( ""), hasASCII( 0)
+Column_Info::Column_Info() : jvar_( 0), label( ""), hasASCII( 0)
 {
-  ascii_values.erase( ascii_values.begin(), ascii_values.end());
+  ascii_values_.erase( ascii_values_.begin(), ascii_values_.end());
 }
 
 //***************************************************************************
 // Column_Info::Column_Info( sColumnInfo) --  Invoke default constructor to
-// clears everything, then parse strung to load column info.
+// clear everything, then parse header string from binary file to load 
+// column info.
 Column_Info::Column_Info( string sColumnInfo) : 
-  label( ""), hasASCII( 0)
+  jvar_( 0), label( ""), hasASCII( 0)
 {
-  ascii_values.erase( ascii_values.begin(), ascii_values.end());
+  ascii_values_.erase( ascii_values_.begin(), ascii_values_.end());
+  // Code to parse string has yet to be written
 }
 
 //***************************************************************************
@@ -68,29 +69,100 @@ Column_Info::Column_Info( const Column_Info &inputInfo)
 // Column_Info::~Column_Info() --  Default destructor clears everything.
 void Column_Info::free()
 {
+  jvar_ = 0;
   label = "";
   hasASCII = 0;
-  ascii_values.erase( ascii_values.begin(), ascii_values.end());
+  ascii_values_.erase( ascii_values_.begin(), ascii_values_.end());
 }
 
-//*****************************************************************
+//***************************************************************************
 // Column_Info::copy( inputInfo) -- Copy inputInfo
 void Column_Info::copy( const Column_Info &inputInfo)
 {
+  jvar_ = inputInfo.jvar_;
   label = inputInfo.label;
   hasASCII = inputInfo.hasASCII;
-  if( ascii_values.size() <= 0)
-    ascii_values.erase( ascii_values.begin(), ascii_values.end());
-  ascii_values = inputInfo.ascii_values;
+  if( ascii_values_.size() <= 0)
+    ascii_values_.erase( ascii_values_.begin(), ascii_values_.end());
+  ascii_values_ = inputInfo.ascii_values_;
 }
 
-//*****************************************************************
-// Column_Info::operator=() -- Overload the '=' operator as a
-// non-static member function.  Deallocate any storage for this
-// object, then copy values for the input element.
+//***************************************************************************
+// Column_Info::operator=() -- Overload the '=' operator as a non-static 
+// member function.  Deallocate any storage for this object, then copy 
+// values for the input element.
 Column_Info& Column_Info::operator=( const Column_Info &inputInfo)
 {
   free();
   this->copy( inputInfo);
   return *this;
+}
+
+//***************************************************************************
+// Column_Info::add_value( sToken) -- Update list of ASCII values and return 
+// the order in which a token appeared.
+int Column_Info::add_value( string sToken)
+{
+  // Determine if this value has occurred before
+  map<string,int>::iterator iter = ascii_values_.find( sToken);
+
+  // Insert it if it's new.  Does insert know how to order strings?
+  if( iter != ascii_values_.end()) {
+    return iter->second;
+  }
+  else {
+    int nValues = ascii_values_.size();
+    //ascii_values_.insert(
+    //  ascii_values_.end(), 
+    //  map<string,int>::value_type(sToken,nValues));
+    ascii_values_.insert( map<string,int>::value_type(sToken,nValues));
+    return nValues;
+  }
+}
+
+//***************************************************************************
+// Column_Info::update_ascii_values_and_data( int j) -- Update the lookup 
+// table to index ascii_values in alphabetical order and update the common 
+// data array for this column.
+int Column_Info::update_ascii_values_and_data( int j)
+{
+  // Make sure we have the right index and look-up table
+  jvar_ = j;
+  if( hasASCII == 0) return -1;
+
+  // Loop: Create and load a map to do the conversion
+  map<int,int> conversion;
+  int iAlpha = 0;
+  for(
+    map<string,int>::iterator iter = ascii_values_.begin();
+    iter != ascii_values_.end(); iter++)
+  {
+    int iOrder = iter->second;
+    conversion.insert( map<int,int>::value_type( iOrder, iAlpha));
+    iter->second = iAlpha;
+    iAlpha++;
+  }
+
+  // Loop: Do the conversion for this column.  WARNING: It is the 
+  // user's responsibility to make sure the column index is correct!
+  for( int i=0; i<npoints; i++) { 
+    points(jvar_,i) = (conversion.find( (int) points(jvar_,i)))->second;
+  }
+  
+  // Report success
+  return jvar_;
+}
+
+//***************************************************************************
+// Column_Info::ascii_value( iValue) -- Protect against bad indices, then
+// loop through map of ASCII values to get value for this index.  
+string Column_Info::ascii_value( int iValue)
+{
+  if( 0>iValue || iValue >= ascii_values_.size()) return string( "BAD_INDEX_VP");
+  map<string,int>::iterator iter = ascii_values_.begin();
+  for( int i=0; i<iValue; i++) {
+    iter++;
+    if( iter == ascii_values_.end()) break;
+  }
+  return iter->first;
 }
