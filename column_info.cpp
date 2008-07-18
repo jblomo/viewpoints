@@ -21,7 +21,7 @@
 // Purpose: Source code for <column_info.h>
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  16-JUL-2008
+// Modified: P. R. Gazis  17-JUL-2008
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -151,6 +151,67 @@ int Column_Info::update_ascii_values_and_data( int j)
   
   // Report success
   return jvar_;
+}
+
+//***************************************************************************
+// Column_Info::add_info_and_update_data( j, old_info) -- Add old column 
+// info and update the common data array for this column.  Note that this
+// is Way Tricky!  The current column info and common data array will be 
+// associated with new data that mst be modified while the old data remains 
+// the same.
+int Column_Info::add_info_and_update_data( int j, Column_Info &old_info)
+{
+  // If this is not an ASCII column then quit
+  if( hasASCII == 0 || old_info.hasASCII == 0) return 0;
+  
+  // Define a map to convert values
+  map<int,int> conversion_table;
+
+  // Loop: Examine successive keys (ASCII values) in the current (e.g., new) 
+  // Column_Info object.  If this key occurs in the old object, change the
+  // associated value to the old value.  If it doesn't occur, increment the 
+  // number of keys and use this as its value.
+  int nAllKeys = (old_info.ascii_values_).size();
+  for(
+    map<string,int>::iterator iter = ascii_values_.begin();
+    iter != ascii_values_.end(); iter++)
+  {
+    string sThisKey = iter->first;
+    int iThisValue = iter->second;
+    if( (old_info.ascii_values_).find(sThisKey) != 
+        (old_info.ascii_values_).end()) {
+      int iOldValue = old_info.ascii_values_[iter->first];
+      iter->second = iOldValue;
+      ascii_values_[sThisKey] = iOldValue;
+      conversion_table.insert( map<int,int>::value_type( iThisValue, iOldValue));
+    }
+    else {
+      iter->second = nAllKeys;
+      ascii_values_[sThisKey] = nAllKeys;
+      conversion_table.insert( map<int,int>::value_type( iThisValue, nAllKeys));
+      nAllKeys++;
+    }
+  }
+
+  // Loop: Go through the old Column_Info object one more time to make sure 
+  // we got everything
+  for(
+    map<string,int>::iterator old_iter = (old_info.ascii_values_).begin();
+    old_iter != (old_info.ascii_values_).end(); old_iter++)
+  {
+    string sOldKey = old_iter->first;
+    int iOldValue = old_iter->second;
+    ascii_values_[sOldKey] = iOldValue;
+  }
+
+  // Loop: Do the conversion for this column.  WARNING: It is the 
+  // user's responsibility to make sure the column index is correct!
+  for( int i=0; i<npoints; i++) { 
+    points(jvar_,i) = conversion_table[ (int) points(jvar_,i)];
+  }
+  
+  // Return number of ASCII vales
+  return ascii_values_.size();
 }
 
 //***************************************************************************

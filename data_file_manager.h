@@ -36,7 +36,7 @@
 //      values' flag, and a lookup table to relate indices to ASCII values.
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  16-JUL-2008
+// Modified: P. R. Gazis  17-JUL-2008
 //***************************************************************************
 
 // Protection to make sure this header is not included twice
@@ -123,6 +123,7 @@
 //   is_ascii_column( jcol) -- Does this column have ASCII values?
 //   is_saved_file() -- Get the 'saved file' flag
 //   is_saved_file( i) -- Set the 'saved file' flag
+//   n_ascii_columns() -- Get number of ascii columns
 //   n_ascii_values( jcol) -- Get number of ASCII valuies in colum jcol
 //   needs_restore_panels() -- Get flag
 //   needs_restore_panels( i) -- Set flag
@@ -131,7 +132,7 @@
 //   selected_data( i)-- Set the 'write all data' flag
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  16-JUL-2008
+// Modified: P. R. Gazis  17-JUL-2008
 //***************************************************************************
 class Data_File_Manager
 {
@@ -255,6 +256,7 @@ class Data_File_Manager
     int is_ascii_column( int jcol) { return column_info[jcol].hasASCII;}
     int is_saved_file() { return isSavedFile_;}
     void is_saved_file( int i) { isSavedFile_ = i;}
+    int n_ascii_columns();
     int n_ascii_values( int jcol) { return (column_info[jcol].ascii_values_).size();}
     int needs_restore_panels() { return needs_restore_panels_;}
     void needs_restore_panels( int i) {needs_restore_panels_ = i;}

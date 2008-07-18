@@ -24,7 +24,7 @@
 //   pow2 ( x) -- x*x
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  09-JUL-2008
+// Modified: P. R. Gazis  17-JUL-2008
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -34,8 +34,8 @@
 #include "global_definitions_vp.h"
 
 //***************************************************************************
-// make_confirmation_window( text, mode) -- Make and manage the confirmation 
-// window.  Result of 1,0,-1 => Yes, No, Cancel.
+// make_confirmation_window( text, nButtons, nLines) -- Make and manage the 
+// confirmation window.  Result of 1,0,-1 => Yes, No, Cancel.
 int make_confirmation_window( const char* text, int nButtons, int nLines)
 {
   // Destroy any existing window

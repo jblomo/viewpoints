@@ -19,7 +19,7 @@
 // Purpose: Source code for <data_file_manager.h>
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  16-JUL-2008
+// Modified: P. R. Gazis  17-JUL-2008
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -318,18 +318,35 @@ int Data_File_Manager::load_data_file()
       column_info = old_column_info;
     }
     else if( doAppend > 0) {
+         
+      // Current (e.g., new) column info and lookup table indices in the
+      // current (new) common data array must be revised first, before the 
+      // current and old data arrays are appended.
+      for( int j=0; j<nvars; j++) {
+        column_info[j].add_info_and_update_data( j, old_column_info[j]);
+      }
+
+      // Enlarge buffer with old data to make space for current data
       int all_npoints = npoints + old_npoints;
       points.resizeAndPreserve( nvars, npoints);
       old_points.resizeAndPreserve( nvars, all_npoints);
 
+      // Append current data to old data
       old_points(
         blitz::Range( 0, nvars-1), 
         blitz::Range( old_npoints, all_npoints-1)) = points;
       points.resize( old_points.shape());
 
+      // Move combined data set back to the current data buffer
       points = old_points;
       npoints = all_npoints;
-      column_info = old_column_info;
+      
+      // Loop: Examine the vector of Column_Info objects to alphabetize 
+      // ASCII values and renumber the data.
+      int nReordered = 0;
+      for( int j=0; j<nvars; j++) {
+        if( column_info[j].update_ascii_values_and_data(j) >=0) nReordered++;
+      }
     }
     else {
       int all_nvars = nvars + old_nvars;
@@ -343,7 +360,7 @@ int Data_File_Manager::load_data_file()
       points.reverseSelf( blitz::firstDim);
       nvars = all_nvars;
 
-      // Add to list of column labels
+      // Add new columns to list of column labels
       old_column_info.pop_back();
       for( unsigned int i=0; i<column_info.size(); i++) {
         old_column_info.push_back( column_info[ i]);
@@ -922,6 +939,22 @@ int Data_File_Manager::read_ascii_file_with_headers()
   //   }
   // }  
   
+  // Check to see if the user specified that the line of column labels was 
+  // commented and all columns were ASCII.  If this happened, it's possible 
+  // that user made a mistake, and the column labels were actually in the
+  // first uncommented line, so ask the user if this was intentional.  If
+  // it wasn't, generate default data and quit so user can try again.
+  if( doCommentedLabels_ != 0 && n_ascii_columns() >= nvars) {
+    string sWarning = "";
+    sWarning.append( "WARNING: All columns appear to be ASCII, as if\n");
+    sWarning.append( "the line of column labels was left uncommented.\n");
+    sWarning.append( "Do you wish to read it as is?");
+    if( make_confirmation_window( sWarning.c_str(), 3, 3) <= 0) {
+      create_default_data( 4);
+      return 0;
+    }
+  }
+  
   // Loop: Examine the vector of Column_Info objects to alphabetize ASCII 
   // values and renumber the data.
   int nReordered = 0;
@@ -1014,6 +1047,16 @@ int Data_File_Manager::read_binary_file_with_headers()
   std::string line;
   line.assign( cBuf);
 
+  // There are two possibilities: Conventional Format, in which case there 
+  // is only one header line and all data is numerical, and ASCII Format, 
+  // in which case the first header line lists the number of columns,
+  // successive lines contain column labels, types, and lookup tables for
+  // ASCII values, and some data is associated with ASCII values
+  // if( strstr( line.c_str(), "ASCII_FORMAT_VP")) {
+  // }
+  // else {
+  // }
+  
   // Save existing delimiter character, then examine the line.  If it 
   // contains tabs, temporarily set the deliminer character to a tab.
   // Otherwise set it to whitespace.
@@ -1900,6 +1943,18 @@ string Data_File_Manager::input_filespec()
 void Data_File_Manager::input_filespec( string inFileSpecIn)
 {
   inFileSpec = inFileSpecIn;
+}
+
+//***************************************************************************
+// Data_File_Manager::n_ascii_columns() -- Get number of columns that 
+// contain ASCII values
+int Data_File_Manager::n_ascii_columns()
+{
+  int result = 0;
+  for( int i=0; i<column_info.size(); i++) {
+    if( column_info[i].hasASCII >0) result++;
+  }
+  return result;
 }
 
 //***************************************************************************
