@@ -19,7 +19,7 @@
 // Purpose: Source code for <data_file_manager.h>
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  17-JUL-2008
+// Modified: P. R. Gazis  24-JUL-2008
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -665,6 +665,12 @@ int Data_File_Manager::extract_column_types( string sLine)
     double inpValue = 0.0;
     if( inpStream >> inpValue) hasASCII = 0;
     else hasASCII = 1;
+    
+    // Treat the string 'NaN' as numerical.  Yes, it might be better to 
+    // convert sToken to uppercase, but I'm lazy
+    if( sToken.compare( "NAN") == 0 || 
+        sToken.compare( "NaN") == 0 ||
+        sToken.compare( "nan") == 0) hasASCII = 0;
 
     // Load information into the vector of Column_Info objects
     column_info[ j].hasASCII = hasASCII;
