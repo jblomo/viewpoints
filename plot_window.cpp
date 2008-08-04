@@ -37,6 +37,7 @@
 #include "control_panel_window.h"
 #include "sprite_textures.h"
 #include "brush.h"
+#include "column_info.h"
 
 // experimental
 #define ALPHA_TEXTURE
@@ -791,6 +792,32 @@ void Plot_Window::screen_to_world(
          << " xworld: " << xworld << " yworld: " << yworld << endl);
 }
 
+
+void Plot_Window::interval_to_strings (const int column, const float x1, const float x2, char *buf1, char *buf2) {
+  if( Data_File_Manager::column_info[column].hasASCII == 0 ) {
+    // numerical data on this axis
+    sprintf( buf1, "%+.3g", x1);
+    sprintf( buf2, "%+.3g", x2); 
+  } else {
+    // categorical (string) data on this axis
+    int ixmin = max(-1,(int)(floorf(x1-0.01/(float)npoints)));
+    int ixmax = max(-1,(int)(floorf(x2)));
+    // if the interval spans at least one integral value....
+    if (ixmax > ixmin) {
+      // look up and build string corresponding to each edge
+      const char *chrp1 = Data_File_Manager::column_info[column].ascii_value(ixmin+1).c_str(); 
+      const char *chrp2 = Data_File_Manager::column_info[column].ascii_value(ixmax).c_str(); 
+      sprintf( buf1, "%11s", chrp1);
+      sprintf( buf2, "%-11s", chrp2);
+    } else {
+      sprintf( buf1, "%s", "");
+      sprintf( buf2, "%s", "");
+    }
+  }
+}
+
+
+
 //***************************************************************************
 // Plot_Window::draw_axes() -- If requested, draw and label the axes
 void Plot_Window::draw_axes()
@@ -848,9 +875,8 @@ void Plot_Window::draw_axes()
         gl_draw( (const char *)(ylabel.c_str()), -(1+b*a), 1+b*a);
       }
       
-      // Define a buffer used to lable tic marks and set the offset factor for 
-      // tic mark length. b<1 -> inwards, b>1 -> outwards, b==1 -> no tick.
-      char buf[ 1024];
+      // the offset factor for tic mark length:
+      // b<1 -> inwards, b>1 -> outwards, b==1 -> no tick.
       float b = 1.5;
 
       // If requested, draw tic marks and numbers to show scale  
@@ -894,27 +920,18 @@ void Plot_Window::draw_axes()
         //  b==1 -> draw it on the axis.
         b = 2;
 
-        // draw lower X-axis tic mark's numeric value
-        snprintf( buf, sizeof(buf), "%+.3g", wmin[0]); 
-        gl_draw( 
-          (const char *)buf, 
-          -1.0-gl_width((const char *)buf)/(w()), -(1+b*a));
-
-        // draw upper X-axis tic mark's numeric value
-        snprintf(buf, sizeof(buf), "%+.3g", wmax[0]); 
-        gl_draw(
-          (const char *)buf, 
-          +1.0-gl_width((const char *)buf)/(w()), -(1+b*a));
+        // build and draw strings corresponding to left and right bounds of X-axis
+        char left[1024], right[1024];
+        interval_to_strings(cp->varindex1->value(), wmin[0], wmax[0], left, right);
+        gl_draw( left, -1.0-gl_width(left)/(w()), -(1+b*a));
+        gl_draw( right, +1.0-gl_width(right)/(w()), -(1+b*a));
 
         b = 2.4;
 
-        // draw lower Y-axis tic mark's numeric value
-        snprintf( buf, sizeof(buf), "%+.3g", wmin[1]);
-        gl_draw( (const char *)buf, -(1+b*a), -1.0f+a/4);
-
-        // draw upper Y-axis tic mark's numeric value
-        snprintf( buf, sizeof(buf), "%+.3g", wmax[1]);
-        gl_draw( (const char *)buf, -(1+b*a), +1.0f+a/4);
+        // build and draw strings corresponding to "left" and "right" bounds of Y-axis
+        interval_to_strings(cp->varindex2->value(), wmin[1], wmax[1], left, right);
+        gl_draw( left, -(1+b*a), -1.0f+a/4);
+        gl_draw( right, -(1+b*a), +1.0f+a/4);
       }
 
     }
@@ -964,42 +981,34 @@ void Plot_Window::print_selection_stats ()
   glBlendFunc( GL_ONE, GL_ZERO);
   glColor4f( 0.9,0.9,0.9,1.0);
 
-  // Define character buffer to allocate storage for printing
-  char buf[ 1024];
+  // Character buffers to contain strings for (fltk OpenGL) printing.
+  char buf1[ 1024], buf2[1024];
 
   // Print selection statistics, centered, near the top of the window
   // LR-centered, upper 95th percentile of the window
-  snprintf( buf, sizeof(buf), 
-    "%8d (%5.2f%%) selected", nselected, 100.0*nselected/(float)npoints);
+  snprintf( buf1, sizeof(buf1), "%8d (%5.2f%%) selected", nselected, 100.0*nselected/(float)npoints);
   gl_font( FL_HELVETICA_BOLD, 11);
-  glWindowPos2i( (w()-(int)gl_width(buf))/2, 95*h()/100);
-  gl_draw( (const char *) buf);
+  glWindowPos2i( (w()-(int)gl_width(buf1))/2, 95*h()/100);
+  gl_draw( (const char *) buf1);
 
-  // Print x-ranges at left and right sides of selection box
   gl_font( FL_HELVETICA, 10);
-  snprintf( buf, sizeof(buf), "%# 7.4g", xdown);
-  gl_draw( (const char *) buf, 
-    xdown-2*gl_width(buf)/(w()*xscale), 
-    ((ydown+ytracked)/2)-(0.5f*gl_height())/(h()*yscale));
-  if (xtracked != xdown) {
-    snprintf( buf, sizeof(buf), "%#-7.4g", xtracked);
-    gl_draw( (const char *) buf, 
-      xtracked+4.0f/(w()*xscale), 
-      ((ydown+ytracked)/2)-(0.5f*gl_height())/(h()*yscale) );
-  }
-  
-  // Print y-ranges at top and bottom sides of selection box
-  snprintf( buf, sizeof(buf), "%# 7.4g", ydown);
-  gl_draw( (const char *) buf, 
-    (xdown+xtracked)/2-gl_width(buf)/(w()*xscale), 
-    ydown+(0.75f*gl_height())/(h()*yscale) );
-  if (ytracked != ydown) {
-    snprintf( buf, sizeof(buf), "%# 7.4g", ytracked);
-    gl_draw( (const char *) buf, 
-      (xdown+xtracked)/2-gl_width(buf)/(w()*xscale), 
-      ytracked-(1.5f*gl_height())/(h()*yscale) );
-  }
 
+  // Print ranges at right sides of selection box
+
+  // first the left and right boundary values
+  float xmin = min(xdown,xtracked);
+  float xmax = max(xdown,xtracked);
+  interval_to_strings(cp->varindex1->value(), xmin, xmax, buf1, buf2);
+  gl_draw( (const char *) buf1, xmin-2.25*gl_width(buf1)/(w()*xscale), ((ydown+ytracked)/2)-(0.5f*gl_height())/(h()*yscale));
+  gl_draw( (const char *) buf2, xmax+4.0f/(w()*xscale), ((ydown+ytracked)/2)-(0.5f*gl_height())/(h()*yscale) );
+  
+  // then the top and bottom
+  float ymin = min(ydown,ytracked);
+  float ymax = max(ydown,ytracked);
+  interval_to_strings(cp->varindex2->value(), ymin, ymax, buf1, buf2);
+  gl_draw( (const char *) buf1, (xmin+xmax)/2-gl_width(buf1)/(w()*xscale), ymin-(2.0f*gl_height())/(h()*yscale) );
+  gl_draw( (const char *) buf2, (xmin+xmax)/2-gl_width(buf2)/(w()*xscale), ymax+(0.5f*gl_height())/(h()*yscale) );
+  
   glDisable( GL_COLOR_LOGIC_OP);
 }
 

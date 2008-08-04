@@ -712,7 +712,7 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   b->align(FL_ALIGN_RIGHT); 
   b->type(FL_RADIO_BUTTON); 
   b->selection_color(FL_BLUE);
-  b->tooltip("plot (x+y) vs. (x-y)");
+  b->tooltip("plot (y+x) vs. (y-x)");
   
   // Button (6,1): cummulative conditional probability or rank of y given x
   cond_prop = b = new Fl_Button(xpos, ypos+=25, 20, 20, "rank(y|x)");

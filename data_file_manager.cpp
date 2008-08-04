@@ -590,7 +590,7 @@ int Data_File_Manager::extract_column_labels( string sLine, int doDefault)
 // Data_File_Manager::extract_column_types( sLine) -- Examine a line of data
 // to determine which columns contain ASCII values.  NOTE: This should be 
 // consolidated with some other method to avoid duplicate code.
-int Data_File_Manager::extract_column_types( string sLine)
+void Data_File_Manager::extract_column_types( string sLine)
 {
   // If the delimiter character is not a tab, replace tabs with spaces
   if( delimiter_char_ != '\t')
@@ -600,7 +600,7 @@ int Data_File_Manager::extract_column_types( string sLine)
   std::stringstream ss( sLine); 
   unsigned isBadData = 0;
   string sToken;
-  double xValue;
+  // double xValue;
   for( int j=0; j<nvars; j++) {
     
     // Get the next word.  NOTE: whitespace-delimited and character-

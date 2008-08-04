@@ -184,10 +184,6 @@ class Data_File_Manager
     // Value assigned to unreadable/nonnumeric/empty/missing values:
     float bad_value_proxy_;
 
-    // Member variable to hold column information must be declared static
-    // for use with static member functions
-    static std::vector<Column_Info> column_info;
-    
     // State variables
     int nSkipHeaderLines;
     int isAsciiInput, isAsciiOutput, isAsciiData;
@@ -198,6 +194,10 @@ class Data_File_Manager
     int isSavedFile_;
 
   public:
+    // Member variable to hold column information must be declared static
+    // for use with static member functions
+    static std::vector<Column_Info> column_info;
+    
     Data_File_Manager();
     void initialize();
 
@@ -206,7 +206,7 @@ class Data_File_Manager
     int load_data_file( string inFileSpec);
     int load_data_file();
     int extract_column_labels( string sLine, int doDefault);
-    int extract_column_types( string sLine);
+    void extract_column_types( string sLine);
     int read_ascii_file_with_headers();
     int read_binary_file_with_headers();
     void create_default_data( int nvars_in);

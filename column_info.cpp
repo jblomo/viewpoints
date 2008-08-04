@@ -103,7 +103,9 @@ Column_Info& Column_Info::operator=( const Column_Info &inputInfo)
 // the order in which a token appeared.
 int Column_Info::add_value( string sToken)
 {
-  // Determine if this value has occurred before
+  // MCL XXX Can't we do this whole thing with operator[] ? 
+
+ // Determine if this value has occurred before
   map<string,int>::iterator iter = ascii_values_.find( sToken);
 
   // Insert it if it's new.  Does insert know how to order strings?
