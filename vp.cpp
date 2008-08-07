@@ -74,7 +74,7 @@
 //   reset_selection_arrays() -- Reset selection arrays
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  10-JUL-2008
+// Modified: P. R. Gazis  07-AUG-2008
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -167,6 +167,7 @@ Fl_Help_View *help_view_widget;
 
 // Define pointers to widgets for Tools|Options window
 Fl_Check_Button* expertButton;
+Fl_Check_Button* trivialColumnsButton;
 Fl_Input* bad_value_proxy_input;
 
 // Function definitions for the main method
@@ -260,6 +261,8 @@ void usage()
        << "default=2." << endl;
   cerr << "  -s, --skip_lines=NLINES     "
        << "Skip NLINES at start of input file, default=0." << endl;
+  cerr << "  -t, --trivial_columns=(T,F) "
+       << "Remove colums with a single value, default=TRUE." << endl;
   cerr << "  -v, --nvars=NVARS           "
        << "Input has NVARS values per point (only for row" << endl
        << "                              "
@@ -985,9 +988,20 @@ void make_options_window( Fl_Widget *o)
     o->value( expert_mode == true);
     o->tooltip( "Suppress confirmation windows");
   }
+  
+  // Remove trivial columns
+  {
+    Fl_Check_Button* o = trivialColumnsButton = 
+      new Fl_Check_Button( 10, 35, 250, 20, " Remove Trivial Columns");
+    o->down_box( FL_DOWN_BOX);
+    o->value( trivial_columns_mode == true);
+    o->tooltip( "Remove any columns that only contain one value");
+  }
+  
+  // Bad value proxy field
   {
     Fl_Input* o = bad_value_proxy_input =
-      new Fl_Input( 10, 35, 70, 20, " Bad Value Proxy");
+      new Fl_Input( 10, 60, 70, 20, " Bad Value Proxy");
     o->align( FL_ALIGN_RIGHT);
     stringstream ss_float;
     string s_float;
@@ -1025,6 +1039,11 @@ void cb_options_window( Fl_Widget *o, void* user_data)
     int i_expert_mode = expertButton->value();
     prefs_.set( "expert_mode", i_expert_mode);
     expert_mode = ( i_expert_mode != 0);
+
+    int i_trivial_columns_mode = trivialColumnsButton->value();
+    prefs_.set( "trivial_columns_mode", i_trivial_columns_mode);
+    trivial_columns_mode = ( i_trivial_columns_mode != 0);
+
     float bad_value_proxy = strtof( bad_value_proxy_input->value(), NULL);
     dfm.bad_value_proxy( bad_value_proxy);
   }
@@ -1842,6 +1861,7 @@ int main( int argc, char **argv)
     { "npoints", required_argument, 0, 'n'},
     { "nvars", required_argument, 0, 'v'},
     { "skip_lines", required_argument, 0, 's'},
+    { "trivial_columns", required_argument, 0, 't'},
     { "ordering", required_argument, 0, 'o'},
     { "rows", required_argument, 0, 'r'},
     { "cols", required_argument, 0, 'c'},
@@ -1866,6 +1886,9 @@ int main( int argc, char **argv)
   int i_expert_mode;
   prefs_.get( "expert_mode", i_expert_mode, 0);
   expert_mode = ( i_expert_mode != 0);
+  int i_trivial_columns_mode;
+  prefs_.get( "trivial_columns_mode", i_trivial_columns_mode, 0);
+  trivial_columns_mode = ( i_trivial_columns_mode != 0);
 
   // Initialize the data file manager, just in case, even though this should
   // already have been done by the constructor, then set global pointer for 
@@ -1884,7 +1907,7 @@ int main( int argc, char **argv)
   while( 
     ( c = getopt_long_only( 
         argc, argv, 
-        "f:n:v:s:o:r:c:m:i:C:M:d:bBhLxOVp", long_options, NULL)) != -1) {
+        "f:n:v:s:t:o:r:c:m:i:C:M:d:bBhLxOVp", long_options, NULL)) != -1) {
   
     // Examine command-line options and extract any optional arguments
     switch( c) {
@@ -1924,6 +1947,18 @@ int main( int argc, char **argv)
       case 's':
         dfm.n_skip_lines( atoi( optarg));
         if( dfm.n_skip_lines() < 0)  {
+          usage();
+          exit( -1);
+        }
+        break;
+      
+      // trivial_column_mode: Set flag to remove trivial columns
+      case 't':
+        if( !strncmp( optarg, "true", 1)) trivial_columns_mode = true;
+        else if( !strncmp( optarg, "TRUE", 1)) trivial_columns_mode = true;
+        else if( !strncmp( optarg, "false", 1)) trivial_columns_mode = false;
+        else if( !strncmp( optarg, "FALSE", 1)) trivial_columns_mode = false;
+        else {
           usage();
           exit( -1);
         }
@@ -2054,6 +2089,14 @@ int main( int argc, char **argv)
         break;
     }
   }
+
+  // Set persistent variables
+  if( expert_mode) i_expert_mode = 1;
+  else i_expert_mode = 0;
+  prefs_.set( "expert_mode", i_expert_mode);
+  if( trivial_columns_mode) i_trivial_columns_mode = 1;
+  else i_trivial_columns_mode = 0;
+  prefs_.set( "trivial_columns_mode", i_trivial_columns_mode);
 
   // If no data file was specified, but there was at least one argument 
   // in the command line, assume the last argument is the filespec.

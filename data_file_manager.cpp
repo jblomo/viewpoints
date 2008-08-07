@@ -277,7 +277,7 @@ int Data_File_Manager::load_data_file()
   // Remove trivial columns
   // XXX this should be a command line and Tool menu option with default 
   // OFF, since it can take both time and memory
-  remove_trivial_columns();
+  if( trivial_columns_mode) remove_trivial_columns();
 
   // If only one or fewer records are available, generate default data to
   // prevent a crash, then quit before something terrible happens!
@@ -830,8 +830,14 @@ int Data_File_Manager::read_ascii_file_with_headers()
       // and character-delimited files must be handled differently.
       // PROBLEM: This isn't handling missing values correctly
       if( delimiter_char_ == ' ') {
-        if( column_info[j].hasASCII == 0) ss >> xValue;
-        else ss >> sToken;
+        // if( column_info[j].hasASCII == 0) ss >> xValue;
+        // else ss >> sToken;
+        ss >> sToken;
+        if( column_info[j].hasASCII == 0) {
+          stringstream bufstream;
+          bufstream << sToken;
+          bufstream >> xValue;
+        }
       }
       else {
         std::string buf;

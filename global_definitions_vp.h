@@ -20,7 +20,7 @@
 //   3) Consider putting these variables into a NAMESPACE?
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  24-JUL-2008
+// Modified: P. R. Gazis  07-AUG-2008
 //***************************************************************************
 
 #ifndef VP_GLOBAL_DEFINITIONS_VP_H
@@ -77,6 +77,7 @@ GLOBAL int nvars INIT(MAXVARS);    // number of columns in data file
 GLOBAL bool use_VBOs INIT(true);
 
 GLOBAL bool expert_mode INIT(false);
+GLOBAL bool trivial_columns_mode INIT(true);
 
 GLOBAL bool be_verbose INIT(false);
 
@@ -178,7 +179,7 @@ GLOBAL Brush *brushes[NBRUSHES];  // MCL XXX this should be a static c++ vector 
 
 //# Make absolutely certain SVN_VERSION is defined
 #ifdef __WIN32__
-  #define SVN_VERSION "Windows revision 230"
+  #define SVN_VERSION "Windows revision 232"
 #endif
 #ifndef SVN_VERSION
   #define SVN_VERSION "unknown_version"
