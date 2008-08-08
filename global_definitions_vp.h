@@ -20,7 +20,7 @@
 //   3) Consider putting these variables into a NAMESPACE?
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  07-AUG-2008
+// Modified: P. R. Gazis  08-AUG-2008
 //***************************************************************************
 
 #ifndef VP_GLOBAL_DEFINITIONS_VP_H
@@ -76,9 +76,9 @@ GLOBAL int nvars INIT(MAXVARS);    // number of columns in data file
 // use openGL vertex buffer objects (VBOs).  
 GLOBAL bool use_VBOs INIT(true);
 
+// Define various operating mode flags
 GLOBAL bool expert_mode INIT(false);
 GLOBAL bool trivial_columns_mode INIT(true);
-
 GLOBAL bool be_verbose INIT(false);
 
 // Define blitz::Arrays to hold raw and ranked (sorted) data arrays.  Used 
@@ -110,8 +110,8 @@ GLOBAL blitz::Array<float,1> tmp_points;
 // Need to include class definitions for Column_Info so we can define a vector
 // of Column_Info objects to hold column labels and associated info.  This is
 // used extensively by the data_file_manager, comntrol_panel_window, and
-// plot_window classes.  NOTE: As of 10-JUL-2008, this has been moved to class 
-// Data_File_Manager
+// plot_window classes. 
+// NOTE: As of 10-JUL-2008, this code has been moved to class Data_File_Manager
 // Class Column_Info;
 // #include "column_info.h"
 // GLOBAL std::vector<Column_Info> column_info; 
@@ -179,7 +179,7 @@ GLOBAL Brush *brushes[NBRUSHES];  // MCL XXX this should be a static c++ vector 
 
 //# Make absolutely certain SVN_VERSION is defined
 #ifdef __WIN32__
-  #define SVN_VERSION "Windows revision 232"
+  #define SVN_VERSION "Windows revision 234"
 #endif
 #ifndef SVN_VERSION
   #define SVN_VERSION "unknown_version"
@@ -191,7 +191,7 @@ GLOBAL int current_serialization_version INIT(225);
 GLOBAL int last_supported_serialization_version INIT(-100);
 GLOBAL int serialization_file_version INIT(-1);
 
-// Define pointers to hold confirmation window
+// Define pointer to hold confirmation window
 GLOBAL Fl_Window *confirmation_window;
 
 // Persistant state for gsl random number generator (Mersenne Twister)

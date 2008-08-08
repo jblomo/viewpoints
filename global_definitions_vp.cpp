@@ -73,7 +73,12 @@ int make_confirmation_window( const char* text, int nButtons, int nLines)
   Fl_Button* cancel_button = new Fl_Button( 250, nHeight-20, 60, 25, "&Cancel");
 
   // Revise format if this is not the three-button mode
-  if( nButtons == 1) {
+  if( nButtons == 2) {
+    yes_button->resize( 90+40, nHeight-20, 60, 25); 
+    no_button->resize( 170+40, nHeight-20, 60, 25);
+    cancel_button->hide();
+  }
+  else if( nButtons == 1) {
     yes_button->hide();
     no_button->label( "&OK");
     cancel_button->hide();

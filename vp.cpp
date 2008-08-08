@@ -13,7 +13,7 @@
 //   Data_File_Manager -- Manage data files
 //
 // Required packages
-//    FLTK 1.1.6 -- Fast Light Toolkit graphics package
+//    FLTK 1.1.6 -- Fast Light Toolkit graphics packageF
 //    FLEWS 0.3 -- Extensions to FLTK 
 //    OGLEXP 1.2.2 -- Access to OpenGL extension under Windows
 //    GSL 1.6 -- Gnu Scientific Library package for Windows
@@ -58,6 +58,7 @@
 //   textsize_help_view_widget( *o, *u) -- Change help text size
 //   close_help_window( *o, *u -- Help View window callback
 //   make_main_menu_bar() -- Create main menu bar
+//   make_file_name_window( *o) -- Make View|File Name window
 //   make_options_window( *o) -- Make Tools|Options window
 //   cb_options_window( *o, *u) -- Process Tools|Options window
 //   step_help_view_widget( *o, *u) -- Step through the Help|Help window.
@@ -74,7 +75,7 @@
 //   reset_selection_arrays() -- Reset selection arrays
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  07-AUG-2008
+// Modified: P. R. Gazis  08-AUG-2008
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -147,7 +148,7 @@ static const int cp_widget_x = 3, cp_widget_y = tabs_widget_y+20;
 static const int brushes_x = 3, brushes_y = tabs_widget_y+tabs_widget_h+10;
 static const int global_widgets_x = 10;
 
-// Set up preferences
+// Instantiate a preferences object to manage persistent preferences
 static Fl_Preferences
   prefs_( Fl_Preferences::USER, "viewpoints.arc.nasa.gov", "viewpoints");
 
@@ -165,7 +166,7 @@ Fl_Window *about_window;
 Fl_Window *help_view_window;
 Fl_Help_View *help_view_widget;
 
-// Define pointers to widgets for Tools|Options window
+// Define pointers to widgets for the Tools|Options window
 Fl_Check_Button* expertButton;
 Fl_Check_Button* trivialColumnsButton;
 Fl_Input* bad_value_proxy_input;
@@ -182,6 +183,7 @@ void create_broadcast_group();
 void manage_plot_window_array( Fl_Widget *o, void* user_data);
 void cb_manage_plot_window_array( void* o);
 void make_main_menu_bar();
+void make_file_name_window( Fl_Widget *o);
 void make_options_window( Fl_Widget *o);
 void cb_options_window( Fl_Widget *o, void* user_data);
 void make_help_view_window( Fl_Widget *o);
@@ -318,7 +320,8 @@ void make_help_about_window( Fl_Widget *o)
 //***************************************************************************
 // create_main_control_panel( main_x, main_y, main_w, main_h, cWindowLabel) 
 // -- Create the main control panel window.
-void create_main_control_panel( int main_x, int main_y, int main_w, int main_h, char* cWindowLabel)
+void create_main_control_panel( 
+  int main_x, int main_y, int main_w, int main_h, char* cWindowLabel)
 {
   // Create main control panel window
   Fl_Group::current(0);
@@ -407,8 +410,8 @@ void create_brushes( int w_x, int w_y, int w_w, int w_h)
   brushes_tab->value(brushes[1]);
   brushes_tab_cb();
 
-//  brushes_window->end();
-//  brushes_window->show();
+  // brushes_window->end();
+  // brushes_window->show();
 }
 
 //***************************************************************************
@@ -463,6 +466,15 @@ void create_broadcast_group ()
 // manage, and reload the plot window array.  It saves any existing axis 
 // information, deletes old tabs, creates new tabs, restores existing axis 
 // information, and loads new data into new plot windows.  
+//   WARNING: This method is the 800-lb gorilla, on which much of the GUI
+// depends!  Like all gorillas, it is delicate, sensitive, and must be 
+// treated with a profound mixture of caution and respect.  In particular, 
+// slight changes in the FLTK calls can lead to elusive segmentation faults!  
+// Test any changes carefully!
+//   WARNING: There is little protection against missing data, and gorillas
+// can misbehave if they can't find their bananas!
+//   NOTE: Little attempt has been made to optimize this method for speed.  
+//
 //   There are four possible behaviors, which all must be recognized, 
 // identified, and treated differently:
 // 1) INITIALIZE -- NULL argument.  Set nplots_old = 0.  
@@ -475,15 +487,11 @@ void create_broadcast_group ()
 //    and this operation is no longer supported!
 // Redrawing of plot windows is controlled by the value of NPLOTS_OLD.  This
 // is initialized to NPLOTS.  For an INITIALIZE or NEW_DATA operation, it is 
-// reset to zero, and all existing plots are hidden so they can be redrawn 
-// with new data, as noted above.  
-//   In some cases, it is desirable to restore window parameters such as
-// axis labels or normalization schemes.  This is controlled by the
-// DO_RESTORE_SETTINGS flag.
-//   NOTE: Little attempt has been made to optimize this method for speed.  
-//   WARNING: This method is delicate, and slight changes in the FLTK calls 
-// could lead to elusive segmentation faults!  Test any changes carefully!
-//   WARNING: There is little protection against missing data!
+// then reset to zero, so that all existing plots will be hidden so they can 
+// be redrawn with new data as noted above.  
+//   In some cases, it is desirable to restore window parameters such as 
+// axis labels or normalization schemes.  Whether this happens is controlled
+// by the 'do_restore_settings' flag.
 void manage_plot_window_array( Fl_Widget *o, void* user_data)
 {
   // Define an enumeration to hold a list of operation types
@@ -500,9 +508,11 @@ void manage_plot_window_array( Fl_Widget *o, void* user_data)
   Fl_Button* pButton;
   
   // Define and set flags and state variables to control the number of plots 
-  // to be preserved and whether or not to restore their settings
+  // to be preserved and whether or not to restore their control panel
+  // settings and positions
   int nplots_old = nplots;
   int do_restore_settings = 0;
+  int do_restore_positions = 0;
   
   // Determine how the method was invoked, and set flags and parameters
   // accordingly.  If method was called with a NULL arguments, assume this 
@@ -538,16 +548,20 @@ void manage_plot_window_array( Fl_Widget *o, void* user_data)
     else if( strncmp( userData, "REFRESH_WINDOWS", 15) == 0) {
       thisOperation = REFRESH_WINDOWS;
       do_restore_settings = 1;
+      do_restore_positions = 1;
     }
     else if( strncmp( widgetTitle, "Open", 4) == 0 ||
         strncmp( userData, "Open", 4) == 0 ||
         strncmp( widgetTitle, "Load", 4) == 0) {
       thisOperation = NEW_DATA;
+      do_restore_settings = 1;
+      do_restore_positions = 1;
     }
     else if( strncmp( widgetTitle, "Append", 6) == 0 ||
         strncmp( widgetTitle, "Merge", 5) == 0) {
       thisOperation = NEW_DATA;
       do_restore_settings = 1;
+      do_restore_positions = 1;
     }
     else if( strncmp( widgetTitle, "Add Row ", 8) == 0) {
       thisOperation = REFRESH_WINDOWS;
@@ -568,12 +582,14 @@ void manage_plot_window_array( Fl_Widget *o, void* user_data)
     else if( strncmp( widgetTitle, "Reload F", 8) == 0) {
       thisOperation = REFRESH_WINDOWS;
       do_restore_settings = 1;
+      do_restore_positions = 1;
       // Reset brushes because load resets brush sizes
       for( int j=0; j<NBRUSHES; j++) brushes[j]->reset();
     }
     else if( strncmp( widgetTitle, "Restore", 7) == 0) {
       thisOperation = REFRESH_WINDOWS;
       do_restore_settings = 1;
+      do_restore_positions = 1;
     }
   
     // When reading new data, invoke Fl_Gl_Window.hide() (instead of the 
@@ -626,8 +642,9 @@ void manage_plot_window_array( Fl_Widget *o, void* user_data)
   int nplots_save = nplots;
   if( thisOperation == INITIALIZE) nplots_save = 0;
 
-  // Save positions of the existing plot window.  NOTE: This must be an 
-  // array rather than apointer array to invoke the default constructor
+  // Save an array of Plot_Window objecst with the positions of the existing 
+  // plot windows.  NOTE: This must be an array rather than a pointer array 
+  // to invoke the default constructor.
   Plot_Window pws_save[ MAXPLOTS+1];
   cout << "manage_plot_window_array: saving information for " << nplots_save 
        << " windows" << endl;
@@ -636,14 +653,15 @@ void manage_plot_window_array( Fl_Widget *o, void* user_data)
     pws_save[i].copy_state( pws[i]);
   }
   
-  // Save old axis, normalization, and transform style information
+  // Save an array of Control_Panel_Window objects with axis, normalization, 
+  // and transform style information of the existing control panels
   Control_Panel_Window cps_save[ MAXPLOTS+1];
   for( int i=0; i<nplots_save; i++) {
     cps[i]->make_state();
     cps_save[i].copy_state( cps[i]);
   }
   
-  // Save old brush information
+  // Save an array of Brush objects with information of the existing brushes
   Brush brushes_save[ NBRUSHES];
   for( int i=0; i<NBRUSHES; i++) {
     brushes[i]->make_state();
@@ -751,11 +769,25 @@ void manage_plot_window_array( Fl_Widget *o, void* user_data)
     }
     else Plot_Window::upper_triangle_incr( ivar, jvar, nvars);
 
-    // If there has been an explicit request to restore plot window settings 
-    // or the number of plots has changed, restore those settings.  Then
-    // generate any new settings that may be required.
+    // If we opened a new file but restored window settings, make sure the
+    // axis labels and indices are within limits
+    // if( do_restore_settings != 0 && NEW_DATA) {
+    //   if( cps_save[i].ivar_save >= nvars) cps_save[i].ivar_save = nvars-1;
+    //   if( cps_save[i].jvar_save >= nvars) cps_save[i].jvar_save = nvars-1;
+    //   if( cps_save[i].kvar_save > nvars) cps_save[i].kvar_save = nvars;
+    // }
+
+    // If there has been an explicit request to restore the saved control 
+    // panel settings or the number of plots has changed, restore those 
+    // settings, then generate any new settings that may be required.
     if( do_restore_settings != 0 ||
         nplots != nplots_old && i<nplots_old) {
+
+      // Make sure axis indices are in range    
+      if( cps_save[i].ivar_save >= nvars) cps_save[i].ivar_save = nvars-1;
+      if( cps_save[i].jvar_save >= nvars) cps_save[i].jvar_save = nvars-1;
+      if( cps_save[i].kvar_save > nvars) cps_save[i].kvar_save = nvars;
+
       cps[i]->copy_state( &cps_save[i]);
       cps[i]->load_state();
     } 
@@ -765,9 +797,9 @@ void manage_plot_window_array( Fl_Widget *o, void* user_data)
       cps[i]->varindex3->value(nvars);  
     }
 
-    // KLUDGE: If there has been an explicit request to restore plot window 
-    // settings or the number of plots has changed, restore the brush 
-    // settings, but only do this once.  
+    // KLUDGE: If there has been an explicit request to restore the saved
+    // control panel settings or the number of plots has changed, restore the 
+    // brush settings, but only do this once, during the first iteration.
     // XXX PRG: This seems unreliable.  Is there a better place to put this?
     if( i==0 && (do_restore_settings != 0 || nplots != nplots_old)) {
       for( int j=0; j<NBRUSHES; j++) {
@@ -779,8 +811,8 @@ void manage_plot_window_array( Fl_Widget *o, void* user_data)
     // If this is an INITIALIZE, REFRESH_WINDOWS, or NEW_DATA operation, 
     // test for missing data, extract data, reset panels, and make them 
     // resizable.  Otherwise it must be a RELOAD operation (which is no
-    // longer supported!), and we must invoke the relevant Plot_Window member 
-    // functions to initialize and draw panels.
+    // longer supported!), and we must invoke the relevant Plot_Window 
+    // member functions to initialize and draw panels.
     if( thisOperation == INITIALIZE || 
         thisOperation == REFRESH_WINDOWS || 
         thisOperation == NEW_DATA) {
@@ -797,13 +829,14 @@ void manage_plot_window_array( Fl_Widget *o, void* user_data)
     }
 
     // KLUDGE: If this is a "append", "merge", "reload file" or "restore 
-    // panels" operation, restore old window positions.  This should be
-    // controlled by a flag rather than examining WIDGETTITLE.
-    if( strncmp( userData, "REFRESH_WINDOWS", 15) == 0 ||
-        strncmp( widgetTitle, "Append", 6) == 0 ||
-        strncmp( widgetTitle, "Merge", 5) == 0 ||
-        strncmp( widgetTitle, "Reload", 6) == 0 ||
-        strncmp( widgetTitle, "Restore", 7) == 0) {
+    // panels" operation, restore old plot window positions.  This should 
+    // be controlled by a flag rather than examining WIDGETTITLE.
+    // if( strncmp( userData, "REFRESH_WINDOWS", 15) == 0 ||
+    //     strncmp( widgetTitle, "Append", 6) == 0 ||
+    //     strncmp( widgetTitle, "Merge", 5) == 0 ||
+    //     strncmp( widgetTitle, "Reload", 6) == 0 ||
+    //     strncmp( widgetTitle, "Restore", 7) == 0) {
+    if( do_restore_positions != 0) {
       for( int i=0; i<nplots_save; i++) {
         // pws[ i]->position( pws_x_save[ i], pws_y_save[ i]);
         // pws[ i]->size( pws_w_save[ i], pws_h_save[ i]);
@@ -909,6 +942,9 @@ void make_main_menu_bar()
 
   // Add View menu items
   main_menu_bar->add( 
+    "View/File Name    ", 0, 
+    (Fl_Callback *) make_file_name_window, 0, FL_MENU_DIVIDER);
+  main_menu_bar->add( 
     "View/Add Row   ", 0, 
     (Fl_Callback *) manage_plot_window_array);
   main_menu_bar->add( 
@@ -959,6 +995,14 @@ void make_main_menu_bar()
   //     (Fl_Menu_Item*) &(main_menu_bar->menu()[i]);
   //   pMenuItem->labelsize(32);
   // }
+}
+
+//***************************************************************************
+// make_file_name_window( *o) -- Create the 'View|File Name' window.
+void make_file_name_window( Fl_Widget *o)
+{
+  string sConfirmText = dfm.input_filespec();
+  int iConfirmResult = make_confirmation_window( sConfirmText.c_str(), 1);
 }
 
 //***************************************************************************
@@ -1446,7 +1490,7 @@ int load_initial_state( string configFileSpec)
 
     // Note the use of &dummy_menu to make save_state( *o) work
     // make_confirmation_window( sWarning.c_str(), 1, 3);
-    if( make_confirmation_window( sWarning.c_str(), 3, 3) == 1) {
+    if( make_confirmation_window( sWarning.c_str(), 2, 3) == 1) {
       save_state( &dummy_menu);
     }
   }
@@ -1652,7 +1696,7 @@ int load_state( Fl_Widget* o)
     sWarning.append( "older version that is only partially supported.\n");
     sWarning.append( "Do you wish to resave a new version?");
 
-    if( make_confirmation_window( sWarning.c_str(), 3, 3) == 1) {
+    if( make_confirmation_window( sWarning.c_str(), 2, 3) == 1) {
       save_state( o);
     }
   }
@@ -1709,27 +1753,34 @@ int save_state( Fl_Widget* o)
     // Attempt to open an output stream to make sure the file can be opened 
     // for write.  If it can't, assume that cOutFileSpec was a directory and 
     // make it the working directory.  Otherwise close the output stream.
-    // NOTE: This will create an empty file.
-    ofstream os;
-    os.open( cOutFileSpec, ios::out|ios::trunc);
-    if( os.fail()) {
-      cerr << " -DIAGNOSTIC: This should trigger on error opening "
-           << cOutFileSpec << "for write" << endl;
-      file_chooser->directory( cOutFileSpec);
-      dfm.directory( (string) cOutFileSpec);
+    // NOTE: If the file exists, it will be opened for append, then closed.
+    // Otherwise this will create and close an empty file.
+    #ifdef __WIN32__
+      ofstream os;
+      // os.open( cOutFileSpec, ios::out|ios::trunc);
+      os.open( cOutFileSpec, ios::out|ios::app);
+      if( os.fail()) {
+        cerr << " -DIAGNOSTIC: This should trigger on error opening "
+             << cOutFileSpec << "for write" << endl;
+        file_chooser->directory( cOutFileSpec);
+        dfm.directory( (string) cOutFileSpec);
+        os.close();
+        continue;
+      }
       os.close();
-      continue;
-    }
-    os.close();
+      if( isNewFile != 0) break;
+    #endif // __WIN32__
+
+    // Presumably this test should be OS-independant
     if( isNewFile != 0) break;
 
     // If we got this far, the file must exist and be available to be
     // overwritten, so open a confirmation window and wait for the button 
     // handler to do something.
-    string sConfirmText = "File '";
+    string sConfirmText = "Configuration file already exists:\n'";
     sConfirmText.append( cOutFileSpec);
-    sConfirmText.append( "' already exists.\nOverwrite exisiting file?\n");
-    int iConfirmResult = make_confirmation_window( sConfirmText.c_str());
+    sConfirmText.append( "'\nOverwrite exisiting file?\n");
+    int iConfirmResult = make_confirmation_window( sConfirmText.c_str(), 3, 3);
 
     // If this was a 'CANCEL' request, return without doing anything.  If 
     // this was a 'YES' request, move on.  Otherwise, make sure we're in
@@ -1838,7 +1889,7 @@ int main( int argc, char **argv)
   // definitions
 
   about_string = "\n\
-    viewpoints 2.1.0 \n\
+    viewpoints 2.1.1 \n\
     " + string(SVN_VERSION) + "\n\
     \n\
     using fltk version (major + 0.01*minor): " + fltk_version_ss.str() + "\n\

@@ -234,6 +234,7 @@ class Control_Panel_Window : public Fl_Group
       NORMALIZATION_RANDOMIZE
     };
     static Fl_Menu_Item normalization_style_menu_items[];
+    static Fl_Menu_Item text_ordering_style_menu_items[];
 
     // Define an array of menu items for the axis selection menus.
     static Fl_Menu_Item varindex_menu_items[]; 

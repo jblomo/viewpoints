@@ -19,7 +19,7 @@
 // Purpose: Source code for <data_file_manager.h>
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  24-JUL-2008
+// Modified: P. R. Gazis  08-AUG-2008
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -837,6 +837,7 @@ int Data_File_Manager::read_ascii_file_with_headers()
           stringstream bufstream;
           bufstream << sToken;
           bufstream >> xValue;
+          if( sToken.compare( 0, 3, "NaN") == 0) xValue = bad_value_proxy_;
         }
       }
       else {
@@ -852,7 +853,10 @@ int Data_File_Manager::read_ascii_file_with_headers()
         else {
           stringstream bufstream;
           bufstream << buf;
-          if( column_info[j].hasASCII == 0) bufstream >> xValue;
+          if( column_info[j].hasASCII == 0) {
+            bufstream >> xValue;
+            if( buf.compare( 0, 3, "NaN") == 0) xValue = bad_value_proxy_;
+          }
           else bufstream >> sToken;
         }
       }
@@ -1305,10 +1309,12 @@ int Data_File_Manager::findOutputFile()
     // Attempt to open an output stream to make sure the file can be opened 
     // for write.  If it can't, assume that cOutFileSpec was a directory and 
     // make it the working directory.  Otherwise close the output stream.
-    // NOTE: This will create an empty file.
+    // NOTE: If the file exists, it will be opened for append, then closed.
+    // Otherwise this will create and close an empty file.
     #ifdef __WIN32__
       ofstream os;
-      os.open( cOutFileSpec, ios::out|ios::trunc);
+      // os.open( cOutFileSpec, ios::out|ios::trunc);
+      os.open( cOutFileSpec, ios::out|ios::app);
       if( os.fail()) {
         cerr << " -DIAGNOSTIC: This should trigger on error opening "
              << cOutFileSpec << "for write" << endl;
@@ -1321,6 +1327,9 @@ int Data_File_Manager::findOutputFile()
       if( isNewFile != 0) break;
     #endif // __WIN32__
 
+    // Presumably this test should be OS-independant
+    if( isNewFile != 0) break;
+
     // OLD CODE: If this is a new file, it can't be opened for read, and 
     // we're done
     // FILE* pFile = fopen( cOutFileSpec, "r");
@@ -1332,10 +1341,10 @@ int Data_File_Manager::findOutputFile()
     // If we got this far, the file must exist and be available to be
     // overwritten, so open a confirmation window and wait for the button 
     // handler to do something.
-    string sConfirmText = "File '";
+    string sConfirmText = "Data file already exists\n'";
     sConfirmText.append( cOutFileSpec);
-    sConfirmText.append( "' already exists.\nOverwrite exisiting file?\n");
-    int iConfirmResult = make_confirmation_window( sConfirmText.c_str());
+    sConfirmText.append( "'\nOverwrite existing file?\n");
+    int iConfirmResult = make_confirmation_window( sConfirmText.c_str(), 3, 3);
 
     // If this was a 'CANCEL' request, return without doing anything.  If 
     // this was a 'YES' request, move on.  Otherwise, make sure we're in

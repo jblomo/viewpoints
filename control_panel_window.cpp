@@ -62,6 +62,14 @@ Fl_Menu_Item Control_Panel_Window::normalization_style_menu_items[] = {
   { 0,              0, 0, (void *) 0,                          0, 0, 0, 0, 0}
 };
 
+// Define an array of menu items for the text ordering style menus.
+Fl_Menu_Item Control_Panel_Window::text_ordering_style_menu_items[] = {
+  { "lexicographic", 0, 0, (void *) NORMALIZATION_NONE,         0, 0, 0, 0, 0},
+  { "frequency",     0, 0, (void *) NORMALIZATION_MINMAX,       0, FL_MENU_INACTIVE, 0, 0, 0},
+  { "order in file", 0, 0, (void *) NORMALIZATION_ZEROMAX,      0, FL_MENU_INACTIVE, 0, 0, 0},
+  { 0,               0, 0, (void *) 0,                          0, 0, 0, 0, 0}
+};
+
 //***************************************************************************
 // Control_Panel_Window::Control_Panel_Window() --  Default constructor with
 // no arguments.  Used only for serialization.  Do nothing except call the 
