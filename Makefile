@@ -124,7 +124,7 @@ ifeq ($(platform),Darwin)
 else
 	cp -r $(TARGET) /tmp/vp
 endif
-	tar -cvzf vp.tar --directory /tmp vp
+	tar -cvzf vp.tar.z --directory /tmp vp
 
 # Automatically generated dependencies if they are there...
 -include makedepend
