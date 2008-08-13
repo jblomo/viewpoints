@@ -179,7 +179,7 @@ GLOBAL Brush *brushes[NBRUSHES];  // MCL XXX this should be a static c++ vector 
 
 //# Make absolutely certain SVN_VERSION is defined
 #ifdef __WIN32__
-  #define SVN_VERSION "Windows revision 234"
+  #define SVN_VERSION "Windows revision 235"
 #endif
 #ifndef SVN_VERSION
   #define SVN_VERSION "unknown_version"

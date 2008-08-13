@@ -22,7 +22,7 @@
 // Purpose: Source code for <Control_Panel_Window.h>
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  09-JUL-2008
+// Modified: P. R. Gazis  13-AUG-2008
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -76,11 +76,11 @@ Fl_Menu_Item Control_Panel_Window::text_ordering_style_menu_items[] = {
 // constructor for the parent class, Fl_Group, with dummy arguments.
 Control_Panel_Window::Control_Panel_Window() : Fl_Group( 10, 10, 10, 10),
   index( 0),
-  ivar_save( 0), jvar_save( 0), kvar_save( 0),
-  ix_style( 1), jy_style( 1), kz_style( 1),
-  ix_lock( 0), jy_lock( 0), kz_lock( 0),
-  background_save( 0.0), luminosity_save( 1.0), point_size_save( 0.0),
-  scale_points_save( 0), transform_style_save( 0)
+  ivar_save_( 0), jvar_save_( 0), kvar_save_( 0),
+  ix_style_( 1), jy_style_( 1), kz_style_( 1),
+  ix_lock_( 0), jy_lock_( 0), kz_lock_( 0),
+  background_save_( 0.0), luminosity_save_( 1.0), point_size_save_( 0.0),
+  scale_points_save_( 0), transform_style_save_( 0)
 {}
 
 //***************************************************************************
@@ -97,19 +97,19 @@ Control_Panel_Window::Control_Panel_Window(
 // this does not axctually save parameters to the configuration file.
 void Control_Panel_Window::make_state()
 {
-  ivar_save = varindex1->value();
-  jvar_save = varindex2->value();
-  kvar_save = varindex3->value();
-  ix_style = x_normalization_style->value();
-  jy_style = y_normalization_style->value();
-  kz_style = z_normalization_style->value();
-  ix_lock = lock_axis1_button->value();
-  jy_lock = lock_axis2_button->value();
-  kz_lock = lock_axis3_button->value();
-  point_size_save = size->value();
-  scale_points_save = scale_points->value();
-  transform_style_save = transform_style_value();
-  blend_style_save = blend_style_value();
+  ivar_save_ = varindex1->value();
+  jvar_save_ = varindex2->value();
+  kvar_save_ = varindex3->value();
+  ix_style_ = x_normalization_style->value();
+  jy_style_ = y_normalization_style->value();
+  kz_style_ = z_normalization_style->value();
+  ix_lock_ = lock_axis1_button->value();
+  jy_lock_ = lock_axis2_button->value();
+  kz_lock_ = lock_axis3_button->value();
+  point_size_save_ = size->value();
+  scale_points_save_ = scale_points->value();
+  transform_style_save_ = transform_style_value();
+  blend_style_save_ = blend_style_value();
 }
 
 //***************************************************************************
@@ -119,19 +119,19 @@ void Control_Panel_Window::copy_state( Control_Panel_Window* cp)
 {
   // Copy state parameters
   index = cp->index;
-  ivar_save = cp->ivar_save;
-  jvar_save = cp->jvar_save;
-  kvar_save = cp->kvar_save;
-  ix_style = cp->ix_style;
-  jy_style = cp->jy_style;
-  kz_style = cp->kz_style;
-  ix_lock = ix_lock;
-  jy_lock = jy_lock;
-  kz_lock = kz_lock;
-  point_size_save = cp->point_size_save;
-  scale_points_save = cp->scale_points_save;
-  transform_style_save = cp->transform_style_save;
-  blend_style_save = cp->blend_style_save;
+  ivar_save_ = cp->ivar_save_;
+  jvar_save_ = cp->jvar_save_;
+  kvar_save_ = cp->kvar_save_;
+  ix_style_ = cp->ix_style_;
+  jy_style_ = cp->jy_style_;
+  kz_style_ = cp->kz_style_;
+  ix_lock_ = ix_lock_;
+  jy_lock_ = jy_lock_;
+  kz_lock_ = kz_lock_;
+  point_size_save_ = cp->point_size_save_;
+  scale_points_save_ = cp->scale_points_save_;
+  transform_style_save_ = cp->transform_style_save_;
+  blend_style_save_ = cp->blend_style_save_;
 }
 
 //***************************************************************************
@@ -140,19 +140,30 @@ void Control_Panel_Window::copy_state( Control_Panel_Window* cp)
 // possibility that this might be a default object without any widgets.
 void Control_Panel_Window::load_state()
 {
-  varindex1->value( ivar_save);
-  varindex2->value( jvar_save);
-  varindex3->value( kvar_save);
-  x_normalization_style->value( ix_style);
-  y_normalization_style->value( jy_style);
-  z_normalization_style->value( kz_style);
-  lock_axis1_button->value( ix_lock);
-  lock_axis2_button->value( jy_lock);
-  lock_axis3_button->value( kz_lock);
-  size->value( point_size_save);
-  scale_points->value( scale_points_save);
-  transform_style_value( transform_style_save);
-  blend_style_value( blend_style_save);
+  varindex1->value( ivar_save_);
+  varindex2->value( jvar_save_);
+  varindex3->value( kvar_save_);
+  x_normalization_style->value( ix_style_);
+  y_normalization_style->value( jy_style_);
+  z_normalization_style->value( kz_style_);
+  lock_axis1_button->value( ix_lock_);
+  lock_axis2_button->value( jy_lock_);
+  lock_axis3_button->value( kz_lock_);
+  size->value( point_size_save_);
+  scale_points->value( scale_points_save_);
+  transform_style_value( transform_style_save_);
+  blend_style_value( blend_style_save_);
+}
+
+//***************************************************************************
+// Control_Panel_Window::restrict_axis_indices( ivar_max, jvar_max, kvar_max) 
+// restrict axes indices.
+void Control_Panel_Window::restrict_axis_indices( 
+  int ivar_max, int jvar_max, int kvar_max)
+{
+  if( ivar_save_ > ivar_max) ivar_save_ = ivar_max;
+  if( jvar_save_ > jvar_max) jvar_save_ = jvar_max;
+  if( kvar_save_ > kvar_max) kvar_save_ = kvar_max;
 }
 
 //***************************************************************************
@@ -314,8 +325,8 @@ void Control_Panel_Window::maybe_redraw()
 }
 
 //***************************************************************************
-// Plot_Window::extract_and_redraw() -- Extract data for these (new?) axes 
-// and redraw plot.  For one local control panel only.
+// Control_Panel_Window::extract_and_redraw() -- Extract data for these 
+// (new?) axes and redraw plot.  For one local control panel only.
 void Control_Panel_Window::extract_and_redraw ()
 {
   pw->extract_data_points();

@@ -25,7 +25,7 @@
 //   1) Add comments and get this code to run under Windows.
 //
 // Author: Creon Levit     2005-2006
-// Modified: P. R. Gazis   14-JUL-2008
+// Modified: P. R. Gazis   13-AUG-2008
 //***************************************************************************
 
 // Protection to make sure this header is not included twice
@@ -41,13 +41,15 @@
 #endif // __WIN32__
 
 // Include libraries under Windows in the Dev-C++ programming environment: 
-// The FLTK package should be handled by Dev-C++ as a 'devpak', but several 
-// include libraries are needed in addition to the regular Dev-C++ and FLTK 
-// libraries.  These are listed below along with their locations on the 
-// primary Windows development system.
+// The FLTK package is now handled explicitly rather than as a 'devpak', 
+// since these weren't adequately supported.  The include libraries needed 
+// in addition to the regular Dev-C++ and FLTK libraries are listed below 
+// along with their locations on the primary Windows development system.
 //
 // Flews
 //   c:\devusr\flews
+// FLTK
+//   c:\devusr\fltk
 // OglExt (Needed to use OpenGL 1.2+)
 //   c:\devuser\oglext\include
 // GSL (Needed for parts of Blitz++)

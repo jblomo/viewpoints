@@ -28,7 +28,7 @@
 //      normalization schemes used here and by class Plot_Windows.
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  09-JUL-2008
+// Modified: P. R. Gazis  13-AUG-2008
 //***************************************************************************
 
 // Protection to make sure this header is not included twice
@@ -73,6 +73,7 @@
 //   make_widgets( *cpw) -- Make widgets for this tab
 //   extract_and_redraw() -- extract a variable, renormalize it, etc.
 //
+//   restrict_axis_indices( ivar_max, jvar_max, kvar_max) -- Restrict indices
 //   transform_style_value() -- Get y-axis transform style
 //   transform_style_value( transform_style_in) -- Set y-axis transform style
 //   blend_style_value() -- Get the alpha-blending style
@@ -89,7 +90,7 @@
 //   This comment also conveys nothing.
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  09-JUL-2008
+// Modified: P. R. Gazis  13-AUG-2008
 //***************************************************************************
 class Control_Panel_Window : public Fl_Group
 {
@@ -99,13 +100,13 @@ class Control_Panel_Window : public Fl_Group
     friend class boost::serialization::access;
     
     // Define state parameters used by serialization
-    int ivar_save, jvar_save, kvar_save;
-    int ix_style, jy_style, kz_style;
-    int ix_lock, jy_lock, kz_lock;
-    float background_save, luminosity_save, point_size_save;
-    int scale_points_save;
-    int transform_style_save;
-    int blend_style_save;
+    int ivar_save_, jvar_save_, kvar_save_;
+    int ix_style_, jy_style_, kz_style_;
+    int ix_lock_, jy_lock_, kz_lock_;
+    float background_save_, luminosity_save_, point_size_save_;
+    int scale_points_save_;
+    int transform_style_save_;
+    int blend_style_save_;
 
     // When the class Archive corresponds to an output archive, the &
     // operator is defined similar to <<.  Likewise, when the class Archive 
@@ -126,28 +127,28 @@ class Control_Panel_Window : public Fl_Group
       try{
         // Variables specified in the original configuration files
         ar & boost::serialization::make_nvp( "index", index);
-        ar & boost::serialization::make_nvp( "varindex1", ivar_save);
-        ar & boost::serialization::make_nvp( "varindex2", jvar_save);
-        ar & boost::serialization::make_nvp( "varindex3", kvar_save);
-        ar & boost::serialization::make_nvp( "x_normalization_style", ix_style);
-        ar & boost::serialization::make_nvp( "y_normalization_style", jy_style);
-        ar & boost::serialization::make_nvp( "z_normalization_style", kz_style);
-        ar & boost::serialization::make_nvp( "lock_axis1_button", ix_lock);
-        ar & boost::serialization::make_nvp( "lock_axis2_button", jy_lock);
-        ar & boost::serialization::make_nvp( "lock_axis3_button", kz_lock);
-        ar & boost::serialization::make_nvp( "background", background_save);
-        ar & boost::serialization::make_nvp( "luminosity", luminosity_save);
-        ar & boost::serialization::make_nvp( "point_size", point_size_save);
-        ar & boost::serialization::make_nvp( "scale_points", scale_points_save);
-        ar & boost::serialization::make_nvp( "transform_style", transform_style_save);
+        ar & boost::serialization::make_nvp( "varindex1", ivar_save_);
+        ar & boost::serialization::make_nvp( "varindex2", jvar_save_);
+        ar & boost::serialization::make_nvp( "varindex3", kvar_save_);
+        ar & boost::serialization::make_nvp( "x_normalization_style", ix_style_);
+        ar & boost::serialization::make_nvp( "y_normalization_style", jy_style_);
+        ar & boost::serialization::make_nvp( "z_normalization_style", kz_style_);
+        ar & boost::serialization::make_nvp( "lock_axis1_button", ix_lock_);
+        ar & boost::serialization::make_nvp( "lock_axis2_button", jy_lock_);
+        ar & boost::serialization::make_nvp( "lock_axis3_button", kz_lock_);
+        ar & boost::serialization::make_nvp( "background", background_save_);
+        ar & boost::serialization::make_nvp( "luminosity", luminosity_save_);
+        ar & boost::serialization::make_nvp( "point_size", point_size_save_);
+        ar & boost::serialization::make_nvp( "scale_points", scale_points_save_);
+        ar & boost::serialization::make_nvp( "transform_style", transform_style_save_);
         
         // Because fields in the configuration files are read in the order 
         // in which they occur, version-dependant variables must be dealt 
         // with in chronological order.
         if( serialization_file_version < 225 && isOutput == 0)  // r225, 09-JUL-2008
-          blend_style_save = 2;
+          blend_style_save_ = 2;
         else
-          ar & boost::serialization::make_nvp( "blend_style", blend_style_save);
+          ar & boost::serialization::make_nvp( "blend_style", blend_style_save_);
       }
       catch( exception &e) {}
     }
@@ -165,6 +166,7 @@ class Control_Panel_Window : public Fl_Group
     void extract_and_redraw();
 
     // Access functions
+    void restrict_axis_indices( int ivar_max, int jvar_max, int kvar_max);
     int transform_style_value();
     void transform_style_value( int transform_style_in);
     int blend_style_value();

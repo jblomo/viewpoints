@@ -75,7 +75,7 @@
 //   reset_selection_arrays() -- Reset selection arrays
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  08-AUG-2008
+// Modified: P. R. Gazis  13-AUG-2008
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -769,24 +769,14 @@ void manage_plot_window_array( Fl_Widget *o, void* user_data)
     }
     else Plot_Window::upper_triangle_incr( ivar, jvar, nvars);
 
-    // If we opened a new file but restored window settings, make sure the
-    // axis labels and indices are within limits
-    // if( do_restore_settings != 0 && NEW_DATA) {
-    //   if( cps_save[i].ivar_save >= nvars) cps_save[i].ivar_save = nvars-1;
-    //   if( cps_save[i].jvar_save >= nvars) cps_save[i].jvar_save = nvars-1;
-    //   if( cps_save[i].kvar_save > nvars) cps_save[i].kvar_save = nvars;
-    // }
-
     // If there has been an explicit request to restore the saved control 
     // panel settings or the number of plots has changed, restore those 
     // settings, then generate any new settings that may be required.
     if( do_restore_settings != 0 ||
         nplots != nplots_old && i<nplots_old) {
 
-      // Make sure axis indices are in range    
-      if( cps_save[i].ivar_save >= nvars) cps_save[i].ivar_save = nvars-1;
-      if( cps_save[i].jvar_save >= nvars) cps_save[i].jvar_save = nvars-1;
-      if( cps_save[i].kvar_save > nvars) cps_save[i].kvar_save = nvars;
+      // Make sure axis indices are in range
+      cps_save[i].restrict_axis_indices( nvars-1, nvars-1, nvars);
 
       cps[i]->copy_state( &cps_save[i]);
       cps[i]->load_state();
@@ -838,8 +828,6 @@ void manage_plot_window_array( Fl_Widget *o, void* user_data)
     //     strncmp( widgetTitle, "Restore", 7) == 0) {
     if( do_restore_positions != 0) {
       for( int i=0; i<nplots_save; i++) {
-        // pws[ i]->position( pws_x_save[ i], pws_y_save[ i]);
-        // pws[ i]->size( pws_w_save[ i], pws_h_save[ i]);
         pws[ i]->copy_state( &pws_save[i]);
         pws[ i]->load_state();
         
