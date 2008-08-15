@@ -75,7 +75,7 @@
 //   reset_selection_arrays() -- Reset selection arrays
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  13-AUG-2008
+// Modified: P. R. Gazis  15-AUG-2008
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -990,6 +990,7 @@ void make_main_menu_bar()
 void make_file_name_window( Fl_Widget *o)
 {
   string sConfirmText = dfm.input_filespec();
+  if( sConfirmText.size()<=0) sConfirmText = "No input file is specified.";
   int iConfirmResult = make_confirmation_window( sConfirmText.c_str(), 1);
 }
 
@@ -1512,6 +1513,7 @@ int load_state( Fl_Widget* o)
   file_chooser->isAscii( 1);
   file_chooser->fileTypeMenu_deactivate();
   file_chooser->delimiter_hide();
+  file_chooser->hasConfigQuery( 1);
 
   // Loop: wait until the file selection is done.  NOTE: This version 
   // doesn't work and is retained only for archival purposes
@@ -1555,6 +1557,7 @@ int load_state( Fl_Widget* o)
     fclose( pFile);
     break;         
   } 
+  int isConfigOnly = file_chooser->isConfigOnly();
 
   // If no file was specified then report, deallocate the Vp_File_Chooser 
   // object, and quit.
@@ -1586,9 +1589,21 @@ int load_state( Fl_Widget* o)
     inputArchive >> BOOST_SERIALIZATION_NVP( serialization_file_version);
     if( serialization_file_version < last_supported_serialization_version) throw 0;
     
-    // STEP 2/8) Get data file from archive and read it
+    // STEP 2/8) Copy existing state, if any, of the data file manager, then
+    // get file i/o information from archive and read input file
+    Data_File_Manager dfm_save;
+    dfm_save.copy_state( &dfm);
+    int nvars_save = nvars;
+    int npoints_save = npoints;
     inputArchive >> BOOST_SERIALIZATION_NVP( dfm);
-    if( dfm.input_filespec().length() <= 0) dfm.create_default_data( 10);
+    if( isConfigOnly) {
+      dfm.copy_state( &dfm_save);
+      nvars = nvars_save;
+      npoints = npoints_save;
+      nvars = points.rows();
+      npoints = points.columns();
+    }
+    else if( dfm.input_filespec().length() <= 0) dfm.create_default_data( 10);
     else {
       if( dfm.load_data_file() != 0) dfm.create_default_data( 10);
       else 
@@ -1864,7 +1879,7 @@ void reset_selection_arrays()
 //   main() -- main routine
 //
 // Author:   Creon Levit   unknown
-// Modified: P. R. Gazis   10-JUL-2008
+// Modified: P. R. Gazis   15-AUG-2008
 //***************************************************************************
 //***************************************************************************
 // Main -- Driver routine
@@ -1877,7 +1892,7 @@ int main( int argc, char **argv)
   // definitions
 
   about_string = "\n\
-    viewpoints 2.1.1 \n\
+    viewpoints 2.1.2 \n\
     " + string(SVN_VERSION) + "\n\
     \n\
     using fltk version (major + 0.01*minor): " + fltk_version_ss.str() + "\n\

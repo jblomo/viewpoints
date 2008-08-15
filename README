@@ -5,18 +5,17 @@ Creon Levit <Creon.Levit@nasa.gov>   and    Paul Gazis <Paul.R.Gazis@nasa.gov>
 Preface:
 
 Please let us know how viewpoints helps you. Did it enable you to solve a
-problem?  To make a discovery?  To find an error?  To generate a
-figure for a paper?  The more we know that viewpoints is useful, the
-more time we'll spend working on it.  
+problem?  To make a discovery?  To find an error?  To generate a figure for 
+a paper?  The more we know that viewpoints is useful, the more time we'll 
+spend working on it.  
 
 
 Overview:
 
-Each archive on this site contains the executable, documentation, a
-sample data file with examples, and (for MS Windows) any dynamic link
-libraries (dlls) that may be required for viewpoints (vp).
-
-The contents of these archives are listed below:
+Each archive on this site contains the  viewpoints (vp) executable, 
+documentation, a sample data file with examples, and for MS Windows, any 
+dynamic link libraries (dlls) that may be required by the package.  The 
+contents of these archives are listed below:
 
 File                Comments
 -----------------------------------------------------------------
@@ -61,7 +60,7 @@ that configuration.
 
 Usage:
 
-In its current form (Version 2.1.1, build 235) 'viewpoints' is run either by 
+In its current form (Version 2.1.2, build 236) 'viewpoints' is run either by 
 clicking on the 'vp' icon or from the command line in the directory in which 
 it has been installed or to which a path is available.  When viewpoints is 
 run from the icon, it will come up with an array of default data.  When it is
@@ -216,6 +215,7 @@ Main menu bar
  File|Load Configuration     Load basic configuration information
  File|Save Configuration     Save basic configuration information
  File|Quit                   Quit
+ View|File Name              Show name of current data file
  View|Add Row                Add a row of plot windows
  View|Add Column             Add a column of plot windows
  View|Remove Row             Remove a row of plot windows
@@ -353,7 +353,7 @@ randomize               Randomize
 
 Notes and warnings:
 
-The current release of the 'viewpoints' package (version 2.1.1, build 235) is 
+The current release of the 'viewpoints' package (version 2.1.2, build 236) is 
 still a development version.  While every effort has been make to ensure that 
 it will work -- or fail gracefully if it doesn't -- it still has many rough 
 edges.  Some of these are described below.  These issues will all be 
@@ -363,20 +363,21 @@ addressed in future releases.
 may need to be refreshed.  This can be accomplished by resizing it.
 
 2) There is, as yet, no 'print' command, but images can be saved for use in
-   a conventional fashion using the relevant OS commands.
+a conventional fashion using the relevant OS commands.
 
-3) The Load and Save Configuration commands are a comparatively new feature,
-and save basic session information.  They may not work on every system.  
-Also, there is not, as yet, any guarantee that old configuration files will
-be upward-compatible with new versions of viewpoints.
+3) The Load and Save Configuration commands are a comparatively new feature.
+For this reason, they are still evolving.  While every effort has been made 
+to ensure that old configuration files are upward-compatible with new 
+versions of viewpoints, it it still advisable to resave these files.
 
-4) The Edit Column Labels tool is also a new feature, and is not guaranteed
-to preserve axis or scaling information.  In the current release, it can only
-delete labels.  Column labels of ASCII files can be renamed via by using an
-editor in a conventional fashion.  Small binary files can be saved to ASCII 
-and edited.  For large binary files, it is possible, with difficulty, to 
-rename labels by saving a small portion of the file as ASCII, editing this, 
-reloading it, and appending the remainding portion of the original binary file.
+4) The Edit Column Labels tool is still under development, and can produce
+unexpected behavior.  It is not guaranteed to preserve axis or scaling 
+information, and in the current release, it can only delete labels.  Column 
+labels of ASCII files can be renamed via by using an editor in a conventional 
+fashion.  Small binary files can be saved to ASCII and edited.  For large 
+binary files, it is possible, with difficulty, to rename labels by saving a 
+small portion of the file as ASCII, editing this, reloading it, and appending 
+the remainding portion of the original binary file.
 
 Please send any questions, bug reports, feature requests, and/or praise to: 
 

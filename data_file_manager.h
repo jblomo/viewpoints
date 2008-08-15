@@ -36,7 +36,7 @@
 //      values' flag, and a lookup table to relate indices to ASCII values.
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  17-JUL-2008
+// Modified: P. R. Gazis  15-AUG-2008
 //***************************************************************************
 
 // Protection to make sure this header is not included twice
@@ -66,6 +66,7 @@
 // Functions:
 //   Data_File_Manager() -- Constructor
 //   initialize() -- Initializer
+//   copy_state( *dfm) -- Copy state parameters from another object
 //
 //   serialize( &ar, iFileVersion) -- Perform serialization
 //   remove_trivial_columns() -- Remove identical data
@@ -184,7 +185,7 @@ class Data_File_Manager
     // Value assigned to unreadable/nonnumeric/empty/missing values:
     float bad_value_proxy_;
 
-    // State variables
+    // I/O parameters and state variables
     int nSkipHeaderLines;
     int isAsciiInput, isAsciiOutput, isAsciiData;
     int doAppend, doMerge, writeAllData_;
@@ -200,6 +201,7 @@ class Data_File_Manager
     
     Data_File_Manager();
     void initialize();
+    void copy_state( Data_File_Manager* dfm);
 
     // File i/o methods
     int findInputFile();

@@ -35,7 +35,7 @@
 //      vp.cpp could be consolidated.
 //
 // Author: Bill Spitzak and others   1998-2005
-// Modified: P. R. Gazis  08-JUL-2008
+// Modified: P. R. Gazis  15-AUG-2008
 //***************************************************************************
 
 // Protection to make sure this header is not included twice
@@ -136,11 +136,15 @@ using namespace std;
 //    filter( pattern_in) -- Set the file browser filter pattern(s)
 //    filter_value() -- Get index of filter in choice window
 //    filter_value( index_in) -- Set index of filter in choice window
+//    hasConfigQuery( hasConfigQuery_in) -- Switch Config query on or off
+//    hasConfigQuery() -- Is Confiq query visible?
 //    hide() -- Hide main window
 //    iconsize() -- Get icon size
 //    iconsize( size_in) -- Set icon size
 //    isAscii( isAscii_in) -- Set ASCII flag
 //    isAscii() -- Get ASCII flag
+//    isConfigOnly() -- Is this to be Configuration Only?
+//    isConfigOnly( isConfigOnly_in) -- Set Configuration Only flag
 //    char* label() -- Get label of main window
 //    label( const char *label_in) -- Set label of main window
 //    ok_label() -- Get label of the 'OK' button
@@ -254,6 +258,8 @@ class FL_EXPORT Vp_File_Chooser
     void cb_cancelButton_i( Fl_Button*, void*);
     static void cb_commentLabelsButton( Fl_Check_Button*, void*);
     void cb_commentLabelsButton_i( Fl_Check_Button*, void*);
+    static void cb_configQueryButton( Fl_Check_Button*, void*);
+    void cb_configQueryButton_i( Fl_Check_Button*, void*);
     static void cb_delimiterButtons( Fl_Round_Button*, void* v);
     void cb_delimiterButtons_i( Fl_Round_Button*, void*);
     static void cb_delimiterInput( Fl_Input* pButton, void*);
@@ -289,7 +295,9 @@ class FL_EXPORT Vp_File_Chooser
     char pattern_[ 1024];
     char preview_text_[ 2048];
     int type_;
+    int hasConfigQuery_;
     int isAscii_;
+    int isConfigOnly_;
     int writeSelectionInfo_;
     int doCommentedLabels_;
 
@@ -352,11 +360,15 @@ class FL_EXPORT Vp_File_Chooser
     void filter( const char *pattern_in);
     int filter_value();
     void filter_value( int index_in);
+    void hasConfigQuery( int hasConfiqQuery_in);
+    int hasConfigQuery();
     void hide();
     uchar iconsize();
     void iconsize( uchar size_in);
     void isAscii( int isAscii_in, int isXML_in = 0);
     int isAscii();
+    void isConfigOnly( int isConfigOnly_in);
+    int isConfigOnly();
     const char* label();
     void label( const char *label_in);
     const char* ok_label();
@@ -390,12 +402,15 @@ class FL_EXPORT Vp_File_Chooser
     Fl_Check_Button *previewButton;   // Preview box checkbutton
     Fl_Check_Button *selectionButton;   // Selection State checkbutton
     Fl_Check_Button *commentLabelsButton;  // Comment column label line
+    Fl_Check_Button *configQueryButton;  // Only load config info
 
     // Public static variables to hold various labels and the sort mode
     static const char *add_favorites_label;
     static const char *all_files_label;
     static const char *commentLabels_label;
     static const char *commentLabels_tooltip;
+    static const char *configQuery_label;
+    static const char *configQuery_tooltip;
     static const char *custom_filter_label;
     static const char *delimiter_label;
     static const char *existing_file_label;

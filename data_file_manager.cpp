@@ -19,7 +19,7 @@
 // Purpose: Source code for <data_file_manager.h>
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  08-AUG-2008
+// Modified: P. R. Gazis  15-AUG-2008
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -70,9 +70,11 @@ Data_File_Manager::Data_File_Manager() : delimiter_char_( ' '),
 // Data_File_Manager::initialize() -- Reset control parameters.
 void Data_File_Manager::initialize()
 {
-  // Set default values for file reads.
+  // Set default format information for file reads.
   delimiter_char_ = ' ';
   bad_value_proxy_ = 0.0;
+
+  // Set default local values for file reads.
   isAsciiInput = 1;
   isAsciiOutput = 0;
   isAsciiData = isAsciiInput;
@@ -99,6 +101,46 @@ void Data_File_Manager::initialize()
   // Initialize number of points and variables
   npoints = MAXPOINTS;
   nvars = MAXVARS;
+}
+
+//***************************************************************************
+// Data_File_Manager::copy_state( *dfm) -- Copy control parameters from 
+// another object.
+void Data_File_Manager::copy_state( Data_File_Manager* dfm)
+{
+  // Copy format information for file reads.
+  delimiter_char_ = dfm->delimiter_char_;
+  bad_value_proxy_ = dfm->bad_value_proxy_;
+
+  // Copy local values for file reads.
+  isAsciiInput = dfm->isAsciiInput;
+  isAsciiOutput = dfm->isAsciiOutput;
+  isAsciiData = isAsciiInput;
+  doAppend = dfm->doAppend;
+  doMerge = dfm->doMerge;
+  readSelectionInfo_ = dfm->readSelectionInfo_;
+  writeAllData_ = dfm->writeAllData_;
+  writeSelectionInfo_ = dfm->writeSelectionInfo_;
+  isSavedFile_ = dfm->isSavedFile_;
+  needs_restore_panels_ = dfm->needs_restore_panels_;
+
+  isColumnMajor = dfm->isColumnMajor;
+  nSkipHeaderLines = dfm->nSkipHeaderLines;  // Number of lines to skip
+  sDirectory_ = dfm->sDirectory_;
+  inFileSpec = dfm->inFileSpec;                                                                                                                                                                                                                                                                                                                                                                                                                                                             "";  // Default input filespec
+  outFileSpec = dfm->outFileSpec;
+  dataFileSpec =dfm->dataFileSpec;
+
+  // Initialize the number of points and variables specified by the command 
+  // line arguments.  NOTE: 0 means read to EOF or end of line.
+  npoints_cmd_line = dfm->npoints_cmd_line;
+  nvars_cmd_line = dfm->nvars_cmd_line;
+  
+  // Copy global number of points and variables
+  // npoints = dfm->npoints_save;
+  // nvars = dfm->nvars_save;
+  nvars = points.rows();
+  npoints = points.columns();
 }
 
 //***************************************************************************
@@ -281,7 +323,8 @@ int Data_File_Manager::load_data_file()
 
   // If only one or fewer records are available, generate default data to
   // prevent a crash, then quit before something terrible happens!
-  if( nvars <= 1 || npoints <= 1) {
+  // if( nvars <= 1 || npoints <= 1) {
+  if( ( doAppend == 0 && doMerge == 0) && ( nvars <= 1 || npoints <= 1)) {
     cerr << " -WARNING: Insufficient data, " << nvars << "x" << npoints
          << " samples.\nCheck delimiter character." << endl;
     string sWarning = "";
@@ -521,20 +564,22 @@ int Data_File_Manager::extract_column_labels( string sLine, int doDefault)
   // Examine the number of Column_Info objects that remain.  If it is too 
   // low or high, report error, close input file, and quit.  Otherwise 
   // report success.
-  if( nvars <= 1) {
+  // if( nvars <= 1) {
+  if( doMerge == 0 && nvars <= 1) {
     cerr << " -WARNING, insufficient number of columns, "
          << "check for correct delimiter character"
          << endl;
-    make_confirmation_window( 
-      "WARNING: Insufficient number of columns.  Check delimiter setting.", 1);
+    string sWarning = "";
+    sWarning.append( "WARNING: Insufficient number of data columns\n.");
+    sWarning.append( "Check delimiter setting.  Generating default data");
+    make_confirmation_window( sWarning.c_str(), 1);
     return -1;
   }
   if( nvars > MAXVARS) {
     cerr << " -WARNING, too many data columns, "
          << "increase MAXVARS and recompile"
          << endl;
-    make_confirmation_window( 
-      "WARNING: Too many data columns.", 1);
+    make_confirmation_window( "WARNING: Too many data columns.", 1);
     return -1;
   }
   cout << " -Examined header of <" << inFileSpec.c_str() << ">," << endl

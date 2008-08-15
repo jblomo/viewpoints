@@ -20,7 +20,7 @@
 //   modified by Paul Gazis and Creon Levit for use with viewpoints.
 //
 // Author: Bill Spitzak and others   1998-2005
-// Modified: P. R. Gazis  08-JUL-2008
+// Modified: P. R. Gazis  15-AUG-2008
 //***************************************************************************
 
 // Include header
@@ -46,6 +46,9 @@ const char *Vp_File_Chooser::custom_filter_label = "Custom Filter";
 const char *Vp_File_Chooser::commentLabels_label = "Column labels are preceeded by a comment";
 const char *Vp_File_Chooser::commentLabels_tooltip = 
   "Column Labels are included in the last line of the \nheader and begin with a comment character";
+const char *Vp_File_Chooser::configQuery_label = "Only load configuration information";
+const char *Vp_File_Chooser::configQuery_tooltip = 
+  "Load configuration information alone, \nwithout reading any new data";
 const char *Vp_File_Chooser::delimiter_label = "Delimiter:";
 const char *Vp_File_Chooser::existing_file_label = "Please choose an existing file!";
 const char *Vp_File_Chooser::favorites_label = "Favorites";
@@ -83,7 +86,9 @@ Vp_File_Chooser::Vp_File_Chooser(
   const char *value_in, const char *filter_in, int type_in, const char *title)
 {
   // Initialize to ASCII mode with no delimiter
+  hasConfigQuery_ = 0;
   isAscii_ = 1;
+  isConfigOnly_ = 0;
   delimiter_char_ = ' ';
   doCommentedLabels_ = 0;
   
@@ -295,6 +300,20 @@ Vp_File_Chooser::Vp_File_Chooser(
         selectionButton->label( selection_label);
       }
 
+      // Write but do not show Configuration Only check button in the
+      // same location as the Selection Info check button
+      { 
+        Fl_Check_Button* o = configQueryButton = 
+          new Fl_Check_Button( 10, 405, 160, 20, "Only load configuation");
+        o->down_box( FL_DOWN_BOX);
+        if( doCommentedLabels_ == 0) o->value( 0);
+        else o->value( 1);
+        o->callback( (Fl_Callback*) cb_configQueryButton);
+        o->tooltip( configQuery_tooltip);
+        configQueryButton->label( configQuery_label);
+        configQueryButton->hide();
+      }
+
       // Write Comment Column Labels check button
       { 
         Fl_Check_Button* o = commentLabelsButton = 
@@ -307,7 +326,7 @@ Vp_File_Chooser::Vp_File_Chooser(
         o->tooltip( commentLabels_tooltip);
         commentLabelsButton->label( commentLabels_label);
       }
-
+      
       // Group with 'OK' and 'Cancel' buttons at bottom right
       {
         Fl_Group* o = new Fl_Group( 310, 420, 175, 35);
@@ -510,7 +529,6 @@ int Vp_File_Chooser::count()
 
 //*****************************************************************************
 // Vp_File_Chooser::delimiter_char() -- Get the current delimiter character.
-// chooser.
 char Vp_File_Chooser::delimiter_char()
 {
   return delimiter_char_;
@@ -527,7 +545,7 @@ void Vp_File_Chooser::delimiter_hide()
 }
 
 //*****************************************************************************
-// Vp_File_Chooser::delimiter_deactivate() -- Show the delimiter box and comment 
+// Vp_File_Chooser::delimiter_show() -- Show the delimiter box and comment 
 // labels button
 void Vp_File_Chooser::delimiter_show()
 {
@@ -839,6 +857,29 @@ void Vp_File_Chooser::filter_value( int index_in)
 }
 
 //*****************************************************************************
+// Vp_File_Chooser::hasConfigQuery( hasConfiqQuery_in) -- Switch the query
+// regarding whether this is to be Configuration Only on and off.
+void Vp_File_Chooser::hasConfigQuery( int hasConfiqQuery_in)
+{
+  hasConfigQuery_ = ( hasConfiqQuery_in != 0);
+  if( hasConfigQuery_ != 0) {
+    delimiter_hide();
+    configQueryButton->show();
+  }
+  else {
+    configQueryButton->hide();
+  }
+}
+
+//*****************************************************************************
+// Vp_File_Chooser::hasConfigQuery() -- Return whether the Configuration Only
+// query is visible. Not needed but included for completeness.
+int Vp_File_Chooser::hasConfigQuery()
+{
+  return hasConfigQuery_;
+}
+
+//*****************************************************************************
 // Vp_File_Chooser::hide() -- Hide the main window.
 void Vp_File_Chooser::hide()
 {
@@ -883,6 +924,21 @@ void Vp_File_Chooser::isAscii( int isAscii_in, int isXML_in)
 //*****************************************************************************
 // Vp_File_Chooser::isAscii( isAscii_in) -- Get the isAscii_ flag
 int Vp_File_Chooser::isAscii() { return isAscii_;}
+
+//*****************************************************************************
+// Vp_File_Chooser::isConfigOnly( isConfigOnly_in) -- Set the config only flag.
+void Vp_File_Chooser::isConfigOnly( int isConfigOnly_in)
+{
+  isConfigOnly_ = ( isConfigOnly_in != 0);
+  configQueryButton->value( isConfigOnly_);
+}
+
+//*****************************************************************************
+// Vp_File_Chooser::isConfigOnly() -- Return the config only flag
+int Vp_File_Chooser::isConfigOnly()
+{
+  return isConfigOnly_;
+}
 
 //*****************************************************************************
 // Vp_File_Chooser::label() -- Get the label of the main window.
@@ -2078,6 +2134,27 @@ void Vp_File_Chooser::cb_commentLabelsButton_i( Fl_Check_Button*, void*)
 {
   if( commentLabelsButton->value()) doCommentedLabels( 1);
   else doCommentedLabels( 0);
+}
+
+//*****************************************************************************
+// Vp_File_Chooser::cb_configQueryButton( o, v) -- Wrapper for the callback 
+// method for the 'Only load configuation info' checkbox.  NOTE: The level 
+// of nesting in calls to parent() is important, and must reflect the actual 
+// level of nesting of the Fl_Check_Button object in the Vp_File_Chooser 
+// object!
+void Vp_File_Chooser::cb_configQueryButton( Fl_Check_Button* o, void* v)
+{
+  ( (Vp_File_Chooser*) 
+    (o->parent()->parent()->user_data()))->cb_configQueryButton_i( o, v);
+}
+
+//*****************************************************************************
+// Vp_File_Chooser::cb_configQueryButton_i( *, *) -- Callback method for the 
+// 'Only load configuation info' checkbox.  
+void Vp_File_Chooser::cb_configQueryButton_i( Fl_Check_Button*, void*)
+{
+  if( configQueryButton->value()) isConfigOnly( 1);
+  else isConfigOnly( 0);
 }
 
 //*****************************************************************************
