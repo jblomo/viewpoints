@@ -1,7 +1,7 @@
 // viewpoints - interactive linked scatterplots and more.
 // copyright 2005 Creon Levit and Paul Gazis, all rights reserved.
 //***************************************************************************
-// File name: sptite_textures.h
+// File name: sprite_textures.h
 //
 // Class definitions:
 //   Sprite_Textures -- Sprite textures

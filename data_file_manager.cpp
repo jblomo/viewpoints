@@ -19,7 +19,7 @@
 // Purpose: Source code for <data_file_manager.h>
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  15-AUG-2008
+// Modified: P. R. Gazis  19-AUG-2008
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -279,10 +279,12 @@ int Data_File_Manager::load_data_file()
   
   // If this is an append or merge operation, save the existing data and 
   // column labels in temporary buffers
+  unsigned uHaveOldData = 0;
   int old_npoints=0, old_nvars=0;
   blitz::Array<float,2> old_points;
   std::vector<Column_Info> old_column_info; 
-  if( doAppend > 0 || doMerge > 0) {
+  if( preserve_old_data_mode || doAppend > 0 || doMerge > 0) {
+    uHaveOldData = 1;
     old_nvars = points.rows();
     old_npoints = points.columns();
     old_points.resize( points.shape());
@@ -306,7 +308,15 @@ int Data_File_Manager::load_data_file()
   if( iReadStatus != 0) {
     cout << "Data_File_Manager::load_data_file: "
          << "Problems reading file <" << inFileSpec.c_str() << ">" << endl;
-    create_default_data( 4);
+    if( !uHaveOldData) create_default_data( 4);
+    else {
+      column_info = old_column_info;
+      points.resize( old_points.shape());
+      points = old_points;
+      npoints = points.columns();
+      nvars = points.rows();
+      uHaveOldData = 0;
+    }
     return -1;
   }
   else
@@ -317,21 +327,30 @@ int Data_File_Manager::load_data_file()
   read_selected.resizeAndPreserve( npoints);  
 
   // Remove trivial columns
-  // XXX this should be a command line and Tool menu option with default 
-  // OFF, since it can take both time and memory
   if( trivial_columns_mode) remove_trivial_columns();
 
   // If only one or fewer records are available, generate default data to
   // prevent a crash, then quit before something terrible happens!
-  // if( nvars <= 1 || npoints <= 1) {
   if( ( doAppend == 0 && doMerge == 0) && ( nvars <= 1 || npoints <= 1)) {
     cerr << " -WARNING: Insufficient data, " << nvars << "x" << npoints
          << " samples.\nCheck delimiter character." << endl;
     string sWarning = "";
     sWarning.append( "WARNING: Insufficient number of attributes or samples\n.");
-    sWarning.append( "Check delimiter setting.  Generating default data");
-    make_confirmation_window( sWarning.c_str(), 1);
-    create_default_data( 4);
+    sWarning.append( "Check delimiter value and 'commented labels' setting.\n");
+    if( !uHaveOldData) {
+      sWarning.append( "Generating default data.");
+      create_default_data( 4);
+    }
+    else {
+      sWarning.append( "Restoring existing data.");
+      column_info = old_column_info;
+      points = old_points;
+      points.resize( old_points.shape());
+      npoints = points.columns();
+      nvars = points.rows();
+      uHaveOldData = 0;
+    }
+    make_confirmation_window( sWarning.c_str(), 1, 3);
     return -1;
   }
   else {
@@ -352,7 +371,7 @@ int Data_File_Manager::load_data_file()
     // again, and copy new column labels if this was a merge operation.
     if( ( doAppend > 0 && nvars != old_nvars) ||
         ( doMerge > 0 && npoints != old_npoints)) {
-      make_confirmation_window( "Array sizes don't match.\nRestore old data", 1);
+      make_confirmation_window( "Array sizes don't match.\nRestoring old data", 1);
 
       points.resize( old_points.shape());
       points = old_points;
@@ -470,7 +489,7 @@ int Data_File_Manager::load_data_file()
 // member vector of Column_Info objects
 int Data_File_Manager::extract_column_labels( string sLine, int doDefault)
 {
-  // Initialize the satic member vector of Column_Info objects
+  // Initialize the static member vector of Column_Info objects
   int nLabels = 0;
   nvars = 0;
   column_info.erase( column_info.begin(), column_info.end());
@@ -566,12 +585,12 @@ int Data_File_Manager::extract_column_labels( string sLine, int doDefault)
   // report success.
   // if( nvars <= 1) {
   if( doMerge == 0 && nvars <= 1) {
-    cerr << " -WARNING, insufficient number of columns, "
-         << "check for correct delimiter character"
+    cerr << " -WARNING, insufficient number of columns (" << nvars
+         << "), check for correct delimiter character"
          << endl;
     string sWarning = "";
-    sWarning.append( "WARNING: Insufficient number of data columns\n.");
-    sWarning.append( "Check delimiter setting.  Generating default data");
+    sWarning.append( "WARNING: Couldn't identify enough columns of data\n.");
+    sWarning.append( "Check delimiter value and 'commented labels' setting.");
     make_confirmation_window( sWarning.c_str(), 1);
     return -1;
   }
@@ -745,10 +764,9 @@ int Data_File_Manager::read_ascii_file_with_headers()
   istream* inStream;
   ifstream inFile;
 
-  // STEP 1: Attempt to open input file and make sure it exists
-
-  // if reading from stdin, bypass opening of input file
-  if (read_from_stdin) {
+  // STEP 1: Either read from stdin, bypassing openning of input file, or
+  // attempt to open input file and make sure it exists.
+  if( read_from_stdin) {
     inStream = &cin;
   } else {
     inFile.open( inFileSpec.c_str(), ios::in);
@@ -800,23 +818,39 @@ int Data_File_Manager::read_ascii_file_with_headers()
        << " header lines." << endl;
 
 
-  // STEP 3: Get column labels.  If LASTHEADERLINE is full, use this to 
-  // generate column labels.  Otherwise generate default column labels.
-
-  // If no header lines were found or the LASTHEADERLINE buffer is empty, 
-  // count the number of values in the first line of data to generate a set 
-  // of default column labels.  Otherwise examine the LASTHEADERLINE buffer 
-  // to extract column labels.
+  // STEP 3: Get column labels from either the last line of the header
+  // block or the first line of the data block.  Under certain conditions,
+  // generate default column labels.
+  
+  // If the DOCOMMENTEDLABELS_ flag is set, unset the UREADNEXTLINE flag to
+  // preserve LINE as the first record in the data block, then examine the 
+  // last line of the header block.  If this doesn't exist or is empty, 
+  // generate default column labels, if it contains information, parse this 
+  // to extract column labels.  Otherwise, parse the first line of the data 
+  // block to extract column labels, and if these all seem to be numeric, 
+  // replace them with default column labels and unset the UREADNEXTLINE 
+  // flag as described above.
   int nLabels = 0;
-  if( doCommentedLabels_ == 0) nLabels = extract_column_labels( line, 0);
-  else {
+  unsigned uReadNextLine = 1;
+  if( doCommentedLabels_) {
+    uReadNextLine = 0;
     if( nHeaderLines == 0 || lastHeaderLine.length() == 0)
       nLabels = extract_column_labels( line, 1);
     else nLabels = extract_column_labels( lastHeaderLine, 0);
   }
+  else {
+    nLabels = extract_column_labels( line, 0);
+    extract_column_types( line);
+    if( n_ascii_columns() <= 0 && nLabels > 0) {
+      uReadNextLine = 0;
+      extract_column_labels( line, 1);
+    }
+  }
 
   // If there were problems, close file and quit
   if( nLabels < 0 && !read_from_stdin) {
+    cout << "Data_File_Manager::read_ascii_file_with_headers: "
+         << "Couldn't identify any column labels." << endl;
     inFile.close();
     return 1;
   }
@@ -841,13 +875,11 @@ int Data_File_Manager::read_ascii_file_with_headers()
   // Loop: Read successive lines from the file
   int nSkip = 0;
   int nLines = 0;
-  unsigned uFirstLine = 0;
-  if( doCommentedLabels_) uFirstLine = 1;
   int nTestCycle = 0, nUnreadableData = 0;
   while( !inStream->eof() && nLines<npoints) {
   
     // Get the next line, check for EOF, and increment accounting information
-    if( !uFirstLine) {
+    if( uReadNextLine) {
       (void) getline( *inStream, line, '\n');
       if( inStream->eof()) break;  // Break here to make accounting work right
       nRead++;
@@ -856,10 +888,10 @@ int Data_File_Manager::read_ascii_file_with_headers()
     // Skip blank lines and comment lines
     if( line.length() == 0 || line.find_first_of( "!#%") == 0) {
       nSkip++;
-      uFirstLine = 0;
+      uReadNextLine = 1;
       continue;
     }
-    uFirstLine = 0;
+    uReadNextLine = 1;
     nTestCycle++;
     
     // Invoke member function to examine the first line of data to identify 
@@ -1019,8 +1051,7 @@ int Data_File_Manager::read_ascii_file_with_headers()
     sWarning.append( "the line of column labels was left uncommented.\n");
     sWarning.append( "Do you wish to read it as is?");
     if( make_confirmation_window( sWarning.c_str(), 3, 3) <= 0) {
-      create_default_data( 4);
-      return 0;
+      return -1;
     }
   }
   
@@ -1074,9 +1105,8 @@ int Data_File_Manager::read_ascii_file_with_headers()
        << " header + " << nLines 
        << " good data + " << nSkip 
        << " skipped lines = " << nRead << " total." << endl;
-  if (!read_from_stdin) {
-    inFile.close();
-  }
+
+  if( !read_from_stdin) inFile.close();
   return 0;
 }
 

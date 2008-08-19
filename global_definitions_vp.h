@@ -20,7 +20,7 @@
 //   3) Consider putting these variables into a NAMESPACE?
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  15-AUG-2008
+// Modified: P. R. Gazis  19-AUG-2008
 //***************************************************************************
 
 #ifndef VP_GLOBAL_DEFINITIONS_VP_H
@@ -80,6 +80,7 @@ GLOBAL bool use_VBOs INIT(true);
 GLOBAL bool expert_mode INIT(false);
 GLOBAL bool read_from_stdin INIT(false);
 GLOBAL bool trivial_columns_mode INIT(true);
+GLOBAL bool preserve_old_data_mode INIT(true);
 GLOBAL bool be_verbose INIT(false);
 
 // Define blitz::Arrays to hold raw and ranked (sorted) data arrays.  Used 
@@ -180,7 +181,7 @@ GLOBAL Brush *brushes[NBRUSHES];  // MCL XXX this should be a static c++ vector 
 
 //# Make absolutely certain SVN_VERSION is defined
 #ifdef __WIN32__
-  #define SVN_VERSION "Windows revision 236"
+  #define SVN_VERSION "Windows revision 238"
 #endif
 #ifndef SVN_VERSION
   #define SVN_VERSION "unknown_version"

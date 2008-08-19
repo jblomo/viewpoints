@@ -48,6 +48,11 @@ data in row- or column-major format.  Note that the line of column labels
 must NOT be preceded by a comment character unless they are specified by the
 user to be part of the header.
 
+Data can also be read directly from the input line using the --stdin command
+line option described below.  This allows piping on systems that support it,
+which allows the user to use a wide variety of third-party applications to
+read or process different data formats such as FITS, CDF, etc.
+
 Configuration Files:
 
 Viewpoints can save basic configuration information, such as axis settings, 
@@ -56,11 +61,12 @@ configuration file for later reuse.  Note that this process does not save the
 actual data or selection information itself!  If it did, this could lead to
 unnecessary duplication of the data files.  The user must save any new or
 modified data they wish to associate with a configuration before they save 
-that configuration.
+that configuration.  Saved configurations can be loaded with or without 
+reading their associated input file.
 
 Usage:
 
-In its current form (Version 2.1.2, build 236) 'viewpoints' is run either by 
+In its current form (Version 2.1.2, build 238) 'viewpoints' is run either by 
 clicking on the 'vp' icon or from the command line in the directory in which 
 it has been installed or to which a path is available.  When viewpoints is 
 run from the icon, it will come up with an array of default data.  When it is
@@ -87,7 +93,7 @@ The invocation for the command line version is:
  vp [optional arguments] [optional inputfile]
 
  the optional arguments are:
-
+    
   --format=ascii (default) [shortcut: -f a] 
     Read an ASCII input file that consists of a header block followed by a
     data block.  Lines in the header block are indicated by one the comment 
@@ -108,7 +114,7 @@ The invocation for the command line version is:
     (\n).  This is followed by a contiguous block that contains a table of 
     binary floating point values.
 
-  --skip_header=<integer> [shortcut: -s <int>] (default 1)
+  --skip_lines=<integer> [shortcut: -s <int>] (default 1)
     Specifies the number of lines that will be assigned to the header block 
     in the absence of comment characters.
 
@@ -175,6 +181,18 @@ The invocation for the command line version is:
     graphics card or if the graphics are inconsistent or very slow.  May be
     useful if you are attempting to look at huge datasets.
 
+  --preserve_data=(T,F) [shortcut: -P <string>] (default TRUE)
+    Preserve existing data for restoration if a read operation fails.  Turn
+    this off to reduce memory usage for extremely karge data sets.
+
+  --stdin [shortcut -I]
+    read input data from stdin.  This allows piping on systems that support 
+    it.
+    e.g.   tail -n 100 bigfile | awk '{print $0 " " $3/$2}' | vp --stdin
+  
+  --trivial_columns=(T,F) [shortcut: -t <string>] (default TRUE)
+    Removes columns with a single value
+
   --verbose [shortcut -O]
     print verbose output with additional diagnostics
     
@@ -199,7 +217,7 @@ You can also select a particular plot by giving it the mouse focus directly,
 or by clicking on its associated tab in the control panel window.  Within 
 different windows, you can use the mouse to select portions of the data set.  
 It is in this feature that the power of 'viewpoints' resides.  Rather than 
-attempt to describe it in detail,we encourage you to experiment!
+attempt to describe it in detail, we encourage you to experiment!
 
 
 Main menu bar
@@ -223,6 +241,8 @@ Main menu bar
  View|Reload File            Reload the existing data file
  View|Restore Panels         Restore deleted plot windows
  View|Default Panels         Restore the default polt window configuration
+ Tools|Edit Column Labels    Prototype of a column label editor
+ Tools|Options               Set viewpoints options
  Help|Help                   Opens a simple HELP window
  Help|About                  Information about this version
 
@@ -353,7 +373,7 @@ randomize               Randomize
 
 Notes and warnings:
 
-The current release of the 'viewpoints' package (version 2.1.2, build 236) is 
+The current release of the 'viewpoints' package (version 2.1.2, build 238) is 
 still a development version.  While every effort has been make to ensure that 
 it will work -- or fail gracefully if it doesn't -- it still has many rough 
 edges.  Some of these are described below.  These issues will all be 

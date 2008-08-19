@@ -121,6 +121,8 @@
 //   do_commented_labels( i) -- Set 'commented labels' flag
 //   do_merge() -- Get append flag
 //   do_merge( i) -- Set merge flag
+//   do_save_old_data() -- Get save old data flag
+//   do_save_old_data( i) -- Set save old data flag
 //   is_ascii_column( jcol) -- Does this column have ASCII values?
 //   is_saved_file() -- Get the 'saved file' flag
 //   is_saved_file( i) -- Set the 'saved file' flag
@@ -133,7 +135,7 @@
 //   selected_data( i)-- Set the 'write all data' flag
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  17-JUL-2008
+// Modified: P. R. Gazis  19-AUG-2008
 //***************************************************************************
 class Data_File_Manager
 {

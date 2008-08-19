@@ -64,7 +64,14 @@ characters '!#%') followed by a <em>data block</em> that consists of a line
 of column labels followed by successive lines of data.  The column labels 
 and data words can be delimited by a user-defined character.  Note that the
 line of column labels is <em>not</em> preceded by a comment character unless
-this specified by the user.
+this is specified by the user.
+</p>
+
+<p>
+Data can also be read directly from the input line using the --stdin command
+line option described below.  This allows piping on systems that support it,
+which allows the user to use a wide variety of third-party applications to
+read or process different data formats such as FITS, CDF, etc.
 </p>
 
 <p>
@@ -78,14 +85,15 @@ represent successive values on a row.
 <h3>Saving and Loading Configuration Information</h3>
 
 <p>
-<em><b>Viewpoint</b></em> can save basic configuration information, such as 
-axis settings, window positions, and the name of the last input or output 
-data file, to a configuration file for later reuse.  <em><b>Note that this 
+<em><b>Viewpoint</b></em> can save configuration information, such as axis 
+settings, window positions, and the name of the last input or output data 
+file, to a configuration file for later reuse.  <em><b>Note that this 
 process does not save the actual data or selection information 
 itself!</b></em>
 If it did, this would produce unnecessary copies of the data files!  The
 user must save any new or modified data they wish to associate with a 
-configuration before they save that configuration.
+configuration before they save that configuration.  Saved configurations
+may be reloaded with or without reading the associated data file.
 <\p>
 
 <a name="Usage"></a>
@@ -183,7 +191,15 @@ The following commands are available from the main menu bar.
 </tr>
 <tr>
  <td>View|Default Panels</td>
- <td>Restore default config</td>
+ <td>Restore default configuration</td>
+</tr>
+<tr>
+ <td>Tools|Edit Column Labels</td>
+ <td>Column label editor (still under development!)</td>
+</tr>
+<tr>
+ <td>Tools|Options</td>
+ <td>Options menu</td>
 </tr>
 <tr>
  <td>Help|Help</td>
@@ -505,7 +521,7 @@ while the window manager focus is on a plot window:
 <h3>Notes and warnings:</h3>
 
 <p>
-The current release of the 'viewpoints' package (version 2.1.2, build 236) 
+The current release of the 'viewpoints' package (version 2.1.2, build 238) 
 is still a development version.  While every effort has been make to ensure 
 that it will work -- or fail gracefully if it doesn't -- it still has many 
 rough edges.  Some of these are described below.  These issues will all be 

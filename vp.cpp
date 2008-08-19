@@ -75,7 +75,7 @@
 //   reset_selection_arrays() -- Reset selection arrays
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  15-AUG-2008
+// Modified: P. R. Gazis  19-AUG-2008
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -169,6 +169,7 @@ Fl_Help_View *help_view_widget;
 // Define pointers to widgets for the Tools|Options window
 Fl_Check_Button* expertButton;
 Fl_Check_Button* trivialColumnsButton;
+Fl_Check_Button* preserveOldDataButton;
 Fl_Input* bad_value_proxy_input;
 
 // Function definitions for the main method
@@ -238,7 +239,7 @@ void usage()
        << "uncommented line that contains column labels" << endl;
   cerr << "  -i, --input_file=FILENAME   "
        << "Read input data from FILENAME." << endl;
-  cerr << "  -I, --stdin   "
+  cerr << "  -I, --stdin                 "
        << "Read input data from stdin." << endl;
   cerr << "  -L, --commented_labels      "
        << "Expect the line that contains column labels to" << endl
@@ -259,6 +260,8 @@ void usage()
   cerr << "  -o, --ordering={rowmajor,columnmajor} " << endl
        << "                              "
        << "Ordering for binary data, default=columnmajor." << endl;
+  cerr << "  -P, --preserve_data=(T,F)   "
+       << "Preserve old data if a file read fails, default=TRUE." << endl;
   cerr << "  -r, --rows=NROWS            "
        << "Startup with this many rows of plot windows," << endl
        << "                              "
@@ -266,7 +269,7 @@ void usage()
   cerr << "  -s, --skip_lines=NLINES     "
        << "Skip NLINES at start of input file, default=0." << endl;
   cerr << "  -t, --trivial_columns=(T,F) "
-       << "Remove colums with a single value, default=TRUE." << endl;
+       << "Remove columns with a single value, default=TRUE." << endl;
   cerr << "  -v, --nvars=NVARS           "
        << "Input has NVARS values per point (only for row" << endl
        << "                              "
@@ -1031,10 +1034,19 @@ void make_options_window( Fl_Widget *o)
     o->tooltip( "Remove any columns that only contain one value");
   }
   
+  // Preserve Old Data
+  {
+    Fl_Check_Button* o = preserveOldDataButton = 
+      new Fl_Check_Button( 10, 60, 250, 20, " Preserve Old Data");
+    o->down_box( FL_DOWN_BOX);
+    o->value( preserve_old_data_mode == true);
+    o->tooltip( "Preserve old data for restoration if a read operation fails");
+  }
+  
   // Bad value proxy field
   {
     Fl_Input* o = bad_value_proxy_input =
-      new Fl_Input( 10, 60, 70, 20, " Bad Value Proxy");
+      new Fl_Input( 10, 85, 70, 20, " Bad Value Proxy");
     o->align( FL_ALIGN_RIGHT);
     stringstream ss_float;
     string s_float;
@@ -1076,6 +1088,10 @@ void cb_options_window( Fl_Widget *o, void* user_data)
     int i_trivial_columns_mode = trivialColumnsButton->value();
     prefs_.set( "trivial_columns_mode", i_trivial_columns_mode);
     trivial_columns_mode = ( i_trivial_columns_mode != 0);
+
+    int i_preserve_old_data_mode = preserveOldDataButton->value();
+    prefs_.set( "preserve_old_data_mode", i_preserve_old_data_mode);
+    preserve_old_data_mode = ( i_preserve_old_data_mode != 0);
 
     float bad_value_proxy = strtof( bad_value_proxy_input->value(), NULL);
     dfm.bad_value_proxy( bad_value_proxy);
@@ -1879,7 +1895,7 @@ void reset_selection_arrays()
 //   main() -- main routine
 //
 // Author:   Creon Levit   unknown
-// Modified: P. R. Gazis   15-AUG-2008
+// Modified: P. R. Gazis   19-AUG-2008
 //***************************************************************************
 //***************************************************************************
 // Main -- Driver routine
@@ -1917,6 +1933,7 @@ int main( int argc, char **argv)
     { "skip_lines", required_argument, 0, 's'},
     { "trivial_columns", required_argument, 0, 't'},
     { "ordering", required_argument, 0, 'o'},
+    { "preserve_data", required_argument, 0, 't'},
     { "rows", required_argument, 0, 'r'},
     { "cols", required_argument, 0, 'c'},
     { "monitors", required_argument, 0, 'm'},
@@ -1944,6 +1961,9 @@ int main( int argc, char **argv)
   int i_trivial_columns_mode;
   prefs_.get( "trivial_columns_mode", i_trivial_columns_mode, 0);
   trivial_columns_mode = ( i_trivial_columns_mode != 0);
+  int i_preserve_old_data_mode;
+  prefs_.get( "preserve_old_data_mode", i_preserve_old_data_mode, 0);
+  preserve_old_data_mode = ( i_preserve_old_data_mode != 0);
 
   // Initialize the data file manager, just in case, even though this should
   // already have been done by the constructor, then set global pointer for 
@@ -1962,7 +1982,7 @@ int main( int argc, char **argv)
   while( 
     ( c = getopt_long_only( 
         argc, argv, 
-        "f:n:v:s:t:o:r:c:m:i:C:M:d:bBhLxOVpI", long_options, NULL)) != -1) {
+        "f:n:v:s:t:o:P:r:c:m:i:C:M:d:bBhLxOVIp", long_options, NULL)) != -1) {
   
     // Examine command-line options and extract any optional arguments
     switch( c) {
@@ -2032,6 +2052,18 @@ int main( int argc, char **argv)
         }
         break;
 
+      // preserve_old_data_mode: Set flag to preserve old data during reads
+      case 'P':
+        if( !strncmp( optarg, "true", 1)) preserve_old_data_mode = true;
+        else if( !strncmp( optarg, "TRUE", 1)) preserve_old_data_mode = true;
+        else if( !strncmp( optarg, "false", 1)) preserve_old_data_mode = false;
+        else if( !strncmp( optarg, "FALSE", 1)) preserve_old_data_mode = false;
+        else {
+          usage();
+          exit( -1);
+        }
+        break;
+      
       // rows: Extract the number of rows of plot windows
       case 'r':
         nrows = atoi( optarg);
@@ -2157,6 +2189,9 @@ int main( int argc, char **argv)
   if( trivial_columns_mode) i_trivial_columns_mode = 1;
   else i_trivial_columns_mode = 0;
   prefs_.set( "trivial_columns_mode", i_trivial_columns_mode);
+  if( preserve_old_data_mode) i_preserve_old_data_mode = 1;
+  else i_preserve_old_data_mode = 0;
+  prefs_.set( "preserve_old_data_mode", i_preserve_old_data_mode);
 
   // If no data file was specified, but there was at least one argument 
   // in the command line, assume the last argument is the filespec.
