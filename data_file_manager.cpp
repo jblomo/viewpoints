@@ -742,20 +742,28 @@ void Data_File_Manager::extract_column_types( string sLine)
 // Step 5:  Close the file.  Returns 0 if successful.
 int Data_File_Manager::read_ascii_file_with_headers() 
 {
-  // STEP 1: Attempt to open input file and make sure it exists
+  istream* inStream;
   ifstream inFile;
-  inFile.open( inFileSpec.c_str(), ios::in);
-  if( inFile.bad() || !inFile.is_open()) {
-    cerr << "read_ascii_file_with_headers:" << endl
-         << " -ERROR, couldn't open <" << inFileSpec.c_str()
-         << ">" << endl;
-    return 1;
-  }
-  else {
-    cout << "read_ascii_file_with_headers:" << endl
-         << " -Opening <" << inFileSpec.c_str() << ">" << endl;
-  }
 
+  // STEP 1: Attempt to open input file and make sure it exists
+
+  // if reading from stdin, bypass opening of input file
+  if (read_from_stdin) {
+    inStream = &cin;
+  } else {
+    inFile.open( inFileSpec.c_str(), ios::in);
+    if( inFile.bad() || !inFile.is_open()) {
+      cerr << "read_ascii_file_with_headers:" << endl
+           << " -ERROR, couldn't open <" << inFileSpec.c_str()
+           << ">" << endl;
+      return 1;
+    }
+    else {
+      cout << "read_ascii_file_with_headers:" << endl
+           << " -Opened <" << inFileSpec.c_str() << ">" << endl;
+    }
+    inStream = &inFile;
+  }
 
   // STEP 2: Read and discard the header block, but save the last line of 
   // the header in the LASTHEADERLINE buffer
@@ -768,8 +776,8 @@ int Data_File_Manager::read_ascii_file_with_headers()
   std::string lastHeaderLine = "";
   int nRead = 0, nHeaderLines = 0;
   for( int iLine = 0; iLine < MAX_HEADER_LINES; iLine++) {
-    if( inFile.eof() != 0) break;
-    (void) getline( inFile, line, '\n');
+    if( inStream->eof() != 0) break;
+    (void) getline( *inStream, line, '\n');
     nRead++;
 
     // Skip empty lines without updating the LASTHEADERLINE buffer
@@ -808,7 +816,7 @@ int Data_File_Manager::read_ascii_file_with_headers()
   }
 
   // If there were problems, close file and quit
-  if( nLabels < 0) {
+  if( nLabels < 0 && !read_from_stdin) {
     inFile.close();
     return 1;
   }
@@ -836,12 +844,12 @@ int Data_File_Manager::read_ascii_file_with_headers()
   unsigned uFirstLine = 0;
   if( doCommentedLabels_) uFirstLine = 1;
   int nTestCycle = 0, nUnreadableData = 0;
-  while( !inFile.eof() && nLines<npoints) {
+  while( !inStream->eof() && nLines<npoints) {
   
     // Get the next line, check for EOF, and increment accounting information
     if( !uFirstLine) {
-      (void) getline( inFile, line, '\n');
-      if( inFile.eof()) break;  // Break here to make accounting work right
+      (void) getline( *inStream, line, '\n');
+      if( inStream->eof()) break;  // Break here to make accounting work right
       nRead++;
     }
 
@@ -1066,7 +1074,9 @@ int Data_File_Manager::read_ascii_file_with_headers()
        << " header + " << nLines 
        << " good data + " << nSkip 
        << " skipped lines = " << nRead << " total." << endl;
-  inFile.close();
+  if (!read_from_stdin) {
+    inFile.close();
+  }
   return 0;
 }
 

@@ -238,6 +238,8 @@ void usage()
        << "uncommented line that contains column labels" << endl;
   cerr << "  -i, --input_file=FILENAME   "
        << "Read input data from FILENAME." << endl;
+  cerr << "  -I, --stdin   "
+       << "Read input data from stdin." << endl;
   cerr << "  -L, --commented_labels      "
        << "Expect the line that contains column labels to" << endl
        << "                              "
@@ -272,9 +274,7 @@ void usage()
   cerr << "  -h, --help                  "
        << "Display this message and exit." << endl;
   cerr << "  -x, --expert                "
-       << "enable expert mode (bypass confirmations, read" << endl
-       << "                              "
-       << "from stdin, etc.)" << endl;
+       << "enable expert mode (bypass confirmations, etc.)" << endl;
   cerr << "  -O, --verbose               "
        << "enable verbOse output with more diagnostics." << endl;
   cerr << "  -V, --version               "
@@ -1931,6 +1931,7 @@ int main( int argc, char **argv)
     { "expert", no_argument, 0, 'x'},
     { "verbose", no_argument, 0, 'O'},
     { "version", no_argument, 0, 'V'},
+    { "stdin", no_argument, 0, 'I'},
 		// Apple OS X "provides" this next argument when any program invoked by clicking on its icon
     { "psn_", required_argument, 0, 'p'}, 
     { 0, 0, 0, 0}
@@ -1961,7 +1962,7 @@ int main( int argc, char **argv)
   while( 
     ( c = getopt_long_only( 
         argc, argv, 
-        "f:n:v:s:t:o:r:c:m:i:C:M:d:bBhLxOVp", long_options, NULL)) != -1) {
+        "f:n:v:s:t:o:r:c:m:i:C:M:d:bBhLxOVpI", long_options, NULL)) != -1) {
   
     // Examine command-line options and extract any optional arguments
     switch( c) {
@@ -2121,6 +2122,11 @@ int main( int argc, char **argv)
       case 'V':
         cout << about_string;
         exit (0);
+        break;
+
+     // read from stdin instead of from a file.
+      case 'I':
+        read_from_stdin = true;
         break;
 
      // Apple OSX gratuitously adds a command line argument -psn_xxx

@@ -78,6 +78,7 @@ GLOBAL bool use_VBOs INIT(true);
 
 // Define various operating mode flags
 GLOBAL bool expert_mode INIT(false);
+GLOBAL bool read_from_stdin INIT(false);
 GLOBAL bool trivial_columns_mode INIT(true);
 GLOBAL bool be_verbose INIT(false);
 
