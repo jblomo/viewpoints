@@ -344,8 +344,8 @@ int Data_File_Manager::load_data_file()
     else {
       sWarning.append( "Restoring existing data.");
       column_info = old_column_info;
-      points = old_points;
       points.resize( old_points.shape());
+      points = old_points;
       npoints = points.columns();
       nvars = points.rows();
       uHaveOldData = 0;

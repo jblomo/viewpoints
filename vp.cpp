@@ -561,7 +561,8 @@ void manage_plot_window_array( Fl_Widget *o, void* user_data)
       do_restore_positions = 1;
     }
     else if( strncmp( widgetTitle, "Append", 6) == 0 ||
-        strncmp( widgetTitle, "Merge", 5) == 0) {
+        strncmp( widgetTitle, "Merge", 5) == 0 ||
+        strncmp( widgetTitle, "Clear all", 9) == 0) {
       thisOperation = NEW_DATA;
       do_restore_settings = 1;
       do_restore_positions = 1;
@@ -928,6 +929,9 @@ void make_main_menu_bar()
   main_menu_bar->add( 
     "File/Save configuration   ", 0, 
     (Fl_Callback *) save_state, 0, FL_MENU_DIVIDER);
+  main_menu_bar->add( 
+    "File/Clear all data       ", 0, 
+    (Fl_Callback *) read_data, (void*) "clear all data");
   main_menu_bar->add( 
     "File/Quit   ", 0, (Fl_Callback *) exit);
 
@@ -1311,12 +1315,20 @@ void read_data( Fl_Widget* o, void* user_data)
   if( strstr( (char *) user_data, "merge") != NULL) dfm.do_merge( 1);
   else dfm.do_merge( 0);
 
-  // If this was a "Reload File" operation and we know the name of the
-  // data file, do nothing.  Otherwise invoke the findInputFile() method of 
-  // the data_file_manager object to query the user for the input filename.
-  // If no file is specified, return immediately and hope the calling routine 
-  // can handle this situation.
-  if( ( strstr( (char *) user_data, "reload") != NULL) &&
+  // If this was a "Clear all data" operation, query the user and set the
+  // doCleaarAllData flag.  If this was a "Reload File" operation and we 
+  // know the name of the data file, do nothing.  Otherwise invoke the 
+  // findInputFile() method of the data_file_manager object to query the 
+  // user for the input filename.  If no file is specified, return 
+  // immediately and hope the calling routine can handle this situation.
+  unsigned doClearAllData = 0;
+  if( strstr( (char *) user_data, "clear") != NULL) {
+    if( !expert_mode &&
+        make_confirmation_window( "Clear all data?  Are you sure?") <= 0)
+      return;
+    doClearAllData = 1;
+  }
+  else if( ( strstr( (char *) user_data, "reload") != NULL) &&
       (dfm.input_filespec()).length() > 0) {
   }
   else{
@@ -1328,9 +1340,12 @@ void read_data( Fl_Widget* o, void* user_data)
     }
   }
 
-  // Invoke the load_data_file() method of the data_file_manager object to 
-  // read the data file.  Error reporting is handled by the method itself.
-  dfm.load_data_file();
+  // If the doClearAllData flag is set, invoke the create_default_data()
+  // method of the Data_File_Manager object to generate default data, 
+  // otherwise invoke the load_data_file() method to read the data file.  
+  // Error reporting is handled by the relevant methods.
+  if( doClearAllData) dfm.create_default_data( 10);
+  else dfm.load_data_file();
 
   // If only one or fewer records are available, quit before something 
   // terrible happens!
@@ -1908,7 +1923,7 @@ int main( int argc, char **argv)
   // definitions
 
   about_string = "\n\
-    viewpoints 2.1.2 \n\
+    viewpoints 2.1.3 \n\
     " + string(SVN_VERSION) + "\n\
     \n\
     using fltk version (major + 0.01*minor): " + fltk_version_ss.str() + "\n\

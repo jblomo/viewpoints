@@ -66,7 +66,7 @@ reading their associated input file.
 
 Usage:
 
-In its current form (Version 2.1.2, build 238) 'viewpoints' is run either by 
+In its current form (Version 2.1.3, build 239) 'viewpoints' is run either by 
 clicking on the 'vp' icon or from the command line in the directory in which 
 it has been installed or to which a path is available.  When viewpoints is 
 run from the icon, it will come up with an array of default data.  When it is
@@ -230,8 +230,9 @@ Main menu bar
  File|Write ASCII file       Write all the current data as an ASCII file
  File|Save all data          Write all data
  File|Save selected data     Write only the currently selected data
- File|Load Configuration     Load basic configuration information
- File|Save Configuration     Save basic configuration information
+ File|Load Configuration     Load configuration information
+ File|Save Configuration     Save configuration information
+ File|Clear all data         Replace data with a small default array
  File|Quit                   Quit
  View|File Name              Show name of current data file
  View|Add Row                Add a row of plot windows
@@ -373,7 +374,7 @@ randomize               Randomize
 
 Notes and warnings:
 
-The current release of the 'viewpoints' package (version 2.1.2, build 238) is 
+The current release of the 'viewpoints' package (version 2.1.3, build 239) is 
 still a development version.  While every effort has been make to ensure that 
 it will work -- or fail gracefully if it doesn't -- it still has many rough 
 edges.  Some of these are described below.  These issues will all be 
