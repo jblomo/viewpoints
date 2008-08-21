@@ -96,6 +96,35 @@ configuration before they save that configuration.  Saved configurations
 may be reloaded with or without reading the associated data file.
 <\p>
 
+<p>
+<em><b>Viewpoint</b></em> can save configuration information, such as axis 
+and brush settings, window positions, and the name of the last input or 
+output data file, to a <em>'configuration file'</em> for later reuse.  
+This is equivalent to saving a snapshot of the work session.  <em><b>Note 
+that this process does not save the actual data or selection information 
+itself!</b></em>
+If it did, this could lead to unnecessary duplication of the data files.  
+For this reason, the user must save any new or modified data they wish to 
+associate with a configuration before they save that configuration.
+</p>
+
+<p>
+Saved configurations can be loaded with or without reading their associated 
+input file.  When this happens, viewpoints will attempt to use the axis
+indices described in the configuration file (e.g., if the configuration
+used axes 1, 2, 6, 7, and 10, viewpoints will attempt to display the
+corresponding columns in the current data file).
+</p>
+
+<p>
+Configuration files are saved in XML format for ease of display, but 
+<em><b>these are not treated as conventional XML files.</b></em>
+In particular, due to limitations of the BOOST serialization library, 
+<em><b>the contents of these files are order dependant.</b></em>  
+For this reason, any attempts to edit them should be performed with extreme 
+caution.
+</p>
+
 <a name="Usage"></a>
 <h3>Usage</h3>
 
@@ -525,7 +554,7 @@ while the window manager focus is on a plot window:
 <h3>Notes and warnings:</h3>
 
 <p>
-The current release of the 'viewpoints' package (version 2.1.3, build 239) 
+The current release of the 'viewpoints' package (version 2.1.3, build 240) 
 is still a development version.  While every effort has been make to ensure 
 that it will work -- or fail gracefully if it doesn't -- it still has many 
 rough edges.  Some of these are described below.  These issues will all be 

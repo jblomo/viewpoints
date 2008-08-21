@@ -20,7 +20,7 @@
 //   modified by Paul Gazis and Creon Levit for use with viewpoints.
 //
 // Author: Bill Spitzak and others   1998-2005
-// Modified: P. R. Gazis  15-AUG-2008
+// Modified: P. R. Gazis  21-AUG-2008
 //***************************************************************************
 
 // Include header
@@ -86,8 +86,8 @@ Vp_File_Chooser::Vp_File_Chooser(
   const char *value_in, const char *filter_in, int type_in, const char *title)
 {
   // Initialize to ASCII mode with no delimiter
-  hasConfigQuery_ = 0;
-  isAscii_ = 1;
+  fileType_ = 0;
+  isConfigFileMode_ = 0;
   isConfigOnly_ = 0;
   delimiter_char_ = ' ';
   doCommentedLabels_ = 0;
@@ -205,12 +205,13 @@ Vp_File_Chooser::Vp_File_Chooser(
         o->label( filetype_label);
       }
       { 
-        Fl_Choice* o = fileType = new Fl_Choice( 85, 320, 215, 25);
+        Fl_Choice* o = fileTypeChoice = new Fl_Choice( 85, 320, 215, 25);
         o->down_box( FL_BORDER_BOX);
         o->labelfont( 1);
         o->add( "ASCII");
         o->add( "binary");
-        o->value( isAscii_ != 1);
+        // o->add( "FITS table extension");
+        o->value( fileType_);
         o->callback( (Fl_Callback*) cb_fileType);
         Fl_Group::current()->resizable(o);
       }
@@ -442,7 +443,7 @@ Vp_File_Chooser::Vp_File_Chooser(
   update_favorites();
   value( value_in);
   type( type_in);  // XXX PRG: Why is this here twice?
-  isAscii_ = 1;
+  fileType_ = 0;
   
   // Set up selection state and box
   int iWriteSelectionInfo;
@@ -777,12 +778,56 @@ char* Vp_File_Chooser::escape_sequences_remove( char *orig)
 }
 
 //*****************************************************************************
+// Vp_File_Chooser::fileType( fileType_in) -- Set the file type value and 
+// and and update the controls for the Data File mode.  NOTE: for development
+// purposes, file types are specified as integers, and it is the user's 
+// responsibility to remember what these integers mean.  At present, the
+// assignments are: (0,1,2) -> ASCII, binary, FITS
+void Vp_File_Chooser::fileType( int fileType_in)
+{ 
+  fileType_ = fileType_in;
+  if( fileType_ < 0) fileType_ = 0;
+  if( fileType_ > 1) fileType_ = 1;
+  fileTypeChoice->value( fileType_);
+
+  if( fileType_ <= 0) {   // ASCII files
+    delimiter_box->show();
+    delimiter_group->show();
+    commentLabelsButton->show();
+    // fitsExtensionNumber->hide();
+  }
+  else if( fileType_ == 1) {   // binary files
+    delimiter_box->hide();
+    delimiter_group->hide();
+    commentLabelsButton->hide();
+    // fitsExtensionNumber->hide();
+  }
+  else if( fileType_ >= 1) {   // FITS files
+    delimiter_box->hide();
+    delimiter_group->hide();
+    commentLabelsButton->hide();
+    // selectionButton->hide();
+    // fitsExtensionNumber->show();
+  }
+}
+
+//*****************************************************************************
+// Vp_File_Chooser::fileType() -- Get the fileType_ value.
+int Vp_File_Chooser::fileType() { return fileType_;}
+
+//*****************************************************************************
 // Vp_File_Chooser::fileTypeMenu_activate() -- Activate the FILETYPE menu
-void Vp_File_Chooser::fileTypeMenu_activate() { fileType->activate(); }
+void Vp_File_Chooser::fileTypeMenu_activate()
+{
+  fileTypeChoice->activate();
+}
 
 //*****************************************************************************
 // Vp_File_Chooser::fileTypeMenu_deactivate() -- Deactivate the FILETYPE menu
-void Vp_File_Chooser::fileTypeMenu_deactivate() { fileType->deactivate(); }
+void Vp_File_Chooser::fileTypeMenu_deactivate()
+{
+  fileTypeChoice->deactivate();
+}
 
 //*****************************************************************************
 // Vp_File_Chooser::filter() -- Get the file browser filter pattern(s).
@@ -857,29 +902,6 @@ void Vp_File_Chooser::filter_value( int index_in)
 }
 
 //*****************************************************************************
-// Vp_File_Chooser::hasConfigQuery( hasConfiqQuery_in) -- Switch the query
-// regarding whether this is to be Configuration Only on and off.
-void Vp_File_Chooser::hasConfigQuery( int hasConfiqQuery_in)
-{
-  hasConfigQuery_ = ( hasConfiqQuery_in != 0);
-  if( hasConfigQuery_ != 0) {
-    delimiter_hide();
-    configQueryButton->show();
-  }
-  else {
-    configQueryButton->hide();
-  }
-}
-
-//*****************************************************************************
-// Vp_File_Chooser::hasConfigQuery() -- Return whether the Configuration Only
-// query is visible. Not needed but included for completeness.
-int Vp_File_Chooser::hasConfigQuery()
-{
-  return hasConfigQuery_;
-}
-
-//*****************************************************************************
 // Vp_File_Chooser::hide() -- Hide the main window.
 void Vp_File_Chooser::hide()
 {
@@ -901,29 +923,38 @@ void Vp_File_Chooser::iconsize( uchar size_in)
 }
 
 //*****************************************************************************
-// Vp_File_Chooser::isAscii( isAscii_in, int isXML_in) -- Set the isAscii_ 
-// flag and update the FILETYPE menu.  NOTE: This includes special provisions
-// to hide parts of the menu for special ASCII formats such as XML.
-void Vp_File_Chooser::isAscii( int isAscii_in, int isXML_in)
-{ 
-  isAscii_ = isAscii_in;
-  fileType->value( isAscii_ != 1);
-  if( isAscii_ != 1 || isXML_in != 0) {
-    delimiter_box->hide();
-    delimiter_group->hide();
-    commentLabelsButton->hide();
+// Vp_File_Chooser::isConfigFileMode( isConfigFileMode_in) -- Switch the
+// Configuration File Mode flag on and off and reconfigure the controls in
+// the file choser window.  Note: since the file chooser comes up with this
+// flag turned off, it should only ever be necessary to turn it on, but the
+// 'off' capability is included for completeness, and sets the file chooser
+// to its ASCII data file mode.
+void Vp_File_Chooser::isConfigFileMode( int isConfigFileMode_in)
+{
+  isConfigFileMode_ = ( isConfigFileMode_in != 0);
+  if( isConfigFileMode_ != 0) {
+    fileType( 0);
+    fileTypeMenu_deactivate();
+    selectionButton->hide();
+    delimiter_hide();
+    configQueryButton->show();
   }
   else {
-    delimiter_box->show();
-    delimiter_group->show();
-    commentLabelsButton->show();
+    configQueryButton->hide();
+    fileType( 0);
+    selectionButton->show();
+    delimiter_show();
+    fileTypeMenu_activate();
   }
-  if( isXML_in != 0) selectionButton->hide();
 }
 
 //*****************************************************************************
-// Vp_File_Chooser::isAscii( isAscii_in) -- Get the isAscii_ flag
-int Vp_File_Chooser::isAscii() { return isAscii_;}
+// Vp_File_Chooser::isConfigFileMode() -- Return value of the Configuration 
+// File Mode flag.  Not needed but included for completeness.
+int Vp_File_Chooser::isConfigFileMode()
+{
+  return isConfigFileMode_;
+}
 
 //*****************************************************************************
 // Vp_File_Chooser::isConfigOnly( isConfigOnly_in) -- Set the config only flag.
@@ -1996,25 +2027,35 @@ void Vp_File_Chooser::fileTypeCB()
 {
   // Get the selected item
   const char *item;
-  item = fileType->text( fileType->value());
+  item = fileTypeChoice->text( fileTypeChoice->value());
   
   // Get default patterns
   if( strcmp( item, "ASCII") == 0) {
     strcpy( pattern_, "*.{txt,lis,asc}\tAll Files (*)");
     fileBrowser->filter( "*.{txt,lis,asc}");
-    isAscii_ = 1;
+    fileType_ = 0;
+  }
+  else if( strcmp( item, "binary") == 0) {
+    strcpy( pattern_, "*.bin\tAll Files (*)");
+    fileBrowser->filter( "*.bin");
+    fileType_ = 1;
+  }
+  else if( strcmp( item, "FITS") == 0) {
+    strcpy( pattern_, "*.fits\tAll Files (*)");
+    fileBrowser->filter( "*.fits");
+    fileType_ = 2;
   }
   else {
     strcpy( pattern_, "*.bin\tAll Files (*)");
     fileBrowser->filter( "*.bin");
-    isAscii_ = 0;
+    fileType_ = 1;
   }
 
   // Set the pattern
   filter( pattern_);
 
   // If this isn't ASCII, turn off delimiter group and comment labels button
-  if( isAscii_ != 1) delimiter_hide();
+  if( fileType_ != 0) delimiter_hide();
   else delimiter_show();
   
   // If necessary, rescan the directory.

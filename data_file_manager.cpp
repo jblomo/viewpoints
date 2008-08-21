@@ -19,7 +19,7 @@
 // Purpose: Source code for <data_file_manager.h>
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  19-AUG-2008
+// Modified: P. R. Gazis  21-AUG-2008
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -57,7 +57,8 @@ const bool include_line_number = false; // MCL XXX This should be an option
 // Data_File_Manager::Data_File_Manager() -- Default constructor, calls the
 // initializer.
 Data_File_Manager::Data_File_Manager() : delimiter_char_( ' '), 
-  bad_value_proxy_( 0.0), isAsciiInput( 1), isAsciiOutput( 0), 
+  bad_value_proxy_( 0.0), 
+  inputFileType_( 0), outputFileType_( 0),
   readSelectionInfo_( 0), doAppend( 0), doMerge( 0), 
   writeAllData_( 1), writeSelectionInfo_( 0), doCommentedLabels_( 0),
   isColumnMajor( 0), isSavedFile_( 0)
@@ -75,9 +76,9 @@ void Data_File_Manager::initialize()
   bad_value_proxy_ = 0.0;
 
   // Set default local values for file reads.
-  isAsciiInput = 1;
-  isAsciiOutput = 0;
-  isAsciiData = isAsciiInput;
+  inputFileType_ = 0;
+  outputFileType_ = 1;
+  isAsciiData = (inputFileType_ == 0);
   doAppend = 0;
   doMerge = 0;
   readSelectionInfo_ = 1;
@@ -113,9 +114,9 @@ void Data_File_Manager::copy_state( Data_File_Manager* dfm)
   bad_value_proxy_ = dfm->bad_value_proxy_;
 
   // Copy local values for file reads.
-  isAsciiInput = dfm->isAsciiInput;
-  isAsciiOutput = dfm->isAsciiOutput;
-  isAsciiData = isAsciiInput;
+  inputFileType_ = dfm->inputFileType_;
+  outputFileType_ = dfm->outputFileType_;
+  isAsciiData = (inputFileType_ == 0);
   doAppend = dfm->doAppend;
   doMerge = dfm->doMerge;
   readSelectionInfo_ = dfm->readSelectionInfo_;
@@ -158,9 +159,17 @@ int Data_File_Manager::findInputFile()
   // of this should be moved to Vp_File_Chooser
   string title;
   string pattern;
-  if( isAsciiInput) {
+  if( inputFileType_ == 0) {
     title = "Open data file";
     pattern = "*.{txt,lis,asc}\tAll Files (*)";
+  }
+  else if( inputFileType_ == 1) {
+    title = "Open data file";
+    pattern = "*.bin\tAll Files (*)";
+  }
+  else if( inputFileType_ == 2) {
+    title = "Open data file";
+    pattern = "*.fits\tAll Files (*)";
   }
   else {
     title = "Open data file";
@@ -177,7 +186,7 @@ int Data_File_Manager::findInputFile()
   Vp_File_Chooser* file_chooser =
     new Vp_File_Chooser( 
       cInFileSpec, pattern.c_str(), Vp_File_Chooser::SINGLE, title.c_str());
-  file_chooser->isAscii( isAsciiInput);
+  file_chooser->fileType( inputFileType_);
   
   // Comment this out to use the value file_chooser provides
   // file_chooser->doCommentedLabels( doCommentedLabels_);
@@ -227,16 +236,19 @@ int Data_File_Manager::findInputFile()
 
   // Query Vp_File_Chooser object to get the file type, delimiter character,
   // and usage of a comment character with the column label information
-  if( file_chooser->isAscii() != 0) isAsciiInput = 1;
-  else isAsciiInput = 0;
+  inputFileType_ = file_chooser->fileType();
   delimiter_char_ = file_chooser->delimiter_char();
   if( file_chooser->doCommentedLabels() != 0) doCommentedLabels_ = 1;
   else doCommentedLabels_ = 0;
   
   // Load the inFileSpec string
   inFileSpec.assign( (string) cInFileSpec);
-  if( isAsciiInput == 1) 
+  if( inputFileType_ == 0) 
     cout << "Data_File_Manager::inputFile: Reading ASCII data from <";
+  else if( inputFileType_ == 1) 
+    cout << "Data_File_Manager::findInputFile: Reading binary data from <";
+  else if( inputFileType_ == 2) 
+    cout << "Data_File_Manager::findInputFile: Reading FITS extension from <";
   else 
     cout << "Data_File_Manager::findInputFile: Reading binary data from <";
   cout << inFileSpec.c_str() << ">" << endl;
@@ -303,8 +315,8 @@ int Data_File_Manager::load_data_file()
   cout << "Data_File_Manager::load_data_file: Reading input data from <"
        << inFileSpec.c_str() << ">" << endl;
   int iReadStatus = 0;
-  if( isAsciiInput == 0) iReadStatus = read_binary_file_with_headers();
-  else iReadStatus = read_ascii_file_with_headers();
+  if( inputFileType_ == 0) iReadStatus = read_ascii_file_with_headers();
+  else iReadStatus = read_binary_file_with_headers();
   if( iReadStatus != 0) {
     cout << "Data_File_Manager::load_data_file: "
          << "Problems reading file <" << inFileSpec.c_str() << ">" << endl;
@@ -477,7 +489,7 @@ int Data_File_Manager::load_data_file()
 
   // Update dataFileSpec, set saved file flag, and report success
   dataFileSpec = inFileSpec;
-  isAsciiData = isAsciiInput;
+  isAsciiData = (inputFileType_ == 0);
   if( doAppend > 0 | doMerge > 0) isSavedFile_ = 0;
   else isSavedFile_ = 1;
   return 0;
@@ -1355,7 +1367,9 @@ int Data_File_Manager::findOutputFile()
   string pattern;
   if( writeAllData_ != 0) title = "Write all data to file";
   else title = "Write selected data to file";
-  if( isAsciiOutput) pattern = "*.{txt,lis,asc}\tAll Files (*)";
+  if( outputFileType_ == 0) pattern = "*.{txt,lis,asc}\tAll Files (*)";
+  else if( outputFileType_ == 1) pattern = "*.bin\tAll Files (*)";
+  else if( outputFileType_ == 2) pattern = "*.fits\tAll Files (*)";
   else pattern = "*.bin\tAll Files (*)";
 
   // Initialize output filespec.  NOTE: cOutFileSpec is defined as const 
@@ -1370,7 +1384,7 @@ int Data_File_Manager::findOutputFile()
     new Vp_File_Chooser( 
       cOutFileSpec, pattern.c_str(), Vp_File_Chooser::CREATE, title.c_str());
   file_chooser->directory( sDirectory_.c_str());
-  file_chooser->isAscii( isAsciiOutput);
+  file_chooser->fileType( outputFileType_);
 
   // Loop: Select succesive filespecs until a non-directory is obtained
   while( 1) {
@@ -1444,8 +1458,7 @@ int Data_File_Manager::findOutputFile()
   //   Vp_File_Chooser( "write ASCII output to file", NULL, NULL, 0);
 
   // Get file type and content information
-  if( file_chooser->isAscii() != 0) isAsciiOutput = 1;
-  else isAsciiOutput = 0;
+  outputFileType_ = file_chooser->fileType();
   delimiter_char_ = file_chooser->delimiter_char();
   if( file_chooser->writeSelectionInfo() != 0) writeSelectionInfo_ = 1;
   else writeSelectionInfo_ = 0;
@@ -1462,9 +1475,13 @@ int Data_File_Manager::findOutputFile()
   }
   else{
     outFileSpec.assign( (string) cOutFileSpec);
-    if( isAsciiOutput == 1) 
+    if( outputFileType_ == 0) 
       cout << "Data_File_Manager::findOutputFile: Writing ASCII data to <";
-    else 
+    else if( outputFileType_ == 1) 
+      cout << "Data_File_Manager::findOutputFile: Writing binary data to <";
+    else if( outputFileType_ == 2) 
+      cout << "Data_File_Manager::findOutputFile: Writing FITS extension to <";
+    else
       cout << "Data_File_Manager::findOutputFile: Writing binary data to <";
     cout << outFileSpec.c_str() << ">" << endl;
     iResult = 0;
@@ -1495,12 +1512,12 @@ int Data_File_Manager::save_data_file( string outFileSpec)
 int Data_File_Manager::save_data_file()
 {
   int result = 0;
-  if( isAsciiOutput != 1) result = write_binary_file_with_headers();
-  else result = write_ascii_file_with_headers();
+  if( outputFileType_ == 0) result = write_ascii_file_with_headers();
+  else result = write_binary_file_with_headers();
   if( result == 0) {
     isSavedFile_ = 1;
     dataFileSpec = outFileSpec;
-    isAsciiData = isAsciiOutput;
+    isAsciiData = (outputFileType_ == 0);
   }
   return result;
 }
@@ -2052,6 +2069,22 @@ void Data_File_Manager::input_filespec( string inFileSpecIn)
 }
 
 //***************************************************************************
+// Data_File_Manager::inputFileType() -- Get input file type.
+int Data_File_Manager::inputFileType()
+{
+  return inputFileType_;
+}
+
+//***************************************************************************
+// Data_File_Manager::inputFileType( i) -- Set input file type.
+void Data_File_Manager::inputFileType( int i)
+{
+  inputFileType_ = i;
+  if( inputFileType_ < 0) inputFileType_ = 0;
+  if( inputFileType_ > 1) inputFileType_ = 1;
+}
+
+//***************************************************************************
 // Data_File_Manager::n_ascii_columns() -- Get number of columns that 
 // contain ASCII values
 int Data_File_Manager::n_ascii_columns()
@@ -2075,4 +2108,20 @@ string Data_File_Manager::output_filespec()
 void Data_File_Manager::output_filespec( string outFileSpecIn)
 {
   outFileSpec = outFileSpecIn;
+}
+
+//***************************************************************************
+// Data_File_Manager::outputFileType() -- Get output file type.
+int Data_File_Manager::outputFileType()
+{
+  return outputFileType_;
+}
+
+//***************************************************************************
+// Data_File_Manager::outputFileType( i) -- Set output file type.
+void Data_File_Manager::outputFileType( int i)
+{
+  outputFileType_ = i;
+  if( outputFileType_ < 0) outputFileType_ = 0;
+  if( outputFileType_ > 1) outputFileType_ = 1;
 }

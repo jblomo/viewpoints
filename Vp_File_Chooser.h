@@ -35,7 +35,7 @@
 //      vp.cpp could be consolidated.
 //
 // Author: Bill Spitzak and others   1998-2005
-// Modified: P. R. Gazis  15-AUG-2008
+// Modified: P. R. Gazis  21-AUG-2008
 //***************************************************************************
 
 // Protection to make sure this header is not included twice
@@ -136,13 +136,11 @@ using namespace std;
 //    filter( pattern_in) -- Set the file browser filter pattern(s)
 //    filter_value() -- Get index of filter in choice window
 //    filter_value( index_in) -- Set index of filter in choice window
-//    hasConfigQuery( hasConfigQuery_in) -- Switch Config query on or off
-//    hasConfigQuery() -- Is Confiq query visible?
 //    hide() -- Hide main window
 //    iconsize() -- Get icon size
 //    iconsize( size_in) -- Set icon size
-//    isAscii( isAscii_in) -- Set ASCII flag
-//    isAscii() -- Get ASCII flag
+//    isConfigFileMode() -- Is this to be the Config File Mode?
+//    isConfigFileMode( isConfigFileMode_in) -- Set Config File Mode flag
 //    isConfigOnly() -- Is this to be Configuration Only?
 //    isConfigOnly( isConfigOnly_in) -- Set Configuration Only flag
 //    char* label() -- Get label of main window
@@ -219,7 +217,7 @@ using namespace std;
 //    cb_previewButton_i( *, *) -- Callback method for the preview checkbox
 //
 // Author: Bill Spitzak and others   1998-2005
-// Modified: P. R. Gazis  08-JUL-2008
+// Modified: P. R. Gazis  21-AUG-2008
 //***************************************************************************
 class FL_EXPORT Vp_File_Chooser
 {
@@ -295,9 +293,9 @@ class FL_EXPORT Vp_File_Chooser
     char pattern_[ 1024];
     char preview_text_[ 2048];
     int type_;
-    int hasConfigQuery_;
-    int isAscii_;
+    int isConfigFileMode_;
     int isConfigOnly_;
+    int fileType_;
     int writeSelectionInfo_;
     int doCommentedLabels_;
 
@@ -308,7 +306,7 @@ class FL_EXPORT Vp_File_Chooser
     Fl_File_Input *fileName;
     Fl_Box *previewBox;
     Fl_Choice *showChoice;
-    Fl_Choice *fileType;
+    Fl_Choice *fileTypeChoice;
     Fl_Double_Window *window;
     
     // FLTK Buttons
@@ -354,19 +352,19 @@ class FL_EXPORT Vp_File_Chooser
     int doCommentedLabels() const { return doCommentedLabels_;};
     char* escape_sequences_insert( char *orig);
     char* escape_sequences_remove( char *orig);
+    void fileType( int fileType_in);
+    int fileType();
     void fileTypeMenu_activate();
     void fileTypeMenu_deactivate();
     const char* filter();
     void filter( const char *pattern_in);
     int filter_value();
     void filter_value( int index_in);
-    void hasConfigQuery( int hasConfiqQuery_in);
-    int hasConfigQuery();
     void hide();
     uchar iconsize();
     void iconsize( uchar size_in);
-    void isAscii( int isAscii_in, int isXML_in = 0);
-    int isAscii();
+    void isConfigFileMode( int isConfigFileMode_in);
+    int isConfigFileMode();
     void isConfigOnly( int isConfigOnly_in);
     int isConfigOnly();
     const char* label();

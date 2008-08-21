@@ -75,7 +75,7 @@
 //   reset_selection_arrays() -- Reset selection arrays
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  19-AUG-2008
+// Modified: P. R. Gazis  21-AUG-2008
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -1533,18 +1533,15 @@ int load_state( Fl_Widget* o)
   const char *cInFileSpec = dfm.directory().c_str();
   // const char *cInFileSpec = strcat( dfm.directory().c_str(), "vp.xml");
 
-  // Instantiate and show an Vp_File_Chooser widget.  NOTE: The pathname 
-  // must be passed as a variable or the window will begin in some root 
-  // directory.
+  // Instantiate and show an Vp_File_Chooser widget and switch it to the
+  // Configuration File Mode.  NOTE: The pathname must be passed as a 
+  // variable or the window will begin in some root directory.
   char* title = "Load saved configuration from file";
   char* pattern = "*.xml\tAll Files (*)";
   Vp_File_Chooser* file_chooser =
     new Vp_File_Chooser( cInFileSpec, pattern, Vp_File_Chooser::SINGLE, title);
   file_chooser->directory( cInFileSpec);
-  file_chooser->isAscii( 1);
-  file_chooser->fileTypeMenu_deactivate();
-  file_chooser->delimiter_hide();
-  file_chooser->hasConfigQuery( 1);
+  file_chooser->isConfigFileMode( 1);
 
   // Loop: wait until the file selection is done.  NOTE: This version 
   // doesn't work and is retained only for archival purposes
@@ -1762,8 +1759,7 @@ int save_state( Fl_Widget* o)
     new Vp_File_Chooser( 
       cOutFileSpec, pattern, Vp_File_Chooser::CREATE, title);
   file_chooser->directory( cOutFileSpec);
-  file_chooser->isAscii( 1, 1);
-  file_chooser->fileTypeMenu_deactivate();
+  file_chooser->isConfigFileMode( 1);
 
   // Loop: Select succesive filespecs until a non-directory is obtained
   while( 1) {
@@ -2004,8 +2000,8 @@ int main( int argc, char **argv)
 
       // format: Extract format of input file
       case 'f':
-        if( !strncmp( optarg, "binary", 1)) dfm.ascii_input( 0);
-        else if( !strncmp( optarg, "ascii", 1)) dfm.ascii_input( 1);
+        if( !strncmp( optarg, "ascii", 1)) dfm.inputFileType( 0);
+        else if( !strncmp( optarg, "binary", 1)) dfm.inputFileType( 1);
         else {
           usage();
           exit( -1);

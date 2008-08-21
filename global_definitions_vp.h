@@ -181,7 +181,7 @@ GLOBAL Brush *brushes[NBRUSHES];  // MCL XXX this should be a static c++ vector 
 
 //# Make absolutely certain SVN_VERSION is defined
 #ifdef __WIN32__
-  #define SVN_VERSION "Windows revision 239"
+  #define SVN_VERSION "Windows revision 240"
 #endif
 #ifndef SVN_VERSION
   #define SVN_VERSION "unknown_version"
@@ -189,9 +189,12 @@ GLOBAL Brush *brushes[NBRUSHES];  // MCL XXX this should be a static c++ vector 
 
 // Define global to hold serialization version.  These must be made global
 // so they will be available to serialization methods for different classes
+// WARNING: The 'current_' and 'last_' values must record the last revision 
+// in which the serialization methods were changed and the last revision 
+// for which configuration files were supported!
 GLOBAL int current_serialization_version INIT(225);
 GLOBAL int last_supported_serialization_version INIT(-100);
-GLOBAL int serialization_file_version INIT(-1);
+GLOBAL int serialization_file_version INIT(-1);  // Will be reset at runtime
 
 // Define pointer to hold confirmation window
 GLOBAL Fl_Window *confirmation_window;

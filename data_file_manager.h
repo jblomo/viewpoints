@@ -36,7 +36,7 @@
 //      values' flag, and a lookup table to relate indices to ASCII values.
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  15-AUG-2008
+// Modified: P. R. Gazis  21-AUG-2008
 //***************************************************************************
 
 // Protection to make sure this header is not included twice
@@ -98,8 +98,14 @@
 //   directory( sDirectory_in) -- Set pathname
 //   input_filespec() -- Get input filespec
 //   input_filespec( inFileSpecIn) -- Set input filespec
+//   inputFileType() -- Get input file type
+//   inputFileType( i) -- Set input file type
+//   n_skip_lines() -- Gte number of header lines to be skipped
+//   n_skip_lines( i) -- Set number of header lines to be skipped
 //   output_filespec() -- Get output filespec
 //   output_filespec( outFileSpecIn) -- Set output filespec
+//   outputFileType() -- Get output file type
+//   outputFileType( i) -- Set output file type
 //
 //   bad_value_proxy() -- Get bad value proxy
 //   bad_value_proxy( f) -- Set bad value proxy
@@ -107,10 +113,6 @@
 //   delimiter_char() -- Get delimiter character
 //   delimiter_char( c) -- Set delimiter character
 //   inFileSpec() -- Get input filespec
-//   ascii_input() -- Get ASCII input flag
-//   ascii_input( i) -- Set ASCII input flag
-//   ascii_output() -- Get ASCII output flag
-//   ascii_output( i) -- Set ASCII output flag
 //   ascii_value( jcol, ivalue) -- ASCII value ival for column jcol
 //   ascii_value_index( jcol, sToken) -- Index is sToken in clumn jcol
 //   column_major() -- Get column major flag
@@ -127,7 +129,7 @@
 //   is_saved_file() -- Get the 'saved file' flag
 //   is_saved_file( i) -- Set the 'saved file' flag
 //   n_ascii_columns() -- Get number of ascii columns
-//   n_ascii_values( jcol) -- Get number of ASCII valuies in colum jcol
+//   n_ascii_values( jcol) -- Get number of ASCII values in colum jcol
 //   needs_restore_panels() -- Get flag
 //   needs_restore_panels( i) -- Set flag
 //   read_selection_info() -- Get the 'read selections' flag
@@ -135,7 +137,7 @@
 //   selected_data( i)-- Set the 'write all data' flag
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  19-AUG-2008
+// Modified: P. R. Gazis  21-AUG-2008
 //***************************************************************************
 class Data_File_Manager
 {
@@ -163,7 +165,7 @@ class Data_File_Manager
       }
       catch( exception &e) {}
       inFileSpec = dataFileSpec;
-      isAsciiInput = isAsciiData;
+      inputFileType_ = (isAsciiData==0);
     }
 
     void remove_trivial_columns();
@@ -189,7 +191,7 @@ class Data_File_Manager
 
     // I/O parameters and state variables
     int nSkipHeaderLines;
-    int isAsciiInput, isAsciiOutput, isAsciiData;
+    int inputFileType_, outputFileType_, isAsciiData;
     int doAppend, doMerge, writeAllData_;
     int readSelectionInfo_, writeSelectionInfo_;
     int doCommentedLabels_;
@@ -233,20 +235,20 @@ class Data_File_Manager
     void directory( string sDirectory_in);
     string input_filespec();
     void input_filespec( string inFileSpecIn);
+    int inputFileType();
+    void inputFileType( int i);
     int n_skip_lines() { return nSkipHeaderLines;}
     void n_skip_lines( int i) { nSkipHeaderLines = i;}
     string output_filespec();
     void output_filespec( string outFileSpecIn);
+    int outputFileType();
+    void outputFileType( int i);
 
     float bad_value_proxy() { return bad_value_proxy_;}
     void bad_value_proxy( float f) { bad_value_proxy_ = f;}
     string column_label( int i) { return column_info[i].label;}
     char delimiter_char() { return delimiter_char_;}
     void delimiter_char( char c) { delimiter_char_ = c;}
-    int ascii_input() { return isAsciiInput;}
-    void ascii_input( int i) { isAsciiInput = (i==1);}
-    int ascii_output() { return isAsciiOutput;}
-    void ascii_output( int i) { isAsciiOutput = (i==1);}
     string ascii_value( int jcol, int ival);
     int ascii_value_index( int jcol, string &sToken);
     int column_major() { return isColumnMajor;}
