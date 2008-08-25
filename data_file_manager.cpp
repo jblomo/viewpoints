@@ -2350,20 +2350,22 @@ void Data_File_Manager::delete_labels( Fl_Widget *o, void* user_data)
   for( int i=0; i<nvars; i++) {
     if( edit_labels_widget->checked(i+1) <= 0) {
       points( ivar, NPOINTS) = points( i, NPOINTS);
+      ranked( ivar) = 0;
+
       Column_Info column_info_buf;  // Why is this necessary?
       column_info_buf = column_info[i];
       column_info[ivar] = column_info_buf;
-      // ranked_points( ivar, NPOINTS) = ranked_points( i, NPOINTS);
       ivar++;
     }
   }
   nvars = ivar;
   points.resizeAndPreserve( nvars, npoints);
+  ranked_points.resizeAndPreserve( nvars, npoints);
+
   column_info.resize( nvars);
   Column_Info column_info_buf;
   column_info_buf.label = string( "-nothing-");
   column_info.push_back( column_info_buf);
-  // ranked_points.resize( nvars, npoints);
 
   // Check the dimensions of the data array and vector of Column_Info
   // objects to make sure we finished with one more column label 
