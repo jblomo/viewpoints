@@ -169,7 +169,7 @@ int Data_File_Manager::findInputFile()
   }
   else if( inputFileType_ == 2) {
     title = "Open data file";
-    pattern = "*.fits\tAll Files (*)";
+    pattern = "*.{fit,fits}\tAll Files (*)";
   }
   else {
     title = "Open data file";
@@ -316,6 +316,7 @@ int Data_File_Manager::load_data_file()
        << inFileSpec.c_str() << ">" << endl;
   int iReadStatus = 0;
   if( inputFileType_ == 0) iReadStatus = read_ascii_file_with_headers();
+  else if( inputFileType_ == 2) iReadStatus = read_table_from_fits_file();
   else iReadStatus = read_binary_file_with_headers();
   if( iReadStatus != 0) {
     cout << "Data_File_Manager::load_data_file: "
@@ -1355,6 +1356,355 @@ int Data_File_Manager::read_binary_file_with_headers()
 }
 
 //***************************************************************************
+// Data_File_Manager::read_table_from_fits_file() -- Open a FITS file and 
+// read a table extension.  Returns 0 if successful.
+int Data_File_Manager::read_table_from_fits_file()
+{
+  // Attempt to open input file and make sure it exists
+  fitsfile *pFitsfile;
+  int status=0;
+  if( fits_open_file( &pFitsfile, inFileSpec.c_str(), READONLY, &status)) {
+    cerr << "read_table_from_fits_file: ERROR" << endl
+         << " -Couldn't open FITS file <" << inFileSpec.c_str() 
+         << "> with status (" << status << ")" << endl;
+    return 1;
+  }
+  else {
+    cout << "read_table_from_fits_file:" << endl
+         << " -Opening FITS file <" << inFileSpec.c_str() 
+         << ">" << endl;
+  }
+
+  // Loop: Locate first ASCII table extension
+  int hdutype;
+  int iExt = -1;
+  for( int i = 2; !( fits_movabs_hdu( pFitsfile, i, &hdutype, &status)); i++) {
+
+    // DIAGNOSTIC
+    cout << "Data_File_Manager::read_table_from_fits_file: "
+         << "Examining HDU[" << i
+         << "] with status (" << status << ")" << endl;
+
+    // Is this an ASCII table extension?
+    if( hdutype == ASCII_TBL) {
+      iExt = i;
+      break;
+    }
+  }
+  if( status || iExt < 0) {
+    cerr << "read_table_from_fits_file: ERROR" << endl
+         << " -Couldn't locate table extension "
+         << "with status (" << status << ")" << endl;
+    string sConfirm = "";
+    sConfirm.append( "Couldn't locate ASCII_TBL in FITs file,\n");
+    sConfirm.append( "check format.  Restoring original data.");
+    make_confirmation_window( sConfirm.c_str(), 1, 2);
+    return 1;
+  }
+
+  // DIAGNOSTIC
+  // cout << "Data_File_Manager::read_table_from_fits_file: "
+  //      << "Finished examining HDUs with iExt (" << iExt
+  //      << ") and status (" << status << ")" << endl;
+
+  // Initialize the static member vector of Column_Info objects
+  int nLabels = 0;
+  nvars = 0;
+  column_info.erase( column_info.begin(), column_info.end());
+
+  // Examine header to get array size
+  long nrows;
+  int ncols;
+  if( fits_get_num_rows( pFitsfile, &nrows, &status) ||
+      fits_get_num_cols( pFitsfile, &ncols, &status)) {
+    cerr << "read_table_from_fits_file: ERROR" << endl
+         << " -Couldn't get array size "
+         << "with status (" << status << ")" << endl;
+    string sConfirm = "";
+    sConfirm.append( "Couldn't get array size from HD of FITs file,\n");
+    sConfirm.append( "check format.  Restoring original data.");
+    make_confirmation_window( sConfirm.c_str(), 1, 2);
+    return 1;
+  }
+  npoints = (int) nrows;
+  nvars = ncols;
+  blitz::Range NPTS( 0, npoints-1);
+  // if( !readSelectionInfo_) points.resize( nvars+1, npoints);
+  // else points.resize( nvars, npoints);
+  points.resize( nvars, npoints);
+
+  // DIAGNOSTIC
+  if( hdutype == ASCII_TBL)
+    cout << "Data_File_Manager::read_table_from_fits_file: "
+         << "ASCII table extension, (" << npoints << "x" << nvars
+         << ")" << endl;
+  else if( hdutype == BINARY_TBL)
+    cout << "Data_File_Manager::read_table_from_fits_file: "
+         << "binary table extension, (" << npoints << "x" << nvars
+         << ")" << endl;
+  else
+    cout << "Data_File_Manager::read_table_from_fits_file: "
+         << "WARNING, unrecognized hdutype (" << hdutype << ")" << endl;
+  
+  // Loop: Extract column names, using the fact that fits_get_colname 
+  // always returns the next name that matches the template.
+  ncols = 0;
+  status = 0;
+  for( int i=0; i<nvars; i++) {
+    char cname[ 80];
+    int icol;
+    fits_get_colname( pFitsfile, CASEINSEN, "*", cname, &icol, &status);
+
+    // DIAGNOSTIC
+    // cout << "Data_File_Manager::read_table_from_fits_file: "
+    //      << "column[" << i << "].name (" << cname
+    //      << ") with status (" << status << ")" << endl;
+
+    if( status == COL_NOT_FOUND) break;
+
+    Column_Info column_info_buf;
+    column_info_buf.label = string( cname);
+    column_info.push_back( column_info_buf);
+    ncols++;
+    
+
+    // DIAGNOSTIC
+    // cout << "Data_File_Manager::read_table_from_fits_file: "
+    // cout << "column[" << i << "].label ("
+    //     << (column_info[i].label).c_str()
+    //     << ")" << endl;
+  }
+  if( ncols < nvars) {
+    cerr << "read_table_from_fits_file: ERROR" << endl
+         << " -Couldn't find enough columns (" << ncols << "/" << nvars
+         << ") with status (" << status << ")" << endl;
+    string sConfirm = "";
+    sConfirm.append( "Couldn't find enough columns in FITS table,\n");
+    sConfirm.append( "check format.  Restoring original data.");
+    make_confirmation_window( sConfirm.c_str(), 1, 2);
+    return 1;
+  }
+
+  // Examine last column to see if it contains selection information
+  readSelectionInfo_ = 0;
+  if( (column_info[nvars-1].label).compare( 0, SELECTION_LABEL.size(), SELECTION_LABEL) == 0) {
+    readSelectionInfo_ = 1;
+    cout << "   -Read selection info-" << endl;
+  }
+
+  // If requested, add a column to contain line numbers
+  Column_Info column_info_buf;
+  // if( include_line_number) {
+  //   column_info_buf.label = string( "-line number-");
+  //   column_info.push_back( column_info_buf);
+  // }
+  
+  // Add a final column label that says 'nothing'.
+  column_info_buf.label = string( "-nothing-");
+  column_info.push_back( column_info_buf);
+
+  // Report label information
+  nLabels = column_info.size();
+  cout << " -Read " << nLabels << "/" << nLabels;
+  cout << " FITS table extension ";
+  cout << "column_labels:" << endl;
+
+  // Clever output formatting to keep line lengths under control.  NOTE: 
+  // This will misbehave if some label is more than 80 characters long.
+  cout << "  ";
+  int nLineLength = 4;
+  for( unsigned int i=0; i < column_info.size(); i++ ) {
+    nLineLength += 2+(column_info[ i].label).length();
+    if( nLineLength > 80) {
+      cout << endl << "  ";
+      nLineLength = 4 + (column_info[ i].label).length();
+    }
+    cout << "  " << column_info[ i].label;
+  }
+  cout << endl;
+
+  // DIAGNOSTIC
+  // cout << "Data_File_Manager::read_table_from_fits_file: "
+  //      << "DIAGNOSTIC: About to allocate storage with npoints ("
+  //      << npoints << ")" << endl;
+
+  // Apparently one cannot use NEW and DELETE to allocate and deallocate 
+  // arrays of char strings for use with fits_read_col.  This code works 
+  // once, then dies during some subsequent use.  It is included for 
+  // archival purposes.
+  // char strnull[]="*";
+  // char **cstring_array = NULL;
+  // int npoints_alloc = npoints;
+  // int nchars = 1000;
+  // cstring_array = new char*[npoints_alloc];
+  // for( int i=0; i<npoints_alloc; i++)
+  //   cstring_array[i] = new char[nchars];
+
+  // Allocate storage to read arrays of character strings.  WARNING: It 
+  // appears that one MUST use MALLOC to allocate arrays of char strings for 
+  // use with fits_read_col.  This code is extrememly delicate!
+  char strnull[]="*";
+  char **cstring_array = NULL;
+  int npoints_alloc = npoints;
+  int nchars = 1000;
+  cstring_array = (char**) malloc( npoints_alloc * (sizeof *cstring_array));
+  // cout << "DIAGNOSTIC: Allocated storage for " << npoints_alloc
+  //      << " pointers" << endl;
+  for( int i=0; i<npoints_alloc; i++) {
+    // cout << "  -Allocate[" << i << "/" << npoints_alloc
+    //      << "] with " << nchars << " chars" << endl;
+    cstring_array[i] = (char*) malloc(nchars + 1);
+  }
+
+  // DIAGNOSTIC
+  // cout << "Data_File_Manager::read_table_from_fits_file: "
+  //      << "About to examine successive columns" << endl;
+
+  // Loop: Read successive columns
+  status = 0;
+  for( int colnum=1; colnum<=nvars; colnum++) {
+
+    // DIAGNOSTIC
+    // cout << "Data_File_Manager::read_table_from_fits_file: "
+    //      << "About to call fits_get_coltype for column["
+    //      << colnum << "]" << endl;
+
+    // Get column info
+    int typecode;
+    long repeat, width;
+    if( fits_get_coltype(
+          pFitsfile, colnum, &typecode, &repeat, &width, &status)) {
+      cerr << "read_table_from_fits_file: ERROR" << endl
+           << " -Couldn't find type for column[" << colnum << "/" << nvars
+           << "] with status (" << status << ")" << endl;
+      string sConfirm = "";
+      sConfirm.append( "Couldn't find typecode for column in FITS\n");
+      sConfirm.append( "table, check format.  Restoring original data.");
+      make_confirmation_window( sConfirm.c_str(), 1, 2);
+      return 1;
+    }
+
+    // DIAGNOSTIC
+    // cout << "Data_File_Manager::read_table_from_fits_file: "
+    //      << "column[" << colnum-1 << "].type (" << typecode
+    //      << ")" << endl;
+
+    // Read column info
+    int frow = 1, felem = 1;
+    int nelem = npoints;
+    int anynull;
+    if( typecode == TSHORT) {
+      short shortnull = 0;
+      // short *shortarray = new short[ npoints];
+      short* shortarray;
+      // shortarray = (short*) malloc( 100);
+      shortarray = (short*) malloc( npoints * sizeof(short));
+      fits_read_col(
+        pFitsfile, typecode, colnum, frow, felem, nelem,
+        &shortnull, shortarray, &anynull, &status);
+      // blitz::Array<short,2>
+      //   abuffer( shortarray, blitz::shape(1,npoints), blitz::duplicateData);
+      // points( colnum-1, NPTS) = blitz::cast( abuffer( 1, NPTS), float());
+      // for( int j=0; j<npoints; j++) points(colnum-1,j) = (float) abuffer(j);
+      for( int j=0; j<npoints; j++) points(colnum-1,j) = shortarray[j];
+      // delete[] shortarray;
+      free( shortarray);
+    }
+    if( typecode == TLONG) {
+      long longnull = 0;
+      long* longarray;
+      longarray = (long*) malloc( npoints * sizeof(long));
+      fits_read_col(
+        pFitsfile, typecode, colnum, frow, felem, nelem,
+        &longnull, longarray, &anynull, &status);
+      for( int j=0; j<npoints; j++) points(colnum-1,j) = (float) longarray[j];
+      free( longarray);
+    }
+    else if( typecode == TFLOAT) {
+      float floatnull = 0;
+      float* floatarray;
+      floatarray = (float*) malloc( npoints * sizeof(float));
+      fits_read_col(
+        pFitsfile, typecode, colnum, frow, felem, nelem,
+        &floatnull, floatarray, &anynull, &status);
+      blitz::Array<float,2>
+        abuffer( floatarray, blitz::shape(1,npoints), blitz::duplicateData);
+      points( colnum-1, NPTS) = abuffer( 0, NPTS);
+      free( floatarray);
+    }
+    else if( typecode == TDOUBLE) {
+      double doublenull = 0;
+      double* doublearray;
+      doublearray = (double*) malloc( npoints * sizeof(double));
+      fits_read_col(
+        pFitsfile, typecode, colnum, frow, felem, nelem,
+        &doublenull, doublearray, &anynull, &status);
+      for( int j=0; j<npoints; j++) points(colnum-1,j) = (float) doublearray[j];
+      free( doublearray);
+    }
+    else {
+
+      // DIAGNOSTIC
+      // cout << "Data_File_Manager::read_table_from_fits_file: "
+      //      << "reading columnstring[" << colnum << "] with "
+      //      << nelem << "/" << npoints << " elements" << endl;
+
+      fits_read_col_str(
+        pFitsfile, colnum, frow, felem, nelem,
+        strnull, cstring_array, &anynull, &status);
+      for( int j=0; j<npoints; j++) {
+        // cout << "  -sToken[" << j << "] (" << cstring_array[j] << ")" << endl;
+        string sToken = string( cstring_array[j]);
+        points(colnum-1,j) = column_info[colnum-1].add_value( sToken);
+      }
+      column_info[colnum-1].hasASCII = 1;
+    }
+
+    // If this is selection information, load selection array
+    if( readSelectionInfo_ != 0 && colnum == nvars)
+      for( int j=0; j<npoints; j++)
+        read_selected(j) = (int) points(colnum-1,j);
+    
+    // DIAGNOSTIC
+    cout << "Data_File_Manager::read_table_from_fits_file: "
+         << "Reading column " << colnum << endl;
+    // for( int j=0; j<npoints; j++) {
+    //   cout << " -VALUE[ " << colnum-1 << ", " << j
+    //        << "] (" << points(colnum-1,j) << ")" << endl;
+    // }
+  }
+
+  // Remember to deallocate space for the array of character strings used
+  // during read operations.  WARNING: As noted above, it appears that one
+  // MUST use MALLOC and FREE to allocate and deallocate arrays of char
+  // strings for use with fits_read_col.  Like the memory allocation, this 
+  // code is extremely delicate!
+  for( int i=0; i<npoints_alloc; i++) {
+    // cout << "  -Deallocate[" << i << "/" << npoints_alloc << "]" << endl;
+    free(cstring_array[i]);
+  }
+  free(cstring_array);
+
+  // As noted above, it appears one can't use NEW and DELETE to allocate and
+  // deallocate arrays of char strings for use with fits_read_col.  Tbis 
+  // code is included for archival purposes.
+  // for( int i=0; i<npoints_alloc; i++) delete[] cstring_array[i];
+  // free(cstring_array);
+
+  // Report success
+  cout << " -Finished reading " << nvars
+       << " columns" << endl;
+  
+  // Update NVARS, close input file and terminate
+  if( readSelectionInfo_ != 0) {
+    nvars = nvars-1;
+    points.resizeAndPreserve( nvars, npoints);
+  }
+  fits_close_file( pFitsfile, &status);
+  return 0;
+}
+
+//***************************************************************************
 // Data_File_Manager::findOutputFile() -- Query user to find the output file.
 // Class Vp_File_Chooser is used in preference to the Vp_File_Chooser method 
 // to obtain access to member functions such as directory() and to allow the 
@@ -1369,7 +1719,7 @@ int Data_File_Manager::findOutputFile()
   else title = "Write selected data to file";
   if( outputFileType_ == 0) pattern = "*.{txt,lis,asc}\tAll Files (*)";
   else if( outputFileType_ == 1) pattern = "*.bin\tAll Files (*)";
-  else if( outputFileType_ == 2) pattern = "*.fits\tAll Files (*)";
+  else if( outputFileType_ == 2) pattern = "*.{fit,fits}\tAll Files (*)";
   else pattern = "*.bin\tAll Files (*)";
 
   // Initialize output filespec.  NOTE: cOutFileSpec is defined as const 
@@ -1404,7 +1754,7 @@ int Data_File_Manager::findOutputFile()
     FILE* pFile = fopen( cOutFileSpec, "r");
     if( pFile == NULL) isNewFile= 1;
     else fclose( pFile);
-
+    
     // Attempt to open an output stream to make sure the file can be opened 
     // for write.  If it can't, assume that cOutFileSpec was a directory and 
     // make it the working directory.  Otherwise close the output stream.
@@ -1513,6 +1863,7 @@ int Data_File_Manager::save_data_file()
 {
   int result = 0;
   if( outputFileType_ == 0) result = write_ascii_file_with_headers();
+  else if( outputFileType_ == 2) result = write_table_to_fits_file();
   else result = write_binary_file_with_headers();
   if( result == 0) {
     isSavedFile_ = 1;
@@ -1672,6 +2023,205 @@ int Data_File_Manager::write_binary_file_with_headers()
     cout << "wrote " << rows_written << " rows of " << nBlockSize 
          << " bytes to binary file " << outFileSpec.c_str() << endl;
   }
+  return 0;
+}
+
+//***************************************************************************
+// Data_File_Manager::write_table_to_fits_file() -- Create a FITS file and 
+// write a table extension.  Returns 0 if successful.
+int Data_File_Manager::write_table_to_fits_file()
+{
+  // Define string to hold filespec for debudding purposes
+  // string sFileSpec = "H:/cppdir/vp.fits240/bowser.fit";
+  string sFileSpec;
+  sFileSpec = outFileSpec;
+
+  // Define pointer to the FITS file along with status buffer.
+  fitsfile *pFitsfile;
+  int status;
+
+  // Make sure a file name was specified, create and write the file
+  if( sFileSpec.length() <= 0){
+    cout << "Data_File_Manager::write_table_to_fits_file "
+         << "reports that no file was specified" << endl;
+    return -1;
+  }
+  else {
+    // The findOutputFile method tries to open the output file to see if it
+    // exists and verify that it's a file rathar than a directory.  This 
+    // will produce an empty file, which must be deleted because the FITS 
+    // routines cannot handle empty files.  The following rigamarole is 
+    // necessary to delete this file under Windows and account for cases
+    // when it has been opened by some earlier write operation.  A better
+    // alternatives might be to examine the FITS code to see why it leaves
+    // open handles, or to modify the findOutputFile method to switch off
+    // the chacking procedure for FITS files.
+
+    // Attempt to delete file.  If this fails, open it, make sure it's 
+    // closed, call fits_delete_file, and try again.
+    if( 0 != unlink( sFileSpec.c_str())) {
+      cout << "Data_File_Manager::write_table_to_fits_file: " << endl
+           << "  WARNING: Couldn't unlink: " << sFileSpec.c_str()
+           << " due to: " << strerror(errno) << endl;
+      status = 0;
+      fits_open_file( &pFitsfile, sFileSpec.c_str(), READWRITE, &status);
+      cout << "  Called fits_open_file with status (" << status
+           << ")" << endl;
+      status = 0;
+      fits_close_file( pFitsfile, &status);
+      cout << "  Called fits_close_file with status (" << status
+           << ")" << endl;
+      status = 0;
+      fits_delete_file( pFitsfile, &status);
+      cout << "  Called fits_delete_file with status (" << status
+           << ")" << endl;
+      if( 0 != unlink( sFileSpec.c_str()))
+        cout << "  WARNING: Second unlink: " << sFileSpec.c_str()
+             << " failed with: " << strerror(errno) << endl;
+      else
+        cout << "Data_File_Manager::write_table_to_fits_file: " << endl
+             << "  Second unlink of " << sFileSpec.c_str()
+             << " succeeded" << endl;
+    }
+    else
+        cout << "Data_File_Manager::write_table_to_fits_file: " << endl
+             << "  First unlink of " << sFileSpec.c_str()
+             << " succeeded" << endl;
+
+    status=0;
+    fits_open_file( &pFitsfile, sFileSpec.c_str(), READWRITE, &status);
+    cout << "DIAGNOSTIC: Finished initial attempt to open FITS file with status ("
+         << status << ") vs (" << FILE_NOT_OPENED << ")" << endl;
+
+    // If file already exists, destroy, recreate, and open it
+    if( status == FILE_NOT_OPENED) {    
+      remove( sFileSpec.c_str());
+      status = 0;
+      fits_create_file( &pFitsfile, sFileSpec.c_str(), &status);
+      cout << "DIAGNOSTIC: Finished attempt to create FITS file with ("
+           << status << ") vs (0)" << endl;
+      status=0;
+      fits_open_file( &pFitsfile, sFileSpec.c_str(), READWRITE, &status);
+    }
+    
+    // If an error occured, close file and quit
+    if( status == 0) {
+      cout << "Data_File_Manager::write_table_to_fits_file: "
+           << "Opened (" << sFileSpec.c_str()
+           << ") as FITS file for output." << endl;
+    }
+    else {
+      if( status != FILE_NOT_OPENED) fits_close_file( pFitsfile, &status);
+      cerr << "Data_File_Manager::write_table_to_fits_file: ERROR, "
+         << "couldn't open ( "<< sFileSpec.c_str()
+         << " for output with status (" << status
+         << ")" << endl;
+      return -1;
+    }
+  }
+
+  // Specify parameters of output file
+  int nrows = npoints;
+  int tfields = nvars;
+  if( writeSelectionInfo_ != 0) tfields = tfields+1;
+  cout << "DIAGNOSTIC: writeSelectionInfo_ (" << writeSelectionInfo_
+       << "), tfields (" << tfields << "/" << nvars << ")" << endl;
+
+  // Define, allocate, and load arrays to store field information  
+  char **ttype;
+  char **tform;
+  char **tunit;
+  ttype = (char**) malloc( tfields * (sizeof *ttype));
+  tform = (char**) malloc( tfields * (sizeof *tform));
+  tunit = (char**) malloc( tfields * (sizeof *tunit));
+  for( int i=0; i<tfields; i++) {
+    if( i<nvars) {
+      ttype[i] = (char*) malloc( (column_info[i].label).size() + 1);
+      tform[i] = (char*) malloc( 10);
+      tunit[i] = (char*) malloc( 1);
+      strcpy( ttype[i], (column_info[i].label).c_str());
+      strcpy( tform[i], "E14.6");
+      strcpy( tunit[i], "\0");
+    }
+    else {
+      ttype[i] = (char*) malloc( 18);
+      tform[i] = (char*) malloc( 3);
+      tunit[i] = (char*) malloc( 1);
+      strcpy( ttype[i], SELECTION_LABEL.c_str());
+      strcpy( tform[i], "I8");
+      strcpy( tunit[i], "\0");
+    }
+  }
+  char extname[] = "VP_OUTPUT_ASCII";
+  
+  // Append a new empty ASCII table onto the FITS file
+  if(
+    fits_create_tbl( 
+      pFitsfile, ASCII_TBL, nrows, tfields, ttype, tform, tunit,
+      extname, &status)) {
+    fits_close_file( pFitsfile, &status);
+    cerr << "Data_File_Manager::write_table_to_fits_file: ERROR, "
+         << "couldn't append table extenstion with status (" << status
+         << ")" << endl;
+    return -1;
+  }
+
+  // Deallocate arrays with field information
+  for( int i=0; i<tfields; i++) {
+    free(ttype[i]);
+    free(tform[i]);
+    free(tunit[i]);
+  }
+  free(ttype);
+  free(tform);
+  free(tunit);
+
+  // Set position for first row and column.  Note that 'firstelem' will be
+  // ignored for ASCII tables
+  int firstrow  = 1;
+  int firstelem = 1;
+
+  // Allocate spoace for output arrays
+  float* floatarray;
+  long* longarray;
+  floatarray = (float*) malloc( npoints * sizeof(float));
+  longarray = (long*) malloc( npoints * sizeof(long));
+
+  // Loop: Write attributes to their respective columns
+  int ifield = 0;
+  for( int i=0; i<tfields; i++) {
+    ifield = i+1;
+    if( i<nvars) {
+      // for( int j=0; j<npoints; j++) floatarray[j] = points(j,i);
+      for( int j=0; j<npoints; j++) floatarray[j] = points(i,j);
+      fits_write_col(
+        pFitsfile, TFLOAT, ifield, firstrow, firstelem, npoints,
+        floatarray, &status);
+    }
+    else {
+      cout << "DIAGNOSTIC: Saving selection information" << endl;
+      for( int j=0; j<npoints; j++) longarray[j] = selected( j);
+      fits_write_col(
+        pFitsfile, TLONG, ifield, firstrow, firstelem, npoints,
+        longarray, &status);
+    }
+  }
+
+  // Deallocate space
+  free( floatarray);
+  free( longarray);
+
+  // Report success to console
+  cout << "Data_File_Manager::write_table_to_fits_file: "
+       << "finished writing (" << npoints << "x" << ifield
+       << ") array to table extension in" << endl
+       << "  FITS file (" << sFileSpec.c_str()
+       << ")" << endl; 
+
+  // Close file and report success
+  fits_close_file( pFitsfile, &status);
+  cout << "Data_File_Manager::write_table_to_fits_file: "
+       << "closed file with status (" << status << ")" << endl;
   return 0;
 }
 

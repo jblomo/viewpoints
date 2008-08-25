@@ -210,7 +210,7 @@ Vp_File_Chooser::Vp_File_Chooser(
         o->labelfont( 1);
         o->add( "ASCII");
         o->add( "binary");
-        // o->add( "FITS table extension");
+        o->add( "FITS table extension");
         o->value( fileType_);
         o->callback( (Fl_Callback*) cb_fileType);
         Fl_Group::current()->resizable(o);
@@ -787,7 +787,7 @@ void Vp_File_Chooser::fileType( int fileType_in)
 { 
   fileType_ = fileType_in;
   if( fileType_ < 0) fileType_ = 0;
-  if( fileType_ > 1) fileType_ = 1;
+  if( fileType_ > 2) fileType_ = 2;
   fileTypeChoice->value( fileType_);
 
   if( fileType_ <= 0) {   // ASCII files
@@ -802,7 +802,7 @@ void Vp_File_Chooser::fileType( int fileType_in)
     commentLabelsButton->hide();
     // fitsExtensionNumber->hide();
   }
-  else if( fileType_ >= 1) {   // FITS files
+  else if( fileType_ >= 2) {   // FITS files
     delimiter_box->hide();
     delimiter_group->hide();
     commentLabelsButton->hide();
@@ -2040,9 +2040,9 @@ void Vp_File_Chooser::fileTypeCB()
     fileBrowser->filter( "*.bin");
     fileType_ = 1;
   }
-  else if( strcmp( item, "FITS") == 0) {
-    strcpy( pattern_, "*.fits\tAll Files (*)");
-    fileBrowser->filter( "*.fits");
+  else if( strstr( item, "FITS")) {
+    strcpy( pattern_, "*.{fit,fits}\tAll Files (*)");
+    fileBrowser->filter( "*.{fit,fits}");
     fileType_ = 2;
   }
   else {

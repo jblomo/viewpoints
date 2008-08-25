@@ -68,6 +68,13 @@ this is specified by the user.
 </p>
 
 <p>
+Binary files consist of a single record containing column information 
+followed by a block of binary words in column- or row-major organization.
+The default is column-major organization, in which successive words 
+represent successive values on a row.
+</p>
+
+<p>
 Data can also be read directly from the input line using the --stdin command
 line option described below.  This allows piping on systems that support it,
 which allows the user to use a wide variety of third-party applications to
@@ -75,10 +82,15 @@ read or process different data formats such as FITS, CDF, etc.
 </p>
 
 <p>
-Binary files consist of a single record containing column information 
-followed by a block of binary words in column- or row-major organization.
-The default is column-major organization, in which successive words 
-represent successive values on a row.
+<em><b>FITS files: </b></em>
+<em>Viewpoints</em> now has limited ability to read and write FITS files.  
+During a read operation, <em>Viewpoints</em> will search for the first ASCII 
+table extension, attempt to read it, and restore the existing data if 
+unsuccessful.  During a write operation, it will create a new file, 
+<em><b>overwriting and destroying any original of the same name</b></em>, 
+and write the data to a single ASCII table extension in that file.  This 
+FITS i/o capability is still under development and will be expanded in 
+future releases!
 </p>
 
 <a name="Configuration_Files"></a>
@@ -554,7 +566,7 @@ while the window manager focus is on a plot window:
 <h3>Notes and warnings:</h3>
 
 <p>
-The current release of the 'viewpoints' package (version 2.1.3, build 240) 
+The current release of the 'viewpoints' package (version 2.1.4, build 241) 
 is still a development version.  While every effort has been make to ensure 
 that it will work -- or fail gracefully if it doesn't -- it still has many 
 rough edges.  Some of these are described below.  These issues will all be 
@@ -566,14 +578,20 @@ addressed in future releases.
 may need to be refreshed.  This can be accomplished by resizing it.
 
 <p>
-2) The Load and Save Configuration commands are a comparatively new feature,
-and save basic session information.  They may not work on every system.  
-Also, there is not, as yet, any guarantee that old configuration files will
-be upward-compatible with new versions of viewpoints.
+2) The Load and Save Configuration commands are a comparatively new feature.
+For this reason, they are still evolving.  While every effort has been made 
+to ensure that old configuration files are upward-compatible with new 
+versions of viewpoints, it is advisable to resave a new version of these 
+files if the package warns you to do so.
 <\p>
 
 <p>
-3) The Edit Column Labels tool is also a new feature, and is not guaranteed
+3) The FITS file i/o capability is new, and is not yet guaranteed to work on 
+every system.  It will undergo substantial improvement in future releases.
+<\p>
+
+<p>
+4) The Edit Column Labels tool is also a new feature, and is not guaranteed
 to preserve axis or scaling information.  In the current release, it can only
 delete labels.  Column labels of ASCII files can be renamed via by using an
 editor in a conventional fashion.  Small binary files can be saved to ASCII 

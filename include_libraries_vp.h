@@ -200,4 +200,7 @@
   //}
 #endif // __APPLE__
 
+// FITS package includes (must be last?)
+#include <fitsio.h>
+
 #endif   // INCLUDE_LIBRARIES_VP_H

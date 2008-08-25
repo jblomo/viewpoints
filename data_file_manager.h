@@ -80,12 +80,14 @@
 //   reorder_ascii_values() -- Alphabetize ascii values
 //   read_ascii_file_with_headers() -- Read ASCII
 //   read_binary_file_with_headers() -- Read binary
+//   read_table_from_fits_file() -- Read FITS table extension
 //   create_default_data( nvars_in) -- Create default data
 //
 //   save_data_file( *outFileSpec) -- Save data
 //   save_data_file() -- Save data
 //   write_ascii_file_with_headers() -- Write ASCII file
 //   write_binary_file_with_headers() -- Write binary file
+//   write_table_to_fits_file() -- Write FITS table extension
 //
 //   edit_column_info_i( *o) -- Static wrapper for edit_column_info
 //   edit_column_info( *o) -- Maintain Edit Column Labels window
@@ -215,6 +217,7 @@ class Data_File_Manager
     void extract_column_types( string sLine);
     int read_ascii_file_with_headers();
     int read_binary_file_with_headers();
+    int read_table_from_fits_file();
     void create_default_data( int nvars_in);
 
     int findOutputFile();
@@ -222,6 +225,7 @@ class Data_File_Manager
     int save_data_file();
     int write_ascii_file_with_headers();
     int write_binary_file_with_headers();
+    int write_table_to_fits_file();
 
     // Column label edit window methods
     static void edit_column_info( Fl_Widget *o);
