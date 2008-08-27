@@ -5,9 +5,7 @@ platform := $(shell uname)
 hardware := $(shell uname -m)
 
 # compiler names:
-CXX		= g++
-# experimental
-#CXX		= /sw/lib/gcc4.2/bin/g++ 
+#CXX		= g++
 
 MAKEDEPEND	= $(CXX) -E -MM
 
@@ -34,7 +32,8 @@ ifeq ($(platform),Darwin)
 
   # compiling on PowerPC mac
   else
-	OPTIM = -O6 -ftree-vectorize -ftree-vectorizer-verbose=0 -Wall -Wconversion -Wno-long-double -ffast-math -fsigned-char -maltivec -mabi=altivec -faltivec -mpowerpc-gfxopt -gfull
+#	OPTIM = -O6 -ftree-vectorize -ftree-vectorizer-verbose=0 -Wall -Wconversion -Wno-long-double -ffast-math -fsigned-char -maltivec -mabi=altivec -faltivec -mpowerpc-gfxopt -gfull
+	OPTIM = -O6 -ftree-vectorize -ftree-vectorizer-verbose=0 -Wall -Wconversion -ffast-math -fsigned-char -maltivec -mabi=altivec -faltivec -mpowerpc-gfxopt -gfull
 
   endif
 
@@ -53,10 +52,10 @@ CXXFLAGS	= $(OPTIM) -D SVN_VERSION="\"revision $(shell svnversion -n)\""
 # libraries to link with:
 ifeq ($(platform),Darwin)
 
-	LDLIBS = -framework AGL -framework OpenGL -framework Carbon -framework ApplicationServices -framework vecLib /usr/local/lib/libgsl.a -lm -lmx -lboost_serialization-d
+	LDLIBS = -framework AGL -framework OpenGL -framework Carbon -framework ApplicationServices -framework vecLib /usr/local/lib/libgsl.a -lm -lmx -lboost_serialization-d -lcfitsio
 
 # for OSX machines where I CAN install things as root... (don't forget to build all libraries as static only)
-	INCPATH = -I/usr/local/include -I/sw/include -I/usr/local/include/boost-1_34_1/
+	INCPATH = -I/usr/local/include -I/sw/include -I/usr/local/include/boost-1_34_1/ -I$$HOME/src/cfitsio/include
 	LIBPATH	= -L/usr/local/lib -L/sw/lib
 
 else
