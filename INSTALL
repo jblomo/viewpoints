@@ -1,11 +1,24 @@
+Step 0 
+
+on Mac OS X systems, and perhaps others, optionally put the
+following into your ~/.cshrc file.  It will greatly speed up all of
+the following builds:
+
+  # for gnu make, etc. to take advantage of multiple CPUs
+  setenv NCPUs `sysctl -n hw.ncpu`
+  set NJOBS_make = $NCPUs
+  @ NJOBS_make++
+  setenv MAKEFLAGS "-j $NJOBS_make"
+
+Note: if someone figures out how to do the above for boost/bjam please update this file.
+
 Step 1
 
 download the latest stable fltk-1.3 from http://fltk.org/software.php
-  (vp does not work with fltk 2.0)
+  (vp does not build with fltk 2.0, yet)
 expand
 cd
 ./configure 
-  (use "./configure --enable-quartz" on mac)
 make
 sudo make install
 
@@ -25,12 +38,12 @@ sudo make install
 
 Step 3
 
-download the latest bltiz from http://sourceforge.net/project/showfiles.php?group_id=63961
+download the latest blitz from http://sourceforge.net/project/showfiles.php?group_id=63961
 expand
-./configure
+./configure --disable-shared
 make lib
 make check-testsuite  (see if all tests pass)
-sudo make install
+sudo make install  (you can ignore errors pertaining to .pdf files and .tex files)
 
 
 Step 4
@@ -42,22 +55,39 @@ make check  (see if all tests pass)
 sudo make install
 
 
-Step 5
+Step 5.1
 
-Download and install boost, see: http://www.boost.org/doc/libs/1_35_0/more/getting_started/unix-variants.html
+Download, build, and install boost, see: http://www.boost.org/users/download/
 Since vp uses the boost serialization library, you do have to build boost.  The "header only" libraries are not adequate.
+./configure
+make  
+
+The above takes a while.  Perhaps someone can insert the instruction
+for building only the static, single-threaded, serialization library)
+
+Step 5.2
+
+Download, build and install cfitsio from http://heasarc.gsfc.nasa.gov/docs/software/fitsio/fitsio.html
+
+(we know there are a huge number of data file formats.  But viewpoints
+was initially written for astrophysical data analysis, and
+astrophysicists use FITS)
+
+./configure
+make
+sudo make install
 
 
 Step 6
 
+make sure you have an svn client installed.  Then:
 svn -checkout (or -update) latest vp sources from http://svn2.assembla.com/svn/viewpoints
-edit your makefile for appropriate machine/OS/debugging combination
+then edit vp/makefile for the appropriate machine/OS/debugging combination & file locations
 make
-
 
 Step 7
 
-test vp
+test vp, eg. "vp -i sampledata.txt"
 
 
 Step 8

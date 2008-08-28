@@ -1544,3 +1544,15 @@ rank norm no save?
 According to: http://developer.apple.com/documentation/GraphicsImaging/Conceptual/OpenGL-MacProgGuide/opengl_performance/chapter_13_section_2.html#//apple_ref/doc/uid/TP40001987-CH213-SW12
 
 Retrieve Error Information Only When Debugging... During development, it's crucial that your code contains error checking routines, not only for the standard OpenGL calls, but for the Apple-specific functions provided by the AGL and CGL APIs.  If you are developing a performance-critical application, you'll want to retrieve error information in the debugging phase. When you deploy your application you'll want to remove the error-retrieval information for all but the most critical cases. If you retrieve error codes and strings for frequently-called functions, you'll cause performance to slow down.
+
+12:37:21 25 Aug 08
+
+Next to add:  pipe to external process to create new column.
+PDL
+  Display modified version of Paul's column chooser under tools->new column
+  user chooses some columns 
+  user inputs shell command to process columns, e.g. "awk '{print $1/$2}'"
+  write file of chosen columns to tempfile1
+  fork process to execute shell command, stdin from tmpfile1, stdout to tmpfile2
+  merge data using tmpfile2 as data source
+  unlink tmpfile[12] ?

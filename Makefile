@@ -4,9 +4,6 @@ platform := $(shell uname)
 # Are we compiling on intel or powerPC ?
 hardware := $(shell uname -m)
 
-# compiler names:
-#CXX		= g++
-
 MAKEDEPEND	= $(CXX) -E -MM
 
 ifeq ($(platform),Darwin)
@@ -52,10 +49,10 @@ CXXFLAGS	= $(OPTIM) -D SVN_VERSION="\"revision $(shell svnversion -n)\""
 # libraries to link with:
 ifeq ($(platform),Darwin)
 
-	LDLIBS = -framework AGL -framework OpenGL -framework Carbon -framework ApplicationServices -framework vecLib /usr/local/lib/libgsl.a -lm -lmx -lboost_serialization-d -lcfitsio
+	LDLIBS = -framework AGL -framework OpenGL -framework Carbon -framework ApplicationServices -framework vecLib -lgsl -lm -lmx -lboost_serialization-d -lcfitsio
 
 # for OSX machines where I CAN install things as root... (don't forget to build all libraries as static only)
-	INCPATH = -I/usr/local/include -I/sw/include -I/usr/local/include/boost-1_34_1/ -I$$HOME/src/cfitsio/include
+	INCPATH = -I/usr/local/include -I/sw/include -I/usr/local/include/boost-1_34_1/
 	LIBPATH	= -L/usr/local/lib -L/sw/lib
 
 else

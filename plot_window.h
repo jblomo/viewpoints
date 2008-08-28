@@ -181,6 +181,7 @@ class Plot_Window : public Fl_Gl_Window
     void draw_selection_information();
     void draw_data_points();
     void draw_center_glyph();
+    void draw_resize_knob();
     void update_linked_transforms();
     void enable_sprites(int);
     void enable_regular_points();
@@ -197,6 +198,7 @@ class Plot_Window : public Fl_Gl_Window
     void screen_to_world(float xs, float ys, float &x, float &y);
     void print_selection_stats();
     void interval_to_strings (const int column, const float x1, const float x2, char *buf1, char *buf2);
+    void center_on_click(int x, int y);
 
     // Event parameters
     int xprev, yprev, xcur, ycur;
