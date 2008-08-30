@@ -526,6 +526,19 @@ int Plot_Window::handle( int event)
     case 'w':
       center_on_click(Fl::event_x(),Fl::event_y());
       return 1;
+    case 'f':
+      {
+        char buf[1024];
+        char label[1024];
+        int  col = Fl::event_shift()?cp->varindex1->value():cp->varindex2->value();
+        strcpy(buf,"");
+        sprintf(label,"Search within '%s'",Data_File_Manager::column_info[col].label.c_str());
+        make_find_window(label,buf);
+        if(buf[0]) {
+          select_on_string(buf,col);
+        }
+        return 1;
+      }
 
     default:
       return 0;
@@ -1101,10 +1114,11 @@ void Plot_Window::print_selection_stats ()
 }
 
 //***************************************************************************
-// Plot_Window::handle_selection() -- Handler to handle selection operations.
-// Does not draw anything (since openGL functions cannot be called from 
-// within a handle() method).  Selection information (e.g. bounding box, 
-// statistics) are drawn from the draw() method for the window making the 
+// Plot_Window::handle_selection() -- Handler to handle mouse-based selection
+// operations.  This routine, and anything it calls, can't actually
+// draw anything (since openGL functions cannot be called from 
+// within an fltk handle() method).  Selection information (e.g. bounding box, 
+// statistics) are drawn via the draw() method for the window making the 
 // selection by calling draw_selection_information().
 void Plot_Window::handle_selection ()
 {
@@ -1145,6 +1159,17 @@ void Plot_Window::handle_selection ()
   default:
     assert(!"Impossible brush footprint");
   }
+  update_selection_from_footprint();
+}
+
+
+void Plot_Window::update_selection_from_footprint()
+{
+  blitz::Range NPTS( 0, npoints-1);  
+
+  Brush  *current_brush = (Brush *)NULL;
+  current_brush =  dynamic_cast <Brush*> (brushes_tab->value());
+  assert (current_brush);
 
   if (current_brush->paint->value()) {
     newly_selected( NPTS) |= inside_footprint(NPTS);
@@ -1177,10 +1202,8 @@ void Plot_Window::handle_selection ()
 //***************************************************************************
 // Plot_Window::color_array_from_selection() -- Fill the index arrays and 
 // their associated counts.  Each array of indices will be rendered later 
-// preceded by its own single call to glColor().
+// using the properties of its corresponding brush.
 // 
-// MCL XXX note this could be redone so that it all lives in handle_selection, 
-// conceptually.  The updating can be done in one pass, I think.
 //
 void Plot_Window::color_array_from_selection()
 {
@@ -2261,6 +2284,24 @@ void Plot_Window::clear_selections( Fl_Widget *o)
   initialize_selection();
   pws[0]->color_array_from_selection(); // So, I'm lazy.
   redraw_all_plots (0);
+}
+
+
+//***************************************************************************
+// Search through all points, using given column, a_col, as the "key".
+// Flag as "inside the footprint" (i.e. painted by this "string search brush")
+// only those points whose corresponding ascii value matches the given string.
+void Plot_Window::select_on_string(const char *str,int a_col) {
+  if( Data_File_Manager::column_info[a_col].hasASCII && a_col>=0) {
+    for(int i=0;i<npoints;i++) {
+      const char *label_a = Data_File_Manager::column_info[a_col].ascii_value((int) points(a_col, i)).c_str();
+      inside_footprint(i) = (label_a && strstr(label_a,str))?1:0;
+    }
+  } else {
+    // what should select_on_string() do here, for pure numerical data?
+  }
+  update_selection_from_footprint();
+  redraw_all_plots(index);
 }
 
 

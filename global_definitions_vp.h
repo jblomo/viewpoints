@@ -198,12 +198,14 @@ GLOBAL int serialization_file_version INIT(-1);  // Will be reset at runtime
 
 // Define pointer to hold confirmation window
 GLOBAL Fl_Window *confirmation_window;
+GLOBAL Fl_Window *find_window;
 
 // Persistant state for gsl random number generator (Mersenne Twister)
 GLOBAL gsl_rng *vp_gsl_rng;
 
 // Global function definitions
 GLOBAL int make_confirmation_window( const char* text, int nButtons = 3, int nLines = 2);
+GLOBAL int make_find_window( const char* text, char *res);
 GLOBAL void reset_selection_arrays();
 
 //***************************************************************************

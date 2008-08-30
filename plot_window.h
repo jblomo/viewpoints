@@ -196,8 +196,10 @@ class Plot_Window : public Fl_Gl_Window
     void run_timing_test();
     
     void screen_to_world(float xs, float ys, float &x, float &y);
+    void update_selection_from_footprint();
     void print_selection_stats();
     void interval_to_strings (const int column, const float x1, const float x2, char *buf1, char *buf2);
+    void select_on_string(const char *str,int col);
     void center_on_click(int x, int y);
 
     // Event parameters
