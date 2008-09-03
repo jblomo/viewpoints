@@ -453,8 +453,12 @@ int Plot_Window::handle( int event)
       // printf ("FL_DRAG & FL_BUTTON1, event_state: %x  isdrag = %d  xdragged=%f  ydragged=%f\n", Fl::event_state(), isdrag, xdragged, ydragged);
       if((fabs(xdragged)+fabs(ydragged))>0 ){
         selection_changed = 1;
-        handle_selection ();
-        redraw_all_plots (index);
+        if (defer_redraws_button->value()) {
+          redraw_one_plot ();
+        } else {
+          handle_selection ();
+          redraw_all_plots (index);
+        }
       }
     }
     screen_to_world (-1, -1, wmin[0], wmin[1]);
@@ -467,7 +471,12 @@ int Plot_Window::handle( int event)
     if( show_center_glyph) {
       show_center_glyph = 0;
     }
-    redraw_one_plot();
+    if (defer_redraws_button->value()) {
+      handle_selection();
+      redraw_all_plots(index);
+    } else {
+      redraw_one_plot();
+    }
     return 1;
 
     // keypress, key is in Fl::event_key(), ascii in Fl::event_text().  Return 
@@ -1450,7 +1459,7 @@ void Plot_Window::draw_data_points()
 // changes (but it must be called for all plots in that case), or when {x,y}bins 
 // changes (in that case, only for one plot).  The way it is, a lot of extra 
 // time is burned here if any histograms are being shown.
-// Note - we could experiment with openGL histograms...
+// Note - we could experiment with openGL histograms...but they seem to suck.
 //
 // MCL XXX also note that if we want to get rid of the vertices() instance 
 // variable to save memory, which should be doable since vertices are copied 

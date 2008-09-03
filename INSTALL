@@ -1,8 +1,8 @@
 Step 0 
 
 on Mac OS X systems, and perhaps others, optionally put the
-following into your ~/.cshrc file.  It will greatly speed up all of
-the following builds:
+following into your ~/.cshrc file.  It will greatly speed up
+the build process:
 
   # for gnu make, etc. to take advantage of multiple CPUs
   setenv NCPUs `sysctl -n hw.ncpu`

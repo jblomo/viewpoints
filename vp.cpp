@@ -1241,6 +1241,14 @@ void make_global_widgets()
   b->type( FL_TOGGLE_BUTTON); 
   b->value( 0);
   b->tooltip("toggle linked viewing transormations");
+
+  // Button(5,2): defer redraws (for huge data)
+  defer_redraws_button = b = new Fl_Button( xpos, ypos+=25, 20, 20, "defer redraws");
+  b->align( FL_ALIGN_RIGHT); 
+  b->selection_color( FL_BLUE); 
+  b->type( FL_TOGGLE_BUTTON); 
+  b->value( 0);
+  b->tooltip("update selections on mouse-up only (for large data)");
 }
 
 //***************************************************************************

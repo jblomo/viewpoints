@@ -82,6 +82,7 @@ GLOBAL bool read_from_stdin INIT(false);
 GLOBAL bool trivial_columns_mode INIT(true);
 GLOBAL bool preserve_old_data_mode INIT(true);
 GLOBAL bool be_verbose INIT(false);
+GLOBAL bool update_on_mouse_up INIT(true);
 
 // Define blitz::Arrays to hold raw and ranked (sorted) data arrays.  Used 
 // extensively in many classes, so for reasons of simplicity and clarity, 
@@ -139,6 +140,7 @@ GLOBAL Fl_Button *write_data_button;
 GLOBAL Fl_Button *choose_color_selected_button, *choose_color_deselected_button; 
 GLOBAL Fl_Repeat_Button *change_all_axes_button;
 GLOBAL Fl_Button *link_all_axes_button;
+GLOBAL Fl_Button *defer_redraws_button;
 GLOBAL Fl_Button *reload_plot_window_array_button;
 GLOBAL Fl_Button *read_data_button;
 

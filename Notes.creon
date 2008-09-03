@@ -1109,23 +1109,6 @@ The safest think to do with the above is to make sure they only exist
 as static libraries (.a files) and not as dynamic libraries (.so or
 .dylib files on linux and OSX respectively).
 
-The following libraries must be linked dynamically, since they are
-machine-specific and/or are required to be dynamic for programs to run
-at all:
-
-  libstdc++
-  libgcc
-  libSystem
-  libmx (OSX, Linux?)
-  libGL (Linux)
-  libGLU (Linux)
-  libXext (Linux)
-  AGL (OSX)
-  OpenGL (OSX)
-  Carbon (OSX)
-  ApplicationServices (OSX)
-  vecLib (OSX)
-
 After a vp executable is built, but before it is released, it is
 important to check and make sure that none it is not accidentally
 linked against any dynamic libraries where static libraries are
@@ -1147,13 +1130,15 @@ required by the vp executable.  The output should look very much like:
 viewpoints.app/Contents/MacOS/viewpoints:
 	/System/Library/Frameworks/AGL.framework/Versions/A/AGL (compatibility version 1.0.0, current version 1.0.0)
 	/System/Library/Frameworks/OpenGL.framework/Versions/A/OpenGL (compatibility version 1.0.0, current version 1.0.0)
-	/System/Library/Frameworks/Carbon.framework/Versions/A/Carbon (compatibility version 2.0.0, current version 128.0.0)
-	/System/Library/Frameworks/ApplicationServices.framework/Versions/A/ApplicationServices (compatibility version 1.0.0, current version 22.0.0)
-	/System/Library/Frameworks/vecLib.framework/Versions/A/vecLib (compatibility version 1.0.0, current version 192.15.0)
-	/usr/lib/libSystem.B.dylib (compatibility version 1.0.0, current version 88.3.9)
-	/usr/lib/libmx.A.dylib (compatibility version 1.0.0, current version 220.0.0)
+	/System/Library/Frameworks/Carbon.framework/Versions/A/Carbon (compatibility version 2.0.0, current version 136.0.0)
+	/System/Library/Frameworks/ApplicationServices.framework/Versions/A/ApplicationServices (compatibility version 1.0.0, current version 34.0.0)
+	/System/Library/Frameworks/vecLib.framework/Versions/A/vecLib (compatibility version 1.0.0, current version 242.0.0)
+	/usr/lib/libSystem.B.dylib (compatibility version 1.0.0, current version 111.1.1)
+	/usr/lib/libmx.A.dylib (compatibility version 1.0.0, current version 292.4.0)
 	/usr/lib/libstdc++.6.dylib (compatibility version 7.0.0, current version 7.4.0)
-	/usr/lib/libgcc_s.1.dylib (compatibility version 1.0.0, current version 1.0.0)
+	/usr/local/lib/libgcc_s.1.dylib (compatibility version 1.0.0, current version 1.0.0)
+	/System/Library/Frameworks/CoreServices.framework/Versions/A/CoreServices (compatibility version 1.0.0, current version 32.0.0)
+	/System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation (compatibility version 150.0.0, current version 476.14.0)
 
 (with perhaps higher version numbers, but NO ADDITIONAL dynamic
 libraries.  Be especally way that it does not show any lines with
