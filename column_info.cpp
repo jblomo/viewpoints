@@ -21,7 +21,7 @@
 // Purpose: Source code for <column_info.h>
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  17-JUL-2008
+// Modified: P. R. Gazis  11-SEP-2008
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -35,7 +35,8 @@
 
 //***************************************************************************
 // Column_Info::Column_Info() --  Default constructor clears everything.
-Column_Info::Column_Info() : jvar_( 0), label( ""), hasASCII( 0)
+Column_Info::Column_Info() : jvar_( 0), label( ""), hasASCII( 0),
+  isVector( 0), vectorLabel( ""), vectorIndex( 0)
 {
   ascii_values_.erase( ascii_values_.begin(), ascii_values_.end());
 }
@@ -73,6 +74,10 @@ void Column_Info::free()
   label = "";
   hasASCII = 0;
   ascii_values_.erase( ascii_values_.begin(), ascii_values_.end());
+  
+  isVector = 0;
+  vectorLabel = "";
+  vectorIndex = 0;
 }
 
 //***************************************************************************
@@ -85,6 +90,10 @@ void Column_Info::copy( const Column_Info &inputInfo)
   if( ascii_values_.size() <= 0)
     ascii_values_.erase( ascii_values_.begin(), ascii_values_.end());
   ascii_values_ = inputInfo.ascii_values_;
+  
+  isVector = inputInfo.isVector;
+  vectorLabel = inputInfo.vectorLabel;
+  vectorIndex = inputInfo.vectorIndex;
 }
 
 //***************************************************************************

@@ -19,7 +19,7 @@
 // Purpose: Source code for <data_file_manager.h>
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  21-AUG-2008
+// Modified: P. R. Gazis  11-SEP-2008
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -1578,8 +1578,8 @@ int Data_File_Manager::read_table_from_fits_file()
            << " -Couldn't find type for column[" << colnum << "/" << nvars
            << "] with status (" << status << ")" << endl;
       string sConfirm = "";
-      sConfirm.append( "Couldn't find typecode for column in FITS\n");
-      sConfirm.append( "table, check format.  Restoring original data.");
+      sConfirm.append( "Couldn't find typecode for column in FITS table.\n");
+      sConfirm.append( "Check format.  Restoring original data.");
       make_confirmation_window( sConfirm.c_str(), 1, 2);
       return 1;
     }
@@ -1681,15 +1681,15 @@ int Data_File_Manager::read_table_from_fits_file()
   // code is extremely delicate!
   for( int i=0; i<npoints_alloc; i++) {
     // cout << "  -Deallocate[" << i << "/" << npoints_alloc << "]" << endl;
-    free(cstring_array[i]);
+    free( cstring_array[i]);
   }
-  free(cstring_array);
+  free( cstring_array);
 
   // As noted above, it appears one can't use NEW and DELETE to allocate and
   // deallocate arrays of char strings for use with fits_read_col.  Tbis 
   // code is included for archival purposes.
   // for( int i=0; i<npoints_alloc; i++) delete[] cstring_array[i];
-  // free(cstring_array);
+  // free( cstring_array);
 
   // Report success
   cout << " -Finished reading " << nvars
@@ -2031,6 +2031,10 @@ int Data_File_Manager::write_binary_file_with_headers()
 // write a table extension.  Returns 0 if successful.
 int Data_File_Manager::write_table_to_fits_file()
 {
+  // Define and set maximum length for ASCII variables.  This should 
+  // eventually be made a static class variable
+  int max_length_ascii_variable = 20;
+  
   // Define string to hold filespec for debudding purposes
   // string sFileSpec = "H:/cppdir/vp.fits240/bowser.fit";
   string sFileSpec;
@@ -2127,6 +2131,10 @@ int Data_File_Manager::write_table_to_fits_file()
   cout << "DIAGNOSTIC: writeSelectionInfo_ (" << writeSelectionInfo_
        << "), tfields (" << tfields << "/" << nvars << ")" << endl;
 
+  // Generate ascii format string, which must be less that 10 chars long!
+  char tform_ascii[10] = "";
+  (void) sprintf( tform_ascii, "a%i", max_length_ascii_variable);
+  
   // Define, allocate, and load arrays to store field information  
   char **ttype;
   char **tform;
@@ -2140,7 +2148,8 @@ int Data_File_Manager::write_table_to_fits_file()
       tform[i] = (char*) malloc( 10);
       tunit[i] = (char*) malloc( 1);
       strcpy( ttype[i], (column_info[i].label).c_str());
-      strcpy( tform[i], "E14.6");
+      if( column_info[i].hasASCII <= 0) strcpy( tform[i], "E14.6");
+      else strcpy( tform[i], tform_ascii);
       strcpy( tunit[i], "\0");
     }
     else {
@@ -2161,7 +2170,7 @@ int Data_File_Manager::write_table_to_fits_file()
       extname, &status)) {
     fits_close_file( pFitsfile, &status);
     cerr << "Data_File_Manager::write_table_to_fits_file: ERROR, "
-         << "couldn't append table extenstion with status (" << status
+         << "couldn't append table extension with status (" << status
          << ")" << endl;
     return -1;
   }
@@ -2181,11 +2190,21 @@ int Data_File_Manager::write_table_to_fits_file()
   int firstrow  = 1;
   int firstelem = 1;
 
-  // Allocate spoace for output arrays
+  // Allocate space for output arrays
   float* floatarray;
   long* longarray;
   floatarray = (float*) malloc( npoints * sizeof(float));
   longarray = (long*) malloc( npoints * sizeof(long));
+
+  // Allocate storage to read arrays of character strings.  WARNING: It 
+  // appears that one MUST use MALLOC to allocate arrays of char strings 
+  // for use with fits_read_col.  This code is extrememly delicate!
+  char **cstring_array = NULL;
+  int npoints_alloc = npoints;
+  int nchars = max_length_ascii_variable+1;
+  cstring_array = (char**) malloc( npoints_alloc * (sizeof *cstring_array));
+  for( int i=0; i<npoints_alloc; i++)
+    cstring_array[i] = (char*) malloc(nchars + 1);
 
   // Loop: Write attributes to their respective columns
   int ifield = 0;
@@ -2193,10 +2212,22 @@ int Data_File_Manager::write_table_to_fits_file()
     ifield = i+1;
     if( i<nvars) {
       // for( int j=0; j<npoints; j++) floatarray[j] = points(j,i);
-      for( int j=0; j<npoints; j++) floatarray[j] = points(i,j);
-      fits_write_col(
-        pFitsfile, TFLOAT, ifield, firstrow, firstelem, npoints,
-        floatarray, &status);
+      
+      // Load and write non-ASCII data as float, otherwise look up and write
+      // ASCII values
+      if( column_info[i].hasASCII <= 0) {
+        for( int j=0; j<npoints; j++) floatarray[j] = points(i,j);
+        fits_write_col(
+          pFitsfile, TFLOAT, ifield, firstrow, firstelem, npoints,
+          floatarray, &status);
+      }
+      else {
+        for( int j=0; j<npoints; j++)
+          strcpy( cstring_array[j], (column_info[i].ascii_value(j)).c_str());
+        fits_write_col(
+          pFitsfile, TSTRING, ifield, firstrow, firstelem, npoints,
+          cstring_array, &status);
+      }
     }
     else {
       cout << "DIAGNOSTIC: Saving selection information" << endl;
@@ -2210,6 +2241,14 @@ int Data_File_Manager::write_table_to_fits_file()
   // Deallocate space
   free( floatarray);
   free( longarray);
+
+  // Remember to deallocate space for the array of character strings used
+  // during read operations.  WARNING: As noted above, it appears that one
+  // MUST use MALLOC and FREE to allocate and deallocate arrays of char
+  // strings for use with fits_read_col.  Like the memory allocation, this 
+  // code is extremely delicate!
+  for( int i=0; i<npoints_alloc; i++) free( cstring_array[i]);
+  free( cstring_array);
 
   // Report success to console
   cout << "Data_File_Manager::write_table_to_fits_file: "

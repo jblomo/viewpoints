@@ -106,7 +106,7 @@ If it did, this would produce unnecessary copies of the data files!  The
 user must save any new or modified data they wish to associate with a 
 configuration before they save that configuration.  Saved configurations
 may be reloaded with or without reading the associated data file.
-<\p>
+</p>
 
 <p>
 <em><b>Viewpoint</b></em> can save configuration information, such as axis 
@@ -278,6 +278,9 @@ when the window manager focus is on a plot window.
 </tr>
 <tr>
  <td>scale</td><td>middle-mouse (ctl-mouse on OSX)</td>
+</tr>
+<tr>
+ <td>scale both x and y</td><td>middle-wheel</td>
 </tr>
 <tr>
  <td>scale histogram</td><td>middle-mouse + h (ctl-mouse + h on OSX)</td>
@@ -517,7 +520,7 @@ These are chosen on a per-axis basis.
  <td>plot rank of x (instead of x)<br>(i.e. nonuniform rescaling to force uniform marginal)</td>
 </tr>
 <tr>
- <td>partial rank<br>&nbsp;</td>
+ <td>partial rank&nbsp;&nbsp;&nbsp;</td>
  <td>rank as above, but overplot similar values</td>
 </tr>
 <tr>
@@ -525,7 +528,7 @@ These are chosen on a per-axis basis.
  <td>plot inverse of Gaussian cummulative distribution function of x<br>(i.e. nonuniform rescaling to force Gaussian marginal)</td>
 </tr>
 <tr>
- <td>randomize<br>&nbsp;</td>
+ <td>randomize&nbsp;&nbsp;&nbsp;</td>
  <td>Randomize</td>
 </tr>
 </table>
@@ -542,6 +545,12 @@ while the window manager focus is on a plot window:
  <th align="LEFT">Action</th><th align="LEFT">Key</th>
 </tr>
 <tr>
+ <td>new selection</td><td>left-mouse</td>
+</tr>
+<tr>
+ <td>move selection</td><td>left-mouse + shift</td>
+</tr>
+<tr>
  <td>invert selection</td><td>i</td>
 </tr>
 <tr>
@@ -549,6 +558,9 @@ while the window manager focus is on a plot window:
 </tr>
 <tr>
  <td>clear selection</td><td>c</td>
+</tr>
+<tr>
+ <td>search y-axis strings&nbsp;&nbsp;&nbsp;</td><td>f</td>
 </tr>
 <tr>
  <td>kill selected points</td><td>x</td>
@@ -566,12 +578,13 @@ while the window manager focus is on a plot window:
 <h3>Notes and warnings:</h3>
 
 <p>
-The current release of the 'viewpoints' package (version 2.1.4, build 242) 
+The current release of the <em><b>Viewpoints</b></em> package 
+(version 2.1.5, build 247) 
 is still a development version.  While every effort has been make to ensure 
 that it will work -- or fail gracefully if it doesn't -- it still has many 
 rough edges.  Some of these are described below.  These issues will all be 
 addressed in future releases.
-<\p>
+</p>
 
 <p>
 1) If you drag a window over the main control panel, the main control panel
@@ -583,12 +596,12 @@ For this reason, they are still evolving.  While every effort has been made
 to ensure that old configuration files are upward-compatible with new 
 versions of viewpoints, it is advisable to resave a new version of these 
 files if the package warns you to do so.
-<\p>
+</p>
 
 <p>
 3) The FITS file i/o capability is new, and is not yet guaranteed to work on 
 every system.  It will undergo substantial improvement in future releases.
-<\p>
+</p>
 
 <p>
 4) The Edit Column Labels tool is also a new feature, and is not guaranteed
@@ -598,7 +611,7 @@ editor in a conventional fashion.  Small binary files can be saved to ASCII
 and edited.  For large binary files, it is possible, with difficulty, to 
 rename labels by saving a small portion of the file as ASCII, editing this, 
 reloading it, and appending the remainding portion of the original binary file.
-<\p>
+</p>
 
 <a name="Compatibility_Issues"></a>
 <p>

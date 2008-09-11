@@ -86,7 +86,7 @@ with extreme caution.
 
 Usage:
 
-In its current form (Version 2.1.4, build 242) 'viewpoints' is run either by 
+In its current form (Version 2.1.5, build 247) 'viewpoints' is run either by 
 clicking on the 'vp' icon or from the command line in the directory in which 
 it has been installed or to which a path is available.  When viewpoints is 
 run from the icon, it will come up with an array of default data.  When it is
@@ -277,6 +277,7 @@ Buttons and (keyboard shortcuts when a plot window has mouse focus):
  invert selection       i
  display deselected     d
  clear selection        c
+ search y-axis strings  f
  kill selected points   x
  reset view             r
  quit                   q
@@ -289,6 +290,7 @@ Mouse Gestures (with the cursor in one of plot windows):
  select points          left-mouse
  translate              right-mouse  (opt-mouse in OSX)
  scale                  middle-mouse (ctl-mouse in OSX)
+ scale both x and y     mouse-wheel
  scale histogram        middle-mouse + h (ctl-mouse + h in OSX)
 
     
@@ -394,7 +396,7 @@ randomize               Randomize
 
 Notes and warnings:
 
-The current release of the 'viewpoints' package (version 2.1.4, build 242) is 
+The current release of the 'viewpoints' package (version 2.1.5, build 247) is 
 still a development version.  While every effort has been make to ensure that 
 it will work -- or fail gracefully if it doesn't -- it still has many rough 
 edges.  Some of these are described below.  These issues will all be 

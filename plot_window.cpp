@@ -22,7 +22,8 @@
 // Purpose: Source code for <Plot_Window.h>
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  08-JUL-2008
+// Modified: Nathan Schmidt  01-SEP-2008
+// Modified: P. R. Gazis  11-SEP-2008
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -307,295 +308,307 @@ int Plot_Window::handle( int event)
 {
   // Current plot window (button pushes, mouse drags, etc) must get redrawn 
   // before others so that selections get colored correctly.  Ugh.
-  switch(event) {
-
+  switch( event) {
     active_plot = index;
 
     // Mouse button push
-  case FL_PUSH:
-    DEBUG(cout << "FL_PUSH at " << xprev << ", " << yprev << endl);
+    case FL_PUSH:
+      DEBUG(cout << "FL_PUSH at " << xprev << ", " << yprev << endl);
 
-    // Show the control panel associated with this plot window.
-    cpt->value(cps[this->index]);  
-    xprev = Fl::event_x();
-    yprev = Fl::event_y();
+      // Show the control panel associated with this plot window.
+      cpt->value(cps[this->index]);  
+      xprev = Fl::event_x();
+      yprev = Fl::event_y();
 
-    if(Fl::event_clicks() > 0) {
-      //double click
-      center_on_click(xprev,yprev);
-      return 1;
-    }
+      // Center of double clicks
+      if( Fl::event_clicks() > 0) {
+        center_on_click( xprev, yprev);
+        return 1;
+      }
 
-    // middle button pushed => start zoom
-    if( (Fl::event_state() == FL_BUTTON2) || 
-        (Fl::event_state() == (FL_BUTTON1 | FL_CTRL))) {
+      // middle button pushed => start zoom
+      if( (Fl::event_state() == FL_BUTTON2) || 
+          (Fl::event_state() == (FL_BUTTON1 | FL_CTRL))) {
+
       // XXX wish this worked
 #if 0
-      xzoomcenter = (float)xprev;
-      xzoomcenter = + (2.0*(xzoomcenter/(float)w()) -1.0) ; // window -> [-1,1]
-      yzoomcenter = (float)yprev;
-      yzoomcenter = - (2.0*(yzoomcenter/(float)h()) -1.0) ; // window -> [-1,1]
+        xzoomcenter = (float)xprev;
+        xzoomcenter = + (2.0*(xzoomcenter/(float)w()) -1.0) ; // window -> [-1,1]
+        yzoomcenter = (float)yprev;
+        yzoomcenter = - (2.0*(yzoomcenter/(float)h()) -1.0) ; // window -> [-1,1]
 #endif
-    }
-
-    // right button pushed => start translating
-    else if( Fl::event_state(FL_BUTTON3) || 
-             (Fl::event_state() == (FL_BUTTON1 | FL_ALT)) ) {
-      show_center_glyph = 1;
-      needs_redraw = 1;
-    }
-
-    // left button pushed => start new selection, or start translating the 
-    // old selection
-    else if( Fl::event_state() == FL_BUTTON1) {
-
-      // determine current and previous active plot windows
-      static Plot_Window *previous_plot, *current_plot = (Plot_Window *)NULL;
-      previous_plot = current_plot;
-      current_plot = this;
-
-      // determine current and previous active brushes
-      static Brush *previous_brush, *current_brush = (Brush *)NULL;
-      previous_brush = current_brush;
-      current_brush =  dynamic_cast <Brush*> (brushes_tab->value());
-      assert (current_brush);
-
-      newly_selected(blitz::Range(0,npoints-1)) = 0;
-      // extend the selection under the following circumstances, otherwise replace.
-      if (current_brush->add_to_selection->value() || // current_brush->paint->value() || ???
-          current_brush != previous_brush ||
-          current_plot != previous_plot) {
-        previously_selected( blitz::Range(0,npoints-1)) = selected( blitz::Range( 0, npoints-1));
       }
 
-      xdown = (float)xprev;
-      xdown = + (2.0*(xdown/(float)w()) -1.0) ; // window -> [-1,1]
-      xdown = xdown / xscale;
-      xdown = xdown + xcenter;
+      // right button pushed => start translating
+      else if( Fl::event_state(FL_BUTTON3) || 
+               (Fl::event_state() == (FL_BUTTON1 | FL_ALT)) ) {
+        show_center_glyph = 1;
+        needs_redraw = 1;
+      }
+
+      // left button pushed => start new selection, or start translating 
+      // the old selection
+      else if( Fl::event_state() == FL_BUTTON1) {
+
+        // determine current and previous active plot windows
+        static Plot_Window *previous_plot, *current_plot = (Plot_Window *)NULL;
+        previous_plot = current_plot;
+        current_plot = this;
+
+        // determine current and previous active brushes
+        static Brush *previous_brush, *current_brush = (Brush *)NULL;
+        previous_brush = current_brush;
+        current_brush =  dynamic_cast <Brush*> (brushes_tab->value());
+        assert (current_brush);
+
+        newly_selected(blitz::Range(0,npoints-1)) = 0;
+        // extend the selection under the following circumstances, otherwise replace.
+        if (current_brush->add_to_selection->value() || // current_brush->paint->value() || ???
+            current_brush != previous_brush ||
+            current_plot != previous_plot) {
+          previously_selected( blitz::Range(0,npoints-1)) = selected( blitz::Range( 0, npoints-1));
+        }
+
+        xdown = (float)xprev;
+        xdown = + (2.0*(xdown/(float)w()) -1.0) ; // window -> [-1,1]
+        xdown = xdown / xscale;
+        xdown = xdown + xcenter;
       
-      ydown = (float)yprev;
-      ydown = - (2.0*(ydown/(float)h()) -1.0) ; // window -> [-1,1]
-      ydown = ydown/yscale;
-      ydown = ydown + ycenter;
+        ydown = (float)yprev;
+        ydown = - (2.0*(ydown/(float)h()) -1.0) ; // window -> [-1,1]
+        ydown = ydown/yscale;
+        ydown = ydown + ycenter;
 
-      xtracked = xdown;
-      ytracked = ydown;
-      selection_changed = 1;
-      handle_selection ();
-      redraw_all_plots (index);
-    }
+        xtracked = xdown;
+        ytracked = ydown;
+        selection_changed = 1;
+        handle_selection ();
+        redraw_all_plots (index);
+      }
 
-    return 1;
+      return 1;
 
     // Mouse drag
-  case FL_DRAG:
-    DEBUG (printf ("FL_DRAG, event_state: %x\n", Fl::event_state()));
-    xcur = Fl::event_x();
-    ycur = Fl::event_y();
+    case FL_DRAG:
+      DEBUG (printf ("FL_DRAG, event_state: %x\n", Fl::event_state()));
+      xcur = Fl::event_x();
+      ycur = Fl::event_y();
 
-    xdragged = xcur - xprev;
-    ydragged = -(ycur - yprev);
-    xprev = xcur;
-    yprev = ycur;
+      xdragged = xcur - xprev;
+      ydragged = -(ycur - yprev);
+      xprev = xcur;
+      yprev = ycur;
 
-    // drag with right mouse (or alt-left-mouse) => translate the view
-    if( Fl::event_state(FL_BUTTON3) || 
-        (Fl::event_state(FL_BUTTON1) && Fl::event_state(FL_ALT))) {
-      float xmove = xdragged*(1/xscale)*(2.0/w());
-      float ymove = ydragged*(1/yscale)*(2.0/h());
-      xcenter -= xmove;
-      ycenter -= ymove;
-      DEBUG ( cout << "translating (xcenter, ycenter) = (" << xcenter << ", " << ycenter << ")" << endl);
-      // redraw ();
-      show_center_glyph = 1;
-      needs_redraw = 1;
-      update_linked_transforms ();
-    }
-
-    // drag with middle-mouse (or c-left-mouse) => scale the view
-    else if( Fl::event_state(FL_BUTTON2) || 
-             (Fl::event_state(FL_BUTTON1) && Fl::event_state(FL_CTRL))) {
-      if( scale_histogram) {
-        xhscale *= 1 + xdragged*(2.0/w());
-        yhscale *= 1 + ydragged*(2.0/h());
+      // drag with right mouse (or alt-left-mouse) => translate the view
+      if( Fl::event_state(FL_BUTTON3) || 
+          (Fl::event_state(FL_BUTTON1) && Fl::event_state(FL_ALT))) {
+        float xmove = xdragged*(1/xscale)*(2.0/w());
+        float ymove = ydragged*(1/yscale)*(2.0/h());
+        xcenter -= xmove;
+        ycenter -= ymove;
+        DEBUG ( cout << "translating (xcenter, ycenter) = (" << xcenter << ", " << ycenter << ")" << endl);
+        // redraw ();
+        show_center_glyph = 1;
+        needs_redraw = 1;
+        update_linked_transforms ();
       }
-      else {
-        xscale *= 1 + xdragged*(2.0/w());
-        yscale *= 1 + ydragged*(2.0/h());
-        zscale *= 1 + 0.5 * (xdragged*(2.0/w()) + ydragged*(2.0/h()));  // XXX hack.
-        DEBUG ( cout << "scaling (xscale, yscale) = (" << xscale << ", " << yscale << ")" << endl);
-      }
-      // redraw();
-      needs_redraw = 1;
-      update_linked_transforms ();
-    }
 
-    // drag with left mouse => continue selecting
-    else if( Fl::event_state(FL_BUTTON1)) {
-      // shift key down => move entire selection
-      if( Fl::event_key(FL_Shift_L) || Fl::event_key(FL_Shift_R)) {
-        xdown += xdragged*(1/xscale)*(2.0/w());
-        ydown += ydragged*(1/yscale)*(2.0/h());
-        xtracked += xdragged*(1/xscale)*(2.0/w());
-        ytracked += ydragged*(1/yscale)*(2.0/h());
+      // drag with middle-mouse (or c-left-mouse) => scale the view
+      else if( Fl::event_state(FL_BUTTON2) || 
+               (Fl::event_state(FL_BUTTON1) && Fl::event_state(FL_CTRL))) {
+        if( scale_histogram) {
+          xhscale *= 1 + xdragged*(2.0/w());
+          yhscale *= 1 + ydragged*(2.0/h());
+        }
+        else {
+          xscale *= 1 + xdragged*(2.0/w());
+          yscale *= 1 + ydragged*(2.0/h());
+          zscale *= 1 + 0.5 * (xdragged*(2.0/w()) + ydragged*(2.0/h()));  // XXX hack.
+          DEBUG ( cout << "scaling (xscale, yscale) = (" << xscale << ", " << yscale << ")" << endl);
+        }
+        // redraw();
+        needs_redraw = 1;
+        update_linked_transforms ();
       }
-      // no shift key => move corner of selection
-      else {
-        xtracked = + (2.0*(xcur/(float)w()) -1.0) ; // window -> [-1,1]
-        xtracked = xtracked / xscale;
-        xtracked = xtracked + xcenter;
+
+      // drag with left mouse => continue selecting
+      else if( Fl::event_state(FL_BUTTON1)) {
+
+        // shift key down => move entire selection
+        if( Fl::event_key(FL_Shift_L) || Fl::event_key(FL_Shift_R)) {
+          xdown += xdragged*(1/xscale)*(2.0/w());
+          ydown += ydragged*(1/yscale)*(2.0/h());
+          xtracked += xdragged*(1/xscale)*(2.0/w());
+          ytracked += ydragged*(1/yscale)*(2.0/h());
+        }
+
+        // no shift key => move corner of selection
+        else {
+          xtracked = + (2.0*(xcur/(float)w()) -1.0) ; // window -> [-1,1]
+          xtracked = xtracked / xscale;
+          xtracked = xtracked + xcenter;
         
-        ytracked = - (2.0*(ycur/(float)h()) -1.0) ; // window -> [-1,1]
-        ytracked = ytracked/yscale;
-        ytracked = ytracked + ycenter;
-      }
+          ytracked = - (2.0*(ycur/(float)h()) -1.0) ; // window -> [-1,1]
+          ytracked = ytracked/yscale;
+          ytracked = ytracked + ycenter;
+        }
         
-      // printf ("FL_DRAG & FL_BUTTON1, event_state: %x  isdrag = %d  xdragged=%f  ydragged=%f\n", Fl::event_state(), isdrag, xdragged, ydragged);
-      if((fabs(xdragged)+fabs(ydragged))>0 ){
-        selection_changed = 1;
-        if (defer_redraws_button->value()) {
-          redraw_one_plot ();
-        } else {
-          handle_selection ();
-          redraw_all_plots (index);
+        // printf ("FL_DRAG & FL_BUTTON1, event_state: %x  isdrag = %d  xdragged=%f  ydragged=%f\n", Fl::event_state(), isdrag, xdragged, ydragged);
+        if( ( fabs(xdragged)+fabs(ydragged))>0) {
+          selection_changed = 1;
+          if( defer_redraws_button->value()) {
+            redraw_one_plot ();
+          } 
+          else {
+            handle_selection ();
+            redraw_all_plots (index);
+          }
         }
       }
-    }
-    screen_to_world (-1, -1, wmin[0], wmin[1]);
-    screen_to_world (+1, +1, wmax[0], wmax[1]);
-    return 1;
+      screen_to_world (-1, -1, wmin[0], wmin[1]);
+      screen_to_world (+1, +1, wmax[0], wmax[1]);
+      return 1;
 
     // Mouse button up
-  case FL_RELEASE:   
-    DEBUG (cout << "FL_RELEASE at " << Fl::event_x() << ", " << Fl::event_y() << endl);
-    if( show_center_glyph) {
-      show_center_glyph = 0;
-    }
-    if (defer_redraws_button->value()) {
-      handle_selection();
-      redraw_all_plots(index);
-    } else {
-      redraw_one_plot();
-    }
-    return 1;
+    case FL_RELEASE:   
+      DEBUG (cout << "FL_RELEASE at " << Fl::event_x() << ", " << Fl::event_y() << endl);
+      if( show_center_glyph) {
+        show_center_glyph = 0;
+      }
+      if (defer_redraws_button->value()) {
+        handle_selection();
+        redraw_all_plots(index);
+      }
+      else {
+        redraw_one_plot();
+      }
+      return 1;
 
     // keypress, key is in Fl::event_key(), ascii in Fl::event_text().  Return 
     // 1 if you understand/use the keyboard event, 0 otherwise...
-  case FL_KEYDOWN:
-    DEBUG ( cout << "FL_KEYDOWN, event_key() = " << Fl::event_key() << endl);
+    case FL_KEYDOWN:
+      DEBUG ( cout << "FL_KEYDOWN, event_key() = " << Fl::event_key() << endl);
 
-    // XXX should figure out how to share shortcuts between plot windows and 
-    // control panels... later
-    switch( Fl::event_key()) {
+      // XXX should figure out how to share shortcuts between plot windows and 
+      // control panels... later
+      switch( Fl::event_key()) {
 
-      // exit
-    case 'q':  
-      if( expert_mode || make_confirmation_window( "Quit?  Are you sure?") > 0)
-        exit( 0);
-      else
-        return 1;
+        // exit
+        case 'q':  
+          if( expert_mode || make_confirmation_window( "Quit?  Are you sure?") > 0)
+            exit( 0);
+          else
+            return 1;
 
-      // delete selected points from all future processing
-    case 'x':
-    case FL_Delete:
-      delete_selection( (Fl_Widget *) NULL);
-      return 1;
+        // delete selected points from all future processing
+        case 'x':
+        case FL_Delete:
+          delete_selection( (Fl_Widget *) NULL);
+          return 1;
 
-      // Invert or restore (uninvert) selected and nonselected
-    case 'i':
-      invert_selection();
-      return 1;
+        // Invert or restore (uninvert) selected and nonselected
+        case 'i':
+          invert_selection();
+          return 1;
 
-      // Clear selection
-    case 'c':
-      clear_selections( (Fl_Widget *) NULL);
-      return 1;
+        // Clear selection
+        case 'c':
+          clear_selections( (Fl_Widget *) NULL);
+          return 1;
 
-      // Don't display / display deselected dots
-    case 'd':
-      toggle_display_deselected( (Fl_Widget *) NULL);
-      return 1;
+        // Don't display / display deselected dots
+        case 'd':
+          toggle_display_deselected( (Fl_Widget *) NULL);
+          return 1;
 
-      // Reset view tranform for this plot
-    case 'r':
-      reset_view();
-      return 1;
+        // Reset view tranform for this plot
+        case 'r':
+          reset_view();
+          return 1;
 
-      // hold down 'h' and middle mouse drag to scale histogram bin height.
-      // there should really be a better way....
-    case 'h':
-      scale_histogram=1;
-      return 1;
+        // hold down 'h' and middle mouse drag to scale histogram bin height.
+        // there should really be a better way....
+        case 'h':
+          scale_histogram=1;
+          return 1;
 
-      // run a timing test, for performancw tuning & profiling 
-    case '9':
-      run_timing_test();
-      return 1;
+        // run a timing test, for performance tuning & profiling 
+        case '9':
+          run_timing_test();
+          return 1;
 
-    case 'w':
-      center_on_click(Fl::event_x(),Fl::event_y());
-      return 1;
-    case 'f':
-      {
-        char buf[1024];
-        char label[1024];
-        int  col = Fl::event_shift()?cp->varindex1->value():cp->varindex2->value();
-        strcpy(buf,"");
-        sprintf(label,"Search within '%s'",Data_File_Manager::column_info[col].label.c_str());
-        make_find_window(label,buf);
-        if(buf[0]) {
-          select_on_string(buf,col);
+        // Center on click
+        case 'w':
+          center_on_click( Fl::event_x(), Fl::event_y());
+          return 1;
+      
+        // Search for strings in y-axis variable
+        case 'f':
+        {
+          char buf[1024];
+          char label[1024];
+          int col = Fl::event_shift()?cp->varindex1->value():cp->varindex2->value();
+          strcpy( buf, "");
+          sprintf(
+            label,
+            "Search for strong in the '%s' axis variable",
+            Data_File_Manager::column_info[col].label.c_str());
+          make_find_window( label, buf);
+          if( buf[0]) {
+            select_on_string( buf, col);
+          }
+          return 1;
         }
-        return 1;
-      }
 
-    default:
-      return 0;
+      // Default: do nothing for unrecognized keys
+      default:
+        return 0;
     }
 
     // Keyboard key up
-  case FL_KEYUP:
-    DEBUG ( cout << "FL_KEYUP" << endl);
-    switch( Fl::event_key()) {
-    case 'h':
-      scale_histogram=0;
-      return 1;
+    case FL_KEYUP:
+      DEBUG ( cout << "FL_KEYUP" << endl);
+      switch( Fl::event_key()) {
+        case 'h':
+          scale_histogram=0;
+          return 1;
 
-    default:
-      return 0;
-    }
+        default:
+          return 0;
+      }
 
     // Shortcut, key is in Fl::event_key(), ascii in Fl::event_text().  Return 
     // 1 if you understand/use the shortcut event, 0 otherwise...
-  case FL_SHORTCUT:
-    return 0;
+    case FL_SHORTCUT:
+      return 0;
 
-
-  case FL_MOUSEWHEEL:
-    if(1) { 
-      float wheel_zoom_rate = 50.0;
-      float wheel_size_rate = 5.0;
-      float dy = Fl::event_dy();
-      float dx = Fl::event_dx();
-      if(dx) {
-        float newsz = cp->size->value();
-        newsz += dx / wheel_size_rate;
-        newsz = (cp->size->maximum()>(double)newsz)?newsz:cp->size->maximum();
-        newsz = (cp->size->minimum()>(double)newsz)?cp->size->minimum():newsz;
-        cp->size->value(newsz);
-      } else {
-        xscale *= 1 - dy / wheel_zoom_rate;
-        yscale *= 1 - dy / wheel_zoom_rate;
+    // Mouse wheel, zoom in both the x and y axes
+    case FL_MOUSEWHEEL:
+      if(1) { 
+        float wheel_zoom_rate = 50.0;
+        float wheel_size_rate = 5.0;
+        float dy = Fl::event_dy();
+        float dx = Fl::event_dx();
+        if(dx) {
+          float newsz = cp->size->value();
+          newsz += dx / wheel_size_rate;
+          newsz = (cp->size->maximum()>(double)newsz)?newsz:cp->size->maximum();
+          newsz = (cp->size->minimum()>(double)newsz)?cp->size->minimum():newsz;
+          cp->size->value(newsz);
+        }
+        else {
+          xscale *= 1 - dy / wheel_zoom_rate;
+          yscale *= 1 - dy / wheel_zoom_rate;
+        }
+        needs_redraw = 1;
+        update_linked_transforms();
+        redraw_one_plot();
+        return 1;
       }
-      needs_redraw = 1;
-      update_linked_transforms();
-      redraw_one_plot();
-      return 1;
-    }
 
-    // Pass other events to the base class...
-  default:
-    return Fl_Gl_Window::handle( event);
+    // Default: Pass other events to the base class...
+    default:
+      return Fl_Gl_Window::handle( event);
   }
 } 
 
@@ -750,7 +763,10 @@ void Plot_Window::draw()
 }
 
 
-void Plot_Window::center_on_click(int x, int y) {
+//***************************************************************************
+// Plot_Window::center_on_click( x, y) -- Center on x, y on a mouse click.
+void Plot_Window::center_on_click( int x, int y)
+{
   float xt;
   float yt;
   
@@ -779,8 +795,9 @@ void Plot_Window::center_on_click(int x, int y) {
   redraw_one_plot();
 }
 
-
-void Plot_Window::draw_resize_knob ()
+//***************************************************************************
+// Plot_Window::draw_resize_knob() -- Draw visual target (knob) for resize.
+void Plot_Window::draw_resize_knob()
 {
 #ifdef __APPLE__
   glDisable( GL_DEPTH_TEST);
@@ -2297,13 +2314,15 @@ void Plot_Window::clear_selections( Fl_Widget *o)
 
 
 //***************************************************************************
-// Search through all points, using given column, a_col, as the "key".
-// Flag as "inside the footprint" (i.e. painted by this "string search brush")
-// only those points whose corresponding ascii value matches the given string.
-void Plot_Window::select_on_string(const char *str,int a_col) {
+// Plot_Window::select_on_string( *str, a_col) -- Search through all points, 
+// using given column, a_col, as the "key".  Flag as "inside the footprint" 
+// (i.e. painted by this "string search brush") only those points whose 
+// corresponding ascii value matches the given string.
+void Plot_Window::select_on_string( const char *str, int a_col) {
   if( Data_File_Manager::column_info[a_col].hasASCII && a_col>=0) {
     for(int i=0;i<npoints;i++) {
-      const char *label_a = Data_File_Manager::column_info[a_col].ascii_value((int) points(a_col, i)).c_str();
+      const char *label_a = 
+        Data_File_Manager::column_info[a_col].ascii_value((int) points(a_col, i)).c_str();
       inside_footprint(i) = (label_a && strstr(label_a,str))?1:0;
     }
   } else {

@@ -26,7 +26,7 @@
 //   1) This is inteded for use as a mamber class of data_file_manager
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  18-JUL-2008
+// Modified: P. R. Gazis  11-SEP-2008
 //***************************************************************************
 
 // Protection to make sure this header is not included twice
@@ -64,11 +64,12 @@
 //   add_info_and_update_data( j, old_info) -- Add info and update data
 //   update_ascii_values_and_data() -- Update ascii_values table and data
 //
-//   index() -- Get index for this column
-//   index( j) -- Set index for this column
+//   index() -- Get column index for this column
+//   index( j) -- Set column index for this column
+//   ascii_value( j) -- Get ASCII value for point j
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  18-JUL-2008
+// Modified: P. R. Gazis  11-SEP-2008
 //***************************************************************************
 class Column_Info
 {
@@ -99,6 +100,10 @@ class Column_Info
     string label;
     int hasASCII;
     std::map<std::string,int> ascii_values_;
+    
+    string vectorLabel;
+    int isVector;
+    int vectorIndex;
 };
 
 #endif   // COLUMN_INFO_H

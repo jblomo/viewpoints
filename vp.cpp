@@ -1927,7 +1927,7 @@ int main( int argc, char **argv)
   // definitions
 
   about_string = "\n\
-    viewpoints 2.1.3 \n\
+    viewpoints 2.1.5 \n\
     " + string(SVN_VERSION) + "\n\
     \n\
     using fltk version (major + 0.01*minor): " + fltk_version_ss.str() + "\n\
