@@ -36,7 +36,7 @@
 //      values' flag, and a lookup table to relate indices to ASCII values.
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  21-AUG-2008
+// Modified: P. R. Gazis  16-SEP-2008
 //***************************************************************************
 
 // Protection to make sure this header is not included twice
@@ -132,6 +132,10 @@
 //   is_saved_file( i) -- Set the 'saved file' flag
 //   n_ascii_columns() -- Get number of ascii columns
 //   n_ascii_values( jcol) -- Get number of ASCII values in colum jcol
+//   n_data_columns() -- Get number of columns in data file
+//   n_data_rows() -- Get number of rows in data file
+//   n_vars() -- Get number of columns of data (variables)
+//   n_points() -- Get number of rows of data (points)
 //   needs_restore_panels() -- Get flag
 //   needs_restore_panels( i) -- Set flag
 //   read_selection_info() -- Get the 'read selections' flag
@@ -139,7 +143,7 @@
 //   selected_data( i)-- Set the 'write all data' flag
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  21-AUG-2008
+// Modified: P. R. Gazis  16-SEP-2008
 //***************************************************************************
 class Data_File_Manager
 {
@@ -199,6 +203,9 @@ class Data_File_Manager
     int doCommentedLabels_;
     int isColumnMajor;
     int isSavedFile_;
+    
+    // Size information
+    int nDataRows_, nDataColumns_;
 
   public:
     // Member variable to hold column information must be declared static
@@ -268,6 +275,10 @@ class Data_File_Manager
     void is_saved_file( int i) { isSavedFile_ = i;}
     int n_ascii_columns();
     int n_ascii_values( int jcol) { return (column_info[jcol].ascii_values_).size();}
+    int n_data_columns() { return nDataColumns_;}
+    int n_data_rows() { return nDataRows_;}
+    int n_vars();
+    int n_points();
     int needs_restore_panels() { return needs_restore_panels_;}
     void needs_restore_panels( int i) {needs_restore_panels_ = i;}
     int read_selection_info() { return readSelectionInfo_;}

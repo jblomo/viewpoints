@@ -20,7 +20,7 @@
 //   3) Consider putting these variables into a NAMESPACE?
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  19-AUG-2008
+// Modified: P. R. Gazis  16-SEP-2008
 //***************************************************************************
 
 #ifndef VP_GLOBAL_DEFINITIONS_VP_H
@@ -87,9 +87,9 @@ GLOBAL bool update_on_mouse_up INIT(true);
 // Define blitz::Arrays to hold raw and ranked (sorted) data arrays.  Used 
 // extensively in many classes, so for reasons of simplicity and clarity, 
 // these are left global
-GLOBAL blitz::Array<float,2> points;  // main data array
-GLOBAL blitz::Array<int,2> ranked_points;   // data, ranked, as needed.
-GLOBAL blitz::Array<int,1> ranked;    // flag: 1->column is ranked, 0->not
+// GLOBAL blitz::Array<float,2> points;  // main data array
+// GLOBAL blitz::Array<int,2> ranked_points;   // data, ranked, as needed.
+// GLOBAL blitz::Array<int,1> ranked;    // flag: 1->column is ranked, 0->not
 
 // Define blitz::Arrays to flag selected points.  As with the raw data, these 
 // are left global for simplicity and clarity.
@@ -183,7 +183,7 @@ GLOBAL Brush *brushes[NBRUSHES];  // MCL XXX this should be a static c++ vector 
 
 //# Make absolutely certain SVN_VERSION is defined
 #ifdef __WIN32__
-  #define SVN_VERSION "Windows revision 247"
+  #define SVN_VERSION "Windows revision 248"
 #endif
 #ifndef SVN_VERSION
   #define SVN_VERSION "unknown_version"

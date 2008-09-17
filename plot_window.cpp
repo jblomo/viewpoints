@@ -23,7 +23,7 @@
 //
 // Author: Creon Levit    2005-2006
 // Modified: Nathan Schmidt  01-SEP-2008
-// Modified: P. R. Gazis  11-SEP-2008
+// Modified: P. R. Gazis  16-SEP-2008
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -919,24 +919,34 @@ void Plot_Window::screen_to_world(
          << " xworld: " << xworld << " yworld: " << yworld << endl);
 }
 
-
-void Plot_Window::interval_to_strings (const int column, const float x1, const float x2, char *buf1, char *buf2) {
-  if( Data_File_Manager::column_info[column].hasASCII == 0 ) {
-    // numerical data on this axis
+//***************************************************************************
+// Plot_Window::interval_to_strings( x1, x2, *buf1, *buf2) -- If this is 
+// ASCII-valued data, convert range values for this interval to strings.
+void Plot_Window::interval_to_strings(
+  const int column, const float x1, const float x2, char *buf1, char *buf2)
+{
+  // If this is a numerical axis, write numerical information.  Otherwise 
+  // identify and write the relevant strings.
+  if( Data_File_Manager::column_info[column].hasASCII == 0) {
     sprintf( buf1, "%+.3g", x1);
     sprintf( buf2, "%+.3g", x2); 
-  } else {
-    // categorical (string) data on this axis
-    int ixmin = max(-1,(int)(floorf(x1-0.01/(float)npoints)));
-    int ixmax = max(-1,(int)(floorf(x2)));
-    // if the interval spans at least one integral value....
-    if (ixmax > ixmin) {
-      // look up and build string corresponding to each edge
-      const char *chrp1 = Data_File_Manager::column_info[column].ascii_value(ixmin+1).c_str(); 
-      const char *chrp2 = Data_File_Manager::column_info[column].ascii_value(ixmax).c_str(); 
+  }
+  else {
+    int ixmin = max( -1, (int) (floorf(x1-0.01/(float)npoints)));
+    int ixmax = max( -1, (int) (floorf(x2)));
+
+    // If the interval spans at least one integral value, look up and build 
+    // string corresponding to each edge.  Otherwise just write the same
+    // string twice.
+    if( ixmax > ixmin) {
+      const char *chrp1 =
+        Data_File_Manager::column_info[column].ascii_value(ixmin+1).c_str(); 
+      const char *chrp2 =
+        Data_File_Manager::column_info[column].ascii_value(ixmax).c_str(); 
       sprintf( buf1, "%11s", chrp1);
       sprintf( buf2, "%-11s", chrp2);
-    } else {
+    }
+    else {
       sprintf( buf1, "%s", "");
       sprintf( buf2, "%s", "");
     }
@@ -1189,6 +1199,8 @@ void Plot_Window::handle_selection ()
 }
 
 
+//***************************************************************************
+// Plot_Window::update_selection_from_footprint() -- 
 void Plot_Window::update_selection_from_footprint()
 {
   blitz::Range NPTS( 0, npoints-1);  
@@ -1229,8 +1241,6 @@ void Plot_Window::update_selection_from_footprint()
 // Plot_Window::color_array_from_selection() -- Fill the index arrays and 
 // their associated counts.  Each array of indices will be rendered later 
 // using the properties of its corresponding brush.
-// 
-//
 void Plot_Window::color_array_from_selection()
 {
   // Loop: initialize brush counts to zero
@@ -1899,12 +1909,12 @@ int Plot_Window::normalize(
 }
 
 //***************************************************************************
-// Plot_Window::compute_rank() -- Order data for normalization and for the
-// generation of histograms
-void Plot_Window::compute_rank(int var_index)
+// Plot_Window::compute_rank( var_index) -- Order data for normalization and 
+// for the generation of histograms
+void Plot_Window::compute_rank( int var_index)
 {
-  if( ranked( var_index)) {
-    // We have a rank "cache hit"
+  // If we have a rank "cache hit", return, otherwise order data, etc.
+  if( Data_File_Manager::column_info[var_index].isRanked) {
     return; 
   }
   else {
@@ -1912,9 +1922,10 @@ void Plot_Window::compute_rank(int var_index)
 
     // The blitz copy constructor aliases the RHS,
     // So this next statement just creates a new view of the rhs.
-    blitz::Array<int,1> a_ranked_indices = ranked_points(var_index, NPTS); 
+    blitz::Array<int,1> a_ranked_indices =
+      (Data_File_Manager::column_info[var_index]).ranked_points(NPTS); 
     
-    // initializealize the ranked indices to be sequential.  The sort that
+    // initialialize the ranked indices to be sequential.  The sort that
     // follows will permute them into the correct order.
     blitz::firstIndex ident;    // MCL XXX don't we have a global holding this?
     a_ranked_indices = ident;
@@ -1923,10 +1934,16 @@ void Plot_Window::compute_rank(int var_index)
     // array data holding the sort key.  We can't use the copy contructor 
     // here since tmp_points was constructed in pre-main.
     // Lucky for us, blitz provides the reference() method for this purpose.
-    tmp_points.reference(points(var_index, NPTS));
-    int *lo = a_ranked_indices.data(), *hi = lo + npoints;
-    std::stable_sort(lo, hi, MyCompare());
-    ranked(var_index) = 1;  // now we are ranked
+    tmp_points.reference(
+      (Data_File_Manager::column_info[var_index]).points(NPTS));
+
+    int *lo = a_ranked_indices.data();
+    int *hi = lo + npoints;
+    std::stable_sort( lo, hi, MyCompare());
+
+    // Data_File_Manager::column_info[var_index].ranked_points(NPTS) = a_ranked_indices(NPTS);
+
+    Data_File_Manager::column_info[var_index].isRanked = 1;  // now we are ranked
     return;
   }
 }
@@ -1961,9 +1978,9 @@ int Plot_Window::extract_data_points ()
   if( axis2 != nvars) zlabel = pdfm->column_label(axis2);
   else zlabel = "";
 
-  // xlabel = column_info[ axis0].label;
-  // ylabel = column_info[ axis1].label;
-  // if( axis2 != nvars) zlabel = column_info[ axis2].label;
+  // xlabel = Data_File_Manager::column_info[ axis0].label;
+  // ylabel = Data_File_Manager::column_info[ axis1].label;
+  // if( axis2 != nvars) zlabel = Data_File_Manager::column_info[ axis2].label;
   // else zlabel = "";
   
   // Define a Range operator with which to extract subarrays
@@ -1979,35 +1996,46 @@ int Plot_Window::extract_data_points ()
   
   // Rank points by x-axis value
   compute_rank(axis0);
-  x_rank.reference(ranked_points(axis0, NPTS));
-  tmin[0] = points( axis0, x_rank( 0));
-  tmax[0] = points( axis0, x_rank( npoints-1));
-  if (be_verbose) {
+  x_rank.reference( 
+    Data_File_Manager::column_info[axis0].ranked_points(NPTS));
+  tmin[0] =
+    Data_File_Manager::column_info[axis0].points(x_rank( 0));
+  tmax[0] =
+    Data_File_Manager::column_info[axis0].points(x_rank( npoints-1));
+  if( be_verbose) {
     cout << "  x-axis( " << xlabel
          << "): min[ " << x_rank( 0) << "] = "
          << tmin[0]
          << ", max[ " << x_rank( npoints-1) << "] = "
          << tmax[0] << endl;
   }
+
   // Rank points by y-axis value
   compute_rank(axis1);
-  y_rank.reference(ranked_points(axis1, NPTS));
-  tmin[1] = points( axis1, y_rank( 0));
-  tmax[1] = points( axis1, y_rank( npoints-1));
-  if (be_verbose) {
+  y_rank.reference(
+    Data_File_Manager::column_info[axis1].ranked_points(NPTS));
+  tmin[1] =
+    Data_File_Manager::column_info[axis1].points( y_rank( 0));
+  tmax[1] =
+    Data_File_Manager::column_info[axis1].points( y_rank( npoints-1));
+  if( be_verbose) {
     cout << "  y-axis( " << ylabel
          << "): min[ " << y_rank( 0) << "] = "
          << tmin[1]
          << ", max[ " << y_rank( npoints-1) << "] = "
          << tmax[1] << endl;
   }
+
   // If z-axis was specified, rank points by z-axis value
   if( axis2 != nvars) {
     compute_rank(axis2);
-    z_rank.reference(ranked_points(axis2, NPTS));
-    tmin[2] = points( axis2, z_rank( 0));
-    tmax[2] = points( axis2, z_rank( npoints-1));
-    if (be_verbose) {
+    z_rank.reference(
+      Data_File_Manager::column_info[axis2].ranked_points(NPTS));
+    tmin[2] =
+      Data_File_Manager::column_info[axis2].points( z_rank( 0));
+    tmax[2] =
+      Data_File_Manager::column_info[axis2].points( z_rank( npoints-1));
+    if( be_verbose) {
       cout << "  z-axis( " << zlabel
            << "): min[ " << z_rank( 0) << "] = "
            << tmin[2]
@@ -2017,42 +2045,53 @@ int Plot_Window::extract_data_points ()
   }
   if (be_verbose) cout << endl;
 
-  // OpenGL vertices, vertex arrays, and VBOs need to have their x, y, and z coordinates
-  // interleaved i.e. stored in adjacent memory locations:  x[0],y[0],z[0],x[1],y[1],z[1],.....
-  // This is not, unfortunately, how the raw data is stored in the blitz points() array.
-  // So we copy the appropriate data "columns" from the points() array into the appropriate
-  // components of the vertex() array.
+  // OpenGL vertices, vertex arrays, and VBOs need to have their x, y, and z 
+  // coordinates interleaved -- i.e. stored in adjacent memory locations:  
+  // x[0],y[0],z[0],x[1],y[1],z[1],...  Unfortunately, this is not how the 
+  // raw data are stored in the blitz points() array.  For this reason, we 
+  // must copy the appropriate data "columns" from the points() array into 
+  // the appropriate components of the vertex() array.
   //
-  // Though this copying takes up time and memory, it is OK since we almost certainly want to
-  // normalize and/or transform the vertices prior rendering them.  Since we don't want to
-  // transform and/or normalize (i.e. clobber) the "original" data, we transform and/or normalize
-  // using aliases to the vertex data.  Since the vertex data are copies (not aliases) of the
-  // original uncorrupted points() data, this works out fine.
+  // Though this copying takes up time and memory, it is OK since we will
+  // almost certainly want to normalize and/or transform the vertices prior 
+  // rendering them.  Since we don't want to transform and/or normalize 
+  // (i.e. clobber) the "original" data, we transform and/or normalize 
+  // using aliases to the vertex data.  Since the vertex data are copies 
+  // (not aliases) of the original uncorrupted points() data, this works 
+  // out fine.
 
-  // MCL XXX - there is no need to copy and normalize all axes if only one has changed... Oh, well...
+  // MCL XXX - there is no need to copy and normalize all axes if only one 
+  // has changed... Oh, well...
 
-  // copy (via assignment) the appropriate columns of points() data to corresponding components of vertex() array,
-  // with circular offset(s), if requested (experimental).
+  // copy (via assignment) the appropriate columns of points() data to 
+  // corresponding components of vertex() array, with circular offset(s), if 
+  // requested (experimental).
   // MCL XXX need to do away with axis0, axis1, and axis2 & replace with axis_index[].
+  // First copy the x-axis
   int delta = (int)cp->offset[0]->value();
-  if (delta == 0) {
-    vertices( NPTS, 0) = points( axis0, NPTS);
-  } else {
-    circular_shift (vertices(NPTS,0), points(axis0,NPTS), delta);
+  if( delta == 0) {
+    vertices( NPTS, 0) = Data_File_Manager::column_info[ axis0].points( NPTS);
   }
+  else {
+    circular_shift( vertices(NPTS,0), Data_File_Manager::column_info[axis0].points(NPTS), delta);
+  }
+
+  // Then copy the y-axis
   delta = (int)cp->offset[1]->value();
   if (delta == 0) {
-    vertices( NPTS, 1) = points( axis1, NPTS);
-  } else {
-    circular_shift (vertices(NPTS,1), points(axis1,NPTS), delta);
+    vertices( NPTS, 1) = Data_File_Manager::column_info[ axis1].points( NPTS);
+  }
+  else {
+    circular_shift( vertices(NPTS,1), Data_File_Manager::column_info[axis1].points(NPTS), delta);
   }
 
   // if z-axis is set to "-nothing-" (which it is, by default), then all z=0.
   if( axis2 == nvars)    {
     vertices( NPTS, 2) = 0.0;
-  } else {
+  }
+  else {
     // MCL XXX offset not supported for z axis (yet).
-    vertices( NPTS, 2) = points( axis2, NPTS);
+    vertices( NPTS, 2) = Data_File_Manager::column_info[ axis2].points( NPTS);
   }
   
   // create aliases to newly copied vertex data for normalization & transformation.
@@ -2187,11 +2226,13 @@ void Plot_Window::run_timing_test()
 // points.  This is a static method used only by class Plot_Window.
 void Plot_Window::delete_selection( Fl_Widget *o)
 {
-  blitz::Range NVARS(0,nvars-1);
+  // blitz::Range NVARS(0,nvars-1);
   int ipoint=0;
   for( int n=0; n<npoints; n++) {
     if( selected( n) < 0.5) {
-      points( NVARS, ipoint) = points( NVARS, n);
+      for( int j=0; j<nvars; j++)
+        Data_File_Manager::column_info[j].points(ipoint) = 
+          Data_File_Manager::column_info[j].points(n);
       ipoint++;
     }
   }
@@ -2199,24 +2240,34 @@ void Plot_Window::delete_selection( Fl_Widget *o)
   // KLUDGE: If no points remain, reload the first two points
   // to avoid overflows
   if( ipoint < 2) {
-    points( NVARS, 0) = points( NVARS, 0);
-    points( NVARS, 1) = points( NVARS, 1);
+    for( int j=0; j<nvars; j++) {
+      Data_File_Manager::column_info[j].points(0) =
+        Data_File_Manager::column_info[j].points(0);
+      Data_File_Manager::column_info[j].points(1) =
+        Data_File_Manager::column_info[j].points(1);
+    }
     ipoint = 2;
-    cerr << " -WARNING: tried to delete every data point, first two points retained." << endl;
-    sErrorMessage = "Tried to delete every data point, first two points retained.";
+    cerr << " -WARNING: tried to delete every data point, "
+         << "first two points retained." << endl;
+    sErrorMessage =
+      "Tried to delete every data point, first two points retained.";
   }
   
-  // If some point(s) got deleted, everyone's ranking needs to 
-  // be recomputed
+  // If the final index does not match the number of points, some point(s) 
+  // got deleted and everyone's ranking must be recomputed
   if( ipoint != npoints)  {
-    ranked = 0;  
+      
+    // Reset the 'isRanked' flags.
+    for( int j=0; j<nvars; j++)
+      Data_File_Manager::column_info[j].isRanked = 0;
 
+    // Update the number of points
     npoints = ipoint;
     // npoints_slider->bounds(1,npoints);
     // npoints_slider->value(npoints);
 
+    // Clear selections and redraw everything
     clear_selections( (Fl_Widget *) NULL);
-  
     for( int j=0; j<nplots; j++) {
       cps[j]->extract_and_redraw();
     }
@@ -2318,14 +2369,17 @@ void Plot_Window::clear_selections( Fl_Widget *o)
 // using given column, a_col, as the "key".  Flag as "inside the footprint" 
 // (i.e. painted by this "string search brush") only those points whose 
 // corresponding ascii value matches the given string.
-void Plot_Window::select_on_string( const char *str, int a_col) {
+void Plot_Window::select_on_string( const char *str, int a_col)
+{
   if( Data_File_Manager::column_info[a_col].hasASCII && a_col>=0) {
     for(int i=0;i<npoints;i++) {
       const char *label_a = 
-        Data_File_Manager::column_info[a_col].ascii_value((int) points(a_col, i)).c_str();
+        Data_File_Manager::column_info[a_col].ascii_value(
+          (int) Data_File_Manager::column_info[a_col].points(i)).c_str();
       inside_footprint(i) = (label_a && strstr(label_a,str))?1:0;
     }
-  } else {
+  }
+  else {
     // what should select_on_string() do here, for pure numerical data?
   }
   update_selection_from_footprint();

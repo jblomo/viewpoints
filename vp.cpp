@@ -75,7 +75,7 @@
 //   reset_selection_arrays() -- Reset selection arrays
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  21-AUG-2008
+// Modified: P. R. Gazis  16-SEP-2008
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -1636,8 +1636,8 @@ int load_state( Fl_Widget* o)
       dfm.copy_state( &dfm_save);
       nvars = nvars_save;
       npoints = npoints_save;
-      nvars = points.rows();
-      npoints = points.columns();
+      nvars = (dfm.column_info).size()-1;
+      npoints = ((dfm.column_info[0]).points).rows();
     }
     else if( dfm.input_filespec().length() <= 0) dfm.create_default_data( 10);
     else {
@@ -1914,7 +1914,7 @@ void reset_selection_arrays()
 //   main() -- main routine
 //
 // Author:   Creon Levit   unknown
-// Modified: P. R. Gazis   19-AUG-2008
+// Modified: P. R. Gazis   16-SEP-2008
 //***************************************************************************
 //***************************************************************************
 // Main -- Driver routine
@@ -1927,7 +1927,7 @@ int main( int argc, char **argv)
   // definitions
 
   about_string = "\n\
-    viewpoints 2.1.5 \n\
+    viewpoints 2.2.0 \n\
     " + string(SVN_VERSION) + "\n\
     \n\
     using fltk version (major + 0.01*minor): " + fltk_version_ss.str() + "\n\

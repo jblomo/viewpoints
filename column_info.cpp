@@ -21,7 +21,7 @@
 // Purpose: Source code for <column_info.h>
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  11-SEP-2008
+// Modified: P. R. Gazis  16-SEP-2008
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -36,7 +36,7 @@
 //***************************************************************************
 // Column_Info::Column_Info() --  Default constructor clears everything.
 Column_Info::Column_Info() : jvar_( 0), label( ""), hasASCII( 0),
-  isVector( 0), vectorLabel( ""), vectorIndex( 0)
+  isVector( 0), vectorLabel( ""), vectorIndex( 0), isRanked( 0)
 {
   ascii_values_.erase( ascii_values_.begin(), ascii_values_.end());
 }
@@ -78,6 +78,10 @@ void Column_Info::free()
   isVector = 0;
   vectorLabel = "";
   vectorIndex = 0;
+  
+  isRanked = 0;
+  points.free();
+  ranked_points.free();
 }
 
 //***************************************************************************
@@ -94,6 +98,12 @@ void Column_Info::copy( const Column_Info &inputInfo)
   isVector = inputInfo.isVector;
   vectorLabel = inputInfo.vectorLabel;
   vectorIndex = inputInfo.vectorIndex;
+
+  isRanked = inputInfo.isRanked;
+  points.resize( (inputInfo.points).shape());
+  points = inputInfo.points;
+  ranked_points.resize( (inputInfo.ranked_points).shape());
+  ranked_points = inputInfo.ranked_points;
 }
 
 //***************************************************************************

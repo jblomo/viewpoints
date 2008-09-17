@@ -26,7 +26,7 @@
 //   1) This is inteded for use as a mamber class of data_file_manager
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  11-SEP-2008
+// Modified: P. R. Gazis  16-SEP-2008
 //***************************************************************************
 
 // Protection to make sure this header is not included twice
@@ -69,7 +69,7 @@
 //   ascii_value( j) -- Get ASCII value for point j
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  11-SEP-2008
+// Modified: P. R. Gazis  16-SEP-2008
 //***************************************************************************
 class Column_Info
 {
@@ -92,18 +92,25 @@ class Column_Info
     int add_info_and_update_data( int j, Column_Info &old_info);
     int update_ascii_values_and_data( int j);
 
-    // Acces functions
+    // Access functions
     int index() { return jvar_;}
     void index( int j) { jvar_ = j;}
     string ascii_value( int j);
-    
+
+    // Define buffers to hold label and ASCII values    
     string label;
     int hasASCII;
     std::map<std::string,int> ascii_values_;
     
+    // Define buffers to hold vector information for FITS files
     string vectorLabel;
     int isVector;
     int vectorIndex;
+    
+    // Define buffers to hold the data
+    blitz::Array<float,1> points;  // main data array
+    blitz::Array<int,1> ranked_points;   // data, ranked, as needed.
+    int isRanked;    // flag: 1->column is ranked, 0->not
 };
 
 #endif   // COLUMN_INFO_H
