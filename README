@@ -86,7 +86,7 @@ with extreme caution.
 
 Usage:
 
-In its current form (Version 2.1.5, build 247) 'viewpoints' is run either by 
+In its current form (Version 2.2.1, build 249) 'viewpoints' is run either by 
 clicking on the 'vp' icon or from the command line in the directory in which 
 it has been installed or to which a path is available.  When viewpoints is 
 run from the icon, it will come up with an array of default data.  When it is
@@ -129,10 +129,17 @@ The invocation for the command line version is:
     an example.
 
   --format=binary [shortcut: -f b]
-    Read a binary input file.  The first record of this file consists of a 
-    line of ASCII attribute names, whitespace delimited, ending with newline 
-    (\n).  This is followed by a contiguous block that contains a table of 
-    binary floating point values.
+    Read a binary input file.  For files that don't contain ASCII values, 
+    the first record be a header that consists of a tab-delimited line of 
+    ASCII attribute names ending with a newline (\n).  This will be followed 
+    by a contiguous block that contains a table of binary floating point 
+    values.  For files that contain ASCII values, the header will consist a
+    succession of lines of ASCII text that describe the contents and provide
+    ASCII lookup tables, if any, for each column of data.
+    
+  --format=fits [shortcut: -f f]
+    Read the first ASCII table from a FITS file.  If no ASCII table is found,
+    routine will assume file was empty.
 
   --skip_lines=<integer> [shortcut: -s <int>] (default 1)
     Specifies the number of lines that will be assigned to the header block 
@@ -396,7 +403,7 @@ randomize               Randomize
 
 Notes and warnings:
 
-The current release of the 'viewpoints' package (version 2.1.5, build 247) is 
+The current release of the 'viewpoints' package (version 2.2.1, build 249) is 
 still a development version.  While every effort has been make to ensure that 
 it will work -- or fail gracefully if it doesn't -- it still has many rough 
 edges.  Some of these are described below.  These issues will all be 

@@ -19,7 +19,7 @@
 // Purpose: Source code for <data_file_manager.h>
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  16-SEP-2008
+// Modified: P. R. Gazis  22-SEP-2008
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -42,6 +42,8 @@ std::vector<Column_Info> Data_File_Manager::column_info;
 
 // Set static data members for class Data_File_Manager::
 string Data_File_Manager::SELECTION_LABEL = "SELECTION_BY_VP";
+string Data_File_Manager::BINARY_FILE_WITH_ASCII_VALUES_LABEL = 
+  "BINARY_FILE_WITH_ASCII_VP";
 Fl_Window* Data_File_Manager::edit_labels_window = NULL;
 Fl_Check_Browser* Data_File_Manager::edit_labels_widget = NULL;
 int Data_File_Manager::needs_restore_panels_ = 0;
@@ -78,7 +80,8 @@ void Data_File_Manager::initialize()
   // Set default local values for file reads.
   inputFileType_ = 0;
   outputFileType_ = 1;
-  isAsciiData = (inputFileType_ == 0);
+  // isAsciiData = (inputFileType_ == 0);
+  isAsciiData = 1-inputFileType_;
   doAppend = 0;
   doMerge = 0;
   readSelectionInfo_ = 1;
@@ -118,7 +121,8 @@ void Data_File_Manager::copy_state( Data_File_Manager* dfm)
   // Copy local values for file reads.
   inputFileType_ = dfm->inputFileType_;
   outputFileType_ = dfm->outputFileType_;
-  isAsciiData = (inputFileType_ == 0);
+  // isAsciiData = (inputFileType_ == 0);
+  isAsciiData = 1-inputFileType_;
   doAppend = dfm->doAppend;
   doMerge = dfm->doMerge;
   readSelectionInfo_ = dfm->readSelectionInfo_;
@@ -132,7 +136,7 @@ void Data_File_Manager::copy_state( Data_File_Manager* dfm)
   isColumnMajor = dfm->isColumnMajor;
   nSkipHeaderLines = dfm->nSkipHeaderLines;  // Number of lines to skip
   sDirectory_ = dfm->sDirectory_;
-  inFileSpec = dfm->inFileSpec;                                                                                                                                                                                                                                                                                                                                                                                                                                                             "";  // Default input filespec
+  inFileSpec = dfm->inFileSpec;   // "";  // Default input filespec
   outFileSpec = dfm->outFileSpec;
   dataFileSpec =dfm->dataFileSpec;
 
@@ -496,7 +500,8 @@ int Data_File_Manager::load_data_file()
 
   // Update dataFileSpec, set saved file flag, and report success
   dataFileSpec = inFileSpec;
-  isAsciiData = (inputFileType_ == 0);
+  // isAsciiData = (inputFileType_ == 0);
+  isAsciiData = 1-inputFileType_;
   if( doAppend > 0 | doMerge > 0) isSavedFile_ = 0;
   else isSavedFile_ = 1;
   return 0;
@@ -661,9 +666,8 @@ int Data_File_Manager::extract_column_labels( string sLine, int doDefault)
   cout << endl;
 
   // Check the last column of data to see if it is the selection label, 
-  // SELECTION_LABEL, defined in <global_definitions.vp.h>.  Note that
-  // since NVARS was not incremented, this will be the column BEFORE
-  // the new final column labelled '-nothing-'.
+  // SELECTION_LABEL.  Note that since NVARS was not incremented, this 
+  // will be the column BEFORE the new final column labelled '-nothing-'.
   readSelectionInfo_ = 0;
   if( (column_info[nvars-1].label).compare( 0, SELECTION_LABEL.size(), SELECTION_LABEL) == 0) {
     readSelectionInfo_ = 1;
@@ -1155,40 +1159,117 @@ int Data_File_Manager::read_binary_file_with_headers()
   std::string line;
   line.assign( cBuf);
 
-  // There are two possibilities: Conventional Format, in which case there 
-  // is only one header line and all data is numerical, and ASCII Format, 
-  // in which case the first header line lists the number of columns,
-  // successive lines contain column labels, types, and lookup tables for
-  // ASCII values, and some data is associated with ASCII values
-  // if( strstr( line.c_str(), "ASCII_FORMAT_VP")) {
-  // }
-  // else {
-  // }
-  
-  // Save existing delimiter character, then examine the line.  If it 
-  // contains tabs, temporarily set the deliminer character to a tab.
-  // Otherwise set it to whitespace.
-  char saved_delimiter_char_ = delimiter_char_;
-  if( line.find( '\t') < 0 || line.size() <= line.find( '\t')) {
-    cout << " -Header is WHITESPACE delimited" << endl;
-    delimiter_char_ = ' ';
+  // There are two possibilities: the original Binary Format, in which case 
+  // there is only one header line and all data are numerical, and Binary
+  // With ASCII Values Format, in which case the first header line contains 
+  // a type identifier, BINARY_FILE_WITH_ASCII_VALUES_LABEL, and the number 
+  // of columns, followed by successive lines that contain column labels, 
+  // column types, and lookup tables for any ASCII values that may be 
+  // associated with data for that column.
+  if( strstr( line.c_str(), BINARY_FILE_WITH_ASCII_VALUES_LABEL.c_str())) {
+
+    // Initialize the static member vector of Column_Info objects
+    int nLabels = 0;
+    nvars = 0;
+    column_info.erase( column_info.begin(), column_info.end());
+
+    // For the sake of consistency, everything is tab-delimited
+    char this_delimiter_ = '\t';
+
+    // Extract the number of columns from the first (tab-delimited) line
+    std::stringstream ss( line);
+    std::string sToken;
+    getline( ss, sToken, this_delimiter_);  // Discard 1st token (identifier)
+    getline( ss, sToken, this_delimiter_);  // Extract 2nd token (nColumns)
+    std::istringstream inpStream( sToken);
+    // int nCR = sToken.find_first_of( '\n');
+    // if( nCR > 0) sToken = sToken.substr( 0, nCR);
+    int nColumns = 0;
+    inpStream >> nColumns;
+    
+    // Loop: Read successive tab-delimited lines and extract column info
+    for( int i=0; i<nColumns; i++) {
+      fgets( cBuf, MAX_HEADER_LENGTH, pInFile);
+      std::string sLine;
+      sLine.assign( cBuf);
+      std::stringstream sLineBuf( sLine);
+
+      // Get label, then generate a new Column_Info object
+      std::string buf;
+      getline( sLineBuf, buf, this_delimiter_);
+      Column_Info column_info_buf;
+      column_info_buf.label = string( buf);
+      
+      // Get the column type (not used)
+      getline( sLineBuf, buf, this_delimiter_);
+      int nCR = buf.find_first_of( '\n');
+      if( nCR > 0) buf = buf.substr( 0, nCR);
+      
+      // Examine the rest of the line to extract ASCII values, if any
+      int nValues = 0;
+      column_info_buf.hasASCII = 0;
+      while( getline( sLineBuf, buf, this_delimiter_)) {
+        nValues++;
+        int nCR = buf.find_first_of( '\n');
+        if( nCR > 0) buf = buf.substr( 0, nCR);
+        column_info_buf.hasASCII = 1;
+        column_info_buf.add_value( buf);
+      }
+
+      // Add the new Column_Info object to the list of Column_Info objects
+      nvars++;
+      column_info.push_back( column_info_buf);
+    }
+    
+    // Check the last column of data to see if it is the selection label, 
+    // SELECTION_LABEL.
+    readSelectionInfo_ = 0;
+    if( (column_info[nvars-1].label).compare( 0, SELECTION_LABEL.size(), SELECTION_LABEL) == 0) {
+      readSelectionInfo_ = 1;
+      cout << "   -Read selection info-" << endl;
+    }
+
+    // Add a final dummy column label that says '-nothing-' but don't 
+    // increment NVARS.
+    Column_Info column_info_buf;
+    column_info_buf.label = string( "-nothing-");
+    column_info.push_back( column_info_buf);
+
+    // Report status to the console
+    nLabels = column_info.size();
+    cout << " -About to read " << nvars
+         << " variables from a "
+         << BINARY_FILE_WITH_ASCII_VALUES_LABEL.c_str()
+         << " with " << nLabels 
+         << " fields (columns) per record (row)" << endl;
   }
   else {
-    cout << " -Header is TAB delimited" << endl;
-    delimiter_char_ = '\t';
+
+    // Save existing delimiter character, then examine the line.  If it 
+    // contains tabs, temporarily set the deliminer character to a tab.
+    // Otherwise set it to whitespace.
+    char saved_delimiter_char_ = delimiter_char_;
+    if( line.find( '\t') < 0 || line.size() <= line.find( '\t')) {
+      cout << " -Header is WHITESPACE delimited" << endl;
+      delimiter_char_ = ' ';
+    }
+    else {
+      cout << " -Header is TAB delimited" << endl;
+      delimiter_char_ = '\t';
+    }
+
+    // Invoke the extract_column_labels method to extract column labels,
+    // then reset the delimiter character
+    int nLabels = 0;
+    nLabels = extract_column_labels( line, 0);
+    delimiter_char_ = saved_delimiter_char_;
+    
+    // Report status to the console
+    cout << " -About to read " << nvars
+         << " variables from a binary file with " << nLabels
+         << " fields (columns) per record (row)" << endl;
   }
-
-  // Invoke the extract_column_labels method to extract column labels,
-  // then reset the delimiter character
-  int nLabels = 0;
-  nLabels = extract_column_labels( line, 0);
-  delimiter_char_ = saved_delimiter_char_;
   
-  // Report status to the console
-  cout << " -About to read " << nvars
-       << " variables from a binary file with " << nLabels
-       << " fields (columns) per record (row)" << endl;
-
   // Now we know the number of variables (nvars), so if we know the number of 
   // points (e.g. from the command line) we can size the main points array 
   // once and for all, and not waste memory.
@@ -1199,7 +1280,7 @@ int Data_File_Manager::read_binary_file_with_headers()
   if( readSelectionInfo_) nDataColumns_--;    // Don't store selection info
   for( int j=0; j<nDataColumns_; j++)
     (column_info[j].points).resize( npoints);
-  
+    
   // Warn if the input buffer is non-contiguous.
   // if( !points.isStorageContiguous()) {
   //   cerr << "read_binary_file_with_headers: WARNING" << endl
@@ -1267,8 +1348,8 @@ int Data_File_Manager::read_binary_file_with_headers()
     }
 
     // Update number of rows and report success
-    npoints = nDataRows_;
-    cout << " -Finished reading " << nDataRows_ << " rows of data." << endl;
+    npoints = nDataRows_ + 1;
+    cout << " -Finished reading " << npoints << " rows of data." << endl;
   }
 
   // ...or read file in Row Major order (e.g., column-by-column).  NOTE: For
@@ -1896,7 +1977,8 @@ int Data_File_Manager::save_data_file()
   if( result == 0) {
     isSavedFile_ = 1;
     dataFileSpec = outFileSpec;
-    isAsciiData = (outputFileType_ == 0);
+    // isAsciiData = (outputFileType_ == 0);
+    isAsciiData = 1-outputFileType_;
   }
   return result;
 }
@@ -2011,19 +2093,58 @@ int Data_File_Manager::write_binary_file_with_headers()
            << "for binary write" << endl;
       return -1;
     }
-    
-    // Loop: Write tab-delimited column labels to the header.  Each label is
-    // followed by a space to make sure the file can be read by older versions 
-    // of viewpoints.
-    // for( int i=0; i < nvars_out; i++ ) os << column_info[ i].label << " ";
-    // if( writeSelectionInfo_ != 0) os << "selection";
-    for( int i=0; i < nvars_out; i++ ) {
-      os << column_info[ i].label << " ";
-      if( i<nvars-1) os << '\t';
+
+    // If ASCII values were present, write a Binary With ASCCII Values format
+    // file beginning a tab-separated line that contains the type specifier,
+    // BINARY_FILE_WITH_ASCII_VALUES_LABEL and number of columns followed by 
+    // successice tab-separated lines of lines of column info.  Otherwise 
+    // write an old-style file.  Note: Everything is tab-delimited
+    if( n_ascii_columns() > 0) {
+
+      // Define number of columns for output, including selection info
+      int nColumns = nvars_out;
+      if( writeSelectionInfo_ != 0) nColumns++;
+              
+      // Write type specifier followed by number of columns
+      os << BINARY_FILE_WITH_ASCII_VALUES_LABEL.c_str() << '\t' << nColumns;
+      os << endl;
+
+      // Loop: Write one line for each column of data
+      for( int i=0; i<nvars_out; i++) {
+        os << (column_info[i].label).c_str() << '\t';
+
+        // Write the data type (not used) and ASCII values, if any
+        if( column_info[i].hasASCII <= 0) {
+          os << "TFLOAT";
+        }
+        else {
+          os << "TSTRING" << '\t';
+          int nValues = n_ascii_values(i);
+          for( int j=0; j<nValues; j++) {
+            os << (column_info[i].ascii_value(j)).c_str();
+            if( j < nValues-1) os << '\t';
+          }
+        }
+        os << endl;
+      }
+
+      // If selection info are to be written, add an additional column
+      if( writeSelectionInfo_ != 0)
+        os << SELECTION_LABEL << '\t' << "TLONG" << endl;
     }
-    if( writeSelectionInfo_ != 0) os << '\t' << " " << SELECTION_LABEL;
-    os << endl;
-    
+    else {
+
+      // Loop: Write tab-delimited column labels to the header.  Each label 
+      // is followed by a space to make sure the file can be read by early
+      // versions of viewpoints that didn't look for tabs.
+      for( int i=0; i < nvars_out; i++ ) {
+        os << column_info[ i].label << " ";
+        if( i<nvars-1) os << '\t';
+      }
+      if( writeSelectionInfo_ != 0) os << '\t' << " " << SELECTION_LABEL;
+      os << endl;
+    }
+
     // Loop: Write data and report any problems
     int nBlockSize = nvars*sizeof(float);
     int rows_written = 0;
@@ -2043,8 +2164,8 @@ int Data_File_Manager::write_binary_file_with_headers()
           make_confirmation_window( sWarning.c_str(), 1);
           return 1;
         }
-        rows_written++;
       }
+      rows_written++;
     }
     
     // Report results
@@ -2697,7 +2818,7 @@ void Data_File_Manager::inputFileType( int i)
 {
   inputFileType_ = i;
   if( inputFileType_ < 0) inputFileType_ = 0;
-  if( inputFileType_ > 1) inputFileType_ = 1;
+  if( inputFileType_ > 2) inputFileType_ = 2;
 }
 
 //***************************************************************************

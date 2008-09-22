@@ -36,7 +36,7 @@
 //      values' flag, and a lookup table to relate indices to ASCII values.
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  16-SEP-2008
+// Modified: P. R. Gazis  22-SEP-2008
 //***************************************************************************
 
 // Protection to make sure this header is not included twice
@@ -143,7 +143,7 @@
 //   selected_data( i)-- Set the 'write all data' flag
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  16-SEP-2008
+// Modified: P. R. Gazis  22-SEP-2008
 //***************************************************************************
 class Data_File_Manager
 {
@@ -171,7 +171,8 @@ class Data_File_Manager
       }
       catch( exception &e) {}
       inFileSpec = dataFileSpec;
-      inputFileType_ = (isAsciiData==0);
+      // inputFileType_ = (isAsciiData==0);
+      inputFileType_ = 1-isAsciiData;  // 0,1,2 -> ASCII, binary, FITS
     }
 
     void remove_trivial_columns();
@@ -294,6 +295,7 @@ class Data_File_Manager
     static const int MAX_HEADER_LENGTH;
     static const int MAX_HEADER_LINES;
     static string SELECTION_LABEL;
+    static string BINARY_FILE_WITH_ASCII_VALUES_LABEL;
     
     // Define statics to hold tests for bad lines of ASCII data
     static const int MAX_NTESTCYCLES = 1000;

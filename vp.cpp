@@ -75,7 +75,7 @@
 //   reset_selection_arrays() -- Reset selection arrays
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  16-SEP-2008
+// Modified: P. R. Gazis  22-SEP-2008
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -231,7 +231,8 @@ void usage()
        << "Interpret CHAR as a field separator, default is" << endl
        << "                              "
        << "whitespace." << endl;
-  cerr << "  -f, --format={ascii,binary} "
+  cerr << "  -f, --format={ascii,binary,fits} " << endl
+       << "                              "
        << "Input file format, default=ascii.  NOTE: for ASCII" << endl
        << "                              "
        << "files, the data block is assumed to begin with an" << endl
@@ -1914,7 +1915,7 @@ void reset_selection_arrays()
 //   main() -- main routine
 //
 // Author:   Creon Levit   unknown
-// Modified: P. R. Gazis   16-SEP-2008
+// Modified: P. R. Gazis   22-SEP-2008
 //***************************************************************************
 //***************************************************************************
 // Main -- Driver routine
@@ -1927,7 +1928,7 @@ int main( int argc, char **argv)
   // definitions
 
   about_string = "\n\
-    viewpoints 2.2.0 \n\
+    viewpoints 2.2.1 \n\
     " + string(SVN_VERSION) + "\n\
     \n\
     using fltk version (major + 0.01*minor): " + fltk_version_ss.str() + "\n\
@@ -2010,6 +2011,7 @@ int main( int argc, char **argv)
       case 'f':
         if( !strncmp( optarg, "ascii", 1)) dfm.inputFileType( 0);
         else if( !strncmp( optarg, "binary", 1)) dfm.inputFileType( 1);
+        else if( !strncmp( optarg, "fits", 1)) dfm.inputFileType( 2);
         else {
           usage();
           exit( -1);
