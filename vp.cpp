@@ -170,6 +170,8 @@ Fl_Help_View *help_view_widget;
 Fl_Check_Button* expertButton;
 Fl_Check_Button* trivialColumnsButton;
 Fl_Check_Button* preserveOldDataButton;
+Fl_Input* maxpoints_input;
+Fl_Input* maxvars_input;
 Fl_Input* bad_value_proxy_input;
 
 // Function definitions for the main method
@@ -1048,10 +1050,36 @@ void make_options_window( Fl_Widget *o)
     o->tooltip( "Preserve old data for restoration if a read operation fails");
   }
   
+  // Maximum number of rows of data (npoints) field
+  {
+    Fl_Input* o = maxpoints_input =
+      new Fl_Input( 10, 85, 90, 20, " Maximum number of points");
+    o->align( FL_ALIGN_RIGHT);
+    stringstream ss_int;
+    string s_int;
+    ss_int << dfm.maxpoints();
+    ss_int >> s_int;
+    o->value( s_int.c_str());
+    o->tooltip( "Maximum number of data points (rows of data)");
+  }
+
+  // Maximum number of columns of data (nvars) field
+  {
+    Fl_Input* o = maxvars_input =
+      new Fl_Input( 10, 110, 70, 20, " Maximum number of variables");
+    o->align( FL_ALIGN_RIGHT);
+    stringstream ss_int;
+    string s_int;
+    ss_int << dfm.maxvars();
+    ss_int >> s_int;
+    o->value( s_int.c_str());
+    o->tooltip( "Maximum number of variables (columns of data)");
+  }
+
   // Bad value proxy field
   {
     Fl_Input* o = bad_value_proxy_input =
-      new Fl_Input( 10, 85, 70, 20, " Bad Value Proxy");
+      new Fl_Input( 10, 135, 70, 20, " Bad Value Proxy");
     o->align( FL_ALIGN_RIGHT);
     stringstream ss_float;
     string s_float;
@@ -1097,6 +1125,12 @@ void cb_options_window( Fl_Widget *o, void* user_data)
     int i_preserve_old_data_mode = preserveOldDataButton->value();
     prefs_.set( "preserve_old_data_mode", i_preserve_old_data_mode);
     preserve_old_data_mode = ( i_preserve_old_data_mode != 0);
+
+    int maxpoints_value = (int) strtof( maxpoints_input->value(), NULL);
+    dfm.maxpoints( maxpoints_value);
+
+    int maxvars_value = (int) strtof( maxvars_input->value(), NULL);
+    dfm.maxvars( maxvars_value);
 
     float bad_value_proxy = strtof( bad_value_proxy_input->value(), NULL);
     dfm.bad_value_proxy( bad_value_proxy);

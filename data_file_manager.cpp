@@ -19,7 +19,7 @@
 // Purpose: Source code for <data_file_manager.h>
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  22-SEP-2008
+// Modified: P. R. Gazis  23-SEP-2008
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -59,7 +59,7 @@ const bool include_line_number = false; // MCL XXX This should be an option
 // Data_File_Manager::Data_File_Manager() -- Default constructor, calls the
 // initializer.
 Data_File_Manager::Data_File_Manager() : delimiter_char_( ' '), 
-  bad_value_proxy_( 0.0), 
+  bad_value_proxy_( 0.0), maxpoints_( MAXPOINTS), maxvars_( MAXVARS),
   inputFileType_( 0), outputFileType_( 0),
   readSelectionInfo_( 0), doAppend( 0), doMerge( 0), 
   writeAllData_( 1), writeSelectionInfo_( 0), doCommentedLabels_( 0),
@@ -76,12 +76,13 @@ void Data_File_Manager::initialize()
   // Set default format information for file reads.
   delimiter_char_ = ' ';
   bad_value_proxy_ = 0.0;
+  maxpoints_ = MAXPOINTS;
+  maxvars_ = MAXVARS;
 
   // Set default local values for file reads.
   inputFileType_ = 0;
   outputFileType_ = 1;
-  // isAsciiData = (inputFileType_ == 0);
-  isAsciiData = 1-inputFileType_;
+  isAsciiData = 1-inputFileType_;   // Conversion needed for legacy reasons
   doAppend = 0;
   doMerge = 0;
   readSelectionInfo_ = 1;
@@ -105,8 +106,10 @@ void Data_File_Manager::initialize()
   nvars_cmd_line = 0;
   
   // Initialize number of points and variables
-  npoints = MAXPOINTS;
-  nvars = MAXVARS;
+  // npoints = MAXPOINTS;
+  // nvars = MAXVARS;
+  npoints = maxpoints_;
+  nvars = maxvars_;
 }
 
 //***************************************************************************
@@ -117,12 +120,13 @@ void Data_File_Manager::copy_state( Data_File_Manager* dfm)
   // Copy format information for file reads.
   delimiter_char_ = dfm->delimiter_char_;
   bad_value_proxy_ = dfm->bad_value_proxy_;
+  maxpoints_ = dfm->maxpoints_;
+  maxvars_ = dfm->maxvars_;
 
   // Copy local values for file reads.
   inputFileType_ = dfm->inputFileType_;
   outputFileType_ = dfm->outputFileType_;
-  // isAsciiData = (inputFileType_ == 0);
-  isAsciiData = 1-inputFileType_;
+  isAsciiData = 1-inputFileType_;   // Conversion needed for legacy reasons
   doAppend = dfm->doAppend;
   doMerge = dfm->doMerge;
   readSelectionInfo_ = dfm->readSelectionInfo_;
@@ -268,8 +272,10 @@ int Data_File_Manager::findInputFile()
   nSkipHeaderLines = 0;
   npoints_cmd_line = 0;
   nvars_cmd_line = 0;
-  npoints = MAXPOINTS;
-  nvars = MAXVARS;
+  // npoints = MAXPOINTS;
+  // nvars = MAXVARS;
+  npoints = maxpoints_;
+  nvars = maxvars_;
 
   return 0;
 }
@@ -301,16 +307,20 @@ int Data_File_Manager::load_data_file()
   unsigned uHaveOldData = 0;
   int old_npoints=0, old_nvars=0;
   std::vector<Column_Info> old_column_info; 
+  blitz::Array<int,1> old_selected;
   if( preserve_old_data_mode || doAppend > 0 || doMerge > 0) {
     uHaveOldData = 1;
     old_column_info = column_info;
     old_nvars = n_vars();
     old_npoints = n_points();
+    old_selected.resize(old_npoints);
+    old_selected = selected;
   }
 
   // Initialize READ_SELECTED here
   // read_selected.resize( npoints);
-  read_selected.resize( MAXPOINTS);
+  // read_selected.resize( MAXPOINTS);
+  read_selected.resize( maxpoints_);
   read_selected = 0;
   
   // Read data file.If there was a problem, create default data to prevent 
@@ -327,9 +337,11 @@ int Data_File_Manager::load_data_file()
          << "Problems reading file <" << inFileSpec.c_str() << ">" << endl;
     if( !uHaveOldData) create_default_data( 4);
     else {
+      nvars = old_nvars;
+      npoints = old_npoints;
+      resize_global_arrays();
       column_info = old_column_info;
-      nvars = n_vars();
-      npoints = n_points();
+      selected = old_selected;
       uHaveOldData = 0;
     }
     return -1;
@@ -339,14 +351,15 @@ int Data_File_Manager::load_data_file()
          << inFileSpec.c_str() << ">" << endl;
   
   // Resize the READ_SELECTED array here
-  read_selected.resizeAndPreserve( npoints);  
+  if( npoints>0) read_selected.resizeAndPreserve( npoints);  
 
   // Remove trivial columns
-  if( trivial_columns_mode) remove_trivial_columns();
+  if( npoints>0 && trivial_columns_mode) remove_trivial_columns();
 
   // If only one or fewer records are available, generate default data to
   // prevent a crash, then quit before something terrible happens!
-  if( ( doAppend == 0 && doMerge == 0) && ( nvars <= 1 || npoints <= 1)) {
+  if( npoints <= 0 ||
+     ( doAppend == 0 && doMerge == 0) && ( nvars <= 1 || npoints <= 1)) {
     cerr << " -WARNING: Insufficient data, " << nvars << "x" << npoints
          << " samples.\nCheck delimiter character." << endl;
     string sWarning = "";
@@ -358,9 +371,12 @@ int Data_File_Manager::load_data_file()
     }
     else {
       sWarning.append( "Restoring existing data.");
+
+      nvars = old_nvars;
+      npoints = old_npoints;
+      resize_global_arrays();
       column_info = old_column_info;
-      nvars = n_vars();
-      npoints = n_points();
+      selected = old_selected;
       uHaveOldData = 0;
     }
     make_confirmation_window( sWarning.c_str(), 1, 3);
@@ -387,13 +403,25 @@ int Data_File_Manager::load_data_file()
       cout << "Old (" << old_nvars << "x" << old_npoints
            << ") array doesn't match new (" << nvars << "x" << npoints
            << ") array" << endl;
-      make_confirmation_window( "Array sizes don't match.\nRestoring old data", 1);
+
+      char cBuf[ 80];
+      sprintf(
+        cBuf, "Array sizes old(%ix%i) vs new(%ix%i) don't match.\n", 
+        old_npoints, old_nvars, npoints, nvars);
+      string sWarning = "";
+      sWarning.append( cBuf);
+      sWarning.append( "Restoring old data.");
+      make_confirmation_window( sWarning.c_str(), 1);
+      
+      nvars = old_nvars;
+      npoints = old_npoints;
+      resize_global_arrays();
       column_info = old_column_info;
-      nvars = n_vars();
-      npoints = n_points();
+      selected = old_selected;
+      return -1;
     }
     else if( doAppend > 0) {
-         
+      
       // Current (e.g., new) column info and lookup table indices in the
       // current (new) common data array must be revised first, before the 
       // current and old data arrays are appended.
@@ -432,11 +460,11 @@ int Data_File_Manager::load_data_file()
       // This old code is retained for archival purposes to document how
       // BLITZ arrays had to be reversed, appended, and re-reversed
       // points.reverseSelf( blitz::firstDim);
-      // old_points.reverseSelf( blitz::firstDim);
+      // old_npoints.reverseSelf( blitz::firstDim);
       // points.resizeAndPreserve( all_nvars, npoints);
       // points( 
       //   blitz::Range( nvars, all_nvars-1), 
-      //   blitz::Range( 0, npoints-1)) = old_points;
+      //   blitz::Range( 0, npoints-1)) = old_npoints;
       // points.reverseSelf( blitz::firstDim);
 
       // Update the number of variables
@@ -464,44 +492,43 @@ int Data_File_Manager::load_data_file()
     for( int j=0; j<nvars; j++)
       (column_info[j].points).resizeAndPreserve( npoints);
 
-  // KLUDGE: If this is a merge, save the current selection information in 
-  // READ_SELECTED so it won't be destroyed by the resize_global_arrays().
-  if( doMerge) {
-    read_selected( blitz::Range( 0, npoints-1)) = 
-      selected( blitz::Range( 0, npoints-1));
-  }
-
   // Now that we know the number of variables and points we've read, we can
   // allocate and/or reallocateResize the other global arrays.  NOTE: This 
   // will invoke reset_selection_arrays()
   resize_global_arrays();
 
-  // If this selection information was found or this was a merge operation, 
-  // load saved selections in READ_SELECTED into the SELECTED array.
-  if( readSelectionInfo_ || doMerge) {
-    selected( blitz::Range( 0, npoints-1)) = 
-      read_selected( blitz::Range( 0, npoints-1));
+  // Straighten out selection information.  WARNING: This will die horribly
+  // if array sizes are not consistent
+  if( doMerge) selected = old_selected;
+  else if( doAppend) {
+    int new_npoints = read_selected.rows();
+    old_npoints = old_selected.rows();
+
+    // Make sure arrays sizes are consistent
+    if( npoints != new_npoints + old_npoints) {
+        cerr << "Data_File_Manager::load_data_file: ERROR, "
+             << "selection arrays aren't consistent!" << endl
+             << "  old(" << old_npoints << ") + new(" << new_npoints
+             << ") != total(" << npoints << ")" << endl;
+    }
+       
+    selected( blitz::Range( 0, new_npoints-1)) = read_selected;
+    selected( blitz::Range( new_npoints, npoints-1)) = old_selected;
+    // selected( blitz::Range( 0, new_npoints-1)) = 
+    //   read_selected( blitz::Range( 0, new_npoints-1));
+    // selected( blitz::Range( new_npoints, npoints-1)) =
+    //   old_selected( blitz::Range( 0, old_npoints-1));
   }
+  else selected = read_selected;
   read_selected.free();
-
-  // If selection information was found, edit the vector of Column_Info 
-  // objects to remove the second-to-last column, which is assumed to 
-  // contain the selection label, SELECTION_LABEL.
-  if( readSelectionInfo_) {
-    vector<Column_Info>::iterator pTarget = column_info.end();
-    pTarget--;
-    pTarget--;
-    if( include_line_number) pTarget--;
-    column_info.erase( pTarget);
-  }
-
+  old_selected.free();
+  
   // Refresh edit window, if it exists.
   refresh_edit_column_info();
 
   // Update dataFileSpec, set saved file flag, and report success
   dataFileSpec = inFileSpec;
-  // isAsciiData = (inputFileType_ == 0);
-  isAsciiData = 1-inputFileType_;
+  isAsciiData = 1-inputFileType_;   // COnversion needed for legacy reasons
   if( doAppend > 0 | doMerge > 0) isSavedFile_ = 0;
   else isSavedFile_ = 1;
   return 0;
@@ -584,7 +611,7 @@ int Data_File_Manager::extract_column_labels( string sLine, int doDefault)
       while( getline( ss, buf, delimiter_char_)) {
         string::size_type notwhite = buf.find_first_not_of( " ");
         buf.erase( 0, notwhite);
-        notwhite = buf.find_last_not_of( " ");
+        notwhite = buf.find_last_not_of( " \n");
         buf.erase( notwhite+1);
         if( buf.size() <= 0) buf = "Dummy";
         column_info_buf.label = string( buf);
@@ -618,7 +645,8 @@ int Data_File_Manager::extract_column_labels( string sLine, int doDefault)
     make_confirmation_window( sWarning.c_str(), 1);
     return -1;
   }
-  if( nvars > MAXVARS) {
+  // if( nvars > MAXVARS) {
+  if( nvars > maxvars_) {
     cerr << " -WARNING, too many data columns, "
          << "increase MAXVARS and recompile"
          << endl;
@@ -661,7 +689,7 @@ int Data_File_Manager::extract_column_labels( string sLine, int doDefault)
       cout << endl << "  ";
       nLineLength = 4 + (column_info[ i].label).length();
     }
-    cout << "  " << column_info[ i].label;
+    cout << "  (" << column_info[ i].label << ")";
   }
   cout << endl;
 
@@ -768,10 +796,37 @@ void Data_File_Manager::extract_column_types( string sLine)
 }
 
 //***************************************************************************
+// Data_File_Manager::remove_column_of_selection_info() -- If selection 
+// information was found, remove the second-to-last column element in the 
+// vector of Column_Info objects, which is assumed to contain the selection 
+// label, SELECTION_LABEL, then update and return the number of data columns.
+int Data_File_Manager::remove_column_of_selection_info()
+{
+  int nColumns = column_info.size();
+  if( readSelectionInfo_) {
+    int iTarget = nColumns-1;
+    vector<Column_Info>::iterator pTarget = column_info.end();
+    iTarget--;
+    iTarget--;
+    pTarget--;
+    pTarget--;
+    // if( include_line_number) {
+    //   iTarget--;
+    //   pTarget--;
+    // }
+    column_info.erase( pTarget);
+    nColumns = column_info.size();
+    cout << " -Removed column[" << iTarget << "/" << nColumns
+         << "] with selection information" << endl;
+  }
+  return nColumns;
+}
+
+//***************************************************************************
 // Data_File_Manager::read_ascii_file_with_headers() -- Reads and ASCII file.
 // Step 1: Open an ASCII file for input.  Step 2: Read and discard the header
 // block.  Step 3: Generate column labels.  Step 4: Read the data block.  
-// Step 5:  Close the file.  Returns 0 if successful.
+// Step 5: Close the file.  Returns 0 if successful.
 int Data_File_Manager::read_ascii_file_with_headers() 
 {
   istream* inStream;
@@ -876,7 +931,8 @@ int Data_File_Manager::read_ascii_file_with_headers()
   // number of points (e.g. from the command line) we can size the main 
   // points array once and for all, and not waste memory.
   if( npoints_cmd_line > 0) npoints = npoints_cmd_line;
-  else npoints = MAXPOINTS;
+  // else npoints = MAXPOINTS;
+  else npoints = maxpoints_;
   nDataColumns_ = nvars;
   if( include_line_number) nDataColumns_++;  // Add column for line number
   if( readSelectionInfo_) nDataColumns_--;   // Don't store selection info
@@ -966,10 +1022,10 @@ int Data_File_Manager::read_ascii_file_with_headers()
       }
 
       // If this was selection information, load it into the READ_SELECTED
-      // vector, otherwise load it into the POINTS array.  In both cases 
-      // inspect the SS stringstream to check for values of NULL that imply
-      // certain types of bad data and/or missing values, and if necessary,
-      // replace these with a default value and clear the error flags.
+      // vector, otherwise load it into the current data buffer.  In both 
+      // cases inspect the SS stringstream to check for values of NULL that 
+      // imply certain types of bad data and/or missing values and replace 
+      // these with a default value and clear the error flags if necessary.
       if( !readSelectionInfo_ || j < nvars-1) {
         if( !ss) {
           column_info[j].points(nDataRows_) = bad_value_proxy_;
@@ -1097,6 +1153,10 @@ int Data_File_Manager::read_ascii_file_with_headers()
   //   cout << endl;
   // }
 
+  // Check for and remove the column of selection information
+  nDataColumns_ = nvars;
+  cout << "read_ascii: ABOUT_TO_REMOVE (" << nDataColumns_ << "/" << nvars << ")" << endl;
+  nDataColumns_ = remove_column_of_selection_info()-1;
 
   // STEP 5: Update NVARS and NPOINTS, resize current data buffers, and 
   // report results of the read operation to the console
@@ -1269,15 +1329,28 @@ int Data_File_Manager::read_binary_file_with_headers()
          << " variables from a binary file with " << nLabels
          << " fields (columns) per record (row)" << endl;
   }
-  
+
   // Now we know the number of variables (nvars), so if we know the number of 
   // points (e.g. from the command line) we can size the main points array 
   // once and for all, and not waste memory.
   if( npoints_cmd_line > 0) npoints = npoints_cmd_line;
-  else npoints = MAXPOINTS;
+  // else npoints = MAXPOINTS;
+  else npoints = maxpoints_;
   int nDataColumns_ = nvars;
   if( include_line_number) nDataColumns_++;   // Add column for line number
   if( readSelectionInfo_) nDataColumns_--;    // Don't store selection info
+  
+  // Check for problems, then resize current buffer
+  int n_column_info = column_info.size();
+  // if( nvars > MAXVARS || nDataColumns_ > MAXVARS ||
+  //     n_column_info > MAXVARS || nDataColumns_ > n_column_info) {
+  if( nvars > maxvars_ || nDataColumns_ > maxvars_ ||
+      n_column_info > maxvars_ || nDataColumns_ > n_column_info) {
+    cerr << " -WARNING, too many data columns, "
+         << "restoring original data"
+         << endl;
+    return 1;
+  }
   for( int j=0; j<nDataColumns_; j++)
     (column_info[j].points).resize( npoints);
     
@@ -1426,6 +1499,11 @@ int Data_File_Manager::read_binary_file_with_headers()
          << " columns" << endl;
   }
   
+  // Check for and remove the column of selection information
+  nDataColumns_ = nvars;
+  cout << "read_binary: ABOUT_TO_REMOVE (" << nDataColumns_ << "/" << nvars << ")" << endl;
+  nDataColumns_ = remove_column_of_selection_info()-1;
+
   // Update NVARS and resize current data buffers
   nvars = nDataColumns_;
   for( int j=0; j<nvars; j++)
@@ -1450,6 +1528,10 @@ int Data_File_Manager::read_table_from_fits_file()
     cerr << "read_table_from_fits_file: ERROR" << endl
          << " -Couldn't open FITS file <" << inFileSpec.c_str() 
          << "> with status (" << status << ")" << endl;
+    string sWarning = "";
+    sWarning.append( "Couldn't open file as FITS file, check format.\n");
+    sWarning.append( "Restoring original data.");
+    make_confirmation_window( sWarning.c_str(), 1, 2);
     return 1;
   }
   else {
@@ -1513,6 +1595,38 @@ int Data_File_Manager::read_table_from_fits_file()
   nDataRows_ = (int) nrows;
   nvars = ncols;
   blitz::Range NPTS( 0, npoints-1);
+
+  // Make sure we don't have too many columns
+  if( nvars > maxvars_) {
+    cerr << " -WARNING, too many data columns, "
+         << "increase MAXVARS and recompile"
+         << endl;
+
+    char cBuf[ 80];
+    sprintf(
+      cBuf, "WARNING: Too many data columns ( %i > %i).\n", nvars, maxvars_);
+    string sWarning = "";
+    sWarning.append( cBuf);
+    sWarning.append( "Restoring old data.");
+    make_confirmation_window( sWarning.c_str(), 1);
+    return -1;
+  }
+
+  // Make sure we don't have too many rows
+  if( npoints > maxpoints_) {
+    cerr << " -WARNING, too many rows of data, "
+         << "increase MAXPOINTS and recompile"
+         << endl;
+
+    char cBuf[ 80];
+    sprintf(
+      cBuf, "WARNING: Too many data points ( %i > %i).\n", npoints, maxpoints_);
+    string sWarning = "";
+    sWarning.append( cBuf);
+    sWarning.append( "Restoring old data.");
+    make_confirmation_window( sWarning.c_str(), 1);
+    return -1;
+  }
 
   // Resize current data buffer to make room for data
   // int n_column_info = nvars+1;
@@ -1803,10 +1917,17 @@ int Data_File_Manager::read_table_from_fits_file()
   // must be recognized and deleted by the calling method.
   // XXX_PRG: For some reason, both of these lines are essential!  I'm
   // not quite sure why the resize operation is needed.
-  if( readSelectionInfo_ != 0) nvars = nvars-1;
+  // if( readSelectionInfo_ != 0) nvars = nvars-1;
+  // for( int j=0; j<nvars; j++)
+  //   (column_info[j].points).resizeAndPreserve( npoints);
+  // nDataColumns_ = nvars;
+
+  // Check for and remove the column of selection information
+  nDataColumns_ = nvars;
+  nDataColumns_ = remove_column_of_selection_info()-1;
+  nvars = nDataColumns_;
   for( int j=0; j<nvars; j++)
     (column_info[j].points).resizeAndPreserve( npoints);
-  nDataColumns_ = nvars;
 
   // Close input file and terminate
   fits_close_file( pFitsfile, &status);
@@ -2696,7 +2817,8 @@ void Data_File_Manager::create_default_data( int nvars_in)
   // Protect against screwy values of nvars_in
   if( nvars_in < 2) return;
   nvars = nvars_in;
-  if( nvars > MAXVARS) nvars = MAXVARS;
+  // if( nvars > MAXVARS) nvars = MAXVARS;
+  if( nvars > maxvars_) nvars = maxvars_;
 
   // Loop: Initialize and load the column labels, including the final label 
   // that says 'nothing'.
@@ -2819,6 +2941,53 @@ void Data_File_Manager::inputFileType( int i)
   inputFileType_ = i;
   if( inputFileType_ < 0) inputFileType_ = 0;
   if( inputFileType_ > 2) inputFileType_ = 2;
+}
+
+//***************************************************************************
+// Data_File_Manager::maxpoints() -- Set maximum number of points (rows) and
+// make sure it's reasonable.
+void Data_File_Manager::maxpoints( int i)
+{
+  if( i < npoints) {
+    if( make_confirmation_window(
+          "This will delete some points.\n  Do you wish to continue?") <= 0)
+    return;
+  }
+  
+  maxpoints_ = i;
+  if( maxpoints_ < 2) maxpoints_ = 2;
+
+  // If necessary, shrink the current buffer  
+  if( npoints > maxpoints_) {
+    npoints = maxpoints_;
+    for( int i=0; i<nvars; i++)
+      (column_info[i].points).resizeAndPreserve(npoints);
+      
+    // Selection arrays should be resized as well
+  }
+}
+
+//***************************************************************************
+// Data_File_Manager::maxvars() -- Set maximum number of variables (columns)
+// and make sure it's reasonable.
+void Data_File_Manager::maxvars( int i)
+{
+  if( i < nvars) {
+    if( make_confirmation_window(
+          "This will delete some columns.\n  Do you wish to continue?") <= 0)
+    return;
+  }
+
+  maxvars_ = i;
+  if( maxvars_ < 2) maxvars_ = 2;
+  
+  // If necessary, nuke columns
+  if( nvars > maxvars_) {
+    nvars = maxvars_;
+    vector<Column_Info>::iterator pTarget = column_info.begin();
+    for( int i=0; i<=nvars; i++) pTarget++;
+    column_info.erase( pTarget, column_info.end());
+  }
 }
 
 //***************************************************************************

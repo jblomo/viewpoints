@@ -36,7 +36,7 @@
 //      values' flag, and a lookup table to relate indices to ASCII values.
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  22-SEP-2008
+// Modified: P. R. Gazis  23-SEP-2008
 //***************************************************************************
 
 // Protection to make sure this header is not included twice
@@ -77,6 +77,7 @@
 //   load_data_file() -- Load and initialize data
 //   extract_column_labels( sLine, doDefault) -- Extract column labels
 //   extract_column_type( sLine) -- Extract column types
+//   remove_column_of_selection_info() -- Remove column of selection info
 //   reorder_ascii_values() -- Alphabetize ascii values
 //   read_ascii_file_with_headers() -- Read ASCII
 //   read_binary_file_with_headers() -- Read binary
@@ -130,6 +131,10 @@
 //   is_ascii_column( jcol) -- Does this column have ASCII values?
 //   is_saved_file() -- Get the 'saved file' flag
 //   is_saved_file( i) -- Set the 'saved file' flag
+//   maxpoints() -- Get maximum number of rows
+//   maxpoints( i) -- Set maximum number of rows
+//   maxvars() -- Get maximum number of columns
+//   maxvars( i)  -- Get maximum number of columnss
 //   n_ascii_columns() -- Get number of ascii columns
 //   n_ascii_values( jcol) -- Get number of ASCII values in colum jcol
 //   n_data_columns() -- Get number of columns in data file
@@ -143,7 +148,7 @@
 //   selected_data( i)-- Set the 'write all data' flag
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  22-SEP-2008
+// Modified: P. R. Gazis  23-SEP-2008
 //***************************************************************************
 class Data_File_Manager
 {
@@ -206,6 +211,7 @@ class Data_File_Manager
     int isSavedFile_;
     
     // Size information
+    int maxpoints_, maxvars_;
     int nDataRows_, nDataColumns_;
 
   public:
@@ -223,6 +229,7 @@ class Data_File_Manager
     int load_data_file();
     int extract_column_labels( string sLine, int doDefault);
     void extract_column_types( string sLine);
+    int remove_column_of_selection_info();
     int read_ascii_file_with_headers();
     int read_binary_file_with_headers();
     int read_table_from_fits_file();
@@ -274,6 +281,10 @@ class Data_File_Manager
     int is_ascii_column( int jcol) { return column_info[jcol].hasASCII;}
     int is_saved_file() { return isSavedFile_;}
     void is_saved_file( int i) { isSavedFile_ = i;}
+    int maxpoints() { return maxpoints_;}
+    void maxpoints( int i);
+    int maxvars() { return maxvars_;}
+    void maxvars( int i);
     int n_ascii_columns();
     int n_ascii_values( int jcol) { return (column_info[jcol].ascii_values_).size();}
     int n_data_columns() { return nDataColumns_;}
