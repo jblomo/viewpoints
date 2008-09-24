@@ -86,7 +86,7 @@ with extreme caution.
 
 Usage:
 
-In its current form (Version 2.2.1, build 250) 'viewpoints' is run either by 
+In its current form (Version 2.2.1, build 251) 'viewpoints' is run either by 
 clicking on the 'vp' icon or from the command line in the directory in which 
 it has been installed or to which a path is available.  When viewpoints is 
 run from the icon, it will come up with an array of default data.  When it is
@@ -145,10 +145,10 @@ The invocation for the command line version is:
     Specifies the number of lines that will be assigned to the header block 
     in the absence of comment characters.
 
-  --npoints=<integer> [shortcut: -n <int>] (default min(all,2000000))
+  --npoints=<integer> [shortcut: -n <int>] (default min(all,3000000))
     Specifies the number of samples (records or rows in the data block of an 
     ASCII file) to read. End of file will terminate read.  Note the default:
-    if you want to read more than 2 million samples, you must say so using 
+    if you want to read more than 3 million samples, you must say so using 
     this argument.
 
   --rows=<integer> [shortcut: -r <int>] (default 2)
@@ -403,7 +403,7 @@ randomize               Randomize
 
 Notes and warnings:
 
-The current release of the 'viewpoints' package (version 2.2.1, build 250) is 
+The current release of the 'viewpoints' package (version 2.2.1, build 251) is 
 still a development version.  While every effort has been make to ensure that 
 it will work -- or fail gracefully if it doesn't -- it still has many rough 
 edges.  Some of these are described below.  These issues will all be 

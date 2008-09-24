@@ -75,7 +75,7 @@
 //   reset_selection_arrays() -- Reset selection arrays
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  22-SEP-2008
+// Modified: P. R. Gazis  24-SEP-2008
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -173,6 +173,7 @@ Fl_Check_Button* preserveOldDataButton;
 Fl_Input* maxpoints_input;
 Fl_Input* maxvars_input;
 Fl_Input* bad_value_proxy_input;
+Fl_Check_Button* use_VBOs_Button;
 
 // Function definitions for the main method
 void usage();
@@ -1012,7 +1013,7 @@ void make_options_window( Fl_Widget *o)
    
   // Create Tools|Options window
   Fl::scheme( "plastic");  // optional
-  options_window = new Fl_Window( 300, 200, "Options");
+  options_window = new Fl_Window( 300, 250, "Options");
   options_window->begin();
   options_window->selection_color( FL_BLUE);
   options_window->labelsize( 10);
@@ -1032,10 +1033,19 @@ void make_options_window( Fl_Widget *o)
     o->tooltip( "Suppress confirmation windows");
   }
   
+  // Use VBOs
+  {
+    Fl_Check_Button* o = use_VBOs_Button = 
+      new Fl_Check_Button( 10, 35, 250, 20, " Use VBOs");
+    o->down_box( FL_DOWN_BOX);
+    o->value( use_VBOs == true);
+    o->tooltip( "Use VBOs to store graphical data");
+  }
+
   // Remove trivial columns
   {
     Fl_Check_Button* o = trivialColumnsButton = 
-      new Fl_Check_Button( 10, 35, 250, 20, " Remove Trivial Columns");
+      new Fl_Check_Button( 10, 60, 250, 20, " Remove Trivial Columns");
     o->down_box( FL_DOWN_BOX);
     o->value( trivial_columns_mode == true);
     o->tooltip( "Remove any columns that only contain one value");
@@ -1044,16 +1054,16 @@ void make_options_window( Fl_Widget *o)
   // Preserve Old Data
   {
     Fl_Check_Button* o = preserveOldDataButton = 
-      new Fl_Check_Button( 10, 60, 250, 20, " Preserve Old Data");
+      new Fl_Check_Button( 10, 85, 250, 20, " Preserve Old Data");
     o->down_box( FL_DOWN_BOX);
     o->value( preserve_old_data_mode == true);
     o->tooltip( "Preserve old data for restoration if a read operation fails");
   }
-  
+ 
   // Maximum number of rows of data (npoints) field
   {
     Fl_Input* o = maxpoints_input =
-      new Fl_Input( 10, 85, 90, 20, " Maximum number of points");
+      new Fl_Input( 10, 110, 90, 20, " Maximum number of points");
     o->align( FL_ALIGN_RIGHT);
     stringstream ss_int;
     string s_int;
@@ -1066,7 +1076,7 @@ void make_options_window( Fl_Widget *o)
   // Maximum number of columns of data (nvars) field
   {
     Fl_Input* o = maxvars_input =
-      new Fl_Input( 10, 110, 70, 20, " Maximum number of variables");
+      new Fl_Input( 10, 135, 70, 20, " Maximum number of variables");
     o->align( FL_ALIGN_RIGHT);
     stringstream ss_int;
     string s_int;
@@ -1079,7 +1089,7 @@ void make_options_window( Fl_Widget *o)
   // Bad value proxy field
   {
     Fl_Input* o = bad_value_proxy_input =
-      new Fl_Input( 10, 135, 70, 20, " Bad Value Proxy");
+      new Fl_Input( 10, 160, 70, 20, " Bad Value Proxy");
     o->align( FL_ALIGN_RIGHT);
     stringstream ss_float;
     string s_float;
@@ -1090,9 +1100,9 @@ void make_options_window( Fl_Widget *o)
   }
 
   // Invoke a multi-purpose callback function to process window
-  Fl_Button* ok_button = new Fl_Button( 150, 170, 40, 25, "&OK");
+  Fl_Button* ok_button = new Fl_Button( 150, 220, 40, 25, "&OK");
   ok_button->callback( (Fl_Callback*) cb_options_window, ok_button);
-  Fl_Button* cancel = new Fl_Button( 200, 170, 60, 25, "&Cancel");
+  Fl_Button* cancel = new Fl_Button( 200, 220, 60, 25, "&Cancel");
   cancel->callback( (Fl_Callback*) cb_options_window, cancel);
 
   // Done creating the 'Help|About' window
@@ -1125,6 +1135,10 @@ void cb_options_window( Fl_Widget *o, void* user_data)
     int i_preserve_old_data_mode = preserveOldDataButton->value();
     prefs_.set( "preserve_old_data_mode", i_preserve_old_data_mode);
     preserve_old_data_mode = ( i_preserve_old_data_mode != 0);
+
+    int i_use_VBOs_mode = use_VBOs_Button->value();
+    // prefs_.set( "use_VBOs_mode", i_use_VBOs_mode);
+    use_VBOs = ( i_use_VBOs_mode != 0);
 
     int maxpoints_value = (int) strtof( maxpoints_input->value(), NULL);
     dfm.maxpoints( maxpoints_value);
@@ -1949,7 +1963,7 @@ void reset_selection_arrays()
 //   main() -- main routine
 //
 // Author:   Creon Levit   unknown
-// Modified: P. R. Gazis   22-SEP-2008
+// Modified: P. R. Gazis   24-SEP-2008
 //***************************************************************************
 //***************************************************************************
 // Main -- Driver routine
@@ -2015,6 +2029,9 @@ int main( int argc, char **argv)
   int i_trivial_columns_mode;
   prefs_.get( "trivial_columns_mode", i_trivial_columns_mode, 0);
   trivial_columns_mode = ( i_trivial_columns_mode != 0);
+  // int i_use_VBOs_mode;
+  // prefs_.get( "use_VBOs_mode", i_use_VBOs_mode, 0);
+  // use_VBOs = ( i_use_VBOs_mode != 0);
   int i_preserve_old_data_mode;
   prefs_.get( "preserve_old_data_mode", i_preserve_old_data_mode, 0);
   preserve_old_data_mode = ( i_preserve_old_data_mode != 0);
@@ -2053,23 +2070,27 @@ int main( int argc, char **argv)
         break;
 
       // npoints: Extract maximum number of points (samples, rows of data) to 
-      // read from the data file
+      // read from the data file.  If requested, increase MAXPOINTS_
       case 'n':
         dfm.npoints_cmd_line = atoi( optarg);
         if( dfm.npoints_cmd_line < 1)  {
           usage();
           exit( -1);
         }
+        if( dfm.npoints_cmd_line > dfm.maxpoints())
+          dfm.maxpoints( dfm.npoints_cmd_line);
         break;
       
       // nvars: Extract maximum number of variables (attributes) to read from 
-      // each line of data file
+      // each line of data file.  If requested, increase MAXVARS_
       case 'v':
         dfm.nvars_cmd_line = atoi( optarg);
         if( dfm.nvars_cmd_line < 1)  {
           usage();
           exit( -1);
         }
+        if( dfm.nvars_cmd_line > dfm.maxvars())
+          dfm.maxvars( dfm.nvars_cmd_line);
         break;
       
       // nSkipHeaderLines: Extract number of header lines to skip at the

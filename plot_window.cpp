@@ -23,7 +23,7 @@
 //
 // Author: Creon Levit    2005-2006
 // Modified: Nathan Schmidt  01-SEP-2008
-// Modified: P. R. Gazis  16-SEP-2008
+// Modified: P. R. Gazis  24-SEP-2008
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -2257,14 +2257,18 @@ void Plot_Window::delete_selection( Fl_Widget *o)
   // got deleted and everyone's ranking must be recomputed
   if( ipoint != npoints)  {
       
-    // Reset the 'isRanked' flags.
-    for( int j=0; j<nvars; j++)
-      Data_File_Manager::column_info[j].isRanked = 0;
-
     // Update the number of points
     npoints = ipoint;
     // npoints_slider->bounds(1,npoints);
     // npoints_slider->value(npoints);
+
+    // Resize the current data buffer to conserve memory and because the
+    // Data_File_Manager class uses it to recalculate NPOINTS.  Also reset
+    // the 'isRanked' flags.
+    for( int j=0; j<nvars; j++) {
+      (Data_File_Manager::column_info[j].points).resizeAndPreserve(npoints);
+      Data_File_Manager::column_info[j].isRanked = 0;
+    }
 
     // Clear selections and redraw everything
     clear_selections( (Fl_Widget *) NULL);
