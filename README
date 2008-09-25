@@ -86,7 +86,7 @@ with extreme caution.
 
 Usage:
 
-In its current form (Version 2.2.1, build 251) 'viewpoints' is run either by 
+In its current form (Version 2.2.2, build 252) 'viewpoints' is run either by 
 clicking on the 'vp' icon or from the command line in the directory in which 
 it has been installed or to which a path is available.  When viewpoints is 
 run from the icon, it will come up with an array of default data.  When it is
@@ -259,9 +259,9 @@ Main menu bar
  File|Save selected data     Write only the currently selected data
  File|Load Configuration     Load configuration information
  File|Save Configuration     Save configuration information
+ File|Current File Name      Show name of current data file
  File|Clear all data         Replace data with a small default array
  File|Quit                   Quit
- View|File Name              Show name of current data file
  View|Add Row                Add a row of plot windows
  View|Add Column             Add a column of plot windows
  View|Remove Row             Remove a row of plot windows
@@ -270,9 +270,10 @@ Main menu bar
  View|Restore Panels         Restore deleted plot windows
  View|Default Panels         Restore the default polt window configuration
  Tools|Edit Column Labels    Prototype of a column label editor
+ Tools|Statistics            Show selection statistics
  Tools|Options               Set viewpoints options
- Help|Help                   Opens a simple HELP window
- Help|About                  Information about this version
+ Help|Viewpoints Help        Opens a simple HELP window
+ Help|About Viewpoints       Information about this version
 
 
 Buttons and (keyboard shortcuts when a plot window has mouse focus):
@@ -373,6 +374,7 @@ Controls in the control panels:
  unselected color       Chose color of unselected points
  change axes            Change all (unlocked) axes
  link axes              Link similar axes
+ defer redraw           Update selections on mouse-up only (for large data)
 
 
 Normalization schemes (per axis)
@@ -403,7 +405,7 @@ randomize               Randomize
 
 Notes and warnings:
 
-The current release of the 'viewpoints' package (version 2.2.1, build 251) is 
+The current release of the 'viewpoints' package (version 2.2.2, build 252) is 
 still a development version.  While every effort has been make to ensure that 
 it will work -- or fail gracefully if it doesn't -- it still has many rough 
 edges.  Some of these are described below.  These issues will all be 
@@ -423,12 +425,12 @@ every system.  It will undergo substantial improvement in future releases.
 
 4) The Edit Column Labels tool is still under development, and can produce
 unexpected behavior.  It is not guaranteed to preserve axis or scaling 
-information, and in the current release, it can only delete labels.  Column 
-labels of ASCII files can be renamed via by using an editor in a conventional 
+information, and in the current release can only delete labels.  For ASCII
+files, column labels can be renamed via by using an editor in a conventional 
 fashion.  Small binary files can be saved to ASCII and edited.  For large 
 binary files, it is possible, with difficulty, to rename labels by saving a 
 small portion of the file as ASCII, editing this, reloading it, and appending 
-the remainding portion of the original binary file.
+the remaining portion of the original binary file.
 
 5) For a variety of reasons related to platform-independance and formatting
 of multiple windows, there is, as yet, no 'print' command.  Images can be 

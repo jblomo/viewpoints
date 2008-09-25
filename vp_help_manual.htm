@@ -199,16 +199,16 @@ The following commands are available from the main menu bar.
  <td>Save configuration information</td>
 </tr>
 <tr>
+ <td>File|Current File Name</td>
+ <td>Shows name of current data file</td>
+</tr>
+<tr>
  <td>File|Clear all data</td>
  <td>Clear data and replace it with a small default array</td>
 </tr>
 <tr>
  <td>File|Quit</td>
  <td>Quit</td>
-</tr>
-<tr>
- <td>View|File Name</td>
- <td>Shows name of current data file</td>
 </tr>
 <tr>
  <td>View|Add Column</td>
@@ -241,6 +241,10 @@ The following commands are available from the main menu bar.
 <tr>
  <td>Tools|Edit Column Labels</td>
  <td>Column label editor (still under development!)</td>
+</tr>
+<tr>
+ <td>Tools|Statistics</td>
+ <td>Selection statistics</td>
 </tr>
 <tr>
  <td>Tools|Options</td>
@@ -472,6 +476,9 @@ below.
 <tr>
  <td>link axes</td><td>Link similar axes so they translate and scale together</td>
 </tr>
+<tr>
+ <td>defer redraw</td><td>Update selections on mouse-up only (for large data)</td>
+</tr>
 </table>
 </p>
 
@@ -579,7 +586,7 @@ while the window manager focus is on a plot window:
 
 <p>
 The current release of the <em><b>Viewpoints</b></em> package 
-(version 2.2.1, build 251) 
+(version 2.2.2, build 252) 
 is still a development version.  While every effort has been make to ensure 
 that it will work -- or fail gracefully if it doesn't -- it still has many 
 rough edges.  Some of these are described below.  These issues will all be 
@@ -605,8 +612,8 @@ every system.  It will undergo substantial improvement in future releases.
 
 <p>
 4) The Edit Column Labels tool is also a new feature, and is not guaranteed
-to preserve axis or scaling information.  In the current release, it can only
-delete labels.  Column labels of ASCII files can be renamed via by using an
+against unexpected behavior.  In the current release, it can only
+delete labels.  For ASCII files, column labels can be renamed by using an
 editor in a conventional fashion.  Small binary files can be saved to ASCII 
 and edited.  For large binary files, it is possible, with difficulty, to 
 rename labels by saving a small portion of the file as ASCII, editing this, 

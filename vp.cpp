@@ -58,7 +58,8 @@
 //   textsize_help_view_widget( *o, *u) -- Change help text size
 //   close_help_window( *o, *u -- Help View window callback
 //   make_main_menu_bar() -- Create main menu bar
-//   make_file_name_window( *o) -- Make View|File Name window
+//   make_file_name_window( *o) -- Make File|Current File Name window
+//   make_statistics_window( *o) -- Make Tools|Statistics window
 //   make_options_window( *o) -- Make Tools|Options window
 //   cb_options_window( *o, *u) -- Process Tools|Options window
 //   step_help_view_widget( *o, *u) -- Step through the Help|Help window.
@@ -75,7 +76,7 @@
 //   reset_selection_arrays() -- Reset selection arrays
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  24-SEP-2008
+// Modified: P. R. Gazis  25-SEP-2008
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -161,6 +162,7 @@ Data_File_Manager dfm;
 Fl_Window *main_control_panel;
 Fl_Scroll *main_scroll;
 Fl_Menu_Bar *main_menu_bar;
+Fl_Window *statistics_window;
 Fl_Window *options_window;
 Fl_Window *about_window;
 Fl_Window *help_view_window;
@@ -188,6 +190,7 @@ void manage_plot_window_array( Fl_Widget *o, void* user_data);
 void cb_manage_plot_window_array( void* o);
 void make_main_menu_bar();
 void make_file_name_window( Fl_Widget *o);
+void make_statistics_window( Fl_Widget *o);
 void make_options_window( Fl_Widget *o);
 void cb_options_window( Fl_Widget *o, void* user_data);
 void make_help_view_window( Fl_Widget *o);
@@ -934,15 +937,15 @@ void make_main_menu_bar()
     "File/Save configuration   ", 0, 
     (Fl_Callback *) save_state, 0, FL_MENU_DIVIDER);
   main_menu_bar->add( 
+    "File/Current File Name    ", 0, 
+    (Fl_Callback *) make_file_name_window);
+  main_menu_bar->add( 
     "File/Clear all data       ", 0, 
     (Fl_Callback *) read_data, (void*) "clear all data");
   main_menu_bar->add( 
     "File/Quit   ", 0, (Fl_Callback *) exit);
 
   // Add View menu items
-  main_menu_bar->add( 
-    "View/File Name    ", 0, 
-    (Fl_Callback *) make_file_name_window, 0, FL_MENU_DIVIDER);
   main_menu_bar->add( 
     "View/Add Row   ", 0, 
     (Fl_Callback *) manage_plot_window_array);
@@ -970,7 +973,10 @@ void make_main_menu_bar()
     "Tools/Edit Column Labels ", 0, 
     (Fl_Callback *) dfm.edit_column_info);
   main_menu_bar->add( 
-    "Tools/Options            ", 0, 
+    "Tools/Statistics         ", 0, 
+    (Fl_Callback *) make_statistics_window, 0, FL_MENU_DIVIDER);
+  main_menu_bar->add( 
+    "Tools/Options...         ", 0, 
     // (Fl_Callback *) make_options_window, 0, FL_MENU_INACTIVE);
     (Fl_Callback *) make_options_window);
 
@@ -978,7 +984,7 @@ void make_main_menu_bar()
   main_menu_bar->add( 
     "Help/Viewpoints Help   ", 0, (Fl_Callback *) make_help_view_window);
   main_menu_bar->add( 
-    "Help/About   ", 0, (Fl_Callback *) make_help_about_window);
+    "Help/About Viewpoints  ", 0, (Fl_Callback *) make_help_about_window);
   
   // Set colors, fonts, etc
   main_menu_bar->color( FL_BACKGROUND_COLOR);
@@ -997,12 +1003,98 @@ void make_main_menu_bar()
 }
 
 //***************************************************************************
-// make_file_name_window( *o) -- Create the 'View|File Name' window.
+// make_file_name_window( *o) -- Create the 'File|Current File Name' window.
 void make_file_name_window( Fl_Widget *o)
 {
   string sConfirmText = dfm.input_filespec();
   if( sConfirmText.size()<=0) sConfirmText = "No input file is specified.";
   int iConfirmResult = make_confirmation_window( sConfirmText.c_str(), 1);
+}
+
+//***************************************************************************
+// make_statistics_window( *o) -- Create the 'Tools|Statistics' window.
+void make_statistics_window( Fl_Widget *o)
+{
+  // Destroy any existing window
+  // MCL XXX rule #2: "Compile cleanly at high warning levels." 
+  if( statistics_window != NULL) statistics_window->hide();
+
+  // Generate dimensions
+  int nLines = 3 + NBRUSHES;
+  int nHeight = 25 * nLines;
+
+  // Create the Tools|Statistics window
+  Fl::scheme( "plastic");  // optional
+  statistics_window = new Fl_Window( 300, 10+nHeight, "Selection Statistics");
+  statistics_window->begin();
+  statistics_window->selection_color( FL_BLUE);
+  statistics_window->labelsize( 10);
+
+  // Generate statistics
+  int n_selected_[ NBRUSHES];
+  for( int i=0; i<NBRUSHES; i++) n_selected_[ i] = 0;
+  for( int i=0; i<npoints; i++) n_selected_[ selected( i)]++;
+  int n_total_selected_ = npoints - n_selected_[0];
+  
+  // Use statistics to generate text
+  string sText = "";
+  char cLine[ 80];
+  sprintf( cLine, "Total points : %10i\n", npoints);
+  sText.append( cLine);
+  sprintf( cLine, "Unselected : %10i\n", n_selected_[0]);
+  sText.append( cLine);
+  sprintf( cLine, "Selected     : %10i\n\n", n_total_selected_);
+  sText.append( cLine);
+  for( int i=1; i<NBRUSHES; i++) {
+    sprintf( cLine, "Brush %i     : %10i\n", i, n_selected_[i]);
+    sText.append( cLine);
+  }
+
+  // Write text to box label and align it inside box
+  Fl_Box* output_box = new Fl_Box( 5, 15, 290, nHeight, sText.c_str());
+  // output_box->box( FL_SHADOW_BOX);
+  output_box->box( FL_NO_BOX);
+  output_box->color( 7);
+  output_box->selection_color( 52);
+  output_box->labelfont( FL_HELVETICA);
+  output_box->labelsize( 15);
+  output_box->align( FL_ALIGN_TOP|FL_ALIGN_LEFT|FL_ALIGN_INSIDE);
+
+  // Define buttons and invoke callback functions to handle them
+  Fl_Button* ok_button = new Fl_Button( 170, nHeight-20, 60, 25, "&OK");
+
+  // Finish creating and show the statistics window.  Make sure it is 
+  // 'modal' to prevent events from being delivered to the other windows.
+  // statistics_window->resizable( statistics_window);
+  statistics_window->resizable( NULL);
+  statistics_window->end();
+  statistics_window->set_modal();   // Switches off label buttons
+  statistics_window->show();
+  
+  // Loop: While the window is open, wait and check the read queue until the 
+  // right widget is activated
+  while( statistics_window->shown()) {
+    Fl::wait();
+    for( ; ;) {   // Is this loop needed?
+      Fl_Widget* o = Fl::readqueue();
+      if( !o) break;
+
+      // Has the window been closed or a button been pushed?
+      if( o == ok_button) {
+        statistics_window->hide();
+        return;
+      }
+      else if( o == statistics_window) {
+
+        // Don't need to hide window because user has already deleted it
+        // confirmation_window->hide();
+        return;
+      }
+    }
+  }
+
+  // When in doubt, do nothing
+  return;
 }
 
 //***************************************************************************
@@ -1036,10 +1128,10 @@ void make_options_window( Fl_Widget *o)
   // Use VBOs
   {
     Fl_Check_Button* o = use_VBOs_Button = 
-      new Fl_Check_Button( 10, 35, 250, 20, " Use VBOs");
+      new Fl_Check_Button( 10, 35, 250, 20, " Use graphics VBOs (recommended)");
     o->down_box( FL_DOWN_BOX);
     o->value( use_VBOs == true);
-    o->tooltip( "Use VBOs to store graphical data");
+    o->tooltip( "Perform graphical operations using VBOs to improve performance");
   }
 
   // Remove trivial columns
@@ -1048,7 +1140,7 @@ void make_options_window( Fl_Widget *o)
       new Fl_Check_Button( 10, 60, 250, 20, " Remove Trivial Columns");
     o->down_box( FL_DOWN_BOX);
     o->value( trivial_columns_mode == true);
-    o->tooltip( "Remove any columns that only contain one value");
+    o->tooltip( "Remove any columns that only contain a single value");
   }
   
   // Preserve Old Data
@@ -1105,7 +1197,7 @@ void make_options_window( Fl_Widget *o)
   Fl_Button* cancel = new Fl_Button( 200, 220, 60, 25, "&Cancel");
   cancel->callback( (Fl_Callback*) cb_options_window, cancel);
 
-  // Done creating the 'Help|About' window
+  // Done creating the 'Help|Options' window
   // options_window->resizable( options_window);
   options_window->resizable( NULL);
   options_window->end();
@@ -1963,7 +2055,7 @@ void reset_selection_arrays()
 //   main() -- main routine
 //
 // Author:   Creon Levit   unknown
-// Modified: P. R. Gazis   24-SEP-2008
+// Modified: P. R. Gazis   25-SEP-2008
 //***************************************************************************
 //***************************************************************************
 // Main -- Driver routine
@@ -1976,7 +2068,7 @@ int main( int argc, char **argv)
   // definitions
 
   about_string = "\n\
-    viewpoints 2.2.1 \n\
+    viewpoints 2.2.2 \n\
     " + string(SVN_VERSION) + "\n\
     \n\
     using fltk version (major + 0.01*minor): " + fltk_version_ss.str() + "\n\
