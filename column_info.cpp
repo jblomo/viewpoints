@@ -21,7 +21,7 @@
 // Purpose: Source code for <column_info.h>
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  16-SEP-2008
+// Modified: P. R. Gazis  27-SEP-2008
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -142,13 +142,12 @@ int Column_Info::add_value( string sToken)
 }
 
 //***************************************************************************
-// Column_Info::update_ascii_values_and_data( int j) -- Update the lookup 
+// Column_Info::update_ascii_values_and_data() -- Update the ASCII lookup 
 // table to index ascii_values in alphabetical order and update the common 
 // data array for this column.
-int Column_Info::update_ascii_values_and_data( int j)
+int Column_Info::update_ascii_values_and_data()
 {
   // Make sure we have the right index and look-up table
-  jvar_ = j;
   if( hasASCII == 0) return -1;
 
   // Loop: Create and load a map to do the conversion
@@ -164,26 +163,26 @@ int Column_Info::update_ascii_values_and_data( int j)
     iAlpha++;
   }
 
-  // Loop: Do the conversion for this column.  WARNING: It is the 
-  // user's responsibility to make sure the column index is correct!
+  // Loop: Do the index conversion for this column.  
   for( int i=0; i<npoints; i++) { 
-    points(jvar_,i) = (conversion.find( (int) points(jvar_,i)))->second;
+    points(i) = (conversion.find( (int) points(i)))->second;
   }
   
   // Report success
-  return jvar_;
+  return 0;
 }
 
 //***************************************************************************
-// Column_Info::add_info_and_update_data( j, old_info) -- Add old column 
-// info and update the common data array for this column.  Note that this
-// is Way Tricky!  The current column info and common data array will be 
-// associated with new data that mst be modified while the old data remains 
-// the same.
-int Column_Info::add_info_and_update_data( int j, Column_Info &old_info)
+// Column_Info::add_info_and_update_data( old_info) -- Use old column info
+// to update indices and ASCII lookup table this column, then copy the
+// revised ASCII lookup table to the old column info and return this by
+// reference.  Note that this is Way Tricky!  The current column info will 
+// be associated with new data that must be modified while the old data 
+// remain the same.
+Column_Info& Column_Info::add_info_and_update_data( Column_Info &old_info)
 {
   // If this is not an ASCII column then quit
-  if( hasASCII == 0 || old_info.hasASCII == 0) return 0;
+  if( hasASCII == 0 || old_info.hasASCII == 0) return old_info;
   
   // Define a map to convert values
   map<int,int> conversion_table;
@@ -225,14 +224,16 @@ int Column_Info::add_info_and_update_data( int j, Column_Info &old_info)
     ascii_values_[sOldKey] = iOldValue;
   }
 
-  // Loop: Do the conversion for this column.  WARNING: It is the 
-  // user's responsibility to make sure the column index is correct!
-  for( int i=0; i<npoints; i++) { 
-    points(jvar_,i) = conversion_table[ (int) points(jvar_,i)];
-  }
-  
+  // Loop: Do the index conversion for this column.  
+  for( int i=0; i<npoints; i++)
+    points(i) = conversion_table[ (int) points(i)];
+
+  // Update the old lookup table, which will be passed back to the calling
+  // method by reference  
+  old_info.ascii_values_ = ascii_values_;
+
   // Return number of ASCII vales
-  return ascii_values_.size();
+  return old_info;
 }
 
 //***************************************************************************

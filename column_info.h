@@ -26,7 +26,7 @@
 //   1) This is inteded for use as a mamber class of data_file_manager
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  16-SEP-2008
+// Modified: P. R. Gazis  27-SEP-2008
 //***************************************************************************
 
 // Protection to make sure this header is not included twice
@@ -61,7 +61,7 @@
 //   copy( inputInfo) -- Copy column info
 //
 //   add_value( string sToken) -- Update list of ASCII values
-//   add_info_and_update_data( j, old_info) -- Add info and update data
+//   add_info_and_update_data( old_info) -- Add info and update data
 //   update_ascii_values_and_data() -- Update ascii_values table and data
 //
 //   index() -- Get column index for this column
@@ -69,7 +69,7 @@
 //   ascii_value( j) -- Get ASCII value for point j
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  16-SEP-2008
+// Modified: P. R. Gazis  27-SEP-2008
 //***************************************************************************
 class Column_Info
 {
@@ -89,8 +89,8 @@ class Column_Info
 
     // Functions to update lists
     int add_value( string sToken);
-    int add_info_and_update_data( int j, Column_Info &old_info);
-    int update_ascii_values_and_data( int j);
+    Column_Info& add_info_and_update_data( Column_Info &old_info);
+    int update_ascii_values_and_data();
 
     // Access functions
     int index() { return jvar_;}

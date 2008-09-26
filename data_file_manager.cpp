@@ -426,14 +426,15 @@ int Data_File_Manager::load_data_file()
       // current (new) common data array must be revised first, before the 
       // current and old data arrays are appended.
       for( int j=0; j<nvars; j++) {
-        column_info[j].add_info_and_update_data( j, old_column_info[j]);
+        column_info[j].add_info_and_update_data( old_column_info[j]);
       }
 
       // Enlarge buffer that contains old data to make space for current data
+      // and make sure current data buffer is the right size
       int all_npoints = npoints + old_npoints;
       for( int j=0; j<nvars; j++) {
-        (column_info[j].points).resizeAndPreserve(npoints);
         (old_column_info[j].points).resizeAndPreserve(all_npoints);
+        (column_info[j].points).resizeAndPreserve(npoints);
       }
 
       // Append current data to old data and resize the current data buffer
@@ -451,7 +452,7 @@ int Data_File_Manager::load_data_file()
       // ASCII values and renumber the data.
       int nReordered = 0;
       for( int j=0; j<nvars; j++) {
-        if( column_info[j].update_ascii_values_and_data(j) >=0) nReordered++;
+        if( column_info[j].update_ascii_values_and_data() >=0) nReordered++;
       }
     }
     else {
@@ -1121,8 +1122,9 @@ int Data_File_Manager::read_ascii_file_with_headers()
   // Loop: Examine the vector of Column_Info objects to alphabetize ASCII 
   // values and renumber the data.
   int nReordered = 0;
+  npoints = nDataRows_;
   for( int j=0; j<nDataColumns_; j++) {
-    if( column_info[j].update_ascii_values_and_data(j) >=0) nReordered++;
+    if( column_info[j].update_ascii_values_and_data() >=0) nReordered++;
   }
 
   // DIAGNOSTIC: Examine column_info again
