@@ -64,55 +64,57 @@
 //
 //   soft(char x) -- Access function
 //   soft() -- Access function
-//   textfont() --
-//   textfont(uchar s) --
-//   textsize() --
-//   textsize(uchar s) --
-//   textcolor() --
-//   textcolor(uchar n) --
-//   cursor_color() --
-//   cursor_color(uchar n) --
-//   buttonssize() --
-//   buttonssize(int s) --
+//   textfont() -- Get font for Fl_Input object
+//   textfont( uchar s) -- Set font for Fl_Input object
+//   textsize() -- Get font size for Fl_Input object
+//   textsize( uchar s) -- Set font size for Fl_Input object
+//   textcolor() -- Get font color for Fl_Input object
+//   textcolor( uchar n) -- Set font color for Fl_Input object
+//   cursor_color() -- Get cursor color for Fl_Input object
+//   cursor_color( uchar n) -- Set cursor color for Fl_Input object
+//   buttonssize() -- Get button size for Fl_Input object
+//   buttonssize( int s) -- Set button size for Fl_Input object
 //
-// Author: Creon Levit    31-Jan-2008
-// Modified: P. R. Gazis  31-Jan-2008
+// Author: Creon Levit    31-JAN-2008
+// Modified: P. R. Gazis  03-OCT-2008
 //*****************************************************************
 class Vp_Value_Input_Spin : public Fl_Valuator {
 private:
   int ix, iy, drag, indrag,sldrag;
-  int delta,deltadir;
+  int delta, deltadir;
   char soft_;
   uchar mouseobj;
   int butsize;
 
-  static FL_EXPORT void input_cb(Fl_Widget*,void*);
+  static FL_EXPORT void input_cb( Fl_Widget*,void*);
   virtual FL_EXPORT void value_damage(); // cause damage() due to value() changing
-  static FL_EXPORT void repeat_callback(void *);
+  static FL_EXPORT void repeat_callback( void *);
   FL_EXPORT void increment_cb(); 
   
 public:
-  Fl_Input input;
-
-  FL_EXPORT Vp_Value_Input_Spin(int x,int y,int w,int h, const char *l = 0);
+  FL_EXPORT Vp_Value_Input_Spin( int x,int y,int w,int h, const char *l = 0);
   ~Vp_Value_Input_Spin();
 
+  // Define Fl_Input object to hold the actual display
+  Fl_Input input;
+
   FL_EXPORT void draw();
-  FL_EXPORT int handle(int);
-  FL_EXPORT void resize(int,int,int,int);
+  FL_EXPORT int handle( int);
+  FL_EXPORT void resize( int, int, int, int);
 
-  void soft(char x) {soft_ = x;}
-  char soft() const {return soft_;}
+  void soft( char x) { soft_ = x;}
+  char soft() const { return soft_;}
 
-  Fl_Font textfont() const {return input.textfont();}
+  // Access functions
+  Fl_Font textfont() const { return input.textfont();}
   void textfont(uchar s) { input.textfont(s);}
-  uchar textsize() const {return input.textsize();}
-  void textsize(uchar s) {input.textsize(s);}
-  Fl_Color textcolor() const {return input.textcolor();}
-  void textcolor(uchar n) {input.textcolor(n);}
-  Fl_Color cursor_color() const {return input.cursor_color();}
+  uchar textsize() const { return input.textsize();}
+  void textsize(uchar s) { input.textsize(s);}
+  Fl_Color textcolor() const { return input.textcolor();}
+  void textcolor(uchar n) { input.textcolor(n);}
+  Fl_Color cursor_color() const { return input.cursor_color();}
   void cursor_color(uchar n) {input.cursor_color(n);}
-  int buttonssize() const {return butsize;}
+  int buttonssize() const { return butsize;}
   void buttonssize(int s) { butsize=s;}
 };
 

@@ -51,6 +51,8 @@
 //   create_main_control_panel( main_x, main_y, main_w, main_h, cWindowLabel) 
 //     -- Create the main control panel window.
 //   cb_main_control_panel( *o, *u); -- Callback for main control panel
+//   create_brushes( w_x, w_y, w_w, w_h) -- Create brushes tabs
+//   brushes_tab_cb() -- Brushes window callback
 //   create_broadcast_group() -- Create special panel under tabs
 //   manage_plot_window_array( *o, *u) -- Manage plot window array
 //   cb_manage_plot_window_array( *o) -- Idle callback
@@ -58,6 +60,7 @@
 //   textsize_help_view_widget( *o, *u) -- Change help text size
 //   close_help_window( *o, *u -- Help View window callback
 //   make_main_menu_bar() -- Create main menu bar
+//   change_screen_mode() -- Change screen mode
 //   make_file_name_window( *o) -- Make File|Current File Name window
 //   make_statistics_window( *o) -- Make Tools|Statistics window
 //   make_options_window( *o) -- Make Tools|Options window
@@ -76,7 +79,7 @@
 //   reset_selection_arrays() -- Reset selection arrays
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  25-SEP-2008
+// Modified: P. R. Gazis  03-OCT-2008
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -134,6 +137,12 @@ static const int main_w = 365;
 // static const int main_h = 850;
 static const int main_h = 890;
 
+// These are calculated and used to hold sizes for use with small laptop 
+// screens
+static const float laptop_scale = 0.8;
+static int laptop_main_w;
+static int laptop_main_h;
+
 // Increase this when the plot controls need more height to fit in their subpanel
 // static const int cp_widget_h = 505; 
 static const int cp_widget_h = 430; 
@@ -161,6 +170,7 @@ Data_File_Manager dfm;
 // available to callback functions
 Fl_Window *main_control_panel;
 Fl_Scroll *main_scroll;
+Fl_Group *main_scroll_group;
 Fl_Menu_Bar *main_menu_bar;
 Fl_Window *statistics_window;
 Fl_Window *options_window;
@@ -172,6 +182,7 @@ Fl_Help_View *help_view_widget;
 Fl_Check_Button* expertButton;
 Fl_Check_Button* trivialColumnsButton;
 Fl_Check_Button* preserveOldDataButton;
+Fl_Check_Button* laptopModeButton;
 Fl_Input* maxpoints_input;
 Fl_Input* maxvars_input;
 Fl_Input* bad_value_proxy_input;
@@ -189,6 +200,7 @@ void create_broadcast_group();
 void manage_plot_window_array( Fl_Widget *o, void* user_data);
 void cb_manage_plot_window_array( void* o);
 void make_main_menu_bar();
+void change_screen_mode();
 void make_file_name_window( Fl_Widget *o);
 void make_statistics_window( Fl_Widget *o);
 void make_options_window( Fl_Widget *o);
@@ -248,6 +260,8 @@ void usage()
        << "Read input data from FILENAME." << endl;
   cerr << "  -I, --stdin                 "
        << "Read input data from stdin." << endl;
+  cerr << "  -l, --laptop_mode      "
+       << "Shrink control panel to fit in a laptop screen" << endl;
   cerr << "  -L, --commented_labels      "
        << "Expect the line that contains column labels to" << endl
        << "                              "
@@ -339,9 +353,9 @@ void create_main_control_panel(
   Fl_Tooltip::delay(1.0);
   Fl_Tooltip::hoverdelay(1.0);
   Fl_Tooltip::size(12);
-  
-  main_h = min(main_h, Fl::h() - (top_frame + bottom_frame));
-  main_control_panel = new Fl_Window( main_x, main_y, main_w, main_h, cWindowLabel);
+
+  int clipped_h = min( main_h, Fl::h() - (top_frame + bottom_frame));
+  main_control_panel = new Fl_Window( main_x, main_y, main_w, clipped_h, cWindowLabel);
   main_control_panel->resizable( main_control_panel);
 
   // Add callback function to intercept 'Close' operations
@@ -349,30 +363,41 @@ void create_main_control_panel(
 
   // Make main menu bar and add the global widgets to control panel
   make_main_menu_bar();
+  main_control_panel->add(main_menu_bar);
 
   // All controls (except the main menu bar) in the main panel are inside an Fl_Scroll, 
   // because there are too many controls to all fit vertically on some small screens.
   // Eventally, we will make the sub-panels independently expandable and reorganize 
   // the gui to alleviate this problem.
-  main_scroll = new Fl_Scroll(0, main_menu_bar->h(), main_w, main_h - main_menu_bar->h());
+  main_scroll = new Fl_Scroll( 0, main_menu_bar->h(), main_w, main_h - main_menu_bar->h());
   main_scroll->box(FL_NO_BOX);
-  
+
+  // Define a group to hold contents of the scolling area and make them 
+  // resizable
+  main_scroll_group =
+    new Fl_Group( main_scroll->x(), main_scroll->y(), main_scroll->w(), main_scroll->h());
+  main_control_panel->add(main_scroll_group);
+  main_scroll_group->box(FL_NO_BOX);
+
   // MCL XXX
   // if I move this call to create_brushes() to the end of this routine, to just before
   // the call to main_control_panel->end(), I get a core dump.  That's' too bad......
   create_brushes( brushes_x, brushes_y, main_w-6, brushes_h);
 
   // the widgets at the bottom of the main panel.  Seems they need to created here. :-?
-  make_global_widgets ();
+  make_global_widgets();
 
   // Inside the main control panel, there is a tab widget, cpt, 
   // that contains the sub-panels (groups), one per plot.
   cpt = new Fl_Tabs( tabs_widget_x, tabs_widget_y, main_w-6, tabs_widget_h);
   cpt->selection_color( FL_BLUE);
   cpt->labelsize( 10);
+  // main_control_panel->add(cpt);
+  main_scroll_group->add(cpt);
 
   // Done creating main control panel (except for the tabbed 
   // sub-panels created by manage_plot_window_array)
+  main_scroll_group->end();
   main_scroll->end();
   main_control_panel->end();
   Fl_Group::current(0);  
@@ -407,6 +432,10 @@ void create_brushes( int w_x, int w_y, int w_w, int w_h)
   brushes_tab->labelsize( 10);
   brushes_tab->callback( (Fl_Callback*) brushes_tab_cb);
   // brushes_tab->clear_visible_focus(); // disbaled for future soloing...
+
+  // Be sure to make this a child of the main control panel window
+  // main_control_panel->add(brushes_tab);
+  main_scroll_group->add(brushes_tab);
 
   Fl_Group::current(brushes_tab);
   for (int i=0; i<NBRUSHES; i++) {
@@ -653,7 +682,7 @@ void manage_plot_window_array( Fl_Widget *o, void* user_data)
   int nplots_save = nplots;
   if( thisOperation == INITIALIZE) nplots_save = 0;
 
-  // Save an array of Plot_Window objecst with the positions of the existing 
+  // Save an array of Plot_Window objects with the positions of the existing 
   // plot windows.  NOTE: This must be an array rather than a pointer array 
   // to invoke the default constructor.
   Plot_Window pws_save[ MAXPLOTS+1];
@@ -672,6 +701,19 @@ void manage_plot_window_array( Fl_Widget *o, void* user_data)
     cps_save[i].copy_state( cps[i]);
   }
   
+  // Save position and size of control panel windows so these can be used to 
+  // calculate sizes for laptop mode
+  int x_save = cp_widget_x;
+  int y_save = cp_widget_y;
+  int w_save = main_w - 6;
+  int h_save = main_h;
+  if( thisOperation != INITIALIZE) {
+    x_save = cps[0]->x();
+    y_save = cps[0]->y();
+    w_save = cps[0]->w();
+    h_save = cps[0]->h();
+  }
+  
   // Save an array of Brush objects with information of the existing brushes
   Brush brushes_save[ NBRUSHES];
   for( int i=0; i<NBRUSHES; i++) {
@@ -679,10 +721,10 @@ void manage_plot_window_array( Fl_Widget *o, void* user_data)
     brushes_save[i].copy_state( brushes[i]);
   }
 
-  // Recalculate number of plots
+  // Recalculate the number of plots
   nplots = nrows * ncols;
 
-  // Clear children of the tab widget to delete old tabs
+  // Clear children of the control panel tab widget to delete old tabs
   cpt->clear();
 
   // Create and add the virtual sub-panels, each group under a tab, one
@@ -695,15 +737,22 @@ void manage_plot_window_array( Fl_Widget *o, void* user_data)
     if( borderless)
       top_frame = bottom_frame = left_frame = right_frame = 1;
 
-    // Determine plot window size and position
+    // Determine default plot window size for regular and laptop mode
+    // int pw_w =
+    //   ( ( number_of_screens*Fl::w() - 
+    //       (main_w+left_frame+right_frame+right_safe+left_safe+20)) / ncols) -
+    //   (left_frame + right_frame);
+    int scaled_main_w = w_save+6;
+    if( laptop_mode) scaled_main_w = (int) (laptop_scale*main_w);
     int pw_w =
       ( ( number_of_screens*Fl::w() - 
-          (main_w+left_frame+right_frame+right_safe+left_safe+20)) / ncols) -
+          (scaled_main_w+left_frame+right_frame+right_safe+left_safe+20)) / ncols) -
       (left_frame + right_frame);
     int pw_h = 
       ( (Fl::h() - (top_safe+bottom_safe))/ nrows) - 
       (top_frame + bottom_frame);
 
+    // Calculate default plot window positions
     int pw_x = 
       left_safe + left_frame + 
       col * (pw_w + left_frame + right_frame);
@@ -720,7 +769,7 @@ void manage_plot_window_array( Fl_Widget *o, void* user_data)
     // create_control_panel and add a new virtual control panel under this
     // tab widget
     Fl_Group::current( cpt);  
-    cps[i] = new Control_Panel_Window(cp_widget_x, cp_widget_y, main_w - 6, cp_widget_h);
+    cps[i] = new Control_Panel_Window( cp_widget_x, cp_widget_y, main_w - 6, cp_widget_h);
     cps[i]->index = i;
     cps[i]->copy_label( labstr.c_str());
     cps[i]->labelsize( 10);
@@ -760,7 +809,7 @@ void manage_plot_window_array( Fl_Widget *o, void* user_data)
     }
 
     // Always link the plot window and its associated virtual control panel
-    assert ((pws[i]->index == i) && (cps[i]->index == i));
+    assert( (pws[i]->index == i) && (cps[i]->index == i));
     cps[i]->pw = pws[i];
     pws[i]->cp = cps[i];
 
@@ -829,7 +878,7 @@ void manage_plot_window_array( Fl_Widget *o, void* user_data)
       pws[i]->extract_data_points();
     }
 
-    // KLUDGE: If this is a "append", "merge", "reload file" or "restore 
+    // OLD KLUDGE: If this is a "append", "merge", "reload file" or "restore 
     // panels" operation, restore old plot window positions.  This should 
     // be controlled by a flag rather than examining WIDGETTITLE.
     // if( strncmp( userData, "REFRESH_WINDOWS", 15) == 0 ||
@@ -837,6 +886,10 @@ void manage_plot_window_array( Fl_Widget *o, void* user_data)
     //     strncmp( widgetTitle, "Merge", 5) == 0 ||
     //     strncmp( widgetTitle, "Reload", 6) == 0 ||
     //     strncmp( widgetTitle, "Restore", 7) == 0) {
+
+     // If the do_restore_positions flag was set by an 'append', 'merge',
+     // 'reload file', or 'restore panels' operation, restire old window
+     // positions.
     if( do_restore_positions != 0) {
       for( int i=0; i<nplots_save; i++) {
         pws[ i]->copy_state( &pws_save[i]);
@@ -878,6 +931,16 @@ void manage_plot_window_array( Fl_Widget *o, void* user_data)
   
   // Create a master control panel to encompass all the tabs
   create_broadcast_group ();
+
+  // If this is laptop mode, shrink fonts and loop through children of the
+  // control palenl tab to rescale control panel windows, including the
+  // 'All' window, which may not be available through cp[nplots]
+  if( thisOperation != INITIALIZE && laptop_mode) {
+    shrink_widget_fonts( cpt, laptop_scale);
+    for( int i=0; i<cpt->children(); i++) {
+      (cpt->child(i))->resize( x_save, y_save, w_save, h_save);
+    }
+  }
 }
 
 //***************************************************************************
@@ -1000,6 +1063,52 @@ void make_main_menu_bar()
   //     (Fl_Menu_Item*) &(main_menu_bar->menu()[i]);
   //   pMenuItem->labelsize(32);
   // }
+}
+
+//***************************************************************************
+// change_screen_mode() -- Change between default and laptop screen modes.
+// WARNING: This doesn't check the current state so it's the user's 
+// responsibility not to call this at the wrong time.
+void change_screen_mode()
+{
+  // Make sure scroll area and group are children of main control panel
+  // and resizable so that we can resize it
+  main_control_panel->add( main_scroll);
+  main_control_panel->add( main_scroll_group);
+  main_scroll->resizable( main_scroll);
+  main_scroll_group->resizable( main_scroll);
+
+  // Move and resize the main control panel, scroll area, font sizes, and 
+  // scroll area
+  int main_control_panel_x_ = main_control_panel->x();
+  if( laptop_mode) {
+    main_control_panel_x_ = main_control_panel_x_ + main_w - laptop_main_w;
+    main_control_panel->resize( 
+      main_control_panel_x_, main_control_panel->y(),
+      laptop_main_w, laptop_main_h);
+    main_scroll->resize( 
+      0, main_menu_bar->h(),
+      laptop_main_w, laptop_main_h-main_menu_bar->h());
+    shrink_widget_fonts( main_control_panel, laptop_scale);
+  }
+  else {
+    main_control_panel_x_ = main_control_panel_x_ + laptop_main_w - main_w;
+    main_control_panel->resize( 
+      main_control_panel_x_, main_control_panel->y(),
+      main_w, main_h);
+    main_scroll->resize( 
+      0, main_menu_bar->h(),
+      main_w, main_h-main_menu_bar->h());
+    shrink_widget_fonts( main_control_panel, 1.0/laptop_scale);
+  }
+  main_scroll_group->resize( 
+    main_scroll->x(), main_scroll->y(),
+    main_scroll->w(), main_scroll->h());
+
+  // Make scroll group a child of scroll area and non-resizable to 'freeze'
+  // it at this size.
+  main_scroll->add( main_scroll_group);
+  main_scroll_group->resizable( NULL);
 }
 
 //***************************************************************************
@@ -1191,6 +1300,15 @@ void make_options_window( Fl_Widget *o)
     o->tooltip( "Value used for missing or bad data");
   }
 
+  // Laptop mode checkbox
+  {
+    Fl_Check_Button* o = laptopModeButton = 
+      new Fl_Check_Button( 10, 185, 150, 20, " Laptop Mode");
+    o->down_box( FL_DOWN_BOX);
+    o->value( laptop_mode == true);
+    o->tooltip( "Tiny control panel and fonts for small laptop screens");
+  }
+  
   // Invoke a multi-purpose callback function to process window
   Fl_Button* ok_button = new Fl_Button( 150, 220, 40, 25, "&OK");
   ok_button->callback( (Fl_Callback*) cb_options_window, ok_button);
@@ -1240,6 +1358,12 @@ void cb_options_window( Fl_Widget *o, void* user_data)
 
     float bad_value_proxy = strtof( bad_value_proxy_input->value(), NULL);
     dfm.bad_value_proxy( bad_value_proxy);
+
+    int i_laptop_mode = laptopModeButton->value();
+    prefs_.set( "laptop_mode", i_laptop_mode);
+    bool laptop_mode_save = laptop_mode;
+    laptop_mode = ( i_laptop_mode != 0);
+    if( laptop_mode != laptop_mode_save) change_screen_mode();
   }
   options_window->hide();
 }
@@ -1336,6 +1460,8 @@ void make_global_widgets()
   b->value( 1);
   b->callback( (Fl_Callback*) Plot_Window::toggle_display_deselected);
   b->tooltip("toggle visibility of nonselected points in all plots");
+  // main_control_panel->add(b);
+  main_scroll_group->add(b);
 
   // Button(2,1): mask out deselected
   mask_out_deselected = b = new Fl_Button( xpos, ypos+=25, 20, 20, "mask nonselected");
@@ -1343,6 +1469,8 @@ void make_global_widgets()
   b->align( FL_ALIGN_RIGHT); 
   b->selection_color( FL_BLUE); 
   b->tooltip("don't select nonselected points");
+  // main_control_panel->add(b);
+  main_scroll_group->add(b);
 
   // Button(3,1): Invert selected and nonselected data
   invert_selection_button = b = new Fl_Button( xpos, ypos+=25, 20, 20, "invert selection");
@@ -1350,6 +1478,8 @@ void make_global_widgets()
   b->selection_color( FL_BLUE); 
   b->callback( (Fl_Callback*) Plot_Window::invert_selection);
   b->tooltip("invert selection status of all points");
+  // main_control_panel->add(b);
+  main_scroll_group->add(b);
 
   // Button(4,1): Clear all selections
   clear_selection_button = b = new Fl_Button(xpos, ypos+=25, 20, 20, "clear selections");
@@ -1357,6 +1487,8 @@ void make_global_widgets()
   b->selection_color( FL_BLUE); 
   b->callback( Plot_Window::clear_selections);
   b->tooltip("clear all selections");
+  // main_control_panel->add(b);
+  main_scroll_group->add(b);
 
   // Button(5,1): Delete selected data
   delete_selection_button = b = new Fl_Button( xpos, ypos+=25, 20, 20, "kill selected");
@@ -1364,6 +1496,8 @@ void make_global_widgets()
   b->selection_color( FL_BLUE); 
   b->callback( Plot_Window::delete_selection);
   b->tooltip("remove selected points completely (does not change data on disk)");
+  // main_control_panel->add(b);
+  main_scroll_group->add(b);
 
   // Advance to column 2
   xpos = xpos1 + 150; ypos = ypos1;
@@ -1374,6 +1508,8 @@ void make_global_widgets()
   change_all_axes_button->selection_color( FL_BLUE); 
   change_all_axes_button->callback( (Fl_Callback*)change_all_axes);
   change_all_axes_button->tooltip("automatically choose new axes for all plots");
+  // main_control_panel->add( change_all_axes_button);
+  main_scroll_group->add( change_all_axes_button);
 
   // Button(4,2): Link all axes
   link_all_axes_button = b = new Fl_Button( xpos, ypos+=25, 20, 20, "link axes");
@@ -1382,6 +1518,8 @@ void make_global_widgets()
   b->type( FL_TOGGLE_BUTTON); 
   b->value( 0);
   b->tooltip("toggle linked viewing transormations");
+  // main_control_panel->add(b);
+  main_scroll_group->add(b);
 
   // Button(5,2): defer redraws (for huge data)
   defer_redraws_button = b = new Fl_Button( xpos, ypos+=25, 20, 20, "defer redraws");
@@ -1390,6 +1528,8 @@ void make_global_widgets()
   b->type( FL_TOGGLE_BUTTON); 
   b->value( 0);
   b->tooltip("update selections on mouse-up only (for large data)");
+  // main_control_panel->add(b);
+  main_scroll_group->add(b);
 }
 
 //***************************************************************************
@@ -2055,7 +2195,7 @@ void reset_selection_arrays()
 //   main() -- main routine
 //
 // Author:   Creon Levit   unknown
-// Modified: P. R. Gazis   25-SEP-2008
+// Modified: P. R. Gazis   03-OCT-2008
 //***************************************************************************
 //***************************************************************************
 // Main -- Driver routine
@@ -2068,7 +2208,7 @@ int main( int argc, char **argv)
   // definitions
 
   about_string = "\n\
-    viewpoints 2.2.2 \n\
+    viewpoints 2.2.3 \n\
     " + string(SVN_VERSION) + "\n\
     \n\
     using fltk version (major + 0.01*minor): " + fltk_version_ss.str() + "\n\
@@ -2104,6 +2244,7 @@ int main( int argc, char **argv)
     { "borderless", no_argument, 0, 'b'},
     { "no_vbo", no_argument, 0, 'B'},
     { "help", no_argument, 0, 'h'},
+    { "laptop_mode", no_argument, 0, 'l'},
     { "commented_labels", no_argument, 0, 'L'},
     { "expert", no_argument, 0, 'x'},
     { "verbose", no_argument, 0, 'O'},
@@ -2127,6 +2268,9 @@ int main( int argc, char **argv)
   int i_preserve_old_data_mode;
   prefs_.get( "preserve_old_data_mode", i_preserve_old_data_mode, 0);
   preserve_old_data_mode = ( i_preserve_old_data_mode != 0);
+  int i_laptop_mode;
+  prefs_.get( "laptop_mode", i_laptop_mode, 0);
+  laptop_mode = ( i_laptop_mode != 0);
 
   // Initialize the data file manager, just in case, even though this should
   // already have been done by the constructor, then set global pointer for 
@@ -2145,7 +2289,7 @@ int main( int argc, char **argv)
   while( 
     ( c = getopt_long_only( 
         argc, argv, 
-        "f:n:v:s:t:o:P:r:c:m:i:C:M:d:bBhLxOVIp", long_options, NULL)) != -1) {
+        "f:n:v:s:t:o:P:r:c:m:i:C:M:d:bBhlLxOVIp", long_options, NULL)) != -1) {
   
     // Examine command-line options and extract any optional arguments
     switch( c) {
@@ -2303,7 +2447,12 @@ int main( int argc, char **argv)
         use_VBOs = false;
         break;
 
-      // enable verbose output
+      // Laptop mode
+      case 'l':
+        laptop_mode = 1;
+        break;
+
+      // Expect labels to begin with comment char
       case 'L':
         dfm.do_commented_labels( 1);
         break;
@@ -2360,6 +2509,9 @@ int main( int argc, char **argv)
   if( preserve_old_data_mode) i_preserve_old_data_mode = 1;
   else i_preserve_old_data_mode = 0;
   prefs_.set( "preserve_old_data_mode", i_preserve_old_data_mode);
+  if( laptop_mode) i_laptop_mode = 1;
+  else i_laptop_mode = 0;
+  prefs_.set( "laptop_mode", i_laptop_mode);
 
   // If no data file was specified, but there was at least one argument 
   // in the command line, assume the last argument is the filespec.
@@ -2432,6 +2584,15 @@ int main( int argc, char **argv)
   // Now we can show the main control panel and all its subpanels
   main_control_panel->show();
 
+  // This should be moved to create_main_control_panel?
+  main_scroll->add( main_scroll_group);
+  main_scroll_group->resizable( NULL);
+
+  // Get screen sizes for laptop mode and use it if requested
+  laptop_main_w = (int) (laptop_scale*main_w);
+  laptop_main_h = (int) (laptop_scale*main_h);
+  if( laptop_mode) change_screen_mode();
+  
   // Step 5: Register functions to call on a reglar basis, when no other
   // events (mouse, etc.) are waiting to be processed.
   // Do not use Fl::add_idle().  It causes causes a busy-wait loop.

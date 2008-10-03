@@ -24,7 +24,7 @@
 //   pow2 ( x) -- x*x
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  17-JUL-2008
+// Modified: P. R. Gazis  02-OCT-2008
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -132,11 +132,10 @@ float pow2( float x)
     return( x*x);
 }
 
-
 //***************************************************************************
-// make_find_window( text, result) -- Make and manage the 
-// text search window.  Ignore return value, use non-empty res parameter as outcome.
-int make_find_window( const char* text,char *res)
+// make_find_window( text, result) -- Make and manage the text search 
+// window.  Ignore return value, use non-empty res parameter as outcome.
+int make_find_window( const char* text, char *res)
 {
   // Destroy any existing window
   if( find_window != NULL) find_window->hide();
@@ -182,13 +181,14 @@ int make_find_window( const char* text,char *res)
   while( find_window->shown()) {
     Fl::wait();
     if(Fl::event_key(FL_Enter)) {
-        find_window->hide();
-        strcpy(res,inp->value());
-        return 1;    
+      find_window->hide();
+      strcpy(res,inp->value());
+      return 1;    
     }
 
     for( ; ;) {   // Is this loop needed?
       Fl_Widget* o = Fl::readqueue();
+      // o->tooltip( "Search for string (case sensitive)");
       if( !o) break;
 
       // Has the window been closed or a button been pushed?
@@ -212,3 +212,42 @@ int make_find_window( const char* text,char *res)
   return -1;
 }
 
+//***************************************************************************
+// shrink_widget_fonts( target_widget, rScale) -- Shrink fonts for widget 
+// and its children.  Note kludge to round up values if rScale>1.
+void shrink_widget_fonts( Fl_Widget* target_widget, float rScale)
+{
+  // Revise font size for this window
+  unsigned labelsize_new = target_widget->labelsize();
+  labelsize_new = (int) (rScale*labelsize_new);
+  if( rScale>1) labelsize_new++;
+  target_widget->labelsize( labelsize_new);  
+
+  // Rescale text in window of Vp_Value_Input_Spin  
+  Vp_Value_Input_Spin* p_Vp_Spin_;
+  if( p_Vp_Spin_ = dynamic_cast <Vp_Value_Input_Spin*> (target_widget)) {
+    int textsize_new = (p_Vp_Spin_->input).textsize();
+    textsize_new = (int) (rScale*textsize_new);
+    if( rScale>1) textsize_new++;
+    (p_Vp_Spin_->input).textsize( textsize_new);
+  }
+
+  // Rescale text in menus
+  Fl_Menu_* p_target_menu__;
+  if( p_target_menu__ = dynamic_cast <Fl_Menu_*> (target_widget)) {
+    int textsize_new = p_target_menu__->textsize();
+    textsize_new = (int) (rScale*textsize_new);
+    if( rScale>1) textsize_new++;
+    p_target_menu__->textsize( textsize_new);
+  }
+
+  // Perform a dynamic cast to determine if this is a group.  If it is,
+  // then shrink its children
+  Fl_Group* p_target_group_;
+  if( p_target_group_ = dynamic_cast <Fl_Group*> (target_widget)) {
+    int nChildren = p_target_group_->children();
+    for( int i=0; i<nChildren; i++) {
+      shrink_widget_fonts( p_target_group_->child(i), rScale);
+    }
+  }
+}

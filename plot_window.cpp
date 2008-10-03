@@ -23,7 +23,7 @@
 //
 // Author: Creon Levit    2005-2006
 // Modified: Nathan Schmidt  01-SEP-2008
-// Modified: P. R. Gazis  24-SEP-2008
+// Modified: P. R. Gazis  01-OCT-2008
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -542,17 +542,20 @@ int Plot_Window::handle( int event)
           center_on_click( Fl::event_x(), Fl::event_y());
           return 1;
       
-        // Search for strings in y-axis variable
+        // Search for strings in x- or y-axis variable
         case 'f':
         {
           char buf[1024];
           char label[1024];
           int col = Fl::event_shift()?cp->varindex1->value():cp->varindex2->value();
+          char cAxis[10];
+          strcpy( cAxis, "");
+          Fl::event_shift()?strcpy( cAxis, "x"):strcpy( cAxis, "y");
           strcpy( buf, "");
           sprintf(
             label,
-            "Search for strong in the '%s' axis variable",
-            Data_File_Manager::column_info[col].label.c_str());
+            "Search for a string in the %s-axis variable, '%s'",
+            cAxis, Data_File_Manager::column_info[col].label.c_str());
           make_find_window( label, buf);
           if( buf[0]) {
             select_on_string( buf, col);
