@@ -563,7 +563,13 @@ int Plot_Window::handle( int event)
           return 1;
         }
 
-      // Default: do nothing for unrecognized keys
+        // toggle grid
+        case 'g':
+          cp->show_grid->value(1-cp->show_grid->value());
+          needs_redraw = 1;
+          return 1;
+
+      // Unrecognized key pressed: do nothing
       default:
         return 0;
     }
@@ -588,7 +594,7 @@ int Plot_Window::handle( int event)
     // Mouse wheel, zoom in both the x and y axes
     case FL_MOUSEWHEEL:
       if(1) { 
-        float wheel_zoom_rate = 50.0;
+        float wheel_zoom_rate = 100.0;
         float wheel_size_rate = 5.0;
         float dy = Fl::event_dy();
         float dx = Fl::event_dx();
@@ -605,7 +611,9 @@ int Plot_Window::handle( int event)
         }
         needs_redraw = 1;
         update_linked_transforms();
-        redraw_one_plot();
+        // make sure grids & axis ticks get updated since we've changed the view.
+        screen_to_world (-1, -1, wmin[0], wmin[1]);
+        screen_to_world (+1, +1, wmax[0], wmax[1]);
         return 1;
       }
 
@@ -744,7 +752,6 @@ void Plot_Window::draw()
     glClearDepth (0.0);
     glClearStencil (0);
     glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-    draw_grid();
   }
 
   if( use_VBOs) {
@@ -754,14 +761,15 @@ void Plot_Window::draw()
     if( !indexVBOsfilled) fill_indexVBOs();
   }
 
+  draw_background ();
   draw_data_points();
   if( selection_changed) {
     draw_selection_information();
   }
   draw_center_glyph();
   draw_axes();
+  draw_grid();
   draw_histograms ();
-  draw_background ();
   draw_resize_knob();
 }
 
@@ -848,56 +856,112 @@ void Plot_Window::draw_background ()
   }
 }
 
+/*
+ * Nice Numbers for Graph Labels
+ * adapted from: Paul Heckbert, "Graphics Gems", Academic Press, 1990
+ * see: http://www.cs.cmu.edu/~ph  (search within page for "nice numbers")
+ */
+
+/* expt(a,n)=a^n for integer n */
+# define expt(a, n) pow(a, (double)(n))
+
+/*
+ * nicenum: find a "nice" number approximately equal to x.
+ * Round the number if round=1, take ceiling if round=0
+ */
+double nicenum(const double x, const double round)
+{
+    int expv;				/* exponent of x */
+    double f;				/* fractional part of x */
+    double nf;			/* nice, rounded fraction */
+
+    expv = (int)floor(log10(x));
+    f = x/expt(10., expv);		/* between 1 and 10 */
+    if (round)
+        if (f<1.5) nf = 1.;
+        else if (f<3.) nf = 2.;
+        else if (f<7.) nf = 5.;
+        else nf = 10.;
+    else
+        if (f<=1.) nf = 1.;
+        else if (f<=2.) nf = 2.;
+        else if (f<=5.) nf = 5.;
+        else nf = 10.;
+    return nf*expt(10., expv);
+}
+
 //***************************************************************************
-// Plot_Window::draw_grid() -- Draw a grid.
+// Plot_Window::draw_grid() -- Draw a grid with lines in "nice" places
 void Plot_Window::draw_grid()
 {
-  glBlendFunc(GL_ONE, GL_ZERO);
-  // glBlendFunc(sfactor, dfactor);
-  // glEnable(GL_LINE_SMOOTH);
-  // glHint(GL_LINE_SMOOTH_HINT,GL_NICEST);
-  // glLineWidth(0.5);
-  glLineWidth(1.0);
   if( cp->show_grid->value()) {
-    glPushMatrix();
-    glLoadIdentity();
+    glDisable( GL_DEPTH_TEST);
+    glBlendFunc(GL_ONE, GL_ZERO);
+    gl_font( FL_HELVETICA, 10);
+    
+    const int nticks = 10;
 
-    float c = initial_pscale;
-    glScalef( c, c, c);
+    const double extra=0.05;
+    const double range_x = wmax[0]-wmin[0], range_y = wmax[1]-wmin[1];
+    const double min_x = wmin[0]-extra*range_x, min_y = wmin[1]-extra*range_y;
+    const double max_x = wmax[0]+extra*range_x, max_y = wmax[1]+extra*range_y;
+    const double nice_range_x = nicenum(max_x-min_x, 0), nice_range_y = nicenum(max_y-min_y, 0);
+    const double d_x = nicenum(nice_range_x/(nticks-1),1), d_y = nicenum(nice_range_y/(nticks-1),1);
+    const double nicemin_x = floor(min_x/d_x)*d_x, nicemin_y = floor(min_y/d_y)*d_y;
+    const double nicemax_x = ceil(max_x/d_x)*d_x,  nicemax_y = ceil(max_y/d_y)*d_y;
+    char format_str_x[20], format_str_y[20], temp[40], temp2[40];
 
-    if( cp->Bkg->value() <= 0.2)
-      glColor4f(0.2,0.2,0.2,0.0);
-    else
-      glColor4f( 
-        0.8*cp->Bkg->value(), 0.8*cp->Bkg->value(), 
-        0.8*cp->Bkg->value(), 0.0);
+    const int nfrac = 8; // number of fractional digits to show.  Was: max(-floor(log10(d)), 0);	
+//    sprintf(format_str_x, "%%-%d.%dg", nfrac, nfrac);
+    sprintf(format_str_x, "%%.%dg", nfrac);	
+    sprintf(format_str_y, "%%.%dg", nfrac);
 
-    // draw the grid here
-    glBegin( GL_LINES);
-    for( int k=-1; k<=1; k+=2) {
-      for( int i=1; i<=10; i++) {
+    DEBUG (printf("nicemin_x=%g nicemax_x=%g d_x=%g\n", nicemin_x, nicemax_x, d_x));
+    if (d_x == 0 || d_y == 0) {
+      cerr << " grid not drawn because of bad values " << endl;
+      return;
+    }
 
-        // XY plane
-        glVertex3f (-1.0, 0.1*i*k, 0.0); 
-        glVertex3f (+1.0, 0.1*i*k, 0.0);
-        glVertex3f (0.1*i*k, -1.0, 0.0); 
-        glVertex3f (0.1*i*k, +1.0, 0.0);
+    float bottom, top, left, right;
+    screen_to_world (-1, -1, left,  bottom);
+    screen_to_world (+1, +1, right, top);
 
-        // YZ plane
-        glVertex3f (0.0, -1.0, 0.1*i*k); 
-        glVertex3f (0.0, +1.0, 0.1*i*k);
-        glVertex3f (0.0, 0.1*i*k, -1.0); 
-        glVertex3f (0.0, 0.1*i*k, +1.0);
+    // Draw lines twice: first thick dark line, then thin light line.  Good enough even w/o antialiasing.
+    int drawn=0;
+    for (float lum=0.33, width=1.5;  width>0;  drawn++, lum+=0.33, width-=1.0) {
+      glColor4f (lum, lum, lum, 1.0);
+      glLineWidth(width);
+      // lines of constant x, where x is nice
 
-        // XZ plane
-        glVertex3f (-1.0, 0.0, 0.1*i*k); 
-        glVertex3f (+1.0, 0.0, 0.1*i*k);
-        glVertex3f (0.1*i*k, 0.0, -1.0); 
-        glVertex3f (0.1*i*k, 0.0, +1.0);
+      for (double x=nicemin_x+d_x; x<=nicemax_x-d_x; x+=d_x) // was: for (x=nicemin; x<nicemax+.5*d; x+=d)
+      { 
+        glBegin( GL_LINES);
+        glVertex3f (x, nicemin_y+d_y, 0);
+        glVertex3f (x, nicemax_y-d_y, 0);
+        glEnd();
+
+        // perhaps we should carry around an up-to-date array of nice tick values for
+        // each axis object, and draw the ticks and labels in separate routines.
+        sprintf(temp, format_str_x, x);
+        DEBUG (printf("(%s)\n", temp));
+        float wx, wy;
+        screen_to_world (0, -1.15, wx, wy); // tweaked offsets
+        gl_draw( temp, x-gl_width(temp)/(w()*xscale), wy);        
+      }
+      // lines of constant y, where y is nice
+      for (double y=nicemin_y+d_y; y<=nicemax_y-d_y; y+=d_y) // was: for (y=nicemin; y<nicemax+.5*d; y+=d)
+      { 
+        glBegin( GL_LINES);
+        glVertex3f (nicemin_x+d_x, y, 0);
+        glVertex3f (nicemax_x-d_x, y, 0);
+        glEnd();
+
+        sprintf(temp2, format_str_y, y);
+        float wx, wy;
+        screen_to_world (+1.1, 0, wx, wy); // tweaked offsets
+        gl_draw( temp2, wx, y-0.5*gl_height()/((h()*yscale)));
       }
     }
-    glEnd();
-    glPopMatrix();
   }
 }
 
@@ -1053,7 +1117,7 @@ void Plot_Window::draw_axes()
 
         glEnd();
 
-        // Offset for drawing tick marks'.  Numeric values are conrolled by "b" 
+        // Offset for drawing tick marks' numerical values.  Positions are controlled by "b" 
         // as follows:
         //  b<1  -> draw it inside of the axis, 
         //  b>1  -> draw it outside of the axis,
@@ -1072,6 +1136,7 @@ void Plot_Window::draw_axes()
         interval_to_strings(cp->varindex2->value(), wmin[1], wmax[1], left, right);
         gl_draw( left, -(1+b*a), -1.0f+a/4);
         gl_draw( right, -(1+b*a), +1.0f+a/4);
+
       }
 
     }
