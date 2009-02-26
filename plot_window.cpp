@@ -869,12 +869,22 @@ void Plot_Window::draw_background ()
  * nicenum: find a "nice" number approximately equal to x.
  * Round the number if round=1, take ceiling if round=0
  */
-double nicenum(const double x, const double round)
+double nicenum(const double xx, const double round)
 {
     int expv;				/* exponent of x */
     double f;				/* fractional part of x */
     double nf;			/* nice, rounded fraction */
+    double signum = 0;
+    double x = fabs(xx);
 
+    if (x == 0.0)
+      return 0.0;
+
+    if (x>0)
+      signum = +1;
+    if (x<0)
+      signum = -1;
+    
     expv = (int)floor(log10(x));
     f = x/expt(10., expv);		/* between 1 and 10 */
     if (round)
@@ -887,7 +897,7 @@ double nicenum(const double x, const double round)
         else if (f<=2.) nf = 2.;
         else if (f<=5.) nf = 5.;
         else nf = 10.;
-    return nf*expt(10., expv);
+    return signum*nf*expt(10., expv);
 }
 
 //***************************************************************************
@@ -933,8 +943,10 @@ void Plot_Window::draw_grid()
       glLineWidth(width);
       // lines of constant x, where x is nice
 
-      for (double x=nicemin_x+d_x; x<=nicemax_x-d_x; x+=d_x) // was: for (x=nicemin; x<nicemax+.5*d; x+=d)
+      for (double x=nicemin_x+d_x; x<=nicemax_x-0.9999*d_x; x+=d_x) // was: for (x=nicemin; x<nicemax+.5*d; x+=d)
       { 
+        if (fabsf(x)<0.0001*d_x)
+          x=0;
         glBegin( GL_LINES);
         glVertex3f (x, nicemin_y+d_y, 0);
         glVertex3f (x, nicemax_y-d_y, 0);
@@ -949,8 +961,10 @@ void Plot_Window::draw_grid()
         gl_draw( temp, x-gl_width(temp)/(w()*xscale), wy);        
       }
       // lines of constant y, where y is nice
-      for (double y=nicemin_y+d_y; y<=nicemax_y-d_y; y+=d_y) // was: for (y=nicemin; y<nicemax+.5*d; y+=d)
+      for (double y=nicemin_y+d_y; y<=nicemax_y-0.9999*d_y; y+=d_y) // was: for (y=nicemin; y<nicemax+.5*d; y+=d)
       { 
+        if (fabsf(y)<0.0001*d_y)
+          y=0;
         glBegin( GL_LINES);
         glVertex3f (nicemin_x+d_x, y, 0);
         glVertex3f (nicemax_x-d_x, y, 0);
