@@ -23,7 +23,7 @@
 //
 // Author: Creon Levit    2005-2006
 // Modified: Nathan Schmidt  01-SEP-2008
-// Modified: P. R. Gazis  01-OCT-2008
+// Modified: P. R. Gazis  24-MAR-2009
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -90,6 +90,7 @@ void cummulative_conditional(
 void fluctuation(
   blitz::Array<float,1> a, const blitz::Array<int,1> indices, 
   const int half_width);
+double nicenum( const double xx, const double round);
 
 //***************************************************************************
 // Plot_Window::Plot_Window() -- Default constructor, used only in
@@ -773,7 +774,6 @@ void Plot_Window::draw()
   draw_resize_knob();
 }
 
-
 //***************************************************************************
 // Plot_Window::center_on_click( x, y) -- Center on x, y on a mouse click.
 void Plot_Window::center_on_click( int x, int y)
@@ -829,7 +829,6 @@ void Plot_Window::draw_resize_knob()
 #endif // __APPLE__
 }
 
-
 //***************************************************************************
 // Plot_Window::draw_background() --  If the background is anything besides 
 // black, draw it.  Last.  Why last?  Because we always blend against a 
@@ -854,50 +853,6 @@ void Plot_Window::draw_background ()
       glPopMatrix();
     }
   }
-}
-
-/*
- * Nice Numbers for Graph Labels
- * adapted from: Paul Heckbert, "Graphics Gems", Academic Press, 1990
- * see: http://www.cs.cmu.edu/~ph  (search within page for "nice numbers")
- */
-
-/* expt(a,n)=a^n for integer n */
-# define expt(a, n) pow(a, (double)(n))
-
-/*
- * nicenum: find a "nice" number approximately equal to x.
- * Round the number if round=1, take ceiling if round=0
- */
-double nicenum(const double xx, const double round)
-{
-    int expv;				/* exponent of x */
-    double f;				/* fractional part of x */
-    double nf;			/* nice, rounded fraction */
-    double signum = 0;
-    double x = fabs(xx);
-
-    if (x == 0.0)
-      return 0.0;
-
-    if (x>0)
-      signum = +1;
-    if (x<0)
-      signum = -1;
-    
-    expv = (int)floor(log10(x));
-    f = x/expt(10., expv);		/* between 1 and 10 */
-    if (round)
-        if (f<1.5) nf = 1.;
-        else if (f<3.) nf = 2.;
-        else if (f<7.) nf = 5.;
-        else nf = 10.;
-    else
-        if (f<=1.) nf = 1.;
-        else if (f<=2.) nf = 2.;
-        else if (f<=5.) nf = 5.;
-        else nf = 10.;
-    return signum*nf*expt(10., expv);
 }
 
 //***************************************************************************
@@ -1033,8 +988,6 @@ void Plot_Window::interval_to_strings(
     }
   }
 }
-
-
 
 //***************************************************************************
 // Plot_Window::draw_axes() -- If requested, draw and label the axes
@@ -1233,11 +1186,11 @@ void Plot_Window::print_selection_stats ()
 
 //***************************************************************************
 // Plot_Window::handle_selection() -- Handler to handle mouse-based selection
-// operations.  This routine, and anything it calls, can't actually
-// draw anything (since openGL functions cannot be called from 
-// within an fltk handle() method).  Selection information (e.g. bounding box, 
-// statistics) are drawn via the draw() method for the window making the 
-// selection by calling draw_selection_information().
+// operations.  This routine, and anything it calls, can't actually draw 
+// anything (since openGL functions cannot be called from within an fltk 
+// handle() method).  Selection information (e.g. bounding box, statistics) 
+// are drawn via the draw() method for the window making the selection by 
+// calling draw_selection_information().
 void Plot_Window::handle_selection ()
 {
   blitz::Range NPTS( 0, npoints-1);  
@@ -1251,7 +1204,6 @@ void Plot_Window::handle_selection ()
   current_brush =  dynamic_cast <Brush*> (brushes_tab->value());
   assert (current_brush);
 
-  
   // switch (current_brush->footprint->value()) {
 
   enum footprint {BRUSH_BOX, BRUSH_CIRCLE};
@@ -1279,7 +1231,6 @@ void Plot_Window::handle_selection ()
   }
   update_selection_from_footprint();
 }
-
 
 //***************************************************************************
 // Plot_Window::update_selection_from_footprint() -- 
@@ -2449,7 +2400,6 @@ void Plot_Window::clear_selections( Fl_Widget *o)
   redraw_all_plots (0);
 }
 
-
 //***************************************************************************
 // Plot_Window::select_on_string( *str, a_col) -- Search through all points, 
 // using given column, a_col, as the "key".  Flag as "inside the footprint" 
@@ -2839,8 +2789,8 @@ void cummulative_conditional(
 }
 
 //***************************************************************************
-// fluctuation: relative difference between a(i) and local average of a.
-// "local" is defined by rank passed in in indices.
+// fluctuation( a, indices, half_width) -- relative difference between a(i) 
+// and local average of a. "local" is defined by rank passed in in indices.
 void fluctuation(
   blitz::Array<float,1> a, const blitz::Array<int,1> indices, 
   const int half_width)
@@ -2869,4 +2819,46 @@ void fluctuation(
 
   // Loop: Unpermute and return in a
   for (int i=0; i<npoints; i++) a(indices(i)) = tmp(i);
+}
+
+
+//***************************************************************************
+// nicenum( xx, round) -- Find a 'nice number' approximately equal to xx.  
+// If round==1, round this number, if round==0, take the ceiling.
+//
+// From: Nice Numbers for Graph Labels
+// adapted from: Paul Heckbert, "Graphics Gems", Academic Press, 1990
+// see: http://www.cs.cmu.edu/~ph  (search within page for "nice numbers")
+//
+// expt(a,n)=a^n for integer n
+# define expt(a, n) pow(a, (double)(n))
+double nicenum( const double xx, const double round)
+{
+  int expv;    // exponent of x
+  double f;    // fractional part of x
+  double nf;   // nice, rounded fraction
+  double signum = 0;
+  double x = fabs(xx);
+
+  if( x == 0.0)
+    return 0.0;
+
+  if( x>0)
+    signum = +1;
+  if( x<0)
+    signum = -1;
+    
+  expv = (int)floor(log10(x));
+  f = x/expt(10., expv);		/* between 1 and 10 */
+  if( round)
+    if( f<1.5) nf = 1.;
+    else if( f<3.) nf = 2.;
+    else if( f<7.) nf = 5.;
+    else nf = 10.;
+  else
+    if( f<=1.) nf = 1.;
+    else if( f<=2.) nf = 2.;
+    else if( f<=5.) nf = 5.;
+    else nf = 10.;
+  return signum*nf*expt(10., expv);
 }

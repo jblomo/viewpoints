@@ -79,7 +79,7 @@
 //   reset_selection_arrays() -- Reset selection arrays
 //
 // Author: Creon Levit    2005-2006
-// Modified: P. R. Gazis  03-OCT-2008
+// Modified: P. R. Gazis  24-MAR-2009
 //***************************************************************************
 
 // Include the necessary include libraries
@@ -2195,7 +2195,7 @@ void reset_selection_arrays()
 //   main() -- main routine
 //
 // Author:   Creon Levit   unknown
-// Modified: P. R. Gazis   03-OCT-2008
+// Modified: P. R. Gazis   24-MAR-2009
 //***************************************************************************
 //***************************************************************************
 // Main -- Driver routine
@@ -2208,7 +2208,7 @@ int main( int argc, char **argv)
   // definitions
 
   about_string = "\n\
-    viewpoints 2.2.3 \n\
+    viewpoints 2.2.4 \n\
     " + string(SVN_VERSION) + "\n\
     \n\
     using fltk version (major + 0.01*minor): " + fltk_version_ss.str() + "\n\
