@@ -192,7 +192,7 @@ class Control_Panel_Window : public Fl_Group
     Fl_Hor_Value_Slider_Input *nbins_slider[3], *hscale_slider[3];
     Fl_Choice *varindex1, *varindex2, *varindex3;
     Fl_Button *lock_axis1_button, *lock_axis2_button, *lock_axis3_button;
-    Vp_Value_Input_Spin *offset[3];
+    Fl_Spinner *offset[3];
 
     // Pointers to buttons
     Fl_Button *reset_view_button;

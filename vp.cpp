@@ -2233,7 +2233,7 @@ int main( int argc, char **argv)
     { "skip_lines", required_argument, 0, 's'},
     { "trivial_columns", required_argument, 0, 't'},
     { "ordering", required_argument, 0, 'o'},
-    { "preserve_data", required_argument, 0, 't'},
+    { "preserve_data", required_argument, 0, 'P'},
     { "rows", required_argument, 0, 'r'},
     { "cols", required_argument, 0, 'c'},
     { "monitors", required_argument, 0, 'm'},

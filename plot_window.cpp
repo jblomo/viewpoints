@@ -207,7 +207,7 @@ void Plot_Window::load_state()
 // (probably) not duplicates.
 void Plot_Window::change_axes( int nchange)
 {
-  // int nchange = 0;
+  nchange = 0;
 
   // Loop: Examine control panel tabs and increment axis counts only for plots 
   // with x or y axis unlocked.  This is not ideal.
@@ -1441,14 +1441,13 @@ void Plot_Window::draw_data_points()
       // be per plot instead of per brush, or better yet it should go away.
       glAlphaFunc(GL_GREATER, brush->cutoff->value());
       
-      //is this brush drawing are we drawing points, or point_sprites, or line strips?
-      GLenum element_mode = GL_POINTS;
-
-      // Set the sprite for this brush - the symbol used for plotting points.
+      // set the current brush to render points, point_sprites or line strips.
       current_sprite = brush->symbol_menu->value();
       assert ((current_sprite >= 0) && (current_sprite < NSYMBOLS));
+      GLenum element_mode;
       switch (current_sprite) {
         case 0:
+          element_mode = GL_POINTS;
           enable_regular_points();
           glPointSize(size);
           break;
@@ -1457,6 +1456,7 @@ void Plot_Window::draw_data_points()
           glLineWidth(size);
           break;
         default:
+          element_mode = GL_POINTS;
           enable_sprites(current_sprite);
           glPointSize(size+2); // sprites cover fewer pixels, in general
           break;

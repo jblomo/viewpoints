@@ -49,10 +49,10 @@ CXXFLAGS	= $(OPTIM) -D SVN_VERSION="\"revision $(shell svnversion -n)\""
 # libraries to link with:
 ifeq ($(platform),Darwin)
 
-	LDLIBS = -framework AGL -framework OpenGL -framework Carbon -framework ApplicationServices -framework vecLib -lgsl -lm -lmx -lboost_serialization-d -lcfitsio
+	LDLIBS = -framework AGL -framework OpenGL -framework Carbon -framework ApplicationServices -framework vecLib -lgsl -lm -lmx -lboost_serialization-xgcc40-mt -lcfitsio
 
 # for OSX machines where I CAN install things as root... (don't forget to build all libraries as static only)
-	INCPATH = -I/usr/local/include -I/sw/include -I/usr/local/include/boost-1_34_1/
+	INCPATH = -I/usr/local/include -I/sw/include -I/usr/local/include/boost-1_38/
 	LIBPATH	= -L/usr/local/lib -L/sw/lib
 
 else
@@ -64,7 +64,7 @@ else
 #	LDLIBS = -lGLU -lGL -lXext -lm -lgsl -lefence -lpthread  
 endif
 
-INCFLEWS	= -I../flews-0.3
+INCFLEWS	= -I../flews-0.3.1
 
 LINKFLEWS	= -L../flews-0.3 -lflews
 LINKFLTK	= -lfltk -lfltk_gl
@@ -76,7 +76,7 @@ LDFLAGS		= $(LIBPATH) $(LINKFLEWS) $(LINKFLTK) $(LINKBLITZ) $(LDLIBS)
 EXEEXT		= 
 
 SRCS =	vp.cpp global_definitions_vp.cpp control_panel_window.cpp plot_window.cpp data_file_manager.cpp Vp_File_Chooser.cpp \
-	symbol_menu.cpp sprite_textures.cpp unescape.cpp brush.cpp Vp_Color_Chooser.cpp Vp_Value_Input_Spin.cpp column_info.cpp
+	symbol_menu.cpp sprite_textures.cpp unescape.cpp brush.cpp Vp_Color_Chooser.cpp column_info.cpp
 
 OBJS:=	$(SRCS:.cpp=.o)
 

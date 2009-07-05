@@ -224,6 +224,7 @@ void shrink_widget_fonts( Fl_Widget* target_widget, float rScale)
   target_widget->labelsize( labelsize_new);  
 
   // Rescale text in window of Vp_Value_Input_Spin  
+#if 0
   Vp_Value_Input_Spin* p_Vp_Spin_;
   if( p_Vp_Spin_ = dynamic_cast <Vp_Value_Input_Spin*> (target_widget)) {
     int textsize_new = (p_Vp_Spin_->input).textsize();
@@ -231,6 +232,7 @@ void shrink_widget_fonts( Fl_Widget* target_widget, float rScale)
     if( rScale>1) textsize_new++;
     (p_Vp_Spin_->input).textsize( textsize_new);
   }
+#endif //0
 
   // Rescale text in menus
   Fl_Menu_* p_target_menu__;

@@ -129,6 +129,7 @@
 #include <FL/Fl_File_Chooser.H>
 #include <FL/Fl_Repeat_Button.H>
 #include <FL/Fl_Check_Browser.H>
+#include <FL/Fl_Spinner.H>
 
 // XXX: for main menu bar
 #include <FL/Fl_Menu_Bar.H>

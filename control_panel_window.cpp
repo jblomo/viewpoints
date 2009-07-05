@@ -461,12 +461,10 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   // offset controls for "delay map"-like tricks.
   ypos += 25;
   for (int i=0; i<3; i++) {
-    offset[i] = new Vp_Value_Input_Spin (xpos+i*subwidth, ypos, subwidth-25, 20);
+    offset[i] = new Fl_Spinner (xpos+i*subwidth, ypos, subwidth-15, 20);
     offset[i]->range(-(npoints-1),(npoints-1));
-    offset[i]->soft(false);
     offset[i]->step(1);
     offset[i]->box(FL_PLASTIC_UP_BOX);
-    offset[i]->buttonssize(20);
     offset[i]->textsize(11);
     offset[i]->callback((Fl_Callback*)static_extract_and_redraw, this);
   }
