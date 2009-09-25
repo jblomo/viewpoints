@@ -19,13 +19,18 @@ endif
 DEBUG		= -gfull -ggdb -Wall -Wunused -Wconversion -fexceptions
 
 
+CXXFLAGS_ADD	= 
+LDFLAGS_ADD	=
+
 # compiling on Apple OSX (darwin)
 ifeq ($(platform),Darwin)
 
   # compiling on intel mac
   ifeq ($(hardware),i386)
-#      	OPTIM = $(DEBUG)
-	OPTIM = -O6 -ftree-vectorize -ftree-vectorizer-verbose=0 -Wall -Wconversion -ffast-math -fsigned-char -gfull 
+	CXXFLAGS_ADD = -arch i386 -isysroot /Developer/SDKs/MacOSX10.6.sdk
+	LDFLAGS_ADD = -arch i386 -isysroot /Developer/SDKs/MacOSX10.6.sdk
+#      	OPTIM = $(DEBUG) $(CXXFLAGS_ADD)
+	OPTIM = -O6 -ftree-vectorize -ftree-vectorizer-verbose=0 -Wall -Wconversion -ffast-math -fsigned-char -gfull $(CXXFLAGS_ADD)
 
   # compiling on PowerPC mac
   else
@@ -66,11 +71,11 @@ endif
 
 INCFLEWS	= -I../flews-0.3.1
 
-LINKFLEWS	= -L../flews-0.3 -lflews
+LINKFLEWS	= -L../flews-0.3.1 -lflews
 LINKFLTK	= -lfltk -lfltk_gl
 LINKBLITZ	= -lblitz
 
-LDFLAGS		= $(LIBPATH) $(LINKFLEWS) $(LINKFLTK) $(LINKBLITZ) $(LDLIBS)
+LDFLAGS		= $(LIBPATH) $(LINKFLEWS) $(LINKFLTK) $(LINKBLITZ) $(LDLIBS) $(LDFLAGS_ADD)
 
 # The extension to use for executables...
 EXEEXT		= 

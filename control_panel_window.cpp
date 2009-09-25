@@ -463,6 +463,7 @@ void Control_Panel_Window::make_widgets( Control_Panel_Window *cpw)
   for (int i=0; i<3; i++) {
     offset[i] = new Fl_Spinner (xpos+i*subwidth, ypos, subwidth-15, 20);
     offset[i]->range(-(npoints-1),(npoints-1));
+    offset[i]->value(0);
     offset[i]->step(1);
     offset[i]->box(FL_PLASTIC_UP_BOX);
     offset[i]->textsize(11);

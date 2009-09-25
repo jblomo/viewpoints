@@ -1541,3 +1541,36 @@ PDL
   fork process to execute shell command, stdin from tmpfile1, stdout to tmpfile2
   merge data using tmpfile2 as data source
   unlink tmpfile[12] ?
+
+09:24:40 16 Sep 09
+
+trying to build on OSX 10.6 (snow leopard)
+
+building fltk a problem.  succeeded using:
+
+	  setenv CC "/usr/bin/cc" 
+	  setenv CFLAGS "-arch i386 -O3 -isysroot /Developer/SDKs/MacOSX10.6.sdk" 
+	  setenv CXX "/usr/bin/c++" 
+	  setenv CXXFLAGS "-arch i386 -O3 -isysroot /Developer/SDKs/MacOSX10.6.sdk" 
+	  setenv LDFLAGS "-arch i386  -isysroot /Developer/SDKs/MacOSX10.6.sdk"
+
+	  ./configure --enable-gl --enable-quartz --enable-threads
+
+building flews-0.3.1 had problems.  Succeeded by:
+Using the above environment settings.  
+modified Makefile.in to have:
+
+	 CFLAGS	=	@CFLAGS@  -I./ -I/usr/local/include/
+	 CXXFLAGS =	@CXXFLAGS@ -I./ -I/usr/local/include/
+	 #LIBS	=	@LIBS@ -lXext -lX11 -lm `fltk-config --ldflags`
+	 LIBS	=	@LIBS@ -lm `fltk-config --ldflags`
+
+	 ./configure --without-x
+
+To build vp, modified makefile to add the above CXXFLAGS and LDFLAGS when on darwin intel
+Linked with old gsl, boost, etc.  Will probably need to fix these too.
+
+Todo: add new flews to source tree.
+
+BUGS!  kill selection and write selected data seem to write random data??  Bad.
+

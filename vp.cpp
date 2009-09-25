@@ -1419,7 +1419,7 @@ void make_help_view_window( Fl_Widget *o)
 // window.
 void textsize_help_view_widget( Fl_Widget *o, void* user_data)
 {
-  int help_textsize = help_view_widget->textsize() + (int) user_data;
+  int help_textsize = help_view_widget->textsize() + (long) user_data;
   if( help_textsize < 8) help_textsize=8;
   help_view_widget->textsize( help_textsize);
 }
@@ -1438,7 +1438,7 @@ void close_help_window( Fl_Widget *o, void* user_data)
 // window.
 void step_help_view_widget( Fl_Widget *o, void* user_data)
 {
-  help_topline += (int) user_data;
+  help_topline += (long) user_data;
   if( help_topline < 0) help_topline=0;
   help_view_widget->topline( help_topline);
 }

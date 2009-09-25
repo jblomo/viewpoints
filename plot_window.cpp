@@ -659,7 +659,7 @@ void Plot_Window::reset_view()
    }
   
   // Get third axis, if any
-  int axis2 = (int)(cp->varindex3->mvalue()->user_data());
+  int axis2 = (long)(cp->varindex3->mvalue()->user_data());
 
   // Regenerate axis scales
   xscale = 2.0 / (wmax[0]-wmin[0]);
@@ -1265,7 +1265,7 @@ void Plot_Window::update_selection_from_footprint()
   else {
     selected( NPTS) = where( newly_selected( NPTS), brush_index, previously_selected( NPTS));
   }
-
+  
   // pack (gather) the new index arrays for later rendering
   color_array_from_selection ();
 }
@@ -2002,9 +2002,9 @@ void Plot_Window::compute_rank( int var_index)
 int Plot_Window::extract_data_points ()
 {
   // Get the labels for the plot's axes
-  int axis0 = (int)(cp->varindex1->mvalue()->user_data());
-  int axis1 = (int)(cp->varindex2->mvalue()->user_data());
-  int axis2 = (int)(cp->varindex3->mvalue()->user_data());
+  long axis0 = (long)(cp->varindex1->mvalue()->user_data());
+  long axis1 = (long)(cp->varindex2->mvalue()->user_data());
+  long axis2 = (long)(cp->varindex3->mvalue()->user_data());
 
   xlabel = pdfm->column_label(axis0);
   ylabel = pdfm->column_label(axis1);
@@ -2263,9 +2263,10 @@ void Plot_Window::delete_selection( Fl_Widget *o)
   int ipoint=0;
   for( int n=0; n<npoints; n++) {
     if( selected( n) < 0.5) {
-      for( int j=0; j<nvars; j++)
-        Data_File_Manager::column_info[j].points(ipoint) = 
-          Data_File_Manager::column_info[j].points(n);
+      // could speed this up with look-ahead....
+      for( int j=0; j<nvars; j++) {
+        Data_File_Manager::column_info[j].points(ipoint) = Data_File_Manager::column_info[j].points(n);
+      }
       ipoint++;
     }
   }
@@ -2274,16 +2275,13 @@ void Plot_Window::delete_selection( Fl_Widget *o)
   // to avoid overflows
   if( ipoint < 2) {
     for( int j=0; j<nvars; j++) {
-      Data_File_Manager::column_info[j].points(0) =
-        Data_File_Manager::column_info[j].points(0);
-      Data_File_Manager::column_info[j].points(1) =
-        Data_File_Manager::column_info[j].points(1);
+      Data_File_Manager::column_info[j].points(0) = Data_File_Manager::column_info[j].points(0);
+      Data_File_Manager::column_info[j].points(1) = Data_File_Manager::column_info[j].points(1);
     }
     ipoint = 2;
     cerr << " -WARNING: tried to delete every data point, "
          << "first two points retained." << endl;
-    sErrorMessage =
-      "Tried to delete every data point, first two points retained.";
+    sErrorMessage = "Tried to delete every data point, first two points retained.";
   }
   
   // If the final index does not match the number of points, some point(s) 
@@ -2292,8 +2290,6 @@ void Plot_Window::delete_selection( Fl_Widget *o)
       
     // Update the number of points
     npoints = ipoint;
-    // npoints_slider->bounds(1,npoints);
-    // npoints_slider->value(npoints);
 
     // Resize the current data buffer to conserve memory and because the
     // Data_File_Manager class uses it to recalculate NPOINTS.  Also reset
