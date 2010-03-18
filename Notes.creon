@@ -1573,4 +1573,14 @@ Linked with old gsl, boost, etc.  Will probably need to fix these too.
 Todo: add new flews to source tree.
 
 BUGS!  kill selection and write selected data seem to write random data??  Bad.
+Fixed it!  See  svn log -r 260
+
+Note: Build process needs a lot of work.  Necessary flews valuators
+and more should probably be moved into vp, to avoid build issues. Need
+to fix all compiler warnings. Elements of c++ style rule: Compile
+cleanly and without warnings.
+
+Note:  It is not clear that fltk is going to survive in the 64 bit apple world.
+
+
 
