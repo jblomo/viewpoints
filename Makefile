@@ -30,7 +30,7 @@ ifeq ($(platform),Darwin)
 	CXXFLAGS_ADD = -arch i386 -isysroot /Developer/SDKs/MacOSX10.6.sdk
 	LDFLAGS_ADD = -arch i386 -isysroot /Developer/SDKs/MacOSX10.6.sdk
 #      	OPTIM = $(DEBUG) $(CXXFLAGS_ADD)
-	OPTIM = -O6 -ftree-vectorize -ftree-vectorizer-verbose=0 -Wall -Wconversion -ffast-math -fsigned-char -gfull $(CXXFLAGS_ADD)
+	OPTIM = -O6 -ftree-vectorize -ftree-vectorizer-verbose=0 -Wall -Wconversion -fno-strict-aliasing -ffast-math -fsigned-char -gfull $(CXXFLAGS_ADD)
 
   # compiling on PowerPC mac
   else
@@ -54,11 +54,11 @@ CXXFLAGS	= $(OPTIM) -D SVN_VERSION="\"revision $(shell svnversion -n)\""
 # libraries to link with:
 ifeq ($(platform),Darwin)
 
-	LDLIBS = -framework AGL -framework OpenGL -framework Carbon -framework ApplicationServices -framework vecLib -lgsl -lm -lmx -lboost_serialization-xgcc40-mt -lcfitsio
+	LDLIBS = -framework Foundation -framework AGL -framework OpenGL -framework Carbon -framework Cocoa -framework ApplicationServices -framework vecLib -framework AudioToolbox -lgsl -lm -lmx -lboost_serialization-xgcc40-mt -lcfitsio
 
 # for OSX machines where I CAN install things as root... (don't forget to build all libraries as static only)
-	INCPATH = -I/usr/local/include -I/sw/include -I/usr/local/include/boost-1_38/
-	LIBPATH	= -L/usr/local/lib -L/sw/lib
+	INCPATH = -I/usr/local/include -I/sw2/include -I/usr/local/include/boost-1_38/
+	LIBPATH	= -L/usr/local/lib -L/sw2/lib
 
 else
 # for NAS linux machines where I can NOT install things as root (don't forget to build all libraries as static only)

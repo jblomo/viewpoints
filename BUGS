@@ -106,3 +106,7 @@
 
 30. deleting plot windows does not free their memory.
 
+31. Select "histogram" on an axis, select "marginal", select the "N bins" input box
+    using the mouse, delete any value in the input box using backspace, then type 
+    "12". Program crashes always reliably.
+

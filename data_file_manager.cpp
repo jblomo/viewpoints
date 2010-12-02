@@ -1209,15 +1209,25 @@ int Data_File_Manager::read_binary_file_with_headers()
   // Use fgets to read a newline-terminated string of characters, test to make 
   // sure it wasn't too long, then load it into a string of header information.
   char cBuf[ MAX_HEADER_LENGTH];
-  fgets( cBuf, MAX_HEADER_LENGTH, pInFile);
-  if( strlen( cBuf) >= (int)MAX_HEADER_LENGTH) {
-    cerr << " -ERROR: Header string is too long, "
+  char *status = fgets( cBuf, MAX_HEADER_LENGTH, pInFile);
+  if ( status == NULL ) {
+       const char * msg = strerror(errno);
+       cerr <<  "while reading file "
+            <<  "<"  << inFileSpec.c_str() << "> "
+            << msg << endl;
+       fclose( pInFile);
+       make_confirmation_window( msg, 1);
+       return 1;
+  } else if( strlen( cBuf) >= (int)MAX_HEADER_LENGTH) {
+    cerr << " -ERROR: Header string is too long in "
+         <<  "<" << inFileSpec.c_str() << ">, "
          << "increase MAX_HEADER_LENGTH and recompile"
          << endl;
     fclose( pInFile);
     make_confirmation_window( "ERROR: Header string is too long", 1);
     return 1;
   }
+
   std::string line;
   line.assign( cBuf);
 
@@ -1251,7 +1261,17 @@ int Data_File_Manager::read_binary_file_with_headers()
     
     // Loop: Read successive tab-delimited lines and extract column info
     for( int i=0; i<nColumns; i++) {
-      fgets( cBuf, MAX_HEADER_LENGTH, pInFile);
+      char * status = fgets( cBuf, MAX_HEADER_LENGTH, pInFile);
+      if ( status == NULL ) {
+           const char * msg = strerror(errno);
+           cerr <<  "while reading file "
+                <<  "<"  << inFileSpec.c_str() << "> "
+                << msg << endl;
+           fclose( pInFile);
+           make_confirmation_window( msg, 1);
+           return 1;
+      }
+      
       std::string sLine;
       sLine.assign( cBuf);
       std::stringstream sLineBuf( sLine);
@@ -1311,7 +1331,7 @@ int Data_File_Manager::read_binary_file_with_headers()
     // contains tabs, temporarily set the deliminer character to a tab.
     // Otherwise set it to whitespace.
     char saved_delimiter_char_ = delimiter_char_;
-    if( line.find( '\t') < 0 || line.size() <= line.find( '\t')) {
+    if( line.find( '\t') == std::string::npos || line.size() <= line.find( '\t')) {
       cout << " -Header is WHITESPACE delimited" << endl;
       delimiter_char_ = ' ';
     }
@@ -1656,7 +1676,9 @@ int Data_File_Manager::read_table_from_fits_file()
   for( int i=0; i<nvars; i++) {
     char cname[ 80];
     int icol;
-    fits_get_colname( pFitsfile, CASEINSEN, "*", cname, &icol, &status);
+    char pattern[sizeof("*")];
+    strcpy(pattern,"*");
+    fits_get_colname( pFitsfile, CASEINSEN, pattern, cname, &icol, &status);
 
     // DIAGNOSTIC
     // cout << "Data_File_Manager::read_table_from_fits_file: "
@@ -2998,7 +3020,7 @@ void Data_File_Manager::maxvars( int i)
 int Data_File_Manager::n_ascii_columns()
 {
   int result = 0;
-  for( int i=0; i<column_info.size(); i++) {
+  for( unsigned int i=0; i<column_info.size(); i++) {
     if( column_info[i].hasASCII >0) result++;
   }
   return result;

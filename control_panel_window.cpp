@@ -55,6 +55,8 @@ Fl_Menu_Item Control_Panel_Window::normalization_style_menu_items[] = {
   { "three sigma",  0, 0, (void *) NORMALIZATION_THREESIGMA,   0, 0, 0, 0, 0},
   { "log_10",       0, 0, (void *) NORMALIZATION_LOG10,        0, 0, 0, 0, 0},
   { "atanh",        0, 0, (void *) NORMALIZATION_SQUASH,       0, 0, 0, 0, 0},
+  { "(x)->(-x)",    0, 0, (void *) NORMALIZATION_REVERSE,      0, 0, 0, 0, 0},
+  { "(x)->(1/x)",   0, 0, (void *) NORMALIZATION_INVERT,       0, 0, 0, 0, 0},
   { "rank",         0, 0, (void *) NORMALIZATION_RANK,         0, 0, 0, 0, 0},
   { "partial rank", 0, 0, (void *) NORMALIZATION_PARTIAL_RANK, 0, 0, 0, 0, 0},
   { "gaussianize",  0, 0, (void *) NORMALIZATION_GAUSSIANIZE,  0, 0, 0, 0, 0},

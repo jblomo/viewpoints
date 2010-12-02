@@ -25,6 +25,7 @@
 
 // Include header
 #include "Vp_File_Chooser.h"
+#include <cstring>
 
 // Define statics to hol bitmap image for new folder button
 static unsigned char idata_new[] = {
@@ -1844,7 +1845,7 @@ void Vp_File_Chooser::fileNameCB()
     
     // ..or file doesn't exist, so beep at and alert the user...
     else {
-      fl_alert(existing_file_label);
+      fl_alert("%s",existing_file_label);
     }
   }   // Fl_Enter or FL_KP_Enter...
 
@@ -2093,7 +2094,7 @@ void Vp_File_Chooser::showChoiceCB()
   char *patend;
   char temp[ 1024];
   if( strcmp( item, custom_filter_label) == 0) {
-    if( ( item = fl_input( custom_filter_label, pattern_)) != NULL) {
+    if( ( item = fl_input( "%s",pattern_,custom_filter_label)) != NULL) {
       strncpy( pattern_, item, sizeof(pattern_));
 
       quote_pathname( temp, item, sizeof(temp));
@@ -2457,7 +2458,7 @@ void Vp_File_Chooser::newdir()
 
   // Get a directory name from the user
   const char *dir;
-  if( ( dir = fl_input(new_directory_label, NULL)) == NULL) return;
+  if( ( dir = fl_input("%s",NULL,new_directory_label)) == NULL) return;
 
   // Make it relative to the current directory as needed...
   #if (defined(WIN32) && ! defined (__CYGWIN__)) || defined(__EMX__)

@@ -192,7 +192,7 @@ Fl_Check_Button* use_VBOs_Button;
 void usage();
 void make_help_about_window( Fl_Widget *o);
 void create_main_control_panel(
-  int main_x, int main_y, int main_w, int main_h, char* cWindowLabel);
+  int main_x, int main_y, int main_w, int main_h, const char* cWindowLabel);
 void cb_main_control_panel( Fl_Widget *o, void* user_data);
 void create_brushes( int w_x, int w_y, int w_w, int w_h);
 void brushes_tab_cb();
@@ -345,7 +345,7 @@ void make_help_about_window( Fl_Widget *o)
 // create_main_control_panel( main_x, main_y, main_w, main_h, cWindowLabel) 
 // -- Create the main control panel window.
 void create_main_control_panel( 
-  int main_x, int main_y, int main_w, int main_h, char* cWindowLabel)
+  int main_x, int main_y, int main_w, int main_h, const char* cWindowLabel)
 {
   // Create main control panel window
   Fl_Group::current(0);
@@ -1825,8 +1825,8 @@ int load_state( Fl_Widget* o)
   // Instantiate and show an Vp_File_Chooser widget and switch it to the
   // Configuration File Mode.  NOTE: The pathname must be passed as a 
   // variable or the window will begin in some root directory.
-  char* title = "Load saved configuration from file";
-  char* pattern = "*.xml\tAll Files (*)";
+  const char* title = "Load saved configuration from file";
+  const char* pattern = "*.xml\tAll Files (*)";
   Vp_File_Chooser* file_chooser =
     new Vp_File_Chooser( cInFileSpec, pattern, Vp_File_Chooser::SINGLE, title);
   file_chooser->directory( cInFileSpec);
@@ -2042,8 +2042,8 @@ int save_state( Fl_Widget* o)
   // Instantiate and show an Vp_File_Chooser widget.  NOTE: The pathname 
   // must be passed as a variable or the window will begin in some root 
   // directory.
-  char* title = "Save current configuration to file";
-  char* pattern = "*.xml\tAll Files (*)";
+  const char* title = "Save current configuration to file";
+  const char* pattern = "*.xml\tAll Files (*)";
   Vp_File_Chooser* file_chooser = 
     new Vp_File_Chooser( 
       cOutFileSpec, pattern, Vp_File_Chooser::CREATE, title);
