@@ -725,7 +725,10 @@ void manage_plot_window_array( Fl_Widget *o, void* user_data)
   nplots = nrows * ncols;
 
   // Clear children of the control panel tab widget to delete old tabs
-  cpt->clear();
+  // cpt->clear();  // for some reason this crashes now, so we hack as follows:
+  for( int i=0; i<nplots_save+1; i++) {
+    cpt->remove(0);
+  }
 
   // Create and add the virtual sub-panels, each group under a tab, one
   // group per plot.
