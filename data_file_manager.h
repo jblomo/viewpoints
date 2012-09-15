@@ -155,12 +155,15 @@ class Data_File_Manager
   protected:
     // Need this declaration to grant the serialization library access to 
     // private member variables and functions.
+#ifdef SERIALIZATION
     friend class boost::serialization::access;
+#endif // SERIALIZATION
        
     // When the class Archive corresponds to an output archive, the &
     // operator is defined similar to <<.  Likewise, when the class Archive 
     // is a type of input archive the & operator is defined similar to >>.
     // It is easiest to define this serialize method inline.
+#ifdef SERIALIZATION
     template<class Archive>
     void serialize( Archive & ar, const unsigned int /* file_version */)
     {
@@ -179,6 +182,7 @@ class Data_File_Manager
       // inputFileType_ = (isAsciiData==0);
       inputFileType_ = 1-isAsciiData;  // 0,1,2 -> ASCII, binary, FITS
     }
+#endif // SERIALIZATION
 
     void remove_trivial_columns();
     void resize_global_arrays();

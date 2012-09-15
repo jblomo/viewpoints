@@ -1,9 +1,6 @@
 # Are we compiling on Darwin (mac OSX) or Linux ?
 platform := $(shell uname)
 
-# Are we compiling on intel or powerPC ?
-hardware := $(shell uname -m)
-
 MAKEDEPEND	= $(CXX) -E -MM
 
 ifeq ($(platform),Darwin)
@@ -25,19 +22,15 @@ LDFLAGS_ADD	=
 # compiling on Apple OSX (darwin)
 ifeq ($(platform),Darwin)
 
-  # compiling on intel mac
-  ifeq ($(hardware),i386)
-	CXXFLAGS_ADD = -arch i386 -isysroot /Developer/SDKs/MacOSX10.6.sdk
-	LDFLAGS_ADD = -arch i386 -isysroot /Developer/SDKs/MacOSX10.6.sdk
+# new apple compilers
+#	CC = llvm-gcc
+#	CXX = llvm-g++
+
+#	CXXFLAGS_ADD = -arch i386 -isysroot /Developer/SDKs/MacOSX10.6.sdk
+#	LDFLAGS_ADD = -arch i386 -isysroot /Developer/SDKs/MacOSX10.6.sdk
 #	OPTIM = $(DEBUG) $(CXXFLAGS_ADD)
-	OPTIM = -O6 -ftree-vectorize -ftree-vectorizer-verbose=0 -Wall -Wconversion -fno-strict-aliasing -ffast-math -fsigned-char -gfull $(CXXFLAGS_ADD)
-
-  # compiling on PowerPC mac
-  else
-#	OPTIM = -O6 -ftree-vectorize -ftree-vectorizer-verbose=0 -Wall -Wconversion -Wno-long-double -ffast-math -fsigned-char -maltivec -mabi=altivec -faltivec -mpowerpc-gfxopt -gfull
-	OPTIM = -O6 -ftree-vectorize -ftree-vectorizer-verbose=0 -Wall -Wconversion -ffast-math -fsigned-char -maltivec -mabi=altivec -faltivec -mpowerpc-gfxopt -gfull
-
-  endif
+#	OPTIM = -O4 -ftree-vectorize -ftree-vectorizer-verbose=0 -Wall -Wconversion -fno-strict-aliasing -ffast-math -fsigned-char -gfull $(CXXFLAGS_ADD)
+	OPTIM = -O3 -Wall -fno-strict-aliasing -ffast-math -fsigned-char -gfull $(CXXFLAGS_ADD)
 
 else
 # compiling on linux (assume intel HW)
@@ -54,17 +47,17 @@ CXXFLAGS	= $(OPTIM) -D SVN_VERSION="\"revision $(shell svnversion -n)\""
 # libraries to link with:
 ifeq ($(platform),Darwin)
 
-	LDLIBS = -framework Foundation -framework AGL -framework OpenGL -framework Carbon -framework Cocoa -framework ApplicationServices -framework vecLib -framework AudioToolbox -lgsl -lm -lmx -lboost_serialization-xgcc40-mt -lcfitsio
+	LDLIBS = -framework Foundation -framework AGL -framework OpenGL -framework Carbon -framework Cocoa -framework ApplicationServices -framework vecLib -framework AudioToolbox -lgsl -lm -lmx -lcfitsio
 
 # for OSX machines where I CAN install things as root... (don't forget to build all libraries as static only)
-	INCPATH = -I/usr/local/include -I/sw2/include -I/usr/local/include/boost-1_38/
-	LIBPATH	= -L/usr/local/lib -L/sw2/lib
+	INCPATH = -I/usr/local/include -I/sw/include 
+	LIBPATH	= -L/usr/local/lib -L/sw/lib
 
 else
 # for NAS linux machines where I can NOT install things as root (don't forget to build all libraries as static only)
-	INCPATH = -I$$HOME/include -I$$HOME/include/boost-1_34
+	INCPATH = -I$$HOME/include -I$$HOME/include/boost
 	LIBPATH	= -L$$HOME/lib -L/usr/X11R6/lib
-	LDLIBS = -lGL -lGLU -lXft -lXext -lm -lgsl -lboost_serialization-gcc34
+	LDLIBS = -lGL -lGLU -lXft -lXext -lm -lgsl
 # for debugging
 #	LDLIBS = -lGLU -lGL -lXext -lm -lgsl -lefence -lpthread  
 endif

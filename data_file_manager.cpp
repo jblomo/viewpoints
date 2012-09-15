@@ -359,7 +359,7 @@ int Data_File_Manager::load_data_file()
   // If only one or fewer records are available, generate default data to
   // prevent a crash, then quit before something terrible happens!
   if( npoints <= 0 ||
-     ( doAppend == 0 && doMerge == 0) && ( nvars <= 1 || npoints <= 1)) {
+      (( doAppend == 0 && doMerge == 0) && ( nvars <= 1 || npoints <= 1))) {
     cerr << " -WARNING: Insufficient data, " << nvars << "x" << npoints
          << " samples.\nCheck delimiter character." << endl;
     string sWarning = "";

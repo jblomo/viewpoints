@@ -862,7 +862,7 @@ void Plot_Window::draw_grid()
   if( cp->show_grid->value()) {
     glDisable( GL_DEPTH_TEST);
     glBlendFunc(GL_ONE, GL_ZERO);
-    gl_font( FL_HELVETICA, 10);
+    gl_font( FL_HELVETICA_BOLD, 10);
     
     const int nticks = 10;
 
@@ -893,7 +893,7 @@ void Plot_Window::draw_grid()
 
     // Draw lines twice: first thick dark line, then thin light line.  Good enough even w/o antialiasing.
     int drawn=0;
-    for (float lum=0.33, width=1.5;  width>0;  drawn++, lum+=0.33, width-=1.0) {
+    for (float lum=0.66, width=1.5;  width>0;  drawn++, lum+=0.33, width-=1.0) {
       glColor4f (lum, lum, lum, 1.0);
       glLineWidth(width);
       // lines of constant x, where x is nice

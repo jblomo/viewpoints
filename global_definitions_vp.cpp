@@ -236,7 +236,7 @@ void shrink_widget_fonts( Fl_Widget* target_widget, float rScale)
 
   // Rescale text in menus
   Fl_Menu_* p_target_menu__;
-  if( p_target_menu__ = dynamic_cast <Fl_Menu_*> (target_widget)) {
+  if( (p_target_menu__ = dynamic_cast <Fl_Menu_*> (target_widget))) {
     int textsize_new = p_target_menu__->textsize();
     textsize_new = (int) (rScale*textsize_new);
     if( rScale>1) textsize_new++;
@@ -246,7 +246,7 @@ void shrink_widget_fonts( Fl_Widget* target_widget, float rScale)
   // Perform a dynamic cast to determine if this is a group.  If it is,
   // then shrink its children
   Fl_Group* p_target_group_;
-  if( p_target_group_ = dynamic_cast <Fl_Group*> (target_widget)) {
+  if( (p_target_group_ = dynamic_cast <Fl_Group*> (target_widget))) {
     int nChildren = p_target_group_->children();
     for( int i=0; i<nChildren; i++) {
       shrink_widget_fonts( p_target_group_->child(i), rScale);

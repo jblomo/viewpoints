@@ -132,7 +132,9 @@ class Plot_Window : public Fl_Gl_Window
   protected:
     // Need this declaration to grant the serialization library access to 
     // private member variables and functions.
+#ifdef SERIALIZATION
     friend class boost::serialization::access;
+#endif //SERIALIZATION
     
     // Define state parameters for serialization
     int x_save, y_save, w_save, h_save;
@@ -141,6 +143,7 @@ class Plot_Window : public Fl_Gl_Window
     // operator is defined similar to <<.  Likewise, when the class Archive 
     // is a type of input archive the & operator is defined similar to >>.
     // It is easiest to define this serialize method inline.
+#ifdef SERIALIZATION
     template<class Archive>
     void serialize( Archive & ar, const unsigned int /* file_version */)
     {
@@ -157,6 +160,7 @@ class Plot_Window : public Fl_Gl_Window
       }
       catch( exception &e) {}
     }
+#endif //SERIALIZATION
 
     // If they are available, use vertex buffer objects (VBOs)
     // have we initialized the openGL vertex buffer object?

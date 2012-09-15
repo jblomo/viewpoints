@@ -181,6 +181,7 @@
 // Blitz++ (C++ array operations via template metaprogramming)
 #include <blitz/array.h>
 
+#ifdef SERIALIZATION
 // BOOST: Include headers that implement an archive in XML format
 // #include <boost/archive/tmpdir.hpp>
 #include <boost/archive/xml_iarchive.hpp>
@@ -191,6 +192,7 @@
 #include <boost/serialization/utility.hpp>
 #include <boost/serialization/list.hpp>
 #include <boost/serialization/version.hpp>
+#endif // SERIALIZATION
 
 // BLAS
 #ifdef __APPLE__

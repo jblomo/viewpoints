@@ -832,11 +832,12 @@ void manage_plot_window_array( Fl_Widget *o, void* user_data)
     }
     else Plot_Window::upper_triangle_incr( ivar, jvar, nvars);
 
+#ifdef SERIALIZATION
     // If there has been an explicit request to restore the saved control 
     // panel settings or the number of plots has changed, restore those 
     // settings, then generate any new settings that may be required.
     if( do_restore_settings != 0 ||
-        nplots != nplots_old && i<nplots_old) {
+        nplots != (nplots_old && i<nplots_old)) {
 
       // Make sure axis indices are in range
       cps_save[i].restrict_axis_indices( nvars-1, nvars-1, nvars);
@@ -849,6 +850,11 @@ void manage_plot_window_array( Fl_Widget *o, void* user_data)
       cps[i]->varindex2->value(jvar);  
       cps[i]->varindex3->value(nvars);  
     }
+#else // SERIALIZATION
+    cps[i]->varindex1->value(ivar);  
+    cps[i]->varindex2->value(jvar);  
+    cps[i]->varindex3->value(nvars);  
+#endif //SERIALIZATION
 
     // KLUDGE: If there has been an explicit request to restore the saved
     // control panel settings or the number of plots has changed, restore the 
@@ -1120,7 +1126,7 @@ void make_file_name_window( Fl_Widget *o)
 {
   string sConfirmText = dfm.input_filespec();
   if( sConfirmText.size()<=0) sConfirmText = "No input file is specified.";
-  int iConfirmResult = make_confirmation_window( sConfirmText.c_str(), 1);
+  (void)make_confirmation_window( sConfirmText.c_str(), 1);
 }
 
 //***************************************************************************
@@ -1679,6 +1685,7 @@ void read_data( Fl_Widget* o, void* user_data)
 // and this is noted explictly in the comments below.
 int load_initial_state( string configFileSpec)
 {
+#ifdef SERIALIZATION  
   // Create dummy menu for use with manage_plot_window_array.  Instantiate 
   // an actual object to avoid potential dangers of pointers.
   Fl_Menu_Bar dummy_menu( 0, 0, 1, 1);
@@ -1807,6 +1814,7 @@ int load_initial_state( string configFileSpec)
     }
   }
 
+#endif // SERIALIZATION
   // Report success
   return 1;
 }
@@ -1818,6 +1826,8 @@ int load_initial_state( string configFileSpec)
 // extremely important, and this noted explicetly in the comments below.
 int load_state( Fl_Widget* o)
 {
+#ifdef SERIALIZATION
+
   // Extract directory from the Data_File_Manager class to initialize the 
   // filespec for the XML archive.  NOTE: cInFileSpec is defined as const 
   // char* for use with Vp_File_Chooser, which means it could be destroyed 
@@ -2024,6 +2034,7 @@ int load_state( Fl_Widget* o)
     }
   }
 
+#endif //SERIALIZATION
   // Report success
   return 1;
 }
@@ -2035,6 +2046,8 @@ int load_state( Fl_Widget* o)
 // extremely important, and tis noted explicetly in the comments below.
 int save_state( Fl_Widget* o)
 {
+#ifdef SERIALIZATION
+
   // Extract directory from the Data_File_Manager class to initialize the 
   // filespec for the XML archive.  NOTE: cOutFileSpec is defined as const 
   // char* for use with Vp_File_Chooser, which means it could be destroyed 
@@ -2148,6 +2161,7 @@ int save_state( Fl_Widget* o)
   outputArchive << BOOST_SERIALIZATION_NVP( brushes);
   
   // Report success
+#endif //SERIALIZATION
   return 1;
 }
 

@@ -79,7 +79,9 @@ class Brush : public Fl_Group
   protected:
     // Need this declaration to grant the serialization library access to 
     // private member variables and functions.
+#ifdef SERIALIZATION
     friend class boost::serialization::access;
+#endif // SERIALIZATION
     
     // Define buffers to save state
     int brush_symbol_save;
@@ -91,6 +93,7 @@ class Brush : public Fl_Group
     // operator is defined similar to <<.  Likewise, when the class Archive 
     // is a type of input archive the & operator is defined similar to >>.
     // It is easiest to define this serialize method inline.
+#ifdef SERIALIZATION
     template<class Archive>
     void serialize( Archive & ar, const unsigned int /* file_version */)
     {
@@ -112,6 +115,7 @@ class Brush : public Fl_Group
       }
       catch( exception &e) {}
     }
+#endif //SERIALIZATION
 
   public:
     Brush();

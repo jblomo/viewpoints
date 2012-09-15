@@ -1582,5 +1582,4 @@ cleanly and without warnings.
 
 Note:  It is not clear that fltk is going to survive in the 64 bit apple world.
 
-
-
+Note: -m32 added to compiler flags forces 32 bit mode....
