@@ -1,0 +1,18 @@
+# vim
+.*.sw[po]
+tags
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+vp
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a

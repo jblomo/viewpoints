@@ -14,6 +14,8 @@ Note: if someone figures out how to do the above for boost/bjam please update th
 
 Step 1
 
+Ubuntu: sudo apt-get install libfltk1.3-dev libfltk1.3
+
 download the latest stable fltk-1.3 from http://fltk.org/software.php
   (vp does not build with fltk 2.0, yet)
 expand
@@ -25,7 +27,8 @@ sudo make install
 
 Step 2
 
-download flews from http://dbarrero.tripod.com/software/flews-0.3.tar.gz
+download flews from http://dbarrero.tripod.com/software/flews-0.3.tar.gz or https://github.com/proyZ/FL_Flews
+
 expand
 cd
 ./configure
@@ -33,12 +36,15 @@ edit source code to remove bogus "include <values.h>" if necessary
 make  
   don't worry if flews test doesn't link.  it is not necessary for vp.  
   If you want to test flews, edit the flews makefile to have the correct locations
-sudo make install
 
+If you used Github version, symlink: ln -s FL_Flews flews-0.3.1
 
 Step 3
 
+Ubuntu: sudo apt-get install libblitz0-dev libblitz0ldbl
+
 download the latest blitz from http://sourceforge.net/project/showfiles.php?group_id=63961
+
 expand
 ./configure --disable-shared
 make lib
@@ -48,7 +54,10 @@ sudo make install  (you can ignore errors pertaining to .pdf files and .tex file
 
 Step 4
 
+Ubuntu: sudo apt-get install libgsl0-dev
+
 download the lastest gsl from ftp://ftp.gnu.org/gnu/gsl/
+
 ./configure --disable-shared
 make
 make check  (see if all tests pass)
@@ -66,6 +75,8 @@ The above takes a while.  Perhaps someone can insert the instruction
 for building only the static, single-threaded, serialization library)
 
 Step 5.2
+
+Ubuntu: sudo apt-get install libccfits-dev
 
 Download, build and install cfitsio from http://heasarc.gsfc.nasa.gov/docs/software/fitsio/fitsio.html
 
