@@ -47,7 +47,7 @@ CXXFLAGS	= $(OPTIM) -D SVN_VERSION="\"revision $(shell svnversion -n)\""
 # libraries to link with:
 ifeq ($(platform),Darwin)
 
-	LDLIBS = -framework Foundation -framework AGL -framework OpenGL -framework Carbon -framework Cocoa -framework ApplicationServices -framework vecLib -framework AudioToolbox -lgsl -lm -lmx -lcfitsio
+	LDLIBS = -framework Foundation -framework AGL -framework OpenGL -framework Carbon -framework Cocoa -framework ApplicationServices -framework vecLib -framework AudioToolbox -lgsl -lgslcblas -lm -lmx -lcfitsio
 
 # for OSX machines where I CAN install things as root... (don't forget to build all libraries as static only)
 	INCPATH = -I/usr/local/include -I/sw/include 
@@ -57,7 +57,7 @@ else
 # for NAS linux machines where I can NOT install things as root (don't forget to build all libraries as static only)
 	INCPATH = -I$$HOME/include -I$$HOME/include/boost
 	LIBPATH	= -L$$HOME/lib -L/usr/X11R6/lib
-	LDLIBS = -lGL -lGLU -lXft -lXext -lm -lgsl
+	LDLIBS = -lGL -lGLU -lXft -lXext -lm -lgsl -lgslcblas -lCCfits -lcfitsio
 # for debugging
 #	LDLIBS = -lGLU -lGL -lXext -lm -lgsl -lefence -lpthread  
 endif
