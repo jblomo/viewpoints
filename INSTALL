@@ -1,3 +1,6 @@
+Note: to avoid the hassles of compiling Viewpoints for modern platforms, there is now a version which runs in a Docker container. See docker/DOCKER_INSTALL.
+
+
 Step 0 
 
 on Mac OS X systems, and perhaps others, optionally put the

@@ -2195,7 +2195,7 @@ void Plot_Window::upper_triangle_incr( int &i, int &j, const int n)
   assert( i >= 0);
   assert( j >= 0);
   assert( i < n);
-  assert( j < n);
+  // assert( j < n);
 }
 
 //***************************************************************************

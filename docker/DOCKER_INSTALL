@@ -1,0 +1,19 @@
+Step 0: Install Docker CE for your platform if you don't already have it: https://www.docker.com/get-docker
+
+
+Step 1: Build the Viewpoints docker image. Run:
+
+> docker build -f docker/Dockerfile -t viewpoints .
+
+from the base project directory. This will likely take several minutes the first time. If you change the source, be sure to re-run this command for your changes to be reflected in the Docker image.
+
+
+Step 2: Run Viewpoints, swapping "./docker_vp.sh" for "./vp". You can pass any arguments accepted by vp. For example:
+
+> ./docker_vp.sh --help  # Prints help message in container, then quits.
+
+> ./docker_vp.sh -d , inline_skating.csv  # Opens Viewpoints with example dataset in the container.
+
+
+
+Exiting Viewpoints will automatically exit the container.
